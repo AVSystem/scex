@@ -1,0 +1,4 @@
+rootProject.name = "scex"
+
+include "scex-core"
+include "scex-test"

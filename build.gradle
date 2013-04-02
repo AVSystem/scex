@@ -1,0 +1,50 @@
+apply plugin: 'idea'
+
+subprojects {
+    apply plugin: 'scala'
+    apply plugin: 'idea'
+
+    version = '1.0-SNAPSHOT'
+
+    configurations {
+        ideaProvided
+        compile.extendsFrom(ideaProvided)
+    }
+
+    repositories {
+        mavenCentral()
+        mavenLocal()
+    }
+
+    ext.scalaVersion = '2.10.1'
+
+    dependencies {
+        scalaTools "org.scala-lang:scala-compiler:$scalaVersion"
+        ideaProvided "org.scala-lang:scala-library:$scalaVersion"
+
+        compile "org.scala-lang:scala-reflect:$scalaVersion"
+        compile "org.scala-lang:scala-compiler:$scalaVersion"
+        compile "org.scala-lang:jline:$scalaVersion"
+        compile "com.google.guava:guava:13.0.1"
+        compile "com.google.code.findbugs:jsr305:2.0.1"
+    }
+
+    idea {
+        module {
+            downloadJavadoc = true
+            downloadSources = true
+
+            scopes.COMPILE.minus += configurations.ideaProvided
+        }
+    }
+}
+
+project("scex-core") {
+
+}
+
+project("scex-test") {
+    dependencies {
+        compile(project(":scex-core"))
+    }
+}

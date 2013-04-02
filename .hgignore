@@ -1,0 +1,33 @@
+syntax: glob
+# logs and binaries
+*.ld
+*.log
+
+.idea/
+*.iml
+*.ipr
+*.iws
+
+license.dat
+public.key
+target
+build
+out
+.gradle
+
+# gedit temporary files
+*~
+
+syntax: regexp
+^[^/]+/.classpath
+^[^/]+/.project
+^[^/]+/.settings/
+^[^/]+/target/
+^[^/]+/build/
+^[^/]+/lib/
+^[^/]+/bin/
+^[^/]+/out/
+
+syntax: regexp
+^.metadata$
+
