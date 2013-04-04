@@ -3,10 +3,7 @@ syntax: glob
 *.ld
 *.log
 
-**/.idea/
-**/*.iml
-**/*.ipr
-**/*.iws
+*.iws
 
 license.dat
 public.key
@@ -22,6 +19,7 @@ syntax: regexp
 ^[^/]+/.classpath
 ^[^/]+/.project
 ^[^/]+/.settings/
+^[^/]+/.idea/
 ^[^/]+/target/
 ^[^/]+/build/
 ^[^/]+/lib/
