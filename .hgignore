@@ -3,10 +3,10 @@ syntax: glob
 *.ld
 *.log
 
-.idea/
-*.iml
-*.ipr
-*.iws
+**/.idea/
+**/*.iml
+**/*.ipr
+**/*.iws
 
 license.dat
 public.key

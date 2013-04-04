@@ -12,27 +12,7 @@ import java.{util => ju, lang => jl}
  */
 object Playground {
   def main(args: Array[String]) {
-    val settings = new Settings
-    settings.usejavacp.value = true
-
-    val repl = new IMain(settings)
-
-    val codeTemplate = """
-                         |import com.avsystem.scex._
-                         |import com.avsystem.ump.core.db.entities.Device
-                         |
-                         |val expr = { __ctx: Device =>
-                         |  import __ctx._
-                         |  InvocationValidators.validate({%s})
-                         |}
-                       """.stripMargin
-
-    val myexpr =
-      """
-        |__ctx.oui.asInstanceOf[java.util.List[String]].size()
-      """.stripMargin
-
-    repl interpret codeTemplate.format(myexpr)
+    println(generateAdapter(classOf[JavaLol]))
   }
 
   private def generateAdapter(clazz: Class[_]) = {
@@ -42,7 +22,7 @@ object Playground {
     val keywords = List("class")
 
     val adapterTemplate = """
-                            |implicit class %s_Adapter(val wrapped: %s) extends AnyVal {
+                            |implicit class %s_Adapter(val wrapped: %s) extends AnyVal with JavaGettersAdapter {
                             |%s
                             |}
                           """.stripMargin
