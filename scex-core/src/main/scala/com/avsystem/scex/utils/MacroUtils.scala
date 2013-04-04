@@ -13,7 +13,8 @@ object MacroUtils {
   def isJavaField(symbol: Universe#Symbol) =
     symbol != null && symbol.isJava && symbol.isTerm && !symbol.isMethod && !isModuleOrPackage(symbol)
 
-  def memberSignature(s: Universe#Symbol) = s"${s.fullName}:${s.typeSignature}"
+  def memberSignature(s: Universe#Symbol) =
+    if (s != null) s"${s.fullName}:${s.typeSignature}" else null
 
   def isStaticImplicitConversion(symbol: Universe#Symbol) =
     symbol != null && symbol.isMethod && symbol.isStatic && symbol.isImplicit

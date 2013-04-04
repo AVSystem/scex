@@ -1,6 +1,7 @@
 import com.avsystem.scex.validation.{TypeMembersValidator, AccessValidators, ChainValidator, Validator}
 import java.{util => ju, lang => jl}
 import scala.reflect.runtime.{universe => ru}
+import scala.runtime.StringAdd
 import scala.Some
 import scala.tools.nsc.interpreter.IMain
 import scala.tools.nsc.Settings
@@ -57,6 +58,7 @@ object ValidationTest {
         |  val jl = new JavaLol
         |  jl.fuu
         |  jl.fuu = 30
+        |  new JavaLol + "fuu"
         |}
       """.stripMargin
 
@@ -64,6 +66,27 @@ object ValidationTest {
       implicit def anythingImplicitly[T]: T = ???
 
       List(
+        denyOn[Any] { any =>
+          any.equals _
+          any.hashCode
+          any.##
+          any.getClass
+          any.asInstanceOf
+          any.isInstanceOf
+        },
+
+        denyOn[Object] { anyRef =>
+          anyRef.eq _
+          anyRef.synchronized _
+        },
+
+        allowOn[Any] { any =>
+          any + (_: String)
+          any -> (_: Any)
+          any == (_: Any)
+          any != (_: Any)
+        },
+
         allow {
           ValidationTest.Foo.Bar.c
           String.CASE_INSENSITIVE_ORDER
@@ -73,32 +96,29 @@ object ValidationTest {
           new JavaLol
         },
 
-        allowOn[String] {
-          s =>
-            s.length
-            s.concat _
-            s.matches _
-            s.reverse
+        allowOn[String] { s =>
+          s.length
+          s.concat _
+          s.matches _
+          s.reverse
+          s.compare(_: String)
         },
 
-        allowOn[A[_]] {
-          a =>
-            a.costam _
-            a.hoho _
-            a.multiParens _
-            a.b()
-            a.getClass
-            a.a_= _
+        allowOn[A[_]] { a =>
+          a.costam _
+          a.hoho _
+          a.multiParens _
+          a.b()
+          a.getClass
+          a.a_= _
         },
 
-        allowOn[Int] {
-          i =>
-            i + (_: Char)
+        allowOn[Int] { i =>
+          i + (_: Char)
         },
 
-        allowOn[JavaLol] {
-          jl =>
-            jl.fuu
+        allowOn[JavaLol] { jl =>
+          jl.fuu
         },
 
         denyAny

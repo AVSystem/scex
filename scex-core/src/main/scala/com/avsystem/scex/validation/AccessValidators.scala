@@ -57,7 +57,7 @@ object AccessValidators {
   private def reifyTypeMembersValidator(c: Context)(requiredPrefixTpe: Option[c.universe.Type], expr: c.universe.Tree, allow: Boolean): c.Expr[AccessValidator] = {
     import c.universe._
 
-    val typesAndSymbolsBuilder = List.newBuilder[(Type, Symbol)]
+    val typesAndSymbolsBuilder = List.newBuilder[(Type, Symbol, Symbol)]
 
     def fullyWidened(tpe: Type) = tpe.map(_.widen)
 
@@ -71,18 +71,18 @@ object AccessValidators {
       else
         isStaticOrConstructor(body.symbol)
 
-    def typeMemberPair(prefix: Tree, body: Tree) =
-      (fullyWidened(requiredPrefixTpe.getOrElse(prefix.tpe)), body.symbol)
+    def accessSpec(prefix: Tree, body: Tree, implConv: Tree) =
+      (fullyWidened(requiredPrefixTpe.getOrElse(prefix.tpe)), body.symbol, if (implConv != null) implConv.symbol else null)
 
     def extractSymbols(body: Tree) {
       body match {
         case Select(apply@Apply(fun, List(prefix)), _) if isValidPrefix(body, prefix) &&
           isStaticImplicitConversion(fun.symbol) && apply.pos == prefix.pos =>
 
-          typesAndSymbolsBuilder += typeMemberPair(prefix, body)
+          typesAndSymbolsBuilder += accessSpec(prefix, body, fun)
 
         case Select(prefix, _) if isValidPrefix(body, prefix) =>
-          typesAndSymbolsBuilder += typeMemberPair(prefix, body)
+          typesAndSymbolsBuilder += accessSpec(prefix, body, null)
 
         case Apply(inner, _) => extractSymbols(inner)
         case TypeApply(inner, _) => extractSymbols(inner)
@@ -106,10 +106,15 @@ object AccessValidators {
     }
 
     val reifiedTypeSignaturePairs: List[Tree] = typesAndSymbols.map {
-      case (tpe, ms) => reify((reifiedTypeExpr(tpe).splice, c.literal(memberSignature(ms)).splice)).tree
+      case (tpe, ms, ic) => reify(
+        MemberAccessSpec(
+          reifiedTypeExpr(tpe).splice,
+          c.literal(memberSignature(ms)).splice,
+          c.literal(memberSignature(ic)).splice))
+        .tree
     }
 
-    val typesAndMethodsListExpr: c.Expr[List[(ru.Type, String)]] =
+    val typesAndMethodsListExpr: c.Expr[List[MemberAccessSpec]] =
       c.Expr(Apply(Select(reify(List).tree, newTermName("apply")), reifiedTypeSignaturePairs))
 
     reify(new TypeMembersValidator(typesAndMethodsListExpr.splice, c.literal(allow).splice))

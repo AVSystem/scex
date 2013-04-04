@@ -24,25 +24,22 @@ object Validator {
     def needsValidation(symbol: Symbol) =
       symbol != null && (symbol.isMethod || isJavaField(symbol))
 
-    def validateAccess(pos: Position, tpe: Type, symbol: Symbol) {
+    def validateAccess(pos: Position, tpe: Type, symbol: Symbol, icSymbol: Symbol) {
       if (needsValidation(symbol)) {
-        if (!validator.isInvocationAllowed(c.universe)(tpe, symbol).getOrElse(false)) {
+        if (!validator.isInvocationAllowed(c.universe)(tpe, symbol, icSymbol).getOrElse(false)) {
           c.error(pos, s"Member ${symbol.fullName} is not allowed on $tpe")
         }
       }
     }
 
-
     def validateTree(tree: Tree) {
-      println(s"LOLVALIDATING ${showRaw(tree)}")
-
       tree match {
         case tree@Select(apply@Apply(fun, List(qualifier)), _) if isStaticImplicitConversion(fun.symbol) && apply.pos == qualifier.pos =>
           //unwrap qualifier from implicit conversion
-          validateAccess(tree.pos, tpeOrNullIfJavaModule(qualifier), tree.symbol)
+          validateAccess(tree.pos, tpeOrNullIfJavaModule(qualifier), tree.symbol, fun.symbol)
           validateTree(qualifier)
         case tree@Select(qualifier, _) =>
-          validateAccess(tree.pos, tpeOrNullIfJavaModule(qualifier), tree.symbol)
+          validateAccess(tree.pos, tpeOrNullIfJavaModule(qualifier), tree.symbol, null)
           validateTree(qualifier)
         case _ =>
           tree.children.foreach(child => validateTree(child))
