@@ -1,7 +1,7 @@
-import com.avsystem.scex.validation.{TypeMembersValidator, AccessValidators, ChainValidator, Validator}
+import com.avsystem.scex.validation._
 import java.{util => ju, lang => jl}
+import reflect.macros.Universe
 import scala.reflect.runtime.{universe => ru}
-import scala.runtime.StringAdd
 import scala.Some
 import scala.tools.nsc.interpreter.IMain
 import scala.tools.nsc.Settings
@@ -32,8 +32,6 @@ object ValidationTest {
     override def costam(buu: Int) = buu * 2
   }
 
-  import AccessValidators._
-
   def main(args: Array[String]) {
     val settings = new Settings
     settings.usejavacp.value = true
@@ -62,29 +60,34 @@ object ValidationTest {
         |}
       """.stripMargin
 
-    Validator.validator = ChainValidator({
+    import com.avsystem.scex.validation.AccessValidators._
+
+    Validator.accessValidator = ChainValidator({
       implicit def anythingImplicitly[T]: T = ???
 
       List(
-        denyOn[Any] { any =>
-          any.equals _
-          any.hashCode
-          any.##
-          any.getClass
-          any.asInstanceOf
-          any.isInstanceOf
+        denyOn[Any] {
+          any =>
+            any.equals _
+            any.hashCode
+            any.##
+            any.getClass
+            any.asInstanceOf
+            any.isInstanceOf
         },
 
-        denyOn[Object] { anyRef =>
-          anyRef.eq _
-          anyRef.synchronized _
+        denyOn[Object] {
+          anyRef =>
+            anyRef.eq _
+            anyRef.synchronized _
         },
 
-        allowOn[Any] { any =>
-          any + (_: String)
-          any -> (_: Any)
-          any == (_: Any)
-          any != (_: Any)
+        allowOn[Any] {
+          any =>
+            any + (_: String)
+            any -> (_: Any)
+            any == (_: Any)
+            any != (_: Any)
         },
 
         allow {
@@ -96,37 +99,53 @@ object ValidationTest {
           new JavaLol
         },
 
-        allowOn[String] { s =>
-          s.length
-          s.concat _
-          s.matches _
-          s.reverse
-          s.compare(_: String)
+        allowOn[String] {
+          s =>
+            s.length
+            s.concat _
+            s.matches _
+            s.reverse
+            s.compare(_: String)
         },
 
-        allowOn[A[_]] { a =>
-          a.costam _
-          a.hoho _
-          a.multiParens _
-          a.b()
-          a.getClass
-          a.a_= _
+        allowOn[A[_]] {
+          a =>
+            a.costam _
+            a.hoho _
+            a.multiParens _
+            a.b()
+            a.getClass
+            a.a_= _
         },
 
-        allowOn[Int] { i =>
-          i + (_: Char)
+        allowOn[Int] {
+          i =>
+            i + (_: Char)
         },
 
-        allowOn[JavaLol] { jl =>
-          jl.fuu
+        allowOn[JavaLol] {
+          jl =>
+            jl.fuu
         },
 
         denyAny
       )
     })
 
-    Validator.validator.asInstanceOf[ChainValidator].validators.collect {
+    Validator.accessValidator.asInstanceOf[ChainValidator].validators.collect {
       case v: TypeMembersValidator => v.typesAndMembers foreach println
+    }
+
+    Validator.syntaxValidator = new SyntaxValidator {
+      def isSyntaxAllowed(u: Universe)(tree: u.Tree): Boolean = {
+        import u._
+
+        tree match {
+          case _: Block | _: Select | _: Apply | _: TypeApply | _: Ident |
+               _: If | _: Literal | _: New | _: This | _: Typed | _: TypTree => true
+          case _ => false
+        }
+      }
     }
 
     repl interpret codeTemplate.format(myexpr)
