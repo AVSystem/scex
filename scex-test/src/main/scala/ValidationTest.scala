@@ -135,7 +135,11 @@ object ValidationTest {
         |}
       """.stripMargin
 
-    println(compiler.compileExpression[Object, String](profile, myexpr).apply(null))
+    println(benchmark {
+      10000 times {
+        compiler.getCompiledExpression[Object, String](profile, myexpr).apply(null)
+      }
+    })
   }
 
 }
