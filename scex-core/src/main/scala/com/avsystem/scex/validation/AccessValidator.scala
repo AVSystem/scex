@@ -4,7 +4,7 @@ import java.{util => ju, lang => jl}
 import scala.reflect.runtime.{universe => ru}
 import scala.reflect.api.{JavaUniverse, Universe}
 import com.google.common.cache.{CacheLoader, CacheBuilder}
-import com.avsystem.scex.utils.MacroUtils._
+import com.avsystem.scex.Utils._
 
 case class MemberAccessSpec(prefixTpe: ru.Type, member: String, implicitConv: String)
 

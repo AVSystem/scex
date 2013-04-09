@@ -26,6 +26,9 @@
     <option name="SKIP_IMPORT_STATEMENTS" value="false" />
   </component>
   <component name="Encoding" useUTFGuessing="true" native2AsciiForPropertiesFiles="false" />
+  <component name="EntryPointsManager">
+    <entry_points version="2.0" />
+  </component>
   <component name="GradleUISettings">
     <setting name="root" />
   </component>
@@ -173,7 +176,11 @@
   </component>
   <component name="ProjectCodeStyleSettingsManager">
     <option name="PER_PROJECT_SETTINGS">
-      <value />
+      <value>
+        <XML>
+          <option name="XML_LEGACY_SETTINGS_IMPORTED" value="true" />
+        </XML>
+      </value>
     </option>
   </component>
   <component name="ProjectModuleManager">

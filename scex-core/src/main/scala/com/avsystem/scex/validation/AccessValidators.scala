@@ -1,10 +1,9 @@
 package com.avsystem.scex.validation
 
 import scala.language.experimental.macros
-import java.io.{PrintWriter, FileWriter}
 import scala.reflect.macros.Context
 import scala.reflect.runtime.{universe => ru}
-import com.avsystem.scex.utils.MacroUtils._
+import com.avsystem.scex.Utils._
 
 object AccessValidators {
 

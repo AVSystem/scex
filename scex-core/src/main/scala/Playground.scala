@@ -22,7 +22,7 @@ object Playground {
     val keywords = List("class")
 
     val adapterTemplate = """
-                            |implicit class %s_Adapter(val wrapped: %s) extends AnyVal with JavaGettersAdapter {
+                            |implicit class %s_Adapter(val wrapped: %s) extends AnyVal with com.avsystem.scex.JavaGettersAdapter {
                             |%s
                             |}
                           """.stripMargin

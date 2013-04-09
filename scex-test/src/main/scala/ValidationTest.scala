@@ -1,10 +1,10 @@
+import com.avsystem.scex.{ExpressionProfile, ExpressionCompiler}
 import com.avsystem.scex.validation._
 import java.{util => ju, lang => jl}
 import reflect.macros.Universe
 import scala.reflect.runtime.{universe => ru}
 import scala.Some
-import scala.tools.nsc.interpreter.IMain
-import scala.tools.nsc.Settings
+import com.avsystem.scex.Utils._
 
 object ValidationTest {
 
@@ -23,7 +23,7 @@ object ValidationTest {
 
     def multiParens(a: Int)(b: String, c: Float)(implicit d: T): Unit = ???
 
-    var a: T = ???
+    var a: T = _
 
     def b(): T = ???
   }
@@ -33,36 +33,10 @@ object ValidationTest {
   }
 
   def main(args: Array[String]) {
-    val settings = new Settings
-    settings.usejavacp.value = true
-
-    val repl = new IMain(settings)
-
-    val codeTemplate = """
-                         |import com.avsystem.scex.validation._
-                         |
-                         |val expr = { __ctx: Any =>
-                         |  import __ctx._
-                         |  Validator.validate({%s})
-                         |}
-                       """.stripMargin
-
-    val myexpr =
-      """
-        |{
-        |  String.CASE_INSENSITIVE_ORDER
-        |  val b = new ValidationTest.B
-        |  b.a = 42
-        |  val jl = new JavaLol
-        |  jl.fuu
-        |  jl.fuu = 30
-        |  new JavaLol + "fuu"
-        |}
-      """.stripMargin
 
     import com.avsystem.scex.validation.AccessValidators._
 
-    Validator.accessValidator = ChainValidator({
+    val accessValidator = ChainValidator({
       implicit def anythingImplicitly[T]: T = ???
 
       List(
@@ -132,11 +106,11 @@ object ValidationTest {
       )
     })
 
-    Validator.accessValidator.asInstanceOf[ChainValidator].validators.collect {
-      case v: TypeMembersValidator => v.typesAndMembers foreach println
-    }
+    //    accessValidator.validators.collect {
+    //      case v: TypeMembersValidator => v.typesAndMembers foreach println
+    //    }
 
-    Validator.syntaxValidator = new SyntaxValidator {
+    val syntaxValidator = new SyntaxValidator {
       def isSyntaxAllowed(u: Universe)(tree: u.Tree): Boolean = {
         import u._
 
@@ -148,7 +122,20 @@ object ValidationTest {
       }
     }
 
-    repl interpret codeTemplate.format(myexpr)
+    val profile = new ExpressionProfile(syntaxValidator, accessValidator, null, null)
+    val compiler = new ExpressionCompiler
+
+    val myexpr =
+      """
+        |{
+        |  String.CASE_INSENSITIVE_ORDER
+        |  new ValidationTest.B
+        |  (new JavaLol).fuu
+        |  new JavaLol + "fuu"
+        |}
+      """.stripMargin
+
+    println(compiler.compileExpression[Object, String](profile, myexpr).apply(null))
   }
 
 }

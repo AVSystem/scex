@@ -3,19 +3,20 @@ package com.avsystem.scex.validation
 import java.{util => ju, lang => jl}
 import scala.reflect.macros.Context
 import scala.language.experimental.macros
-import com.avsystem.scex.utils.MacroUtils._
+import com.avsystem.scex.ExpressionProfile
+import scala.util.DynamicVariable
+import com.avsystem.scex.Utils._
 
-object Validator {
-  var accessValidator: AccessValidator = null
-  var syntaxValidator: SyntaxValidator = null
+object ExpressionValidator {
+  val profile: DynamicVariable[ExpressionProfile] = new DynamicVariable(null)
 
-  def validate[T >: Null](expr: T): T = macro validate_impl[T]
+  def validate[T](expr: T): T = macro validate_impl[T]
 
-  def validate_impl[T >: Null](c: Context)(expr: c.Expr[T]): c.Expr[T] = {
+  def validate_impl[T](c: Context)(expr: c.Expr[T]): c.Expr[T] = {
     import c.universe._
 
     expr.tree.foreach { subtree =>
-      if (!syntaxValidator.isSyntaxAllowed(c.universe)(subtree)) {
+      if (!profile.value.syntaxValidator.isSyntaxAllowed(c.universe)(subtree)) {
         c.error(subtree.pos, s"Forbidden construct: ${subtree.getClass.getSimpleName}")
       }
     }
@@ -33,7 +34,7 @@ object Validator {
 
     def validateAccess(pos: Position, tpe: Type, symbol: Symbol, icSymbol: Symbol) {
       if (needsValidation(symbol)) {
-        if (!accessValidator.isInvocationAllowed(c.universe)(tpe, symbol, icSymbol).getOrElse(false)) {
+        if (!profile.value.accessValidator.isInvocationAllowed(c.universe)(tpe, symbol, icSymbol).getOrElse(false)) {
           c.error(pos, s"Member ${symbol.fullName} is not allowed on $tpe")
         }
       }
