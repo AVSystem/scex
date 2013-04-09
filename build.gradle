@@ -1,5 +1,9 @@
 apply plugin: 'idea'
 
+task wrapper(type: Wrapper) {
+    gradleVersion = "1.5"
+}
+
 subprojects {
     apply plugin: 'scala'
     apply plugin: 'idea'
