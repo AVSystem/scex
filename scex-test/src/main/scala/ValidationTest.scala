@@ -100,15 +100,16 @@ object ValidationTest {
         allowOn[JavaLol] {
           jl =>
             jl.fuu
+            jl.isFoo
         },
 
         denyAny
       )
     })
 
-    //    accessValidator.validators.collect {
-    //      case v: TypeMembersValidator => v.typesAndMembers foreach println
-    //    }
+    accessValidator.validators.collect {
+      case v: TypeMembersValidator => v.typesAndMembers foreach println
+    }
 
     val syntaxValidator = new SyntaxValidator {
       def isSyntaxAllowed(u: Universe)(tree: u.Tree): Boolean = {
@@ -122,7 +123,7 @@ object ValidationTest {
       }
     }
 
-    val profile = new ExpressionProfile(syntaxValidator, accessValidator, null, null)
+    val profile = new ExpressionProfile(syntaxValidator, accessValidator, List(classOf[JavaLol]), null)
     val compiler = new ExpressionCompiler
 
     val myexpr =
@@ -130,7 +131,7 @@ object ValidationTest {
         |{
         |  String.CASE_INSENSITIVE_ORDER
         |  new ValidationTest.B
-        |  (new JavaLol).fuu
+        |  (new JavaLol).foo
         |  new JavaLol + "fuu"
         |}
       """.stripMargin

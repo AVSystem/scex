@@ -46,4 +46,8 @@ object Utils {
 
   def isStaticImplicitConversion(symbol: Universe#Symbol) =
     symbol != null && symbol.isMethod && symbol.isStatic && symbol.isImplicit
+
+  def isJavaParameterlessMethod(symbol: Universe#Symbol) =
+    symbol != null && symbol.isPublic && symbol.isJava && symbol.isMethod &&
+      symbol.asMethod.paramss == List(List()) && !symbol.typeSignature.takesTypeArgs
 }

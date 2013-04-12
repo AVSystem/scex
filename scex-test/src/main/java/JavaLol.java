@@ -14,6 +14,10 @@ public class JavaLol {
         this.lol = lol;
     }
 
+    public boolean isFoo() {
+        return true;
+    }
+
     public static void main(String[] args) {
         ExpressionCompiler compiler = new ExpressionCompiler();
         Function1<Object, String> expr = compiler.getCompiledExpression(null, "${hashCode}", Object.class, String.class);
