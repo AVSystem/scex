@@ -40,31 +40,33 @@ object ValidationTest {
       implicit def anythingImplicitly[T]: T = ???
 
       List(
-        denyOn[Any] {
-          any =>
-            any.equals _
-            any.hashCode
-            any.##
-            any.getClass
-            any.asInstanceOf
-            any.isInstanceOf
+        denyOn[Any] { any =>
+          any.equals _
+          any.hashCode
+          any.##
+          any.getClass
+          any.asInstanceOf
+          any.isInstanceOf
         },
 
-        denyOn[Object] {
-          anyRef =>
-            anyRef.eq _
-            anyRef.synchronized _
+        denyOn[Object] { anyRef =>
+          anyRef.eq _
+          anyRef.synchronized _
         },
 
-        allowOn[Any] {
-          any =>
-            any + (_: String)
-            any -> (_: Any)
-            any == (_: Any)
-            any != (_: Any)
+        allowOn[Any] { any =>
+          any + (_: String)
+          any -> (_: Any)
+          any == (_: Any)
+          any != (_: Any)
+        },
+
+        allowOn[StringContext] { sc =>
+          sc.s _
         },
 
         allow {
+          StringContext.apply _
           ValidationTest.Foo.Bar.c
           String.CASE_INSENSITIVE_ORDER
           Some.apply _
@@ -132,15 +134,11 @@ object ValidationTest {
         |  String.CASE_INSENSITIVE_ORDER
         |  new ValidationTest.B
         |  (new JavaLol).foo
-        |  new JavaLol + "fuu"
+        |  new JavaLol + s"fuu ${new JavaLol}"
         |}
       """.stripMargin
 
-    println(benchmark {
-      10000 times {
-        compiler.getCompiledExpression[Object, String](profile, myexpr).apply(null)
-      }
-    })
+    println(compiler.getCompiledStringExpression[Object](profile, "${1+5+10} hahaha \" dafuq \"").apply(null))
   }
 
 }

@@ -200,53 +200,14 @@
     <mapping directory="" vcs="" />
   </component>
   <component name="libraryTable">
-    <library name="scala-compiler">
+    <library name="scala-compiler-2.10.1">
       <CLASSES>
-        <root url="jar://$USER_HOME$/soft/scala/lib/scala-compiler.jar!/" />
-        <root url="jar://$USER_HOME$/soft/scala/lib/scala-library.jar!/" />
-        <root url="jar://$USER_HOME$/soft/scala/lib/scala-reflect.jar!/" />
+        <root url="jar://$USER_HOME$/.gradle/caches/artifacts-23/filestore/org.scala-lang/scala-compiler/2.10.1/jar/8b244299a760499b04af54ad82dde75933284cbc/scala-compiler-2.10.1.jar!/" />
+        <root url="jar://$USER_HOME$/.gradle/caches/artifacts-23/filestore/org.scala-lang/scala-library/2.10.1/jar/ed3e1a6b0615dea666a7eaf753b03030f3f889/scala-library-2.10.1.jar!/" />
+        <root url="jar://$USER_HOME$/.gradle/caches/artifacts-23/filestore/org.scala-lang/scala-reflect/2.10.1/jar/2c96f085955741faeb4f8da709e88d6feb91194e/scala-reflect-2.10.1.jar!/" />
       </CLASSES>
       <JAVADOC />
       <SOURCES />
-    </library>
-    <library name="scala-compiler">
-      <CLASSES>
-        <root url="jar://$USER_HOME$/soft/scala/lib/scala-compiler.jar!/" />
-        <root url="jar://$USER_HOME$/soft/scala/lib/scala-library.jar!/" />
-        <root url="jar://$USER_HOME$/soft/scala/lib/scala-reflect.jar!/" />
-      </CLASSES>
-      <JAVADOC />
-      <SOURCES />
-    </library>
-    <library name="scala-library">
-      <CLASSES>
-        <root url="jar://$USER_HOME$/soft/scala/lib/scala-library.jar!/" />
-        <root url="jar://$USER_HOME$/soft/scala/lib/scala-swing.jar!/" />
-        <root url="jar://$USER_HOME$/soft/scala/lib/scala-actors.jar!/" />
-      </CLASSES>
-      <JAVADOC>
-        <root url="file://$USER_HOME$/soft/scala/doc/scala-devel-docs/api" />
-      </JAVADOC>
-      <SOURCES>
-        <root url="jar://$USER_HOME$/soft/scala/src/scala-library-src.jar!/" />
-        <root url="jar://$USER_HOME$/soft/scala/src/scala-swing-src.jar!/" />
-        <root url="jar://$USER_HOME$/soft/scala/src/scala-actors-src.jar!/" />
-      </SOURCES>
-    </library>
-    <library name="scala-library">
-      <CLASSES>
-        <root url="jar://$USER_HOME$/soft/scala/lib/scala-library.jar!/" />
-        <root url="jar://$USER_HOME$/soft/scala/lib/scala-swing.jar!/" />
-        <root url="jar://$USER_HOME$/soft/scala/lib/scala-actors.jar!/" />
-      </CLASSES>
-      <JAVADOC>
-        <root url="file://$USER_HOME$/soft/scala/doc/scala-devel-docs/api" />
-      </JAVADOC>
-      <SOURCES>
-        <root url="jar://$USER_HOME$/soft/scala/src/scala-library-src.jar!/" />
-        <root url="jar://$USER_HOME$/soft/scala/src/scala-swing-src.jar!/" />
-        <root url="jar://$USER_HOME$/soft/scala/src/scala-actors-src.jar!/" />
-      </SOURCES>
     </library>
   </component>
 </project>

@@ -14,6 +14,10 @@ import scala.language.existentials
 import com.google.common.cache.{CacheLoader, CacheBuilder}
 import scala.collection.mutable
 import com.avsystem.scex.Utils._
+import org.apache.commons.lang.StringEscapeUtils
+import com.avsystem.scex.validation.Exceptions.ExpressionCompilationException
+import java.io.PrintWriter
+import org.apache.commons.io.output.StringBuilderWriter
 
 private object ExpressionCompiler {
   private val exprVal = "expr"
@@ -124,17 +128,16 @@ class ExpressionCompiler {
 
   private val settings = new Settings
   settings.usejavacp.value = true
-  private val interpreter = new IMain(settings)
+
+  private val interpreterOutput = new jl.StringBuilder
+  private val interpreter = new IMain(settings, new PrintWriter(new StringBuilderWriter(interpreterOutput)))
 
   private val expressionCache = new ConcurrentHashMap[ExpressionDef, RawExpression].asScala
   private val profileObjectsCache = CacheBuilder.newBuilder.build(new CacheLoader[ExpressionProfile, String] {
     def load(key: ExpressionProfile): String = {
       val ident = newProfileIdent()
-
-      interpreter.interpret(generateProfileObject(ident, key)) match {
-        case Success => ident
-        case _ => throw new RuntimeException("Could not compile profile object.")
-      }
+      interpret(generateProfileObject(ident, key))
+      ident
     }
   })
 
@@ -145,13 +148,39 @@ class ExpressionCompiler {
     s"__profile_$profileIdentIndex"
   }
 
+  private def interpret(code: String) {
+    try {
+      interpreter.interpret(code) match {
+        case Success => ()
+        case _ => throw new RuntimeException("Compilation failure:\n" + interpreterOutput)
+      }
+    } finally {
+      interpreterOutput.delete(0, interpreterOutput.length)
+    }
+  }
+
+  private def clazzOf[T: ClassTag] = implicitly[ClassTag[T]].runtimeClass.asInstanceOf[Class[T]]
+
+  def getCompiledStringExpression[C <: AnyRef : ClassTag](
+    profile: ExpressionProfile,
+    expression: String): C => String = {
+
+    getCompiledStringExpression(profile, expression, clazzOf[C])
+  }
+
+  def getCompiledStringExpression[C <: AnyRef](
+    profile: ExpressionProfile,
+    expression: String,
+    contextClass: Class[C]): C => String = {
+
+    getCompiledExpression(profile, "s\"\"\"" + StringEscapeUtils.escapeJava(expression) + "\"\"\"", contextClass, classOf[String])
+  }
+
   def getCompiledExpression[C <: AnyRef : ClassTag, R <: AnyRef : ClassTag](
     profile: ExpressionProfile,
     expression: String): C => R = {
 
-    def clazz[T: ClassTag] = implicitly[ClassTag[T]].runtimeClass.asInstanceOf[Class[T]]
-
-    getCompiledExpression[C, R](profile, expression, clazz[C], clazz[R])
+    getCompiledExpression[C, R](profile, expression, clazzOf[C], clazzOf[R])
   }
 
   /**
@@ -233,17 +262,18 @@ class ExpressionCompiler {
         |  import $profileObject._
         |  __ctx => {
         |    import __ctx._
-        |    com.avsystem.scex.validation.ExpressionValidator.validate(${exprDef.expression})
+        |    com.avsystem.scex.validation.ExpressionValidator.validate(
+        |      ${exprDef.expression}
+        |    )
         |  }
         |}
       """.stripMargin
 
     ExpressionValidator.profile.withValue(exprDef.profile) {
-      interpreter.interpret(codeToCompile) match {
-        case Success => interpreter.valueOfTerm(exprVal).get.asInstanceOf[RawExpression]
-        case _ => null
-      }
+      interpret(codeToCompile)
     }
+
+    interpreter.valueOfTerm(exprVal).get.asInstanceOf[RawExpression]
   }
 
   private def generateProfileObject(ident: String, profile: ExpressionProfile): String = {
