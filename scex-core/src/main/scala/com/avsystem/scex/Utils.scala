@@ -50,4 +50,13 @@ object Utils {
   def isJavaParameterlessMethod(symbol: Universe#Symbol) =
     symbol != null && symbol.isPublic && symbol.isJava && symbol.isMethod &&
       symbol.asMethod.paramss == List(List()) && !symbol.typeSignature.takesTypeArgs
+
+  def memberThat(u: Universe)(tpe: u.Type, name: String, predicate: u.Symbol => Boolean): u.Symbol = {
+    import u._
+    tpe.member(u.newTermName(name)) match {
+      case symbol if symbol.isTerm => symbol.asTerm.alternatives.find(predicate).getOrElse(NoSymbol)
+      case symbol if predicate(symbol) => symbol
+      case _ => NoSymbol
+    }
+  }
 }

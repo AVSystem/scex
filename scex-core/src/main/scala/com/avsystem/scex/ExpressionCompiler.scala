@@ -15,7 +15,6 @@ import com.google.common.cache.{CacheLoader, CacheBuilder}
 import scala.collection.mutable
 import com.avsystem.scex.Utils._
 import org.apache.commons.lang.StringEscapeUtils
-import com.avsystem.scex.validation.Exceptions.ExpressionCompilationException
 import java.io.PrintWriter
 import org.apache.commons.io.output.StringBuilderWriter
 
@@ -163,7 +162,7 @@ class ExpressionCompiler {
 
   def getCompiledStringExpression[C <: AnyRef : ClassTag](
     profile: ExpressionProfile,
-    expression: String): C => String = {
+    expression: String): Expression[C, String] = {
 
     getCompiledStringExpression(profile, expression, clazzOf[C])
   }
@@ -171,14 +170,14 @@ class ExpressionCompiler {
   def getCompiledStringExpression[C <: AnyRef](
     profile: ExpressionProfile,
     expression: String,
-    contextClass: Class[C]): C => String = {
+    contextClass: Class[C]): Expression[C, String] = {
 
     getCompiledExpression(profile, "s\"\"\"" + StringEscapeUtils.escapeJava(expression) + "\"\"\"", contextClass, classOf[String])
   }
 
   def getCompiledExpression[C <: AnyRef : ClassTag, R <: AnyRef : ClassTag](
     profile: ExpressionProfile,
-    expression: String): C => R = {
+    expression: String): Expression[C, R] = {
 
     getCompiledExpression[C, R](profile, expression, clazzOf[C], clazzOf[R])
   }
@@ -196,7 +195,7 @@ class ExpressionCompiler {
     profile: ExpressionProfile,
     expression: String,
     contextClass: Class[C],
-    resultClass: Class[R]): C => R = {
+    resultClass: Class[R]): Expression[C, R] = {
 
     require(profile != null, "Profile cannot be null")
     require(expression != null, "Expression cannot be null")
@@ -207,7 +206,10 @@ class ExpressionCompiler {
 
     // force eager compilation and return a proxy that will fetch compiled expression from ExpressionCompiler at each access
     if (getUsingCache(exprDef) != null)
-      (context: C) => getUsingCache(exprDef).asInstanceOf[C => R](context)
+      new Expression[C, R] {
+        def apply(context: C) =
+          getUsingCache(exprDef).asInstanceOf[C => R](context)
+      }
     else
       null
   }
