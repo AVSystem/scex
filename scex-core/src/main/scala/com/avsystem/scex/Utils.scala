@@ -1,6 +1,7 @@
 package com.avsystem.scex
 
 import scala.reflect.api.Universe
+import scala.reflect.macros.Context
 
 /**
  * Created with IntelliJ IDEA.
@@ -50,6 +51,19 @@ object Utils {
   def isJavaParameterlessMethod(symbol: Universe#Symbol) =
     symbol != null && symbol.isPublic && symbol.isJava && symbol.isMethod &&
       symbol.asMethod.paramss == List(List()) && !symbol.typeSignature.takesTypeArgs
+
+  def isJavaStaticType(tpe: Universe#Type) = {
+    val symbol = tpe.typeSymbol
+    symbol != null && symbol.isJava && isModuleOrPackage(symbol)
+  }
+
+  def isStaticOrConstructor(symbol: Universe#Symbol) =
+    symbol.isStatic || (symbol.isMethod && symbol.asMethod.isConstructor)
+
+  def reifyOption[A, B](c: Context)(opt: Option[A], innerReify: A => c.Expr[B]): c.Expr[Option[B]] = opt match {
+    case Some(x) => c.universe.reify(Some(innerReify(x).splice))
+    case None => c.universe.reify(None)
+  }
 
   def memberThat(u: Universe)(tpe: u.Type, name: String, predicate: u.Symbol => Boolean): u.Symbol = {
     import u._

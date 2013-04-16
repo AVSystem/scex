@@ -7,6 +7,11 @@ import com.avsystem.scex.{BooleanIsGetter, JavaGettersAdapter, ExpressionProfile
 import scala.util.DynamicVariable
 import com.avsystem.scex.Utils._
 
+/**
+ * Object used during expression compilation to validate the expression (syntax, invocations, etc.)
+ * This must be a Scala object and not a class because it contains macros. Validation is performed against
+ * given ExpressionProfile which is injected into this object by ExpressionCompiler by means of a dynamic variable.
+ */
 object ExpressionValidator {
   val profile: DynamicVariable[ExpressionProfile] = new DynamicVariable(null)
 
@@ -34,7 +39,7 @@ object ExpressionValidator {
 
     def validateAccess(pos: Position, tpe: Type, symbol: Symbol, icSymbol: Symbol) {
       if (needsValidation(symbol)) {
-        if (!profile.value.accessValidator.isInvocationAllowed(c.universe)(tpe, symbol, icSymbol).getOrElse(false)) {
+        if (!profile.value.accessValidator.isInvocationAllowed(c.universe)(tpe, symbol, icSymbol)) {
           c.error(pos, s"Member ${symbol.fullName} is not allowed on $tpe")
         }
       }
