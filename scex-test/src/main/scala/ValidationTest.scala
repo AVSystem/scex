@@ -55,85 +55,49 @@ object ValidationTest {
       sc: StringContext => {
         sc.s _
       }
-    } ++ deny { any: Any =>
-      any.getClass
-      any.hashCode
+
+      any: Any => {
+        any + (_: String)
+        any -> (_: Any)
+        any == (_: Any)
+        any != (_: Any)
+      }
+
+      a: A[_] => {
+        a.costam _
+        a.hoho _
+        a.b()
+        a.multiParens(_: Int)(_: String, _: Float)(_: Nothing)
+        a.getClass
+        a.a_= _
+      }
+
+      i: Int => {
+        i + (_: Char)
+      }
+
+      jl: JavaLol => {
+        jl.fuu
+        jl.isFoo
+      }
+
+    } ++ deny {
+
+      any: Any => {
+        any.equals _
+        any.hashCode
+        any.##
+        any.getClass
+        any.asInstanceOf
+        any.isInstanceOf
+      }
+
+      anyRef: AnyRef => {
+        anyRef.eq _
+        anyRef.synchronized _
+      }
+
     }
-
-    stuff foreach println
-
-//    val accessValidator = ChainValidator({
-//      implicit def anythingImplicitly[T]: T = ???
-//
-//      List(
-//        denyOn[Any] { any =>
-//          any.equals _
-//          any.hashCode
-//          any.##
-//          any.getClass
-//          any.asInstanceOf
-//          any.isInstanceOf
-//        },
-//
-//        denyOn[Object] { anyRef =>
-//          anyRef.eq _
-//          anyRef.synchronized _
-//        },
-//
-//        allowOn[Any] { any =>
-//          any + (_: String)
-//          any -> (_: Any)
-//          any == (_: Any)
-//          any != (_: Any)
-//        },
-//
-//        allowOn[StringContext] { sc =>
-//          sc.s _
-//        },
-//
-//        allow {
-//          StringContext.apply _
-//          ValidationTest.Foo.Bar.c
-//          String.CASE_INSENSITIVE_ORDER
-//          Some.apply _
-//          String.valueOf(_: Boolean)
-//          new B
-//          new JavaLol
-//        },
-//
-//        allowOn[String] {
-//          s =>
-//            s.length
-//            s.concat _
-//            s.matches _
-//            s.reverse
-//            s.compare(_: String)
-//        },
-//
-//        allowOn[A[_]] {
-//          a =>
-//            a.costam _
-//            a.hoho _
-//            a.multiParens _
-//            a.b()
-//            a.getClass
-//            a.a_= _
-//        },
-//
-//        allowOn[Int] {
-//          i =>
-//            i + (_: Char)
-//        },
-//
-//        allowOn[JavaLol] {
-//          jl =>
-//            jl.fuu
-//            jl.isFoo
-//        },
-//
-//        denyAny
-//      )
-//    })
 
     val syntaxValidator = new SyntaxValidator {
       def isSyntaxAllowed(u: Universe)(tree: u.Tree): Boolean = {
@@ -147,7 +111,7 @@ object ValidationTest {
       }
     }
 
-    val symbolValidator = new SymbolValidator
+    val symbolValidator = new SymbolValidator(stuff)
 
     val profile = new ExpressionProfile(syntaxValidator, symbolValidator, List(classOf[JavaLol]), null)
     val compiler = new ExpressionCompiler
@@ -158,10 +122,12 @@ object ValidationTest {
         |  String.CASE_INSENSITIVE_ORDER
         |  new ValidationTest.B
         |  (new JavaLol).foo
+        |  System.exit(0)
         |  new JavaLol + s"fuu ${new JavaLol}"
         |}
       """.stripMargin
 
+    println(compiler.getCompiledExpression[Object, Object](profile, myexpr).apply(null))
     println(compiler.getCompiledStringExpression[Object](profile, "${1+5+10} hahaha \" dafuq \"").apply(null))
   }
 

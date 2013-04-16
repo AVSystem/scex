@@ -7,8 +7,14 @@ import scala.language.experimental.macros
 import scala.reflect.macros.Context
 import com.avsystem.scex.Utils._
 import scala.reflect.api.Universe
+import com.avsystem.scex.validation.SymbolValidator.MemberAccessSpec
+import com.google.common.cache.{CacheLoader, CacheBuilder}
 
 object SymbolValidator {
+
+  private val importersCache = CacheBuilder.newBuilder().weakKeys().build(new CacheLoader[Universe, Universe#Importer] {
+    def load(u: Universe): Universe#Importer = u.mkImporter(ru)
+  })
 
   case class MemberAccessSpec(prefixTpe: Option[ru.Type], member: String, implicitConv: Option[String], allow: Boolean)
 
@@ -30,30 +36,28 @@ object SymbolValidator {
       (prefixTpeOpt, body.symbol, implConv.map(_.symbol))
     }
 
-    def extractSymbols(body: Tree): List[(Option[Type], Symbol, Option[Symbol])] = {
-      body match {
-        case Select(apply@Apply(fun, List(prefix)), _) if isStaticImplicitConversion(fun.symbol) && apply.pos == prefix.pos =>
-          List(accessSpec(prefix, body, Some(fun)))
+    def extractSymbols(body: Tree): List[(Option[Type], Symbol, Option[Symbol])] = body match {
+      case Select(apply@Apply(fun, List(prefix)), _) if isStaticImplicitConversion(fun.symbol) && apply.pos == prefix.pos =>
+        List(accessSpec(prefix, body, Some(fun)))
 
-        case Select(prefix, _) =>
-          List(accessSpec(prefix, body, None))
+      case Select(prefix, _) =>
+        List(accessSpec(prefix, body, None))
 
-        case Apply(inner, _) =>
-          extractSymbols(inner)
+      case Apply(inner, _) =>
+        extractSymbols(inner)
 
-        case TypeApply(inner, _) =>
-          extractSymbols(inner)
+      case TypeApply(inner, _) =>
+        extractSymbols(inner)
 
-        case Function(_, actualBody) =>
-          extractSymbols(actualBody)
+      case Function(_, actualBody) =>
+        extractSymbols(actualBody)
 
-        case Block(stats, finalExpr) =>
-          (finalExpr :: stats).flatMap(extractSymbols(_: Tree))
+      case Block(stats, finalExpr) =>
+        (finalExpr :: stats).flatMap(extractSymbols(_: Tree))
 
-        case _ =>
-          c.error(body.pos, "Bad symbol specification syntax: ")
-          Nil
-      }
+      case _ =>
+        c.error(body.pos, "Bad symbol specification syntax: ")
+        Nil
     }
 
     val rawAccessSpecs = extractSymbols(expr.tree)
@@ -81,6 +85,32 @@ object SymbolValidator {
   }
 }
 
-class SymbolValidator {
-  def isInvocationAllowed(u: Universe)(objType: u.Type, symbol: u.Symbol, implicitConv: u.Symbol): Boolean = false
+import SymbolValidator._
+
+class SymbolValidator(accessSpecs: List[MemberAccessSpec]) {
+
+  def isInvocationAllowed(u: Universe)(objType: Option[u.Type], invocationSymbol: u.Symbol, invocationConvOpt: Option[u.Symbol]): Boolean = {
+    type Importer = u.Importer {val from: ru.type}
+    val importer = importersCache.get(u).asInstanceOf[Importer]
+
+    def typesMatch(specTpeOpt: Option[ru.Type], actualTpeOpt: Option[u.Type]) =
+      (specTpeOpt, actualTpeOpt) match {
+        case (None, None) => true
+        case (Some(specTpe), Some(actualTpe)) if actualTpe <:< importer.importType(specTpe) => true
+        case _ => false
+      }
+
+    val invocationSymbolSignatures =
+      (invocationSymbol :: invocationSymbol.allOverriddenSymbols).view.map(memberSignature).toSet
+
+    def symbolsMatch(specSymbol: String, actualSymbol: u.Symbol) =
+      invocationSymbolSignatures.contains(specSymbol)
+
+    val invocationConvSignatureOpt = invocationConvOpt.map(memberSignature)
+
+    accessSpecs.collectFirst {
+      case MemberAccessSpec(specTpeOpt, specSymbol, specConvOpt, allow) if specConvOpt == invocationConvSignatureOpt &&
+        symbolsMatch(specSymbol, invocationSymbol) && typesMatch(specTpeOpt, objType) => allow
+    } getOrElse (false)
+  }
 }

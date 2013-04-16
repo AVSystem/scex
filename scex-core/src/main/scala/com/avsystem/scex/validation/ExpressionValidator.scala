@@ -26,31 +26,24 @@ object ExpressionValidator {
       }
     }
 
-    def tpeOrNullIfJavaModule(qualifier: Tree) = {
-      val qualifierSymbol = qualifier.symbol
-      if (qualifierSymbol != null && qualifierSymbol.isJava && isModuleOrPackage(qualifierSymbol))
-        null
-      else
-        qualifier.tpe
-    }
-
     def needsValidation(symbol: Symbol) =
       symbol != null && (symbol.isMethod || isJavaField(symbol))
 
-    def validateAccess(pos: Position, tpe: Type, symbol: Symbol, icSymbol: Symbol) {
+    def validateAccess(pos: Position, tpe: Type, symbol: Symbol, icSymbol: Option[Symbol]) {
       if (needsValidation(symbol)) {
-        if (!profile.value.accessValidator.isInvocationAllowed(c.universe)(tpe, symbol, icSymbol)) {
+        if (!profile.value.accessValidator.isInvocationAllowed(c.universe)(tpeOpt(tpe), symbol, icSymbol)) {
           c.error(pos, s"Member ${symbol.fullName} is not allowed on $tpe")
         }
       }
     }
 
     lazy val adapterType = typeOf[JavaGettersAdapter]
+    lazy val booleanIsGetterType = typeOf[BooleanIsGetter]
 
     // gets Java getter called by implicit wrapper
     def getJavaGetter(symbol: Symbol, javaTpe: Type): Symbol = {
       val prefix =
-        if (symbol.annotations.exists(_.tpe =:= typeOf[BooleanIsGetter]))
+        if (symbol.annotations.exists(_.tpe =:= booleanIsGetterType))
           "is"
         else
           "get"
@@ -69,21 +62,26 @@ object ExpressionValidator {
       }
     }
 
+    def tpeOpt(tpe: Type) =
+      Option(tpe).filterNot(isJavaStaticType)
+
     def validateTree(tree: Tree) {
       tree match {
         case tree@Select(apply@Apply(fun, List(qualifier)), _) if isStaticImplicitConversion(fun.symbol) && apply.pos == qualifier.pos =>
           val wrappedJavaGetter = apply.tpe != null && apply.tpe <:< adapterType
 
           if (wrappedJavaGetter) {
-            validateAccess(tree.pos, tpeOrNullIfJavaModule(qualifier), getJavaGetter(tree.symbol, qualifier.tpe), null)
+            validateAccess(tree.pos, qualifier.tpe, getJavaGetter(tree.symbol, qualifier.tpe), None)
           } else {
-            validateAccess(tree.pos, tpeOrNullIfJavaModule(qualifier), tree.symbol, fun.symbol)
+            validateAccess(tree.pos, qualifier.tpe, tree.symbol, Some(fun.symbol))
           }
 
           validateTree(qualifier)
+
         case tree@Select(qualifier, _) =>
-          validateAccess(tree.pos, tpeOrNullIfJavaModule(qualifier), tree.symbol, null)
+          validateAccess(tree.pos, qualifier.tpe, tree.symbol, None)
           validateTree(qualifier)
+
         case _ =>
           tree.children.foreach(child => validateTree(child))
       }
