@@ -23,7 +23,7 @@ object ExpressionValidator {
     expr.tree.foreach {
       subtree =>
         if (!profile.value.syntaxValidator.isSyntaxAllowed(c.universe)(subtree)) {
-          c.error(subtree.pos, s"Forbidden construct: ${subtree.getClass.getSimpleName}")
+          c.error(subtree.pos, s"Cannot use language construct: ${subtree.getClass.getSimpleName}")
         }
     }
 
@@ -33,7 +33,7 @@ object ExpressionValidator {
     def validateAccess(pos: Position, tpe: Type, symbol: Symbol, icSymbol: Option[Symbol]) {
       if (needsValidation(symbol)) {
         if (!profile.value.accessValidator.isInvocationAllowed(c)(tpe, symbol, icSymbol)) {
-          c.error(pos, s"Cannot call ${symbol.fullName} on ${tpe.typeSymbol.fullName}")
+          c.error(pos, s"Cannot call ${memberSignature(symbol)} on ${tpe.typeSymbol.fullName}")
         }
       }
     }

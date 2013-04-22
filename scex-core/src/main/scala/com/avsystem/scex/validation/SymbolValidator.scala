@@ -117,4 +117,9 @@ class SymbolValidator(accessSpecs: List[MemberAccessSpec]) {
         symbolsMatch(specSymbol, invocationSymbol) && classesMatch(clazzOpt) => allow
     } getOrElse (false)
   }
+
+  lazy val referencedClasses =
+    accessSpecs.collect({
+      case MemberAccessSpec(Some(clazz), _, _, true) => clazz
+    }).toSet.toList
 }

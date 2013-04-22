@@ -7,5 +7,4 @@ import com.avsystem.scex.validation.{SymbolValidator, SyntaxValidator}
 class ExpressionProfile(
   val syntaxValidator: SyntaxValidator,
   val accessValidator: SymbolValidator,
-  val wrappedJavaClasses: List[Class[_]],
   val expressionHeader: String)

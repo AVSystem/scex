@@ -115,7 +115,7 @@ object ValidationTest {
 
     val symbolValidator = new SymbolValidator(stuff)
 
-    val profile = new ExpressionProfile(syntaxValidator, symbolValidator, List(classOf[JavaLol]), null)
+    val profile = new ExpressionProfile(syntaxValidator, symbolValidator, null)
     val compiler = new ExpressionCompiler
 
     val myexpr =

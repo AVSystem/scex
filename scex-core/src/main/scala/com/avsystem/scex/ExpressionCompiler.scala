@@ -76,14 +76,15 @@ private object ExpressionCompiler {
     // generate scala getters
     val sb = new StringBuilder
     val alreadyWrapped = new mutable.HashSet[String]
-    tpe.members.sorted.foreach { symbol =>
-      symbol match {
-        case JavaGetter(propName, booleanIsGetter) if !alreadyWrapped.contains(propName) =>
-          alreadyWrapped += propName
-          val annot = if (booleanIsGetter) "@com.avsystem.scex.BooleanIsGetter" else ""
-          sb ++= s"$annot def `$propName` = wrapped.${symbol.name}\n"
-        case _ => ()
-      }
+    tpe.members.sorted.foreach {
+      symbol =>
+        symbol match {
+          case JavaGetter(propName, booleanIsGetter) if !alreadyWrapped.contains(propName) =>
+            alreadyWrapped += propName
+            val annot = if (booleanIsGetter) "@com.avsystem.scex.BooleanIsGetter" else ""
+            sb ++= s"$annot def `$propName` = wrapped.${symbol.name}\n"
+          case _ => ()
+        }
     }
     val propDefs = sb.mkString
 
@@ -99,8 +100,9 @@ private object ExpressionCompiler {
     val genericTypes = if (typeParams.nonEmpty) typeParams.map(_.name).mkString("[", ",", "]") else ""
 
     val genericTypesWithBounds = if (typeParams.nonEmpty) {
-      typeParams.map { param =>
-        param.name.toString + param.typeSignature
+      typeParams.map {
+        param =>
+          param.name.toString + param.typeSignature
       } mkString("[", ",", "]")
     } else ""
 
@@ -280,7 +282,7 @@ class ExpressionCompiler {
 
   private def generateProfileObject(ident: String, profile: ExpressionProfile): String = {
     val sb = new StringBuilder
-    profile.wrappedJavaClasses foreach { clazz =>
+    profile.accessValidator.referencedClasses foreach { clazz =>
       sb ++= javaGetterWrappersCache.get(clazz)
     }
     val wrappers = sb.mkString
