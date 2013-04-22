@@ -65,6 +65,13 @@ object Utils {
     case None => c.universe.reify(None)
   }
 
+  def reifyRuntimeClassOpt(c: Context)(tpe: c.universe.Type) =
+    if (isJavaStaticType(tpe)) {
+      c.universe.reify(None)
+    } else {
+      c.universe.reify(Some(c.Expr[Class[_]](c.reifyRuntimeClass(tpe)).splice))
+    }
+
   def memberThat(u: Universe)(tpe: u.Type, name: String, predicate: u.Symbol => Boolean): u.Symbol = {
     import u._
     tpe.member(u.newTermName(name)) match {

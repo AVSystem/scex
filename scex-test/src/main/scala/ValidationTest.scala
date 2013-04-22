@@ -99,6 +99,8 @@ object ValidationTest {
 
     }
 
+    stuff foreach println
+
     val syntaxValidator = new SyntaxValidator {
       def isSyntaxAllowed(u: Universe)(tree: u.Tree): Boolean = {
         import u._

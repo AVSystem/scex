@@ -20,10 +20,11 @@ object ExpressionValidator {
   def validate_impl[T](c: Context)(expr: c.Expr[T]): c.Expr[T] = {
     import c.universe._
 
-    expr.tree.foreach { subtree =>
-      if (!profile.value.syntaxValidator.isSyntaxAllowed(c.universe)(subtree)) {
-        c.error(subtree.pos, s"Forbidden construct: ${subtree.getClass.getSimpleName}")
-      }
+    expr.tree.foreach {
+      subtree =>
+        if (!profile.value.syntaxValidator.isSyntaxAllowed(c.universe)(subtree)) {
+          c.error(subtree.pos, s"Forbidden construct: ${subtree.getClass.getSimpleName}")
+        }
     }
 
     def needsValidation(symbol: Symbol) =
@@ -31,8 +32,8 @@ object ExpressionValidator {
 
     def validateAccess(pos: Position, tpe: Type, symbol: Symbol, icSymbol: Option[Symbol]) {
       if (needsValidation(symbol)) {
-        if (!profile.value.accessValidator.isInvocationAllowed(c.universe)(tpeOpt(tpe), symbol, icSymbol)) {
-          c.error(pos, s"Member ${symbol.fullName} is not allowed on $tpe")
+        if (!profile.value.accessValidator.isInvocationAllowed(c)(tpe, symbol, icSymbol)) {
+          c.error(pos, s"Cannot call ${symbol.fullName} on ${tpe.typeSymbol.fullName}")
         }
       }
     }
@@ -61,9 +62,6 @@ object ExpressionValidator {
         case _ => fail
       }
     }
-
-    def tpeOpt(tpe: Type) =
-      Option(tpe).filterNot(isJavaStaticType)
 
     def validateTree(tree: Tree) {
       tree match {
