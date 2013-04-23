@@ -35,7 +35,7 @@ object ValidationTest {
 
     import com.avsystem.scex.validation.SymbolValidator._
 
-    val stuff = allow {
+    val memberAccessSpecs = allow {
       StringContext.apply _
       ValidationTest.Foo.Bar.c
       String.CASE_INSENSITIVE_ORDER
@@ -99,7 +99,7 @@ object ValidationTest {
 
     }
 
-    stuff foreach println
+    memberAccessSpecs foreach println
 
     val syntaxValidator = new SyntaxValidator {
       def isSyntaxAllowed(u: Universe)(tree: u.Tree): Boolean = {
@@ -113,7 +113,7 @@ object ValidationTest {
       }
     }
 
-    val symbolValidator = new SymbolValidator(stuff)
+    val symbolValidator = new SymbolValidator(memberAccessSpecs)
 
     val profile = new ExpressionProfile(syntaxValidator, symbolValidator, null)
     val compiler = new ExpressionCompiler
@@ -123,8 +123,7 @@ object ValidationTest {
         |{
         |  String.CASE_INSENSITIVE_ORDER
         |  new ValidationTest.B
-        |  (new JavaLol).foo
-        |  System.exit(0)
+        |  (new JavaLol).isFoo
         |  new JavaLol + s"fuu ${new JavaLol}"
         |}
       """.stripMargin
