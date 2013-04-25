@@ -84,7 +84,16 @@ class ExpressionCompiler {
     profile: ExpressionProfile,
     expression: String,
     contextClass: Class[_],
-    resultClass: Class[_]) {
+    resultClass: Class[_])
+
+  private sealed abstract class CompilationResult {
+    def pkgName: String
+  }
+
+  private case class Success(pkgName: String) extends CompilationResult
+
+  private case class Failure(source: String, errors: List[CompileError]) extends CompilationResult {
+    def pkgName = throw new CompilationFailedException(source, errors)
   }
 
   private type RawExpression = Function[_, _]
@@ -98,22 +107,26 @@ class ExpressionCompiler {
   private val expressionCache =
     CacheBuilder.newBuilder.removalListener(onExprRemove _).build[ExpressionDef, RawExpression](loadCompiledRawExpression _)
 
-  private val expressionPackageNamesCache =
-    CacheBuilder.newBuilder.removalListener(onExprImplRemove _).build[ExpressionDef, String](compileExpression _)
+  private val expressionCompilationResultsCache =
+    CacheBuilder.newBuilder.removalListener(onExprImplRemove _).build[ExpressionDef, CompilationResult](compileExpression _)
 
   private val javaGetterAdaptersCache =
     CacheBuilder.newBuilder.build(generateJavaGetterAdapter: Class[_] => String)
 
   private def onExprRemove(notification: RemovalNotification[ExpressionDef, RawExpression]) {
-    expressionPackageNamesCache.invalidate(notification.getKey)
+    expressionCompilationResultsCache.invalidate(notification.getKey)
   }
 
-  private def onExprImplRemove(notification: RemovalNotification[ExpressionDef, String]) {
-    virtualDirectory.lookupPath(notification.getValue.replaceAllLiterally(".", "/"), directory = true).delete()
+  private def onExprImplRemove(notification: RemovalNotification[ExpressionDef, CompilationResult]) {
+    notification.getValue match {
+      case Success(pkgName) =>
+        virtualDirectory.lookupPath(pkgName.replaceAllLiterally(".", "/"), directory = true).delete()
+      case _ => ()
+    }
   }
 
   private def loadCompiledRawExpression(exprDef: ExpressionDef): RawExpression = synchronized {
-    val className = s"${expressionPackageNamesCache.get(exprDef)}.$expressionClassName"
+    val className = s"${expressionCompilationResultsCache.get(exprDef).pkgName}.$expressionClassName"
     Class.forName(className, true, classLoader).newInstance.asInstanceOf[RawExpression]
   }
 
@@ -184,7 +197,7 @@ class ExpressionCompiler {
 
   }
 
-  private def compileExpression(exprDef: ExpressionDef): String = synchronized {
+  private def compileExpression(exprDef: ExpressionDef): CompilationResult = synchronized {
     def erasedType[A](clazz: Class[A]) =
       ru.runtimeMirror(clazz.getClassLoader).classSymbol(clazz).toType.erasure
 
@@ -217,11 +230,10 @@ class ExpressionCompiler {
       run.compileSources(List(new BatchSourceFile("(scex expression)", codeToCompile)))
     }
 
-    if (reporter.hasErrors) {
-      throw new CompilationFailedException(codeToCompile, reporter.compileErrors)
-    }
-
-    pkgName
+    if (!reporter.hasErrors)
+      Success(pkgName)
+    else
+      Failure(codeToCompile, reporter.compileErrors)
   }
 
   private def clazzOf[T: ClassTag] = implicitly[ClassTag[T]].runtimeClass.asInstanceOf[Class[T]]
