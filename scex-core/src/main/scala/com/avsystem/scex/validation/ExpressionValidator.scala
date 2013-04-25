@@ -6,6 +6,7 @@ import scala.language.experimental.macros
 import com.avsystem.scex.{BooleanIsGetter, JavaGettersAdapter, ExpressionProfile}
 import scala.util.DynamicVariable
 import com.avsystem.scex.Utils._
+import scala.reflect.api.{Universe, JavaMirrors}
 
 /**
  * Object used during expression compilation to validate the expression (syntax, invocations, etc.)
@@ -13,16 +14,20 @@ import com.avsystem.scex.Utils._
  * given ExpressionProfile which is injected into this object by ExpressionCompiler by means of a dynamic variable.
  */
 object ExpressionValidator {
-  val profile: DynamicVariable[ExpressionProfile] = new DynamicVariable(null)
+
+  case class CompilationContext(global: Universe with JavaMirrors, profile: ExpressionProfile)
+
+  val contextVar: DynamicVariable[CompilationContext] = new DynamicVariable(null)
 
   def validate[T](expr: T): T = macro validate_impl[T]
 
   def validate_impl[T](c: Context)(expr: c.Expr[T]): c.Expr[T] = {
     import c.universe._
+    val CompilationContext(global, profile) = contextVar.value
 
     expr.tree.foreach {
       subtree =>
-        if (!profile.value.syntaxValidator.isSyntaxAllowed(c.universe)(subtree)) {
+        if (!profile.syntaxValidator.isSyntaxAllowed(c.universe)(subtree)) {
           c.error(subtree.pos, s"Cannot use language construct: ${subtree.getClass.getSimpleName}")
         }
     }
@@ -32,7 +37,7 @@ object ExpressionValidator {
 
     def validateAccess(pos: Position, tpe: Type, symbol: Symbol, icSymbol: Option[Symbol]) {
       if (needsValidation(symbol)) {
-        if (!profile.value.accessValidator.isInvocationAllowed(c)(tpe, symbol, icSymbol)) {
+        if (!profile.accessValidator.isInvocationAllowed(global, c)(tpe, symbol, icSymbol)) {
           c.error(pos, s"Cannot call ${memberSignature(symbol)} on ${tpe.typeSymbol.fullName}")
         }
       }

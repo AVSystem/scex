@@ -1,4 +1,4 @@
-import com.avsystem.scex.{ExpressionProfile, ExpressionCompiler}
+import com.avsystem.scex.{Utils, ExpressionProfile, ExpressionCompiler}
 import com.avsystem.scex.validation._
 import java.{util => ju, lang => jl}
 import reflect.macros.Universe
@@ -43,6 +43,7 @@ object ValidationTest {
       String.valueOf(_: Boolean)
       new B
       new JavaLol
+      Utils.toString
 
       s: String => {
         s.length
@@ -99,8 +100,6 @@ object ValidationTest {
 
     }
 
-    memberAccessSpecs foreach println
-
     val syntaxValidator = new SyntaxValidator {
       def isSyntaxAllowed(u: Universe)(tree: u.Tree): Boolean = {
         import u._
@@ -124,6 +123,7 @@ object ValidationTest {
         |  String.CASE_INSENSITIVE_ORDER
         |  new ValidationTest.B
         |  (new JavaLol).isFoo
+        |  com.avsystem.scex.Utils.toString
         |  new JavaLol + s"fuu ${new JavaLol}"
         |}
       """.stripMargin

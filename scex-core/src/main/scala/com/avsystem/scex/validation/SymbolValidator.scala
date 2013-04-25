@@ -1,19 +1,14 @@
 package com.avsystem.scex.validation
 
 import java.{util => ju, lang => jl}
-import scala.reflect.runtime.{universe => ru}
 import scala.language.implicitConversions
 import scala.language.experimental.macros
 import scala.reflect.macros.Context
 import com.avsystem.scex.Utils._
-import scala.reflect.api.Universe
-import com.google.common.cache.{CacheLoader, CacheBuilder}
+import scala.tools.reflect.ReflectGlobal
+import scala.reflect.api.{Universe, JavaMirrors}
 
 object SymbolValidator {
-
-  private val importersCache = CacheBuilder.newBuilder().weakKeys().build(new CacheLoader[Universe, Universe#Importer] {
-    def load(u: Universe): Universe#Importer = ru.mkImporter(u)
-  })
 
   case class MemberAccessSpec(clazzOpt: Option[Class[_]], member: String, implicitConv: Option[String], allow: Boolean)
 
@@ -78,24 +73,29 @@ object SymbolValidator {
 
     typesAndMethodsListExpr
   }
+
 }
 
 import SymbolValidator._
 
 class SymbolValidator(accessSpecs: List[MemberAccessSpec]) {
 
-  def isInvocationAllowed(c: Context)(objType: c.universe.Type, invocationSymbol: c.universe.Symbol, invocationConvOpt: Option[c.universe.Symbol]): Boolean = {
+  def isInvocationAllowed(global: Universe with JavaMirrors, c: Context)
+    (objType: c.universe.Type, invocationSymbol: c.universe.Symbol, invocationConvOpt: Option[c.universe.Symbol]): Boolean = {
+
     import c.universe._
 
-    type Importer = ru.Importer {val from: c.universe.type}
-    val importer = importersCache.get(c.universe).asInstanceOf[Importer]
-    val runtimeMirror = ru.runtimeMirror(this.getClass.getClassLoader)
+    val importer = global.mkImporter(c.universe).asInstanceOf[global.Importer {val from: c.universe.type}]
+    val runtimeMirror = global.runtimeMirror(this.getClass.getClassLoader)
+
+    def runtimeClass(tpe: Type) =
+      runtimeMirror.runtimeClass(importer.importSymbol(objType.typeSymbol).asClass)
 
     val actualClassOpt: Option[Class[_]] =
       if (isJavaStaticType(objType))
         None
       else
-        Some(runtimeMirror.runtimeClass(importer.importSymbol(objType.typeSymbol).asClass))
+        Some(runtimeClass(objType))
 
     def classesMatch(clazzOpt: Option[Class[_]]) =
       (clazzOpt, actualClassOpt) match {

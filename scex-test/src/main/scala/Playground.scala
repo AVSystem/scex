@@ -1,3 +1,4 @@
+import com.avsystem.scex.TestMacros
 import tools.nsc.Settings
 import tools.nsc.interpreter.IMain
 
@@ -12,7 +13,11 @@ import java.{util => ju, lang => jl}
  */
 object Playground {
   def main(args: Array[String]) {
-    println(generateAdapter(classOf[JavaLol]))
+    import TestMacros._
+
+    println(lol[List[Map[String, Set[_ <: Seq[Any]]]]].apply(ru).tpe.erasure)
+
+
   }
 
   private def generateAdapter(clazz: Class[_]) = {
