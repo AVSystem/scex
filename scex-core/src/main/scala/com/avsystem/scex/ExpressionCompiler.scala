@@ -218,7 +218,11 @@ class ExpressionCompiler {
         |    $header
         |    /* import profile object */
         |    import __ctx._
-        |    com.avsystem.scex.validation.ExpressionValidator.validate(${exprDef.expression})
+        |    com.avsystem.scex.validation.ExpressionValidator.validate(
+        |
+        |${exprDef.expression}
+        |
+        |    )
         |  }
         |}
         |
