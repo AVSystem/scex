@@ -13,11 +13,6 @@ import java.{util => ju, lang => jl}
  */
 object Playground {
   def main(args: Array[String]) {
-    import TestMacros._
-
-    println(lol[List[Map[String, Set[_ <: Seq[Any]]]]].apply(ru).tpe.erasure)
-
-
   }
 
   private def generateAdapter(clazz: Class[_]) = {

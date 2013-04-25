@@ -15,15 +15,13 @@ import scala.reflect.api.{Universe, JavaMirrors}
  */
 object ExpressionValidator {
 
-  case class CompilationContext(global: Universe with JavaMirrors, profile: ExpressionProfile)
-
-  val contextVar: DynamicVariable[CompilationContext] = new DynamicVariable(null)
+  val profileVar: DynamicVariable[ExpressionProfile] = new DynamicVariable(null)
 
   def validate[T](expr: T): T = macro validate_impl[T]
 
   def validate_impl[T](c: Context)(expr: c.Expr[T]): c.Expr[T] = {
     import c.universe._
-    val CompilationContext(global, profile) = contextVar.value
+    val profile = profileVar.value
 
     expr.tree.foreach {
       subtree =>
@@ -37,7 +35,7 @@ object ExpressionValidator {
 
     def validateAccess(pos: Position, tpe: Type, symbol: Symbol, icSymbol: Option[Symbol]) {
       if (needsValidation(symbol)) {
-        if (!profile.accessValidator.isInvocationAllowed(global, c)(tpe, symbol, icSymbol)) {
+        if (!profile.accessValidator.isInvocationAllowed(c)(tpe, symbol, icSymbol)) {
           c.error(pos, s"Cannot call ${memberSignature(symbol)} on ${tpe.typeSymbol.fullName}")
         }
       }

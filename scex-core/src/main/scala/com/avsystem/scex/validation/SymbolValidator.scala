@@ -6,11 +6,12 @@ import scala.language.experimental.macros
 import scala.reflect.macros.Context
 import com.avsystem.scex.Utils._
 import scala.tools.reflect.ReflectGlobal
-import scala.reflect.api.{Universe, JavaMirrors}
+import reflect.api.{TypeCreator, Universe, JavaMirrors}
+import com.avsystem.scex.CachingTypeCreator
 
 object SymbolValidator {
 
-  case class MemberAccessSpec(clazzOpt: Option[Class[_]], member: String, implicitConv: Option[String], allow: Boolean)
+  case class MemberAccessSpec(typeCreator: CachingTypeCreator, member: String, implicitConv: Option[String], allow: Boolean)
 
   def allow(expr: Any): List[SymbolValidator.MemberAccessSpec] = macro allow_impl
 
@@ -58,10 +59,19 @@ object SymbolValidator {
     def reifySignature(symbol: Symbol) =
       c.literal(memberSignature(symbol))
 
+    def reifyTypeCreator(tpe: Type) = {
+      val widenedTpe = tpe.map(_.widen)
+
+      val Block(List(_, _), Apply(_, List(_, typeCreatorTree))) =
+        c.reifyType(treeBuild.mkRuntimeUniverseRef, EmptyTree, widenedTpe)
+
+      reify(new CachingTypeCreator(c.Expr[TypeCreator](typeCreatorTree).splice, c.literal(widenedTpe.toString).splice))
+    }
+
     val reifiedAccessSpecs: List[Tree] = rawAccessSpecs.map {
       case (tpe, ms, ic) => reify(
         MemberAccessSpec(
-          reifyRuntimeClassOpt(c)(tpe).splice,
+          reifyTypeCreator(tpe).splice,
           reifySignature(ms).splice,
           reifyOption(c)(ic, reifySignature(_: Symbol)).splice,
           c.literal(allow).splice))
@@ -80,29 +90,10 @@ import SymbolValidator._
 
 class SymbolValidator(accessSpecs: List[MemberAccessSpec]) {
 
-  def isInvocationAllowed(global: Universe with JavaMirrors, c: Context)
+  def isInvocationAllowed(c: Context)
     (objType: c.universe.Type, invocationSymbol: c.universe.Symbol, invocationConvOpt: Option[c.universe.Symbol]): Boolean = {
 
     import c.universe._
-
-    val importer = global.mkImporter(c.universe).asInstanceOf[global.Importer {val from: c.universe.type}]
-    val runtimeMirror = global.runtimeMirror(this.getClass.getClassLoader)
-
-    def runtimeClass(tpe: Type) =
-      runtimeMirror.runtimeClass(importer.importSymbol(objType.typeSymbol).asClass)
-
-    val actualClassOpt: Option[Class[_]] =
-      if (isJavaStaticType(objType))
-        None
-      else
-        Some(runtimeClass(objType))
-
-    def classesMatch(clazzOpt: Option[Class[_]]) =
-      (clazzOpt, actualClassOpt) match {
-        case (None, None) => true
-        case (Some(clazz), Some(actualClazz)) => clazz.isAssignableFrom(actualClazz)
-        case _ => false
-      }
 
     val invocationSymbolSignatures =
       (invocationSymbol :: invocationSymbol.allOverriddenSymbols).view.map(memberSignature).toSet
@@ -113,13 +104,11 @@ class SymbolValidator(accessSpecs: List[MemberAccessSpec]) {
     val invocationConvSignatureOpt = invocationConvOpt.map(memberSignature)
 
     accessSpecs.collectFirst {
-      case MemberAccessSpec(clazzOpt, specSymbol, specConvOpt, allow) if specConvOpt == invocationConvSignatureOpt &&
-        symbolsMatch(specSymbol, invocationSymbol) && classesMatch(clazzOpt) => allow
+      case MemberAccessSpec(typeCreator, specSymbol, specConvOpt, allow)
+        if specConvOpt == invocationConvSignatureOpt &&
+          symbolsMatch(specSymbol, invocationSymbol) &&
+          objType <:< typeCreator.typeIn(c.universe) =>
+        allow
     } getOrElse (false)
   }
-
-  lazy val referencedClasses =
-    accessSpecs.collect({
-      case MemberAccessSpec(Some(clazz), _, _, true) => clazz
-    }).toSet.toList
 }
