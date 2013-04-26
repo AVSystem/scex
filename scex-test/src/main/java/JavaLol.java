@@ -1,5 +1,6 @@
 import com.avsystem.scex.Expression;
 import com.avsystem.scex.ExpressionCompiler;
+import com.avsystem.scex.TypeConverters;
 
 public class JavaLol {
     public int fuu = 5;
@@ -19,8 +20,6 @@ public class JavaLol {
     }
 
     public static void main(String[] args) throws Exception {
-        ExpressionCompiler compiler = new ExpressionCompiler();
-        Expression<Object, String> expr = compiler.getCompiledStringExpression(null, "${1+2+3}", Object.class);
-        expr.apply(new Object());
+        System.out.println(TypeConverters.javaTypeAsScalaType(byte[].class));
     }
 }
