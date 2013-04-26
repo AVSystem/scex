@@ -1,8 +1,8 @@
 package com.avsystem.scex
 
+import com.avsystem.scex.validation.{SymbolValidator, SyntaxValidator}
 import java.{util => ju, lang => jl}
 import scala.reflect.runtime.{universe => ru}
-import com.avsystem.scex.validation.{SymbolValidator, SyntaxValidator}
 
 class ExpressionProfile(
   val syntaxValidator: SyntaxValidator,

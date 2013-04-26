@@ -1,6 +1,5 @@
 import com.avsystem.scex.Expression;
 import com.avsystem.scex.ExpressionCompiler;
-import scala.Function1;
 
 public class JavaLol {
     public int fuu = 5;
@@ -19,7 +18,7 @@ public class JavaLol {
         return true;
     }
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws Exception {
         ExpressionCompiler compiler = new ExpressionCompiler();
         Expression<Object, String> expr = compiler.getCompiledStringExpression(null, "${1+2+3}", Object.class);
         expr.apply(new Object());

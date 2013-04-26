@@ -1,9 +1,9 @@
 package com.avsystem.scex
 
-import java.{util => ju, lang => jl}
-import scala.reflect.runtime.{universe => ru}
-import reflect.api.{Universe, TypeCreator}
 import com.google.common.cache.CacheBuilder
+import java.{util => ju, lang => jl}
+import reflect.api.{Universe, TypeCreator}
+import scala.reflect.runtime.{universe => ru}
 
 class CachingTypeCreator(typeCreator: TypeCreator, typeRepr: String) {
 

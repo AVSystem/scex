@@ -1,13 +1,39 @@
 package com.avsystem.scex.validation
 
-import java.{util => ju, lang => jl}
-import scala.language.implicitConversions
-import scala.language.experimental.macros
-import scala.reflect.macros.Context
-import com.avsystem.scex.Utils._
-import scala.tools.reflect.ReflectGlobal
-import reflect.api.{TypeCreator, Universe, JavaMirrors}
+import SymbolValidator._
 import com.avsystem.scex.CachingTypeCreator
+import com.avsystem.scex.Utils._
+import java.{util => ju, lang => jl}
+import scala.language.experimental.macros
+import scala.language.implicitConversions
+import scala.reflect.api.TypeCreator
+import scala.reflect.macros.Context
+
+class SymbolValidator(accessSpecs: List[MemberAccessSpec]) {
+
+  def isInvocationAllowed(c: Context)
+    (objType: c.universe.Type, invocationSymbol: c.universe.Symbol, invocationConvOpt: Option[c.universe.Symbol]): Boolean = {
+
+    import c.universe._
+
+    val invocationSymbolSignatures =
+      (invocationSymbol :: invocationSymbol.allOverriddenSymbols).view.map(memberSignature).toSet
+
+    def symbolsMatch(specSymbol: String, actualSymbol: Symbol) =
+      invocationSymbolSignatures.contains(specSymbol)
+
+    val invocationConvSignatureOpt = invocationConvOpt.map(memberSignature)
+
+    accessSpecs.collectFirst {
+      case MemberAccessSpec(typeCreator, specSymbol, specConvOpt, allow)
+        if specConvOpt == invocationConvSignatureOpt &&
+          symbolsMatch(specSymbol, invocationSymbol) &&
+          objType <:< typeCreator.typeIn(c.universe) =>
+        allow
+    } getOrElse (false)
+  }
+
+}
 
 object SymbolValidator {
 
@@ -82,33 +108,5 @@ object SymbolValidator {
       c.Expr(Apply(Select(reify(List).tree, newTermName("apply")), reifiedAccessSpecs))
 
     typesAndMethodsListExpr
-  }
-
-}
-
-import SymbolValidator._
-
-class SymbolValidator(accessSpecs: List[MemberAccessSpec]) {
-
-  def isInvocationAllowed(c: Context)
-    (objType: c.universe.Type, invocationSymbol: c.universe.Symbol, invocationConvOpt: Option[c.universe.Symbol]): Boolean = {
-
-    import c.universe._
-
-    val invocationSymbolSignatures =
-      (invocationSymbol :: invocationSymbol.allOverriddenSymbols).view.map(memberSignature).toSet
-
-    def symbolsMatch(specSymbol: String, actualSymbol: Symbol) =
-      invocationSymbolSignatures.contains(specSymbol)
-
-    val invocationConvSignatureOpt = invocationConvOpt.map(memberSignature)
-
-    accessSpecs.collectFirst {
-      case MemberAccessSpec(typeCreator, specSymbol, specConvOpt, allow)
-        if specConvOpt == invocationConvSignatureOpt &&
-          symbolsMatch(specSymbol, invocationSymbol) &&
-          objType <:< typeCreator.typeIn(c.universe) =>
-        allow
-    } getOrElse (false)
   }
 }

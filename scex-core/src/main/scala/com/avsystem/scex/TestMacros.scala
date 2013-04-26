@@ -1,9 +1,9 @@
 package com.avsystem.scex
 
 import java.{util => ju, lang => jl}
+import reflect.api.TypeCreator
 import reflect.macros.Context
 import scala.language.experimental.macros
-import reflect.api.{TypeCreator, Universe}
 
 object TestMacros {
   def lol[T]: TypeCreator = macro impl[T]

@@ -1,12 +1,11 @@
 package com.avsystem.scex.validation
 
-import java.{util => ju, lang => jl}
-import scala.reflect.macros.Context
-import scala.language.experimental.macros
-import com.avsystem.scex.{BooleanIsGetter, JavaGettersAdapter, ExpressionProfile}
-import scala.util.DynamicVariable
 import com.avsystem.scex.Utils._
-import scala.reflect.api.{Universe, JavaMirrors}
+import com.avsystem.scex.{BooleanIsGetter, JavaGettersAdapter, ExpressionProfile}
+import java.{util => ju, lang => jl}
+import scala.language.experimental.macros
+import scala.reflect.macros.Context
+import scala.util.DynamicVariable
 
 /**
  * Object used during expression compilation to validate the expression (syntax, invocations, etc.)

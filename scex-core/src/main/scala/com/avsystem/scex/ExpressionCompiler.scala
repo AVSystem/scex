@@ -1,25 +1,25 @@
 package com.avsystem.scex
 
-import java.{util => ju, lang => jl}
-import scala.reflect.runtime.{universe => ru}
-import tools.nsc.{Global, Settings}
-import scala.tools.nsc.interpreter.AbstractFileClassLoader
-import scala.reflect.ClassTag
-import com.avsystem.scex.validation.ExpressionValidator
-import scala.language.existentials
-import com.google.common.cache.{RemovalNotification, CacheBuilder}
-import scala.collection.mutable
-import com.avsystem.scex.Utils._
-import org.apache.commons.lang.StringEscapeUtils
-import scala.reflect.io.VirtualDirectory
-import scala.tools.nsc.reporters.AbstractReporter
-import scala.reflect.internal.util.{BatchSourceFile, Position}
 import CacheImplicits._
-import scala.collection.mutable.ListBuffer
-import scala.ref.WeakReference
-import scala.Some
-
 import ExpressionCompiler._
+import com.avsystem.scex.Utils._
+import com.avsystem.scex.validation.ExpressionValidator
+import com.google.common.cache.{RemovalNotification, CacheBuilder}
+import java.{util => ju, lang => jl}
+import org.apache.commons.lang.StringEscapeUtils
+import scala.Some
+import scala.collection.mutable
+import scala.collection.mutable.ListBuffer
+import scala.language.existentials
+import scala.ref.WeakReference
+import scala.reflect.ClassTag
+import scala.reflect.internal.util.{BatchSourceFile, Position}
+import scala.reflect.io.VirtualDirectory
+import scala.reflect.runtime.{universe => ru}
+import scala.tools.nsc.interpreter.AbstractFileClassLoader
+import scala.tools.nsc.reporters.AbstractReporter
+import scala.tools.nsc.{Global, Settings}
+import scala.util.{Failure, Success, Try}
 
 /**
  * Central class for expression compilation. Encapsulates Scala compiler, so it is
@@ -86,16 +86,6 @@ class ExpressionCompiler {
     contextClass: Class[_],
     resultClass: Class[_])
 
-  private sealed abstract class CompilationResult {
-    def pkgName: String
-  }
-
-  private case class Success(pkgName: String) extends CompilationResult
-
-  private case class Failure(source: String, errors: List[CompileError]) extends CompilationResult {
-    def pkgName = throw new CompilationFailedException(source, errors)
-  }
-
   private type RawExpression = Function[_, _]
 
   private val global = new Global(settings, reporter)
@@ -105,19 +95,20 @@ class ExpressionCompiler {
   //TODO: profiles, cache expiration, classLoader resetting, validator compilation
 
   private val expressionCache =
-    CacheBuilder.newBuilder.removalListener(onExprRemove _).build[ExpressionDef, RawExpression](loadCompiledRawExpression _)
+    CacheBuilder.newBuilder.removalListener(onExprRemove _).build[ExpressionDef, Try[RawExpression]](loadCompiledRawExpression _)
 
+  // holds names of packages to which expressions are compiled
   private val expressionCompilationResultsCache =
-    CacheBuilder.newBuilder.removalListener(onExprImplRemove _).build[ExpressionDef, CompilationResult](compileExpression _)
+    CacheBuilder.newBuilder.removalListener(onExprImplRemove _).build[ExpressionDef, Try[String]](compileExpression _)
 
   private val javaGetterAdaptersCache =
     CacheBuilder.newBuilder.build(generateJavaGetterAdapter: Class[_] => String)
 
-  private def onExprRemove(notification: RemovalNotification[ExpressionDef, RawExpression]) {
+  private def onExprRemove(notification: RemovalNotification[ExpressionDef, Try[RawExpression]]) {
     expressionCompilationResultsCache.invalidate(notification.getKey)
   }
 
-  private def onExprImplRemove(notification: RemovalNotification[ExpressionDef, CompilationResult]) {
+  private def onExprImplRemove(notification: RemovalNotification[ExpressionDef, Try[String]]) {
     notification.getValue match {
       case Success(pkgName) =>
         virtualDirectory.lookupPath(pkgName.replaceAllLiterally(".", "/"), directory = true).delete()
@@ -125,9 +116,11 @@ class ExpressionCompiler {
     }
   }
 
-  private def loadCompiledRawExpression(exprDef: ExpressionDef): RawExpression = synchronized {
-    val className = s"${expressionCompilationResultsCache.get(exprDef).pkgName}.$expressionClassName"
-    Class.forName(className, true, classLoader).newInstance.asInstanceOf[RawExpression]
+  private def loadCompiledRawExpression(exprDef: ExpressionDef): Try[RawExpression] = synchronized {
+    expressionCompilationResultsCache.get(exprDef).map { pkgName =>
+      val className = s"$pkgName.$expressionClassName"
+      Class.forName(className, true, classLoader).newInstance.asInstanceOf[RawExpression]
+    }
   }
 
   private var idx = 0
@@ -197,7 +190,7 @@ class ExpressionCompiler {
 
   }
 
-  private def compileExpression(exprDef: ExpressionDef): CompilationResult = synchronized {
+  private def compileExpression(exprDef: ExpressionDef): Try[String] = synchronized {
     def erasedType[A](clazz: Class[A]) =
       ru.runtimeMirror(clazz.getClassLoader).classSymbol(clazz).toType.erasure
 
@@ -237,11 +230,12 @@ class ExpressionCompiler {
     if (!reporter.hasErrors)
       Success(pkgName)
     else
-      Failure(codeToCompile, reporter.compileErrors)
+      Failure(new CompilationFailedException(codeToCompile, reporter.compileErrors))
   }
 
   private def clazzOf[T: ClassTag] = implicitly[ClassTag[T]].runtimeClass.asInstanceOf[Class[T]]
 
+  @throws[CompilationFailedException]
   def getCompiledStringExpression[C <: AnyRef : ClassTag](
     profile: ExpressionProfile,
     expression: String): Expression[C, String] = {
@@ -249,6 +243,7 @@ class ExpressionCompiler {
     getCompiledStringExpression(profile, expression, clazzOf[C])
   }
 
+  @throws[CompilationFailedException]
   def getCompiledStringExpression[C <: AnyRef](
     profile: ExpressionProfile,
     expression: String,
@@ -257,6 +252,7 @@ class ExpressionCompiler {
     getCompiledExpression(profile, "s\"\"\"" + StringEscapeUtils.escapeJava(expression) + "\"\"\"", contextClass, classOf[String])
   }
 
+  @throws[CompilationFailedException]
   def getCompiledExpression[C <: AnyRef : ClassTag, R <: AnyRef : ClassTag](
     profile: ExpressionProfile,
     expression: String): Expression[C, R] = {
@@ -273,6 +269,7 @@ class ExpressionCompiler {
    * @param contextClass expression context class
    * @param resultClass expression result class
    */
+  @throws[CompilationFailedException]
   def getCompiledExpression[C <: AnyRef, R <: AnyRef](
     profile: ExpressionProfile,
     expression: String,
@@ -290,11 +287,11 @@ class ExpressionCompiler {
     // this allows the actual expression to be GCed when ExpressionCompiler is doing cleanup
     // without which the classloader will not be GCed and its classes unloaded
     new Expression[C, R] {
-      private var rawExpressionRef = new WeakReference(loadRawExpression)
+      var rawExpressionRef = new WeakReference(loadRawExpression)
 
-      private def loadRawExpression = expressionCache.get(exprDef)
+      def loadRawExpression = expressionCache.get(exprDef).get
 
-      private def rawExpression = rawExpressionRef.get match {
+      def rawExpression = rawExpressionRef.get match {
         case Some(expr) => expr
         case None =>
           val result = loadRawExpression

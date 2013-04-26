@@ -1,9 +1,6 @@
-import com.avsystem.scex.TestMacros
-import tools.nsc.Settings
-import tools.nsc.interpreter.IMain
 
-import scala.reflect.runtime.{universe => ru}
 import java.{util => ju, lang => jl}
+import scala.reflect.runtime.{universe => ru}
 
 /**
  * Created with IntelliJ IDEA.
