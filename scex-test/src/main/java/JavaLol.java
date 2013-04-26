@@ -20,6 +20,6 @@ public class JavaLol {
     }
 
     public static void main(String[] args) throws Exception {
-        System.out.println(TypeConverters.javaTypeAsScalaType(byte[].class));
+        System.out.println(TypeConverters.javaTypeAsScalaType(int.class));
     }
 }

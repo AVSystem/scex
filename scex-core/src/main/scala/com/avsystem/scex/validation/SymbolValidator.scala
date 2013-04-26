@@ -1,12 +1,12 @@
 package com.avsystem.scex.validation
 
 import SymbolValidator._
-import com.avsystem.scex.CachingTypeCreator
+import com.avsystem.scex.TypeInfo
 import com.avsystem.scex.Utils._
 import java.{util => ju, lang => jl}
 import scala.language.experimental.macros
 import scala.language.implicitConversions
-import scala.reflect.api.TypeCreator
+import scala.reflect.api.{Universe, TypeCreator}
 import scala.reflect.macros.Context
 
 class SymbolValidator(accessSpecs: List[MemberAccessSpec]) {
@@ -33,11 +33,14 @@ class SymbolValidator(accessSpecs: List[MemberAccessSpec]) {
     } getOrElse (false)
   }
 
+  lazy val referencedJavaClasses: Set[Class[_]] = accessSpecs.view.collect({
+    case MemberAccessSpec(typeInfo, _, _, true) if typeInfo.isJava => typeInfo.clazz
+  }).flatten.toSet
 }
 
 object SymbolValidator {
 
-  case class MemberAccessSpec(typeCreator: CachingTypeCreator, member: String, implicitConv: Option[String], allow: Boolean)
+  case class MemberAccessSpec(typeInfo: TypeInfo, member: String, implicitConv: Option[String], allow: Boolean)
 
   def allow(expr: Any): List[SymbolValidator.MemberAccessSpec] = macro allow_impl
 
@@ -91,7 +94,11 @@ object SymbolValidator {
       val Block(List(_, _), Apply(_, List(_, typeCreatorTree))) =
         c.reifyType(treeBuild.mkRuntimeUniverseRef, EmptyTree, widenedTpe)
 
-      reify(new CachingTypeCreator(c.Expr[TypeCreator](typeCreatorTree).splice, c.literal(widenedTpe.toString).splice))
+      reify(new TypeInfo(
+        c.Expr[TypeCreator](typeCreatorTree).splice,
+        reifyRuntimeClassOpt(c)(tpe).splice,
+        c.literal(tpe.typeSymbol.isJava).splice,
+        c.literal(widenedTpe.toString).splice))
     }
 
     val reifiedAccessSpecs: List[Tree] = rawAccessSpecs.map {

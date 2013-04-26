@@ -2,6 +2,7 @@ package com.avsystem.scex
 
 import CacheImplicits._
 import ExpressionCompiler._
+import TypeConverters._
 import com.avsystem.scex.Utils._
 import com.avsystem.scex.validation.ExpressionValidator
 import com.google.common.cache.{RemovalNotification, CacheBuilder}
@@ -20,6 +21,7 @@ import scala.tools.nsc.interpreter.AbstractFileClassLoader
 import scala.tools.nsc.reporters.AbstractReporter
 import scala.tools.nsc.{Global, Settings}
 import scala.util.{Failure, Success, Try}
+import java.lang.reflect.Method
 
 /**
  * Central class for expression compilation. Encapsulates Scala compiler, so it is
@@ -60,18 +62,18 @@ class ExpressionCompiler {
     val getterPattern = "get([A-Z][a-z0-9_]*)+".r
     val booleanGetterPattern = "is([A-Z][a-z0-9_]*)+".r
 
-    def unapply(symbol: ru.Symbol): Option[(String, Boolean)] =
-      if (isJavaParameterlessMethod(symbol)) {
+    def unapply(method: Method): Option[(String, Boolean)] =
+      if (method.getParameterTypes.isEmpty && method.getTypeParameters.isEmpty) {
 
         def uncapitalize(str: String) =
           str.head.toLower + str.tail
-        def isBoolOrBoolean(tpe: ru.Type) =
-          tpe =:= ru.typeOf[Boolean] || tpe =:= ru.typeOf[jl.Boolean]
+        def isBoolOrBoolean(clazz: Class[_]) =
+          clazz == classOf[Boolean] || clazz == classOf[jl.Boolean]
 
-        symbol.name.toString match {
+        method.getName match {
           case getterPattern(capitalizedName) =>
             Some((uncapitalize(capitalizedName), false))
-          case booleanGetterPattern(capitalizedName) if isBoolOrBoolean(symbol.asMethod.returnType) =>
+          case booleanGetterPattern(capitalizedName) if isBoolOrBoolean(method.getReturnType) =>
             Some((uncapitalize(capitalizedName), true))
           case _ => None
         }
@@ -140,23 +142,16 @@ class ExpressionCompiler {
    * forwarding to existing Java-style getters of given class.
    */
   private def generateJavaGetterAdapter(clazz: Class[_]): String = {
-    val classSymbol = ru.runtimeMirror(clazz.getClassLoader).classSymbol(clazz)
-
-    if (!classSymbol.isJava) {
-      return ""
-    }
-
-    val tpe = classSymbol.toType
-
     // generate scala getters
     val sb = new StringBuilder
     val alreadyWrapped = new mutable.HashSet[String]
-    tpe.members.sorted.foreach { symbol =>
-      symbol match {
+
+    clazz.getMethods.foreach { method =>
+      method match {
         case JavaGetter(propName, booleanIsGetter) if !alreadyWrapped.contains(propName) =>
           alreadyWrapped += propName
-          val annot = if (booleanIsGetter) "@com.avsystem.scex.BooleanIsGetter" else ""
-          sb ++= s"$annot def `$propName` = wrapped.${symbol.name}\n"
+          val annot = if (booleanIsGetter) "@com.avsystem.scex.BooleanIsGetter\n" else ""
+          sb ++= s"${annot}def `$propName` = wrapped.${method.getName}\n"
         case _ => ()
       }
     }
@@ -167,22 +162,17 @@ class ExpressionCompiler {
     }
 
     // generate class code
-    val rawName = tpe.typeConstructor.toString
-    val adapterName = "Adapter_" + rawName.replaceAll("\\.", "_")
+    val adapterName = "Adapter_" + clazz.getName.replaceAll("\\.", "_")
 
-    val typeParams = classSymbol.typeParams
-    val genericTypes = if (typeParams.nonEmpty) typeParams.map(_.name).mkString("[", ",", "]") else ""
-
-    val genericTypesWithBounds = if (typeParams.nonEmpty) {
-      typeParams.map { param =>
-        param.name.toString + param.typeSignature
-      } mkString("[", ",", "]")
-    } else ""
+    val ClassExistential(polyType, typeVars) = classToExistential(clazz)
+    val genericAdapter = adapterName + boundedTypeVariables(typeVars)
+    val polyTypeRepr = javaTypeAsScalaType(polyType)
 
     s"""
-      |implicit class $adapterName $genericTypesWithBounds
-      |  (val wrapped: $rawName $genericTypes)
+      |implicit class $genericAdapter
+      |  (val wrapped: $polyTypeRepr)
       |  extends AnyVal with com.avsystem.scex.JavaGettersAdapter {
+      |
       |$propDefs
       |}
       |
@@ -191,11 +181,8 @@ class ExpressionCompiler {
   }
 
   private def compileExpression(exprDef: ExpressionDef): Try[String] = synchronized {
-    def erasedType[A](clazz: Class[A]) =
-      ru.runtimeMirror(clazz.getClassLoader).classSymbol(clazz).toType.erasure
-
-    val contextType = erasedType(exprDef.contextClass).toString
-    val resultType = erasedType(exprDef.resultClass).toString
+    val contextType = javaTypeAsScalaType(exprDef.contextClass)
+    val resultType = javaTypeAsScalaType(exprDef.resultClass)
 
     val header = Option(exprDef.profile.expressionHeader).getOrElse("")
 
@@ -206,15 +193,13 @@ class ExpressionCompiler {
       s"""
         |package $pkgName
         |
-        |class $expressionClassName extends ($contextType => $resultType) {
+        |class $expressionClassName extends (($contextType) => $resultType) {
         |  def apply(__ctx: $contextType): $resultType = {
         |    $header
         |    /* import profile object */
         |    import __ctx._
         |    com.avsystem.scex.validation.ExpressionValidator.validate(
-        |
         |${exprDef.expression}
-        |
         |    )
         |  }
         |}
@@ -308,7 +293,7 @@ class ExpressionCompiler {
 object ExpressionCompiler {
 
   case class CompileError(line: String, column: Int, msg: String) {
-    override def toString = s"$msg:\n${line.stripLineEnd}:\n${" " * (column - 1)}^"
+    override def toString = s"$msg:\n${line.stripLineEnd}\n${" " * (column - 1)}^"
   }
 
   case class CompilationFailedException(source: String, errors: List[CompileError])

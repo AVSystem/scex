@@ -6,5 +6,5 @@ import scala.reflect.runtime.{universe => ru}
 
 class ExpressionProfile(
   val syntaxValidator: SyntaxValidator,
-  val accessValidator: SymbolValidator,
+  val symbolValidator: SymbolValidator,
   val expressionHeader: String)

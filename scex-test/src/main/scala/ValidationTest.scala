@@ -1,9 +1,9 @@
-import com.avsystem.scex.{Utils, ExpressionProfile, ExpressionCompiler}
 import com.avsystem.scex.validation._
+import com.avsystem.scex.{Utils, ExpressionProfile, ExpressionCompiler}
 import java.{util => ju, lang => jl}
 import reflect.macros.Universe
-import scala.reflect.runtime.{universe => ru}
 import scala.Some
+import scala.reflect.runtime.{universe => ru}
 
 object ValidationTest {
 
@@ -44,6 +44,10 @@ object ValidationTest {
       new B
       new JavaLol
       Utils.toString
+
+      tl: TypedLol[_] => {
+        tl.toString
+      }
 
       s: String => {
         s.length
@@ -100,7 +104,7 @@ object ValidationTest {
 
     }
 
-    memberAccessSpecs foreach println
+    //memberAccessSpecs foreach println
 
     val syntaxValidator = new SyntaxValidator {
       def isSyntaxAllowed(u: Universe)(tree: u.Tree): Boolean = {
@@ -122,10 +126,12 @@ object ValidationTest {
     val myexpr =
       """
         |{
+        |  def lol = 5
         |  String.CASE_INSENSITIVE_ORDER
         |  new ValidationTest.B
         |  (new JavaLol).isFoo
         |  com.avsystem.scex.Utils.toString
+        |  System.exit(3)
         |  new JavaLol + s"fuu ${new JavaLol}"
         |}
       """.stripMargin

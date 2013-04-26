@@ -22,11 +22,10 @@ object ExpressionValidator {
     import c.universe._
     val profile = profileVar.value
 
-    expr.tree.foreach {
-      subtree =>
-        if (!profile.syntaxValidator.isSyntaxAllowed(c.universe)(subtree)) {
-          c.error(subtree.pos, s"Cannot use language construct: ${subtree.getClass.getSimpleName}")
-        }
+    expr.tree.foreach { subtree =>
+      if (!profile.syntaxValidator.isSyntaxAllowed(c.universe)(subtree)) {
+        c.error(subtree.pos, s"Cannot use language construct: ${subtree.getClass.getSimpleName}")
+      }
     }
 
     def needsValidation(symbol: Symbol) =
@@ -34,7 +33,7 @@ object ExpressionValidator {
 
     def validateAccess(pos: Position, tpe: Type, symbol: Symbol, icSymbol: Option[Symbol]) {
       if (needsValidation(symbol)) {
-        if (!profile.accessValidator.isInvocationAllowed(c)(tpe, symbol, icSymbol)) {
+        if (!profile.symbolValidator.isInvocationAllowed(c)(tpe, symbol, icSymbol)) {
           c.error(pos, s"Cannot call ${memberSignature(symbol)} on ${tpe.typeSymbol.fullName}")
         }
       }
@@ -53,7 +52,7 @@ object ExpressionValidator {
 
       val name = prefix + symbol.name.toString.capitalize
 
-      def fail = throw new RuntimeException(s"Could not get java getter for $symbol on $javaTpe")
+      def fail = throw new Error(s"Could not get java getter for $symbol on $javaTpe")
 
       javaTpe.member(newTermName(name)) match {
         case s if isJavaParameterlessMethod(s) => s

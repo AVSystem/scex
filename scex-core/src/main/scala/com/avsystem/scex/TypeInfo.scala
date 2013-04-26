@@ -5,7 +5,7 @@ import java.{util => ju, lang => jl}
 import reflect.api.{Universe, TypeCreator}
 import scala.reflect.runtime.{universe => ru}
 
-class CachingTypeCreator(typeCreator: TypeCreator, typeRepr: String) {
+class TypeInfo(typeCreator: TypeCreator, val clazz: Option[Class[_]], val isJava: Boolean, typeRepr: String) {
 
   import CacheImplicits._
 
@@ -16,5 +16,5 @@ class CachingTypeCreator(typeCreator: TypeCreator, typeRepr: String) {
   def typeIn(u: Universe): u.Type =
     cache.get(u, u.TypeTag[Any](u.rootMirror, typeCreator).tpe).asInstanceOf[u.Type]
 
-  override def toString = s"CachingTypeCreator($typeRepr)"
+  override def toString = s"TypeInfo($typeRepr)"
 }
