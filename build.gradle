@@ -10,11 +10,6 @@ subprojects {
 
     version = '1.0-SNAPSHOT'
 
-    configurations {
-        ideaProvided
-        compile.extendsFrom(ideaProvided)
-    }
-
     repositories {
         mavenCentral()
         mavenLocal()
@@ -27,8 +22,8 @@ subprojects {
 
     dependencies {
         scalaTools "org.scala-lang:scala-compiler:$scalaVersion"
-        ideaProvided "org.scala-lang:scala-library:$scalaVersion"
 
+        compile "org.scala-lang:scala-library:$scalaVersion"
         compile "org.scala-lang:scala-reflect:$scalaVersion"
         compile "org.scala-lang:scala-compiler:$scalaVersion"
         compile "org.scala-lang:jline:$scalaVersion"
@@ -48,8 +43,6 @@ subprojects {
         module {
             downloadJavadoc = true
             downloadSources = true
-
-            scopes.COMPILE.minus += configurations.ideaProvided
         }
     }
 }

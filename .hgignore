@@ -4,6 +4,8 @@ syntax: glob
 *.log
 
 *.iws
+*.iml
+*.ipr
 
 license.dat
 public.key
