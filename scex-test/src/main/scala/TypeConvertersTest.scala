@@ -1,3 +1,4 @@
+import com.avsystem.scex.Utils
 import java.{util => ju, lang => jl}
 import scala.collection.mutable
 import scala.collection.JavaConverters._
@@ -14,5 +15,7 @@ object TypeConvertersTest {
     println(javaTypeAsScalaType(clazz))
     println(javaTypeAsScalaType(classOf[JavaLol#InnerLol]))
     println(boundedTypeVariables(classToExistential(clazz).typeVars))
+
+    Utils.hierarchy(classOf[ju.ArrayList[_]]) foreach println
   }
 }

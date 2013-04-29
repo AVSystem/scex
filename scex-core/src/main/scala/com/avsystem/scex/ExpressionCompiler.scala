@@ -5,7 +5,7 @@ import ExpressionCompiler._
 import TypeConverters._
 import com.avsystem.scex.validation.ExpressionValidator
 import com.google.common.cache.{RemovalNotification, CacheBuilder}
-import java.lang.reflect.{Type, Method}
+import java.lang.reflect.{Modifier, Type, Method}
 import java.{util => ju, lang => jl}
 import org.apache.commons.lang.StringEscapeUtils
 import scala.Some
@@ -143,8 +143,10 @@ class ExpressionCompiler {
     // generate scala getters
     val alreadyWrapped = new mutable.HashSet[String]
 
-    val scalaGetters = clazz.getMethods.collect {
-      case method@JavaGetter(propName, booleanIsGetter) if !alreadyWrapped.contains(propName) =>
+    val scalaGetters = clazz.getDeclaredMethods.collect {
+      case method@JavaGetter(propName, booleanIsGetter)
+        if Modifier.isPublic(method.getModifiers) && !alreadyWrapped.contains(propName) =>
+
         alreadyWrapped += propName
         val annot = if (booleanIsGetter) "@com.avsystem.scex.BooleanIsGetter\n" else ""
         s"${annot}def `$propName` = wrapped.${method.getName}\n"
@@ -167,7 +169,7 @@ class ExpressionCompiler {
       |$classBody
       |}
       |
-    """.stripMargin
+      """.stripMargin
 
     } else ""
   }

@@ -2,6 +2,7 @@ package com.avsystem.scex
 
 import scala.reflect.api.Universe
 import scala.reflect.macros.Context
+import scala.collection.mutable
 
 /**
  * Created with IntelliJ IDEA.
@@ -34,6 +35,21 @@ object Utils {
     val start = System.nanoTime()
     expr
     (System.nanoTime() - start) / 1000000000.0
+  }
+
+  def hierarchy(clazz: Class[_]): Set[Class[_]] = {
+    val resultBuilder = Set.newBuilder[Class[_]]
+
+    def fill(clazz: Class[_]) {
+      if (clazz != null) {
+        resultBuilder += clazz
+        fill(clazz.getSuperclass)
+        clazz.getInterfaces.foreach(fill)
+      }
+    }
+
+    fill(clazz)
+    resultBuilder.result()
   }
 
   def isModuleOrPackage(symbol: Universe#Symbol) = symbol != null &&

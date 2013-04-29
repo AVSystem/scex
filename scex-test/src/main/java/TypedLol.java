@@ -8,7 +8,9 @@ public class TypedLol<T extends TypedLol<T>> {
     }
 
     public class Dafuq<F extends List<? super String>> {
-
+        public F getStuff() {
+            return null;
+        }
     }
 
 }

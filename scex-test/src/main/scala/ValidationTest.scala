@@ -49,6 +49,10 @@ object ValidationTest {
         tl.toString
       }
 
+      d: (TypedLol[T]#Dafuq[_] forSome {type T}) => {
+        d.getStuff
+      }
+
       s: String => {
         s.length
         s.concat _
