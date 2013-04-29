@@ -1,10 +1,8 @@
-package com.avsystem.scex
+package com.avsystem.scex.compiler
 
-import java.{util => ju, lang => jl}
-import scala.collection.mutable
-import scala.collection.JavaConverters._
-import scala.reflect.runtime.{universe => ru}
 import java.lang.reflect.{Type, ParameterizedType}
+import java.{util => ju, lang => jl}
+import scala.reflect.runtime.{universe => ru}
 
 abstract class TypeTag[T] extends Type {
   require(getClass.getSuperclass == classOf[TypeTag[_]], "You must directly extend TypeTag")

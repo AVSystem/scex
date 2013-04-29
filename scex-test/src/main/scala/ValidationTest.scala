@@ -1,5 +1,6 @@
+import com.avsystem.scex.compiler.{ExpressionProfile, ExpressionCompiler, ExpressionCompilerConfig}
+import com.avsystem.scex.util.CommonUtils
 import com.avsystem.scex.validation._
-import com.avsystem.scex.{Utils, ExpressionProfile, ExpressionCompiler}
 import java.{util => ju, lang => jl}
 import reflect.macros.Universe
 import scala.Some
@@ -43,7 +44,7 @@ object ValidationTest {
       String.valueOf(_: Boolean)
       new B
       new JavaLol
-      Utils.toString
+      CommonUtils.toString
 
       tl: TypedLol[_] => {
         tl.toString
@@ -125,7 +126,7 @@ object ValidationTest {
     val symbolValidator = new SymbolValidator(memberAccessSpecs)
 
     val profile = new ExpressionProfile(syntaxValidator, symbolValidator, null)
-    val compiler = new ExpressionCompiler
+    val compiler = new ExpressionCompiler(new ExpressionCompilerConfig)
 
     val myexpr =
       """
@@ -134,7 +135,7 @@ object ValidationTest {
         |  String.CASE_INSENSITIVE_ORDER
         |  new ValidationTest.B
         |  (new JavaLol).isFoo
-        |  com.avsystem.scex.Utils.toString
+        |  com.avsystem.scex.util.CommonUtils.toString
         |  new JavaLol + s"fuu ${new JavaLol}"
         |}
       """.stripMargin

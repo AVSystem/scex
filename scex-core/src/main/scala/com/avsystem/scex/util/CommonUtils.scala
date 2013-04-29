@@ -1,8 +1,7 @@
-package com.avsystem.scex
+package com.avsystem.scex.util
 
 import scala.reflect.api.Universe
 import scala.reflect.macros.Context
-import scala.collection.mutable
 
 /**
  * Created with IntelliJ IDEA.
@@ -10,7 +9,7 @@ import scala.collection.mutable
  * Date: 08.01.13
  * Time: 21:03
  */
-object Utils {
+object CommonUtils {
 
   implicit class EnhancedInt(val i: Int) extends AnyVal {
     def times(expr: => Any) {

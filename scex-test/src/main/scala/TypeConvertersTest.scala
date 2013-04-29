@@ -1,12 +1,11 @@
-import com.avsystem.scex.Utils
+import com.avsystem.scex.compiler.TypeConverter
+import com.avsystem.scex.util.CommonUtils
 import java.{util => ju, lang => jl}
-import scala.collection.mutable
-import scala.collection.JavaConverters._
 import scala.reflect.runtime.{universe => ru}
 
 object TypeConvertersTest {
 
-  import com.avsystem.scex.TypeConverters._
+  import TypeConverter._
   import scala.language.existentials
 
   def main(args: Array[String]) {
@@ -16,6 +15,6 @@ object TypeConvertersTest {
     println(javaTypeAsScalaType(classOf[JavaLol#InnerLol]))
     println(boundedTypeVariables(classToExistential(clazz).typeVars))
 
-    Utils.hierarchy(classOf[ju.ArrayList[_]]) foreach println
+    CommonUtils.hierarchy(classOf[ju.ArrayList[_]]) foreach println
   }
 }

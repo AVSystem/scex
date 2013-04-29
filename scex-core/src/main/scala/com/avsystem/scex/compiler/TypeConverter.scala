@@ -1,12 +1,12 @@
-package com.avsystem.scex
+package com.avsystem.scex.compiler
 
 import java.lang.reflect.{Type, WildcardType, TypeVariable, ParameterizedType, Modifier, GenericArrayType}
 import java.{util => ju, lang => jl}
-import scala.reflect.runtime.{universe => ru}
 import scala.collection.mutable
 import scala.language.existentials
+import scala.reflect.runtime.{universe => ru}
 
-object TypeConverters {
+object TypeConverter {
 
   case class TypeVariableRef(name: String) extends Type
 

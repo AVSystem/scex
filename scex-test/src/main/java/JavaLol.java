@@ -1,5 +1,5 @@
-import com.avsystem.scex.TypeConverters;
-import com.avsystem.scex.TypeTag;
+import com.avsystem.scex.compiler.TypeConverter;
+import com.avsystem.scex.compiler.TypeTag;
 
 import java.util.List;
 import java.util.Map;
@@ -30,7 +30,7 @@ public class JavaLol {
     }
 
     public static void main(String[] args) throws Exception {
-        System.out.println(TypeConverters.javaTypeAsScalaType((new TypeTag<Map<?, ? super List>>() {
+        System.out.println(TypeConverter.javaTypeAsScalaType((new TypeTag<Map<?, ? super List>>() {
         })));
     }
 }

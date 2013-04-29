@@ -1,12 +1,11 @@
 package com.avsystem.scex.validation
 
 import SymbolValidator._
-import com.avsystem.scex.TypeInfo
-import com.avsystem.scex.Utils._
+import com.avsystem.scex.util.CommonUtils._
 import java.{util => ju, lang => jl}
 import scala.language.experimental.macros
 import scala.language.implicitConversions
-import scala.reflect.api.{Universe, TypeCreator}
+import scala.reflect.api.TypeCreator
 import scala.reflect.macros.Context
 
 class SymbolValidator(accessSpecs: List[MemberAccessSpec]) {

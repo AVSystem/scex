@@ -1,6 +1,7 @@
-package com.avsystem.scex
+package com.avsystem.scex.compiler
 
 import java.{util => ju, lang => jl}
 import scala.reflect.runtime.{universe => ru}
 
-trait Expression[-T, +R] extends (T => R)
+trait JavaGettersAdapter extends Any
+

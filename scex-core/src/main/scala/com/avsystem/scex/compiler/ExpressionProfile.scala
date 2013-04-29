@@ -1,4 +1,4 @@
-package com.avsystem.scex
+package com.avsystem.scex.compiler
 
 import com.avsystem.scex.validation.{SymbolValidator, SyntaxValidator}
 import java.{util => ju, lang => jl}

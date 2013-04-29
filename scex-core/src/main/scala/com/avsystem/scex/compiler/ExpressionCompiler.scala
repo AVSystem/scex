@@ -1,8 +1,11 @@
-package com.avsystem.scex
+package com.avsystem.scex.compiler
 
-import CacheImplicits._
 import ExpressionCompiler._
-import TypeConverters._
+import TypeConverter._
+import com.avsystem.scex.compiler.ExpressionCompiler.CompilationFailedException
+import com.avsystem.scex.compiler.ExpressionCompiler.CompileError
+import com.avsystem.scex.compiler.TypeConverter.ClassExistential
+import com.avsystem.scex.util.CacheImplicits._
 import com.avsystem.scex.validation.ExpressionValidator
 import com.google.common.cache.{RemovalNotification, CacheBuilder}
 import java.lang.reflect.{Modifier, Type, Method}
@@ -13,7 +16,6 @@ import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 import scala.language.existentials
 import scala.ref.WeakReference
-import scala.reflect.ClassTag
 import scala.reflect.internal.util.{BatchSourceFile, Position}
 import scala.reflect.io.VirtualDirectory
 import scala.tools.nsc.interpreter.AbstractFileClassLoader
@@ -25,7 +27,7 @@ import scala.util.{Failure, Success, Try}
  * Central class for expression compilation. Encapsulates Scala compiler, so it is
  * VERY heavy. Thread safe with compilation synchronized.
  */
-class ExpressionCompiler {
+class ExpressionCompiler(config: ExpressionCompilerConfig) {
 
   private val virtualDirectory = new VirtualDirectory("(scex)", None)
 
@@ -86,7 +88,7 @@ class ExpressionCompiler {
     contextType: String,
     resultType: String)
 
-  private type RawExpression = Function[_, _]
+  private type RawExpression = Function[Any, Nothing]
 
   private val global = new Global(settings, reporter)
 
@@ -94,8 +96,12 @@ class ExpressionCompiler {
 
   //TODO: profiles, cache expiration, classLoader resetting, validator compilation
 
-  private val expressionCache =
-    CacheBuilder.newBuilder.removalListener(onExprRemove _).build[ExpressionDef, Try[RawExpression]](loadCompiledRawExpression _)
+  /**
+   * VARIOUS CACHES
+   */
+
+  private val expressionCache = CacheBuilder.newBuilder
+    .removalListener(onExprRemove _).build[ExpressionDef, Try[RawExpression]](loadCompiledRawExpression _)
 
   // holds names of packages to which expressions are compiled
   private val expressionCompilationResultsCache =
@@ -110,9 +116,14 @@ class ExpressionCompiler {
   private val javaGetterAdaptersCache =
     CacheBuilder.newBuilder.build(generateJavaGetterAdapter: Class[_] => String)
 
+  // when expression object is removed from cache, remove its compilation result too
   private def onExprRemove(notification: RemovalNotification[ExpressionDef, Try[RawExpression]]) {
     expressionCompilationResultsCache.invalidate(notification.getKey)
   }
+
+  /**
+   * CACHE BUILDER AND REMOVAL METHODS
+   */
 
   // when cache entry expires, remove corresponding classfiles from virtualDirectory
   private def onCompilationResultRemoval[K](notification: RemovalNotification[K, Try[String]]) {
@@ -155,7 +166,7 @@ class ExpressionCompiler {
         if Modifier.isPublic(method.getModifiers) && !alreadyWrapped.contains(propName) =>
 
         alreadyWrapped += propName
-        val annot = if (booleanIsGetter) "@com.avsystem.scex.BooleanIsGetter\n" else ""
+        val annot = if (booleanIsGetter) "@com.avsystem.scex.compiler.BooleanIsGetter\n" else ""
         s"${annot}def `$propName` = wrapped.${method.getName}\n"
     }
 
@@ -171,7 +182,7 @@ class ExpressionCompiler {
       s"""
       |implicit class $genericAdapter
       |  (val wrapped: $polyTypeRepr)
-      |  extends AnyVal with com.avsystem.scex.JavaGettersAdapter {
+      |  extends AnyVal with com.avsystem.scex.compiler.JavaGettersAdapter {
       |
       |$classBody
       |}
@@ -188,12 +199,12 @@ class ExpressionCompiler {
 
     val codeToCompile =
       s"""
-        |package $pkgName
-        |
-        |object $profileObjectName {
-        |$adapters
-        |}
-        |
+      |package $pkgName
+      |
+      |object $profileObjectName {
+      |$adapters
+      |}
+      |
       """.stripMargin
 
     compile("(scex profile)", codeToCompile) match {
@@ -213,19 +224,19 @@ class ExpressionCompiler {
 
     val codeToCompile =
       s"""
-        |package $pkgName
-        |
-        |class $expressionClassName extends (($contextType) => $resultType) {
-        |  def apply(__ctx: $contextType): $resultType = {
-        |    $header
-        |    import $profileObjectPkg.$profileObjectName._
-        |    import __ctx._
-        |    com.avsystem.scex.validation.ExpressionValidator.validate(
-        |${exprDef.expression}
-        |    )
-        |  }
-        |}
-        |
+      |package $pkgName
+      |
+      |class $expressionClassName extends (($contextType) => $resultType) {
+      |  def apply(__ctx: $contextType): $resultType = {
+      |    $header
+      |    import $profileObjectPkg.$profileObjectName._
+      |    import __ctx._
+      |    com.avsystem.scex.validation.ExpressionValidator.validate(
+      |${exprDef.expression}
+      |    )
+      |  }
+      |}
+      |
       """.stripMargin
 
     ExpressionValidator.profileVar.withValue(exprDef.profile) {

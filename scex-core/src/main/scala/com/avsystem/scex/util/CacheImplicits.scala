@@ -1,4 +1,4 @@
-package com.avsystem.scex
+package com.avsystem.scex.util
 
 import com.google.common.cache.{RemovalNotification, RemovalListener, CacheLoader}
 import java.util.concurrent.Callable
