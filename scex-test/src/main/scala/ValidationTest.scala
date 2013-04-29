@@ -139,7 +139,9 @@ object ValidationTest {
         |}
       """.stripMargin
 
-    println(compiler.getCompiledExpression[Object, Object](profile, myexpr, classOf[Object], classOf[Object]).apply(null))
+    for (_ <- 0 to 100) {
+      println(compiler.getCompiledExpression[Object, Object](profile, myexpr, classOf[Object], classOf[Object]).apply(null))
+    }
     println(compiler.getCompiledStringExpression[Object](profile, "${1+5+10} hahaha \" dafuq \"", classOf[Object]).apply(null))
   }
 

@@ -99,7 +99,13 @@ class ExpressionCompiler {
 
   // holds names of packages to which expressions are compiled
   private val expressionCompilationResultsCache =
-    CacheBuilder.newBuilder.removalListener(onExprImplRemove _).build[ExpressionDef, Try[String]](compileExpression _)
+    CacheBuilder.newBuilder.removalListener(onCompilationResultRemoval[ExpressionDef] _)
+      .build[ExpressionDef, Try[String]](compileExpression _)
+
+  // holds names of packages to which profiles are compiled
+  private val profileCompilationResultsCache =
+    CacheBuilder.newBuilder.removalListener(onCompilationResultRemoval[ExpressionProfile] _)
+      .build[ExpressionProfile, Try[String]](compileProfileObject _)
 
   private val javaGetterAdaptersCache =
     CacheBuilder.newBuilder.build(generateJavaGetterAdapter: Class[_] => String)
@@ -108,7 +114,8 @@ class ExpressionCompiler {
     expressionCompilationResultsCache.invalidate(notification.getKey)
   }
 
-  private def onExprImplRemove(notification: RemovalNotification[ExpressionDef, Try[String]]) {
+  // when cache entry expires, remove corresponding classfiles from virtualDirectory
+  private def onCompilationResultRemoval[K](notification: RemovalNotification[K, Try[String]]) {
     notification.getValue match {
       case Success(pkgName) =>
         virtualDirectory.lookupPath(pkgName.replaceAllLiterally(".", "/"), directory = true).delete()
@@ -174,12 +181,12 @@ class ExpressionCompiler {
     } else ""
   }
 
-  private def generateProfileObject(profile: ExpressionProfile): (String, String) = {
+  private def compileProfileObject(profile: ExpressionProfile): Try[String] = {
     val pkgName = newProfilePackage()
 
     val adapters = profile.symbolValidator.referencedJavaClasses.map(javaGetterAdaptersCache.get).mkString
 
-    val code =
+    val codeToCompile =
       s"""
         |package $pkgName
         |
@@ -189,7 +196,10 @@ class ExpressionCompiler {
         |
       """.stripMargin
 
-    (s"$pkgName.$profileObjectName", code)
+    compile("(scex profile)", codeToCompile) match {
+      case Nil => Success(pkgName)
+      case errors => Failure(new CompilationFailedException(codeToCompile, errors))
+    }
   }
 
   private def compileExpression(exprDef: ExpressionDef): Try[String] = synchronized {
@@ -199,7 +209,7 @@ class ExpressionCompiler {
     val header = Option(exprDef.profile.expressionHeader).getOrElse("")
 
     val pkgName = newExpressionPackage()
-    val (fqProfileObject, profileObjectSource) = generateProfileObject(exprDef.profile)
+    val profileObjectPkg = profileCompilationResultsCache.get(exprDef.profile).get
 
     val codeToCompile =
       s"""
@@ -208,7 +218,7 @@ class ExpressionCompiler {
         |class $expressionClassName extends (($contextType) => $resultType) {
         |  def apply(__ctx: $contextType): $resultType = {
         |    $header
-        |    import $fqProfileObject._
+        |    import $profileObjectPkg.$profileObjectName._
         |    import __ctx._
         |    com.avsystem.scex.validation.ExpressionValidator.validate(
         |${exprDef.expression}
@@ -218,21 +228,21 @@ class ExpressionCompiler {
         |
       """.stripMargin
 
-    val run = new global.Run
-
     ExpressionValidator.profileVar.withValue(exprDef.profile) {
-      run.compileSources(List(
-        new BatchSourceFile("(scex profile)", profileObjectSource),
-        new BatchSourceFile("(scex expression)", codeToCompile)))
+      compile("(scex expression)", codeToCompile) match {
+        case Nil => Success(pkgName)
+        case errors => Failure(new CompilationFailedException(codeToCompile, errors))
+      }
     }
-
-    if (!reporter.hasErrors)
-      Success(pkgName)
-    else
-      Failure(new CompilationFailedException(codeToCompile, reporter.compileErrors))
   }
 
-  // lots of adapter methods
+  private def compile(name: String, code: String): List[CompileError] = {
+    val run = new global.Run
+    run.compileSources(List(new BatchSourceFile(name, code)))
+    reporter.compileErrors
+  }
+
+  // lots of adapter methods for Java usage
 
   @throws[CompilationFailedException]
   def getCompiledStringExpression[C](
@@ -348,4 +358,5 @@ object ExpressionCompiler {
 
   private val expressionClassName = "Expression"
   private val profileObjectName = "Profile"
+
 }
