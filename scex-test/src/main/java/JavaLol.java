@@ -1,8 +1,18 @@
-import com.avsystem.scex.Expression;
-import com.avsystem.scex.ExpressionCompiler;
 import com.avsystem.scex.TypeConverters;
+import com.avsystem.scex.TypeTag;
+
+import java.util.List;
+import java.util.Map;
 
 public class JavaLol {
+    public static class StaticLol {
+
+    }
+
+    public class InnerLol {
+
+    }
+
     public int fuu = 5;
 
     private int lol;
@@ -20,6 +30,7 @@ public class JavaLol {
     }
 
     public static void main(String[] args) throws Exception {
-        System.out.println(TypeConverters.javaTypeAsScalaType(int.class));
+        System.out.println(TypeConverters.javaTypeAsScalaType((new TypeTag<Map<?, ? super List>>() {
+        })));
     }
 }

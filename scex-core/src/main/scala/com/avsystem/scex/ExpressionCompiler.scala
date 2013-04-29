@@ -3,9 +3,9 @@ package com.avsystem.scex
 import CacheImplicits._
 import ExpressionCompiler._
 import TypeConverters._
-import com.avsystem.scex.Utils._
 import com.avsystem.scex.validation.ExpressionValidator
 import com.google.common.cache.{RemovalNotification, CacheBuilder}
+import java.lang.reflect.{Type, Method}
 import java.{util => ju, lang => jl}
 import org.apache.commons.lang.StringEscapeUtils
 import scala.Some
@@ -16,12 +16,10 @@ import scala.ref.WeakReference
 import scala.reflect.ClassTag
 import scala.reflect.internal.util.{BatchSourceFile, Position}
 import scala.reflect.io.VirtualDirectory
-import scala.reflect.runtime.{universe => ru}
 import scala.tools.nsc.interpreter.AbstractFileClassLoader
 import scala.tools.nsc.reporters.AbstractReporter
 import scala.tools.nsc.{Global, Settings}
 import scala.util.{Failure, Success, Try}
-import java.lang.reflect.Method
 
 /**
  * Central class for expression compilation. Encapsulates Scala compiler, so it is
@@ -85,8 +83,8 @@ class ExpressionCompiler {
   private case class ExpressionDef(
     profile: ExpressionProfile,
     expression: String,
-    contextClass: Class[_],
-    resultClass: Class[_])
+    contextType: String,
+    resultType: String)
 
   private type RawExpression = Function[_, _]
 
@@ -132,7 +130,7 @@ class ExpressionCompiler {
     "_scex_expr$" + idx
   }
 
-  private def newProfilePackage() {
+  private def newProfilePackage() = {
     idx += 1
     "_scex_profile$" + idx
   }
@@ -143,51 +141,63 @@ class ExpressionCompiler {
    */
   private def generateJavaGetterAdapter(clazz: Class[_]): String = {
     // generate scala getters
-    val sb = new StringBuilder
     val alreadyWrapped = new mutable.HashSet[String]
 
-    clazz.getMethods.foreach { method =>
-      method match {
-        case JavaGetter(propName, booleanIsGetter) if !alreadyWrapped.contains(propName) =>
-          alreadyWrapped += propName
-          val annot = if (booleanIsGetter) "@com.avsystem.scex.BooleanIsGetter\n" else ""
-          sb ++= s"${annot}def `$propName` = wrapped.${method.getName}\n"
-        case _ => ()
-      }
-    }
-    val propDefs = sb.mkString
-
-    if (propDefs.isEmpty) {
-      return ""
+    val scalaGetters = clazz.getMethods.collect {
+      case method@JavaGetter(propName, booleanIsGetter) if !alreadyWrapped.contains(propName) =>
+        alreadyWrapped += propName
+        val annot = if (booleanIsGetter) "@com.avsystem.scex.BooleanIsGetter\n" else ""
+        s"${annot}def `$propName` = wrapped.${method.getName}\n"
     }
 
-    // generate class code
-    val adapterName = "Adapter_" + clazz.getName.replaceAll("\\.", "_")
+    if (scalaGetters.nonEmpty) {
+      val classBody = scalaGetters.mkString
 
-    val ClassExistential(polyType, typeVars) = classToExistential(clazz)
-    val genericAdapter = adapterName + boundedTypeVariables(typeVars)
-    val polyTypeRepr = javaTypeAsScalaType(polyType)
+      val adapterName = "Adapter_" + clazz.getName.replaceAll("\\.", "_")
 
-    s"""
+      val ClassExistential(polyType, typeVars) = classToExistential(clazz)
+      val genericAdapter = adapterName + boundedTypeVariables(typeVars)
+      val polyTypeRepr = javaTypeAsScalaType(polyType)
+
+      s"""
       |implicit class $genericAdapter
       |  (val wrapped: $polyTypeRepr)
       |  extends AnyVal with com.avsystem.scex.JavaGettersAdapter {
       |
-      |$propDefs
+      |$classBody
       |}
       |
     """.stripMargin
 
+    } else ""
+  }
+
+  private def generateProfileObject(profile: ExpressionProfile): (String, String) = {
+    val pkgName = newProfilePackage()
+
+    val adapters = profile.symbolValidator.referencedJavaClasses.map(javaGetterAdaptersCache.get).mkString
+
+    val code =
+      s"""
+        |package $pkgName
+        |
+        |object $profileObjectName {
+        |$adapters
+        |}
+        |
+      """.stripMargin
+
+    (s"$pkgName.$profileObjectName", code)
   }
 
   private def compileExpression(exprDef: ExpressionDef): Try[String] = synchronized {
-    val contextType = javaTypeAsScalaType(exprDef.contextClass)
-    val resultType = javaTypeAsScalaType(exprDef.resultClass)
+    val contextType = exprDef.contextType
+    val resultType = exprDef.resultType
 
     val header = Option(exprDef.profile.expressionHeader).getOrElse("")
 
     val pkgName = newExpressionPackage()
-    val profileObjectName = null
+    val (fqProfileObject, profileObjectSource) = generateProfileObject(exprDef.profile)
 
     val codeToCompile =
       s"""
@@ -196,7 +206,7 @@ class ExpressionCompiler {
         |class $expressionClassName extends (($contextType) => $resultType) {
         |  def apply(__ctx: $contextType): $resultType = {
         |    $header
-        |    /* import profile object */
+        |    import $fqProfileObject._
         |    import __ctx._
         |    com.avsystem.scex.validation.ExpressionValidator.validate(
         |${exprDef.expression}
@@ -209,7 +219,9 @@ class ExpressionCompiler {
     val run = new global.Run
 
     ExpressionValidator.profileVar.withValue(exprDef.profile) {
-      run.compileSources(List(new BatchSourceFile("(scex expression)", codeToCompile)))
+      run.compileSources(List(
+        new BatchSourceFile("(scex profile)", profileObjectSource),
+        new BatchSourceFile("(scex expression)", codeToCompile)))
     }
 
     if (!reporter.hasErrors)
@@ -218,31 +230,64 @@ class ExpressionCompiler {
       Failure(new CompilationFailedException(codeToCompile, reporter.compileErrors))
   }
 
-  private def clazzOf[T: ClassTag] = implicitly[ClassTag[T]].runtimeClass.asInstanceOf[Class[T]]
+  // lots of adapter methods
 
   @throws[CompilationFailedException]
-  def getCompiledStringExpression[C <: AnyRef : ClassTag](
-    profile: ExpressionProfile,
-    expression: String): Expression[C, String] = {
-
-    getCompiledStringExpression(profile, expression, clazzOf[C])
-  }
-
-  @throws[CompilationFailedException]
-  def getCompiledStringExpression[C <: AnyRef](
+  def getCompiledStringExpression[C](
     profile: ExpressionProfile,
     expression: String,
-    contextClass: Class[C]): Expression[C, String] = {
+    contextType: Class[C]): Expression[C, String] = {
 
-    getCompiledExpression(profile, "s\"\"\"" + StringEscapeUtils.escapeJava(expression) + "\"\"\"", contextClass, classOf[String])
+    getCompiledExpression(profile, "s\"\"\"" + StringEscapeUtils.escapeJava(expression) + "\"\"\"", contextType: Type, classOf[String])
   }
 
   @throws[CompilationFailedException]
-  def getCompiledExpression[C <: AnyRef : ClassTag, R <: AnyRef : ClassTag](
+  def getCompiledStringExpression[C](
     profile: ExpressionProfile,
-    expression: String): Expression[C, R] = {
+    expression: String,
+    contextType: TypeTag[C]): Expression[C, String] = {
 
-    getCompiledExpression[C, R](profile, expression, clazzOf[C], clazzOf[R])
+    getCompiledExpression(profile, "s\"\"\"" + StringEscapeUtils.escapeJava(expression) + "\"\"\"", contextType: Type, classOf[String])
+  }
+
+  @throws[CompilationFailedException]
+  def getCompiledExpression[C, R](
+    profile: ExpressionProfile,
+    expression: String,
+    contextType: Class[C],
+    resultType: Class[R]): Expression[C, R] = {
+
+    getCompiledExpression[C, R](profile, expression, contextType: Type, resultType: Type)
+  }
+
+  @throws[CompilationFailedException]
+  def getCompiledExpression[C, R](
+    profile: ExpressionProfile,
+    expression: String,
+    contextType: Class[C],
+    resultType: TypeTag[R]): Expression[C, R] = {
+
+    getCompiledExpression[C, R](profile, expression, contextType: Type, resultType: Type)
+  }
+
+  @throws[CompilationFailedException]
+  def getCompiledExpression[C, R](
+    profile: ExpressionProfile,
+    expression: String,
+    contextType: TypeTag[C],
+    resultType: Class[R]): Expression[C, R] = {
+
+    getCompiledExpression[C, R](profile, expression, contextType: Type, resultType: Type)
+  }
+
+  @throws[CompilationFailedException]
+  def getCompiledExpression[C, R](
+    profile: ExpressionProfile,
+    expression: String,
+    contextType: TypeTag[C],
+    resultType: TypeTag[R]): Expression[C, R] = {
+
+    getCompiledExpression[C, R](profile, expression, contextType: Type, resultType: Type)
   }
 
   /**
@@ -251,22 +296,22 @@ class ExpressionCompiler {
    *
    * @param profile expression profile to compile this expression with
    * @param expression the expression
-   * @param contextClass expression context class
-   * @param resultClass expression result class
+   * @param contextType expression context class
+   * @param resultType expression result class
    */
   @throws[CompilationFailedException]
-  def getCompiledExpression[C <: AnyRef, R <: AnyRef](
+  def getCompiledExpression[C, R](
     profile: ExpressionProfile,
     expression: String,
-    contextClass: Class[C],
-    resultClass: Class[R]): Expression[C, R] = {
+    contextType: Type,
+    resultType: Type): Expression[C, R] = {
 
     require(profile != null, "Profile cannot be null")
     require(expression != null, "Expression cannot be null")
-    require(contextClass != null, "Context class cannot be null")
-    require(resultClass != null, "Result class cannot be null")
+    require(contextType != null, "Context type cannot be null")
+    require(resultType != null, "Result type cannot be null")
 
-    val exprDef = ExpressionDef(profile, expression, contextClass, resultClass)
+    val exprDef = ExpressionDef(profile, expression, javaTypeAsScalaType(contextType), javaTypeAsScalaType(resultType))
 
     // return wrapper over a weak reference to actual expression
     // this allows the actual expression to be GCed when ExpressionCompiler is doing cleanup
@@ -300,4 +345,5 @@ object ExpressionCompiler {
     extends Exception(s"Compilation failed with ${errors.size} errors:\n${errors.mkString("\n")}")
 
   private val expressionClassName = "Expression"
+  private val profileObjectName = "Profile"
 }

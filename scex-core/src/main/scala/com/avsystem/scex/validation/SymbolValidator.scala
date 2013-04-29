@@ -33,9 +33,9 @@ class SymbolValidator(accessSpecs: List[MemberAccessSpec]) {
     } getOrElse (false)
   }
 
-  lazy val referencedJavaClasses: Set[Class[_]] = accessSpecs.view.collect({
+  lazy val referencedJavaClasses = accessSpecs.view.collect({
     case MemberAccessSpec(typeInfo, _, _, true) if typeInfo.isJava => typeInfo.clazz
-  }).flatten.toSet
+  }).flatten.toSet.toList
 }
 
 object SymbolValidator {

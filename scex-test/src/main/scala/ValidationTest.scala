@@ -126,18 +126,17 @@ object ValidationTest {
     val myexpr =
       """
         |{
-        |  def lol = 5
+        |  null: String
         |  String.CASE_INSENSITIVE_ORDER
         |  new ValidationTest.B
         |  (new JavaLol).isFoo
         |  com.avsystem.scex.Utils.toString
-        |  System.exit(3)
         |  new JavaLol + s"fuu ${new JavaLol}"
         |}
       """.stripMargin
 
-    println(compiler.getCompiledExpression[Object, Object](profile, myexpr).apply(null))
-    println(compiler.getCompiledStringExpression[Object](profile, "${1+5+10} hahaha \" dafuq \"").apply(null))
+    println(compiler.getCompiledExpression[Object, Object](profile, myexpr, classOf[Object], classOf[Object]).apply(null))
+    println(compiler.getCompiledStringExpression[Object](profile, "${1+5+10} hahaha \" dafuq \"", classOf[Object]).apply(null))
   }
 
 }

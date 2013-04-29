@@ -4,14 +4,36 @@ import java.lang.reflect.{Type, WildcardType, TypeVariable, ParameterizedType, M
 import java.{util => ju, lang => jl}
 import scala.reflect.runtime.{universe => ru}
 import scala.collection.mutable
+import scala.language.existentials
 
 object TypeConverters {
 
-  case class TypeSkolem(name: String) extends Type
+  case class TypeVariableRef(name: String) extends Type
 
   case class RawClass(clazz: Class[_]) extends Type
 
   case class ClassExistential(polyType: Type, typeVars: List[TypeVariable[_]]) extends Type
+
+  // extractors for java.lang.reflect.Type subinterfaces
+  private object WildcardType {
+    def unapply(tpe: WildcardType) =
+      Some((tpe.getUpperBounds, tpe.getLowerBounds))
+  }
+
+  private object TypeVariable {
+    def unapply(tv: TypeVariable[_]) =
+      Some((tv.getName, tv.getBounds))
+  }
+
+  private object ParameterizedType {
+    def unapply(ptpe: ParameterizedType) =
+      Some((ptpe.getRawType, ptpe.getOwnerType, ptpe.getActualTypeArguments))
+  }
+
+  private object GenericArrayType {
+    def unapply(gat: GenericArrayType) =
+      Some(gat.getGenericComponentType)
+  }
 
   private def isStatic(clazz: Class[_]) =
     Modifier.isStatic(clazz.getModifiers)
@@ -36,33 +58,36 @@ object TypeConverters {
       case clazz: Class[_] =>
         javaTypeAsScalaTypeIn(classToExistential(clazz))
 
-      case wildcard: WildcardType =>
-        val upperBounds = wildcard.getUpperBounds.filter(_ != classOf[Object]).map(javaTypeAsScalaTypeIn).mkString(" with ")
-        val lowerBounds = wildcard.getLowerBounds.map(javaTypeAsScalaTypeIn).mkString(" with ")
-        "_" + (if (upperBounds.nonEmpty) (" >: " + upperBounds) else "") + (if (lowerBounds.nonEmpty) (" >: " + lowerBounds) else "")
+      case TypeTag(underlyingType) =>
+        javaTypeAsScalaTypeIn(underlyingType)
 
-      case typeVariable: TypeVariable[_] if alreadyConvertedVariables.contains(typeVariable) =>
-        typeVariable.getName
+      case WildcardType(upperBounds, lowerBounds) =>
+        val upperBoundsRepr = upperBounds.filter(_ != classOf[Object]).map(javaTypeAsScalaTypeIn).mkString(" with ")
+        val lowerBoundsRepr = lowerBounds.map(javaTypeAsScalaTypeIn).mkString(" with ")
 
-      case typeVariable: TypeVariable[_] =>
+        "_" + (if (upperBoundsRepr.nonEmpty) (" >: " + upperBoundsRepr) else "") +
+          (if (lowerBoundsRepr.nonEmpty) (" >: " + lowerBoundsRepr) else "")
+
+      case typeVariable@TypeVariable(name, _) if alreadyConvertedVariables.contains(typeVariable) =>
+        name
+
+      case typeVariable@TypeVariable(name, bounds) =>
         alreadyConvertedVariables += typeVariable
-        val name = typeVariable.getName
-        val bounds = typeVariable.getBounds.filter(_ != classOf[Object]).map(javaTypeAsScalaTypeIn).mkString(" with ")
-        name + (if (bounds.nonEmpty) (" <: " + bounds) else "")
+        val boundsRepr = bounds.filter(_ != classOf[Object]).map(javaTypeAsScalaTypeIn).mkString(" with ")
+        name + (if (boundsRepr.nonEmpty) (" <: " + boundsRepr) else "")
 
-      case appliedType: ParameterizedType =>
-        val clazz = appliedType.getRawType.asInstanceOf[Class[_]]
-        val owner = if (appliedType.getOwnerType != null) javaTypeAsScalaTypeIn(appliedType.getOwnerType) else null
-        val typeParams = appliedType.getActualTypeArguments.map(javaTypeAsScalaTypeIn).mkString("[", ", ", "]")
+      case ParameterizedType(rawType, ownerType, typeArguments) =>
+        val clazz = rawType.asInstanceOf[Class[_]]
+        val typeArgumentsRepr = if (typeArguments.nonEmpty) typeArguments.map(javaTypeAsScalaTypeIn).mkString("[", ", ", "]") else ""
 
-        if (owner != null) {
-          owner + (if (isStatic(clazz)) "." else "#") + clazz.getSimpleName + typeParams
+        if (ownerType != null) {
+          javaTypeAsScalaTypeIn(ownerType) + (if (isStatic(clazz)) "." else "#") + clazz.getSimpleName + typeArgumentsRepr
         } else {
-          javaTypeAsScalaTypeIn(RawClass(clazz)) + typeParams
+          javaTypeAsScalaTypeIn(RawClass(clazz)) + typeArgumentsRepr
         }
 
-      case genericArrayType: GenericArrayType =>
-        s"Array[${javaTypeAsScalaTypeIn(genericArrayType.getGenericComponentType)}]"
+      case GenericArrayType(componentType) =>
+        s"Array[${javaTypeAsScalaTypeIn(componentType)}]"
 
       case ClassExistential(polyType, typeVars) =>
         def typeVarDefs = typeVars.map(tv => s"type ${tv.getName}").mkString(" forSome {", "; ", "}")
@@ -77,7 +102,7 @@ object TypeConverters {
       case RawClass(clazz) if !clazz.isAnonymousClass && !clazz.isSynthetic =>
         clazz.getName
 
-      case TypeSkolem(name) =>
+      case TypeVariableRef(name) =>
         name
 
       case _ =>
@@ -90,19 +115,20 @@ object TypeConverters {
   // lifts raw class into an existential type, e.g. java.util.List becomes java.util.List[T] forSome {type T}
   def classToExistential(clazz: Class[_]): ClassExistential = {
     val enclosingClass = clazz.getEnclosingClass
+
     val ClassExistential(ownerType, ownerTypeVariables) =
       if (enclosingClass != null && !isStatic(clazz))
         classToExistential(enclosingClass)
-      else if (enclosingClass != null)
-        ClassExistential(RawClass(enclosingClass), Nil)
       else
-        ClassExistential(null, Nil)
+        ClassExistential(enclosingClass, Nil)
 
-    val typeVariables = ownerTypeVariables ::: List[TypeVariable[_]](clazz.getTypeParameters: _*)
+    val typeVariables =
+      ownerTypeVariables ::: List[TypeVariable[_]](clazz.getTypeParameters: _*)
 
-    val tpe = if (typeVariables.nonEmpty) {
-      val typeArgs: Array[Type] = clazz.getTypeParameters.map(typeParam => TypeSkolem(typeParam.getName))
+    val typeArgs: Array[Type] =
+      clazz.getTypeParameters.map(typeParam => TypeVariableRef(typeParam.getName))
 
+    val tpe =
       new ParameterizedType {
         def getActualTypeArguments: Array[Type] = typeArgs
 
@@ -110,9 +136,6 @@ object TypeConverters {
 
         def getOwnerType: Type = ownerType
       }
-    } else {
-      RawClass(clazz)
-    }
 
     ClassExistential(tpe, typeVariables)
   }
