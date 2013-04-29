@@ -1,4 +1,4 @@
-package com.avsystem.scex.compiler
+package com.avsystem.scex
 
 import java.lang.reflect.{Type, ParameterizedType}
 import java.{util => ju, lang => jl}

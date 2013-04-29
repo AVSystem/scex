@@ -22,6 +22,7 @@ import scala.tools.nsc.interpreter.AbstractFileClassLoader
 import scala.tools.nsc.reporters.AbstractReporter
 import scala.tools.nsc.{Global, Settings}
 import scala.util.{Failure, Success, Try}
+import com.avsystem.scex.{TypeTag, Expression}
 
 /**
  * Central class for expression compilation. Encapsulates Scala compiler, so it is

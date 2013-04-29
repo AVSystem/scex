@@ -1,5 +1,5 @@
 import com.avsystem.scex.compiler.TypeConverter;
-import com.avsystem.scex.compiler.TypeTag;
+import com.avsystem.scex.TypeTag;
 
 import java.util.List;
 import java.util.Map;

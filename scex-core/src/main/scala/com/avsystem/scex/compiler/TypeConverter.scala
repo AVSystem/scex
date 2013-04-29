@@ -5,6 +5,7 @@ import java.{util => ju, lang => jl}
 import scala.collection.mutable
 import scala.language.existentials
 import scala.reflect.runtime.{universe => ru}
+import com.avsystem.scex.TypeTag
 
 object TypeConverter {
 
