@@ -2,6 +2,7 @@ package com.avsystem.scex.compiler
 
 import java.lang.reflect.{Type, WildcardType, TypeVariable, ParameterizedType, Modifier, GenericArrayType}
 import java.{util => ju, lang => jl}
+import java.lang.{reflect => jlr}
 import scala.collection.mutable
 import scala.language.existentials
 import scala.reflect.runtime.{universe => ru}
@@ -91,7 +92,7 @@ object TypeConverter {
         s"Array[${javaTypeAsScalaTypeIn(componentType)}]"
 
       case ClassExistential(polyType, typeVars) =>
-        def typeVarDefs = typeVars.map(tv => s"type ${tv.getName}").mkString(" forSome {", "; ", "}")
+        def typeVarDefs = typeVars.map(tv => s"type ${javaTypeAsScalaType(tv)}").mkString(" forSome {", "; ", "}")
         javaTypeAsScalaTypeIn(polyType) + (if (typeVars.nonEmpty) typeVarDefs else "")
 
       case RawClass(arrayClazz) if arrayClazz.isArray =>
@@ -111,6 +112,15 @@ object TypeConverter {
     }
 
     javaTypeAsScalaTypeIn(tpe)
+  }
+
+  def erasureOf(tpe: Type): Class[_] = tpe match {
+    case clazz: Class[_] => clazz
+    case RawClass(clazz) => clazz
+    case TypeTag(underlyingType) => erasureOf(underlyingType)
+    case GenericArrayType(componentType) => jlr.Array.newInstance(erasureOf(componentType), 0).getClass
+    case ParameterizedType(rawType, _, _) => erasureOf(rawType)
+    case _ => throw new IllegalArgumentException(s"Type $tpe does not have erasure")
   }
 
   // lifts raw class into an existential type, e.g. java.util.List becomes java.util.List[T] forSome {type T}

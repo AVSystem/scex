@@ -131,18 +131,24 @@ object ValidationTest {
     val myexpr =
       """
         |{
+        |  stuff
         |  null: String
         |  String.CASE_INSENSITIVE_ORDER
         |  new ValidationTest.B
-        |  (new JavaLol).isFoo
+        |  (new JavaLol).foo
         |  com.avsystem.scex.util.CommonUtils.toString
         |  new JavaLol + s"fuu ${new JavaLol}"
         |}
       """.stripMargin
 
-    for (_ <- 0 to 100) {
-      println(compiler.getCompiledExpression[Object, Object](profile, myexpr, classOf[Object], classOf[Object]).apply(null))
-    }
+    class TL extends TypedLol[TL]
+
+    val typedLol = new TL
+    val dafuq = new typedLol.Dafuq[ju.ArrayList[CharSequence]]
+
+    type Typ = TypedLol[T]#Dafuq[F] forSome {type T; type F}
+
+    println(compiler.getCompiledExpression[Typ, Object](profile, myexpr, classOf[Typ], classOf[Object]).apply(dafuq))
     println(compiler.getCompiledStringExpression[Object](profile, "${1+5+10} hahaha \" dafuq \"", classOf[Object]).apply(null))
   }
 

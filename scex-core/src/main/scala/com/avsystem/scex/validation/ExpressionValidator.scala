@@ -1,11 +1,12 @@
 package com.avsystem.scex.validation
 
-import com.avsystem.scex.compiler.{ExpressionProfile, BooleanIsGetter, JavaGettersAdapter}
+import com.avsystem.scex.compiler.ExpressionProfile
 import java.{util => ju, lang => jl}
 import scala.language.experimental.macros
 import scala.reflect.macros.Context
 import scala.util.DynamicVariable
 import com.avsystem.scex.util.CommonUtils._
+import com.avsystem.scex.compiler.annotation.{ContextAdapter, JavaGetterAdapter, BooleanIsGetter}
 
 /**
  * Object used during expression compilation to validate the expression (syntax, invocations, etc.)
@@ -16,9 +17,9 @@ object ExpressionValidator {
 
   val profileVar: DynamicVariable[ExpressionProfile] = new DynamicVariable(null)
 
-  def validate[T](expr: T): T = macro validate_impl[T]
+  def validate[C, R](expr: R): R = macro validate_impl[C, R]
 
-  def validate_impl[T](c: Context)(expr: c.Expr[T]): c.Expr[T] = {
+  def validate_impl[C: c.WeakTypeTag, R](c: Context)(expr: c.Expr[R]): c.Expr[R] = {
     import c.universe._
     val profile = profileVar.value
 
@@ -39,17 +40,22 @@ object ExpressionValidator {
       }
     }
 
-    lazy val adapterType = typeOf[JavaGettersAdapter]
-    lazy val booleanIsGetterType = typeOf[BooleanIsGetter]
+    lazy val adapterAnnotType = typeOf[JavaGetterAdapter]
+    lazy val booleanGetterAnnotType = typeOf[BooleanIsGetter]
+    lazy val contextAdapterAnnotType = typeOf[ContextAdapter]
+
+    def isAdapter(tpe: Type) =
+      tpe != null && tpe.typeSymbol.annotations.exists(_.tpe =:= adapterAnnotType)
+
+    def isContextAdapter(symbol: Symbol) =
+      symbol.annotations.exists(_.tpe =:= contextAdapterAnnotType)
+
+    def isBooleanGetterAdapter(symbol: Symbol) =
+      symbol.annotations.exists(_.tpe =:= booleanGetterAnnotType)
 
     // gets Java getter called by implicit wrapper
     def getJavaGetter(symbol: Symbol, javaTpe: Type): Symbol = {
-      val prefix =
-        if (symbol.annotations.exists(_.tpe =:= booleanIsGetterType))
-          "is"
-        else
-          "get"
-
+      val prefix = if (isBooleanGetterAdapter(symbol)) "is" else "get"
       val name = prefix + symbol.name.toString.capitalize
 
       def fail = throw new Error(s"Could not get java getter for $symbol on $javaTpe")
@@ -64,12 +70,17 @@ object ExpressionValidator {
       }
     }
 
+    lazy val contextTpe = weakTypeOf[C]
+
     def validateTree(tree: Tree) {
       tree match {
-        case tree@Select(apply@Apply(fun, List(qualifier)), _) if isStaticImplicitConversion(fun.symbol) && apply.pos == qualifier.pos =>
-          val wrappedJavaGetter = apply.tpe != null && apply.tpe <:< adapterType
+        case tree@Select(contextAdapter@Ident(_), _) if isContextAdapter(contextAdapter.symbol) =>
+          validateAccess(tree.pos, contextTpe, getJavaGetter(tree.symbol, contextTpe), None)
 
-          if (wrappedJavaGetter) {
+        case tree@Select(apply@Apply(fun, List(qualifier)), _)
+          if isStaticImplicitConversion(fun.symbol) && apply.pos == qualifier.pos =>
+
+          if (isAdapter(apply.tpe)) {
             validateAccess(tree.pos, qualifier.tpe, getJavaGetter(tree.symbol, qualifier.tpe), None)
           } else {
             validateAccess(tree.pos, qualifier.tpe, tree.symbol, Some(fun.symbol))

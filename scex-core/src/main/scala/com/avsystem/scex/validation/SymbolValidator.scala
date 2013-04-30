@@ -36,7 +36,7 @@ class SymbolValidator(accessSpecs: List[MemberAccessSpec]) {
     case MemberAccessSpec(typeInfo, _, _, true)
       if typeInfo.clazz.isDefined && typeInfo.isJava =>
       hierarchy(typeInfo.clazz.get)
-  }).flatten.toSet.toList
+  }).flatten.toSet
 }
 
 object SymbolValidator {

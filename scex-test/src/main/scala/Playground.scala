@@ -1,5 +1,6 @@
 
 import java.{util => ju, lang => jl}
+import scala.collection.mutable
 import scala.reflect.runtime.{universe => ru}
 
 /**
@@ -19,7 +20,7 @@ object Playground {
     val keywords = List("class")
 
     val adapterTemplate = """
-                            |implicit class %s_Adapter(val wrapped: %s) extends AnyVal with com.avsystem.scex.compiler.JavaGettersAdapter {
+                            |implicit class %s_Adapter(val wrapped: %s) extends AnyVal with com.avsystem.scex.compiler.JavaGetterAdapter {
                             |%s
                             |}
                           """.stripMargin
@@ -57,15 +58,6 @@ object Playground {
       None
     }
 
-  }
-}
-
-object Stuff {
-  def main(args: Array[String]) {
-    def on[T](fun: (T => Any)*) = fun
-
-    val f = on[String](_.replaceFirst _)
-    println(f.getClass)
   }
 }
 
