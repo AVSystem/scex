@@ -1,8 +1,5 @@
-import com.avsystem.scex.compiler.TypeConverter;
-import com.avsystem.scex.TypeTag;
-
-import java.util.List;
-import java.util.Map;
+import com.avsystem.scex.Expression;
+import com.avsystem.scex.compiler.ExpressionCompiler;
 
 public class JavaLol {
     public static class StaticLol {
@@ -30,7 +27,7 @@ public class JavaLol {
     }
 
     public static void main(String[] args) throws Exception {
-        System.out.println(TypeConverter.javaTypeAsScalaType((new TypeTag<Map<?, ? super List>>() {
-        })));
+        ExpressionCompiler compiler = new ExpressionCompiler(null);
+        Expression<String, Object> expr = compiler.getCompiledExpression(null, null, String.class, Object.class);
     }
 }

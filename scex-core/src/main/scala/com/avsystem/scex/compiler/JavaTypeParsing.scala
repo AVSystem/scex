@@ -1,14 +1,15 @@
 package com.avsystem.scex.compiler
 
-import java.lang.reflect.{Type, WildcardType, TypeVariable, ParameterizedType, Modifier, GenericArrayType}
-import java.{util => ju, lang => jl}
-import java.lang.{reflect => jlr}
-import scala.collection.mutable
-import scala.language.existentials
-import scala.reflect.runtime.{universe => ru}
 import com.avsystem.scex.TypeTag
+import java.lang.reflect._
+import java.lang.{reflect => jlr}
+import java.{util => ju, lang => jl}
+import scala.Array
+import scala.Some
+import scala.collection.mutable
+import scala.reflect.runtime.{universe => ru}
 
-object TypeConverter {
+trait JavaTypeParsing {
 
   case class TypeVariableRef(name: String) extends Type
 
@@ -52,7 +53,7 @@ object TypeConverter {
     classOf[Double] -> "Double"
   )
 
-  def javaTypeAsScalaType(tpe: Type): String = {
+  protected def javaTypeAsScalaType(tpe: Type): String = {
     // for recursive generic type definitions like "Class C[T <: C[T]]"
     val alreadyConvertedVariables = new mutable.HashSet[TypeVariable[_]]
 
@@ -114,7 +115,7 @@ object TypeConverter {
     javaTypeAsScalaTypeIn(tpe)
   }
 
-  def erasureOf(tpe: Type): Class[_] = tpe match {
+  protected def erasureOf(tpe: Type): Class[_] = tpe match {
     case clazz: Class[_] => clazz
     case RawClass(clazz) => clazz
     case TypeTag(underlyingType) => erasureOf(underlyingType)
@@ -124,7 +125,7 @@ object TypeConverter {
   }
 
   // lifts raw class into an existential type, e.g. java.util.List becomes java.util.List[T] forSome {type T}
-  def classToExistential(clazz: Class[_]): ClassExistential = {
+  protected def classToExistential(clazz: Class[_]): ClassExistential = {
     val enclosingClass = clazz.getEnclosingClass
 
     val ClassExistential(ownerType, ownerTypeVariables) =
@@ -151,12 +152,10 @@ object TypeConverter {
     ClassExistential(tpe, typeVariables)
   }
 
-  def boundedTypeVariables(typeVars: List[TypeVariable[_]]): String = {
+  protected def boundedTypeVariables(typeVars: List[TypeVariable[_]]): String = {
     if (typeVars.nonEmpty)
       typeVars.map(javaTypeAsScalaType).mkString("[", ", ", "]")
     else
       ""
   }
-
-
 }
