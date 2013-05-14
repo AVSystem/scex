@@ -5,6 +5,7 @@ import java.{util => ju, lang => jl}
 import reflect.macros.Universe
 import scala.Some
 import scala.reflect.runtime.{universe => ru}
+import scala.language.existentials
 
 object ValidationTest {
 
@@ -46,15 +47,15 @@ object ValidationTest {
       new JavaLol
       CommonUtils.toString
 
-      tl: TypedLol[_] => {
+      { tl: TypedLol[_] =>
         tl.toString
       }
 
-      d: (TypedLol[T]#Dafuq[_] forSome {type T}) => {
+      { d: (TypedLol[T]#Dafuq[_] forSome {type T}) =>
         d.getStuff
       }
 
-      s: String => {
+      { s: String =>
         s.length
         s.concat _
         s.matches _
@@ -62,18 +63,22 @@ object ValidationTest {
         s.compare(_: String)
       }
 
-      sc: StringContext => {
+      { sc: StringContext =>
         sc.s _
       }
 
-      any: Any => {
+      { al: ju.ArrayList[String] =>
+        al.anyConstructor
+      }
+
+      { any: Any =>
         any + (_: String)
         any -> (_: Any)
         any == (_: Any)
         any != (_: Any)
       }
 
-      a: A[_] => {
+      { a: A[_] =>
         a.costam _
         a.hoho _
         a.b()
@@ -82,18 +87,19 @@ object ValidationTest {
         a.a_= _
       }
 
-      i: Int => {
-        i + (_: Char)
+      { i: Int =>
+        i.anyConstructor
+        i.anyNamed("+")
       }
 
-      jl: JavaLol => {
+      { jl: JavaLol =>
         jl.fuu
         jl.isFoo
       }
 
     } ++ deny {
 
-      any: Any => {
+      { any: Any =>
         any.equals _
         any.hashCode
         any.##
@@ -102,14 +108,14 @@ object ValidationTest {
         any.isInstanceOf
       }
 
-      anyRef: AnyRef => {
+      { anyRef: AnyRef =>
         anyRef.eq _
         anyRef.synchronized _
       }
 
     }
 
-    //memberAccessSpecs foreach println
+    memberAccessSpecs foreach println
 
     val syntaxValidator = new SyntaxValidator {
       def isSyntaxAllowed(u: Universe)(tree: u.Tree): Boolean = {

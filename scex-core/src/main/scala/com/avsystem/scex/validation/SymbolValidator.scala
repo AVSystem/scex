@@ -5,7 +5,7 @@ import com.avsystem.scex.util.CommonUtils._
 import java.{util => ju, lang => jl}
 import scala.language.experimental.macros
 import scala.language.implicitConversions
-import scala.reflect.api.TypeCreator
+import scala.reflect.api.{Universe, TypeCreator}
 import scala.reflect.macros.Context
 
 class SymbolValidator(accessSpecs: List[MemberAccessSpec]) {
@@ -43,6 +43,22 @@ object SymbolValidator {
 
   case class MemberAccessSpec(typeInfo: TypeInfo, member: String, implicitConv: Option[String], allow: Boolean)
 
+  implicit class WildcardMemberAccess(val wrapped: Any) extends AnyVal {
+    private def notImplemented: List[MemberAccessSpec] =
+      throw new NotImplementedError("You cannot call this method outside of symbol validator DSL")
+
+    /**
+     * Allows for accessing or calling any member (field, value, variable, method) with given name
+     */
+    def anyNamed(name: String) = notImplemented
+
+    /**
+     * Allows for creating new instances of given type using any public constructor.
+     * @return
+     */
+    def anyConstructor = notImplemented
+  }
+
   def allow(expr: Any): List[SymbolValidator.MemberAccessSpec] = macro allow_impl
 
   def allow_impl(c: Context)(expr: c.Expr[Any]) =
@@ -53,15 +69,49 @@ object SymbolValidator {
   def deny_impl(c: Context)(expr: c.Expr[Any]) =
     extractMemberAccessSpecs(c)(expr, allow = false)
 
-  private def extractMemberAccessSpecs(c: Context)(expr: c.Expr[Any], allow: Boolean) = {
+  private def extractMemberAccessSpecs(c: Context)(expr: c.Expr[Any], allow: Boolean): c.Expr[List[MemberAccessSpec]] = {
     import c.universe._
+
+    object ImplicitlyConverted {
+      def unapply(tree: Tree) = tree match {
+        case Apply(fun, List(prefix)) if isStaticImplicitConversion(fun.symbol) && tree.pos == prefix.pos =>
+          Some((prefix, fun))
+        case _ =>
+          None
+      }
+    }
 
     def accessSpec(prefix: Tree, body: Tree, implConv: Option[Tree]) = {
       (prefix.tpe, body.symbol, implConv.map(_.symbol))
     }
 
+    def allMemberSpecsNamed(tpe: Type, name: Name) = {
+      val member = tpe.member(name)
+      if (member.isTerm) {
+        Some(member.asTerm.alternatives.map(symbol => (tpe, symbol, None)))
+      } else {
+        None
+      }
+    }
+
     def extractSymbols(body: Tree): List[(Type, Symbol, Option[Symbol])] = body match {
-      case Select(apply@Apply(fun, List(prefix)), _) if isStaticImplicitConversion(fun.symbol) && apply.pos == prefix.pos =>
+      case Apply(Select(implConv@ImplicitlyConverted(prefix, fun), termName), List(memberNameLiteral@Literal(Constant(memberName: String))))
+        if termName == newTermName("anyNamed") && implConv.tpe <:< typeOf[WildcardMemberAccess] =>
+
+        allMemberSpecsNamed(prefix.tpe, newTermName(memberName).encodedName).getOrElse {
+          c.error(memberNameLiteral.pos, s"${prefix.tpe.map(_.widen)} has no members named $memberName")
+          Nil
+        }
+
+      case Select(implConv@ImplicitlyConverted(prefix, fun), termName)
+        if termName == newTermName("anyConstructor") && implConv.tpe <:< typeOf[WildcardMemberAccess] =>
+
+        allMemberSpecsNamed(prefix.tpe, nme.CONSTRUCTOR).getOrElse {
+          c.error(body.pos, s"${prefix.tpe.map(_.widen)} has no constructors")
+          Nil
+        }
+
+      case Select(ImplicitlyConverted(prefix, fun)) =>
         List(accessSpec(prefix, body, Some(fun)))
 
       case Select(prefix, _) =>

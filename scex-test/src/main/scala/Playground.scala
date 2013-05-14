@@ -74,4 +74,8 @@ class Target {
   def getStuff() = 5
 
   def someValue: Double = 7.234234
+
+  def fuu = 5
+
+  def fuu(int: Int) = int
 }

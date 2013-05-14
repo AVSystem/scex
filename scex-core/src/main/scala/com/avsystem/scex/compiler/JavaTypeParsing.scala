@@ -116,12 +116,18 @@ trait JavaTypeParsing {
   }
 
   protected def erasureOf(tpe: Type): Class[_] = tpe match {
-    case clazz: Class[_] => clazz
-    case RawClass(clazz) => clazz
-    case TypeTag(underlyingType) => erasureOf(underlyingType)
-    case GenericArrayType(componentType) => jlr.Array.newInstance(erasureOf(componentType), 0).getClass
-    case ParameterizedType(rawType, _, _) => erasureOf(rawType)
-    case _ => throw new IllegalArgumentException(s"Type $tpe does not have erasure")
+    case clazz: Class[_] =>
+      clazz
+    case RawClass(clazz) =>
+      clazz
+    case TypeTag(underlyingType) =>
+      erasureOf(underlyingType)
+    case GenericArrayType(componentType) =>
+      jlr.Array.newInstance(erasureOf(componentType), 0).getClass
+    case ParameterizedType(rawType, _, _) =>
+      erasureOf(rawType)
+    case _ =>
+      throw new IllegalArgumentException(s"Type $tpe does not have erasure")
   }
 
   // lifts raw class into an existential type, e.g. java.util.List becomes java.util.List[T] forSome {type T}

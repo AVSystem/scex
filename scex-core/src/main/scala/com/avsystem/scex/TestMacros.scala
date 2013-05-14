@@ -16,4 +16,16 @@ object TestMacros {
 
     c.Expr[TypeCreator](typeCreatorTree)
   }
+
+  def gimme[T](expr: T) = macro gimme_impl[T]
+
+  def gimme_impl[T](c: Context)(expr: c.Expr[T]) = {
+    import c.universe._
+
+    expr.tree foreach {
+      tree => println(tree.tpe + " " + showRaw(tree))
+    }
+
+    expr
+  }
 }
