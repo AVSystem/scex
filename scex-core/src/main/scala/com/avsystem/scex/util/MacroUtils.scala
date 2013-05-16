@@ -5,7 +5,7 @@ import java.{util => ju, lang => jl}
 import scala.Some
 import scala.reflect.macros.Context
 
-class MacroUtils[C <: Context with Singleton](val context: C) {
+class MacroUtils[C <: Context with Singleton] private(val context: C) {
 
   import context.{Expr, reifyRuntimeClass}
   import context.universe._

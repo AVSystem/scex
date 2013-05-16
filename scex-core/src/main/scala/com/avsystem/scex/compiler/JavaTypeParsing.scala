@@ -8,6 +8,7 @@ import scala.Array
 import scala.Some
 import scala.collection.mutable
 import scala.reflect.runtime.{universe => ru}
+import scala.language.existentials
 
 trait JavaTypeParsing {
 

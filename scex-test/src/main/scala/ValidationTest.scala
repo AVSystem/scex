@@ -47,15 +47,15 @@ object ValidationTest {
       new JavaLol
       CommonUtils.toString
 
-      { tl: TypedLol[_] =>
+      on { tl: TypedLol[_] =>
         tl.toString
       }
 
-      { d: (TypedLol[T]#Dafuq[_] forSome {type T}) =>
+      on { d: (TypedLol[T]#Dafuq[_] forSome {type T}) =>
         d.getStuff
       }
 
-      { s: String =>
+      on { s: String =>
         s.length
         s.concat _
         s.matches _
@@ -63,22 +63,22 @@ object ValidationTest {
         s.compare(_: String)
       }
 
-      { sc: StringContext =>
+      on { sc: StringContext =>
         sc.s _
       }
 
-      { al: ju.ArrayList[_] =>
+      on { al: ju.ArrayList[_] =>
         al.constructorWithSignature("(x$1: java.util.Collection[_ <: E])java.util.ArrayList[E]")
       }
 
-      { any: Any =>
+      on { any: Any =>
         any + (_: String)
         any -> (_: Any)
         any == (_: Any)
         any != (_: Any)
       }
 
-      { a: A[_] =>
+      on { a: A[_] =>
         a.costam _
         a.hoho _
         a.b()
@@ -87,19 +87,19 @@ object ValidationTest {
         a.a_= _
       }
 
-      { i: Int =>
+      on { i: Int =>
         i.anyConstructor
         i.anyMethodNamed("+")
       }
 
-      { jl: JavaLol =>
+      on { jl: JavaLol =>
         jl.fuu
         jl.isFoo
       }
 
     } ++ deny {
 
-      { any: Any =>
+      on { any: Any =>
         any.equals _
         any.hashCode
         any.##
@@ -108,7 +108,7 @@ object ValidationTest {
         any.isInstanceOf
       }
 
-      { anyRef: AnyRef =>
+      on { anyRef: AnyRef =>
         anyRef.eq _
         anyRef.synchronized _
       }
