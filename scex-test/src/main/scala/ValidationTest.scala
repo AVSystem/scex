@@ -67,8 +67,8 @@ object ValidationTest {
         sc.s _
       }
 
-      { al: ju.ArrayList[String] =>
-        al.anyConstructor
+      { al: ju.ArrayList[_] =>
+        al.constructorWithSignature("(x$1: java.util.Collection[_ <: E])java.util.ArrayList[E]")
       }
 
       { any: Any =>
@@ -89,7 +89,7 @@ object ValidationTest {
 
       { i: Int =>
         i.anyConstructor
-        i.anyNamed("+")
+        i.anyMethodNamed("+")
       }
 
       { jl: JavaLol =>
@@ -139,6 +139,7 @@ object ValidationTest {
         |{
         |  stuff
         |  null: String
+        |  new java.util.ArrayList[String](null)
         |  String.CASE_INSENSITIVE_ORDER
         |  new ValidationTest.B
         |  (new JavaLol).foo

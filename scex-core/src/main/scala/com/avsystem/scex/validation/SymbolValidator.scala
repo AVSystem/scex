@@ -7,6 +7,7 @@ import scala.language.experimental.macros
 import scala.language.implicitConversions
 import scala.reflect.api.{Universe, TypeCreator}
 import scala.reflect.macros.Context
+import com.avsystem.scex.util.MacroUtils
 
 class SymbolValidator(accessSpecs: List[MemberAccessSpec]) {
 
@@ -14,6 +15,8 @@ class SymbolValidator(accessSpecs: List[MemberAccessSpec]) {
     (objType: c.universe.Type, invocationSymbol: c.universe.Symbol, invocationConvOpt: Option[c.universe.Symbol]): Boolean = {
 
     import c.universe._
+    val macroUtils = MacroUtils(c)
+    import macroUtils._
 
     val invocationSymbolSignatures =
       (invocationSymbol :: invocationSymbol.allOverriddenSymbols).view.map(memberSignature).toSet
@@ -29,7 +32,7 @@ class SymbolValidator(accessSpecs: List[MemberAccessSpec]) {
           symbolsMatch(specSymbol, invocationSymbol) &&
           objType <:< typeCreator.typeIn(c.universe) =>
         allow
-    } getOrElse (false)
+    } getOrElse false
   }
 
   lazy val referencedJavaClasses = accessSpecs.collect({
@@ -43,20 +46,49 @@ object SymbolValidator {
 
   case class MemberAccessSpec(typeInfo: TypeInfo, member: String, implicitConv: Option[String], allow: Boolean)
 
-  implicit class WildcardMemberAccess(val wrapped: Any) extends AnyVal {
-    private def notImplemented: List[MemberAccessSpec] =
-      throw new NotImplementedError("You cannot call this method outside of symbol validator DSL")
+  implicit class WildcardMemberAccess(wrapped: Any) {
+    private def elidedByMacro =
+      throw new NotImplementedError("Cannot use WildcardMemberAccess methods outside of symbol validator DSL")
 
     /**
-     * Allows for accessing or calling any member (field, value, variable, method) with given name
+     * Allows for calling any method on given type
      */
-    def anyNamed(name: String) = notImplemented
+    def anyMethod = elidedByMacro
+
+    /**
+     * Allows for calling any overloaded variant of method with given name
+     */
+    def anyMethodNamed(name: String) = elidedByMacro
 
     /**
      * Allows for creating new instances of given type using any public constructor.
-     * @return
      */
-    def anyConstructor = notImplemented
+    def anyConstructor = elidedByMacro
+
+    /**
+     * Allows for creating new instances of given type using constructor with given signature.
+     */
+    def constructorWithSignature(signature: String) = elidedByMacro
+
+    /**
+     * Allows for calling any Scala val or var getters
+     */
+    def anyScalaGetter = elidedByMacro
+
+    /**
+     * Allows for calling any Scala var setters
+     */
+    def anyScalaSetter = elidedByMacro
+
+    /**
+     * Allows for calling any Java bean getters
+     */
+    def anyBeanGetter = elidedByMacro
+
+    /**
+     * Allows for calling any Java bean setters
+     */
+    def anyBeanSetter = elidedByMacro
   }
 
   def allow(expr: Any): List[SymbolValidator.MemberAccessSpec] = macro allow_impl
@@ -71,45 +103,81 @@ object SymbolValidator {
 
   private def extractMemberAccessSpecs(c: Context)(expr: c.Expr[Any], allow: Boolean): c.Expr[List[MemberAccessSpec]] = {
     import c.universe._
-
-    object ImplicitlyConverted {
-      def unapply(tree: Tree) = tree match {
-        case Apply(fun, List(prefix)) if isStaticImplicitConversion(fun.symbol) && tree.pos == prefix.pos =>
-          Some((prefix, fun))
-        case _ =>
-          None
-      }
-    }
+    val macroUtils = MacroUtils(c)
+    import macroUtils._
 
     def accessSpec(prefix: Tree, body: Tree, implConv: Option[Tree]) = {
       (prefix.tpe, body.symbol, implConv.map(_.symbol))
     }
 
-    def allMemberSpecsNamed(tpe: Type, name: Name) = {
+    def accessSpecsForMethodNamed(tpe: Type, name: Name) = {
       val member = tpe.member(name)
       if (member.isTerm) {
-        Some(member.asTerm.alternatives.map(symbol => (tpe, symbol, None)))
+        Some(member.asTerm.alternatives.withFilter(_.isMethod).map(symbol => (tpe, symbol, None)))
       } else {
         None
       }
     }
 
-    def extractSymbols(body: Tree): List[(Type, Symbol, Option[Symbol])] = body match {
-      case Apply(Select(implConv@ImplicitlyConverted(prefix, fun), termName), List(memberNameLiteral@Literal(Constant(memberName: String))))
-        if termName == newTermName("anyNamed") && implConv.tpe <:< typeOf[WildcardMemberAccess] =>
+    def accessSpecsFor(tpe: Type, predicate: Symbol => Boolean) = {
+      tpe.members.withFilter(predicate).map(symbol => (tpe, symbol, None)).toList
+    }
 
-        allMemberSpecsNamed(prefix.tpe, newTermName(memberName).encodedName).getOrElse {
+    // extractor that matches calls to WildcardMemberAccess methods
+    object WildcardMemberAccessMethod {
+      def unapply(tree: Tree) = tree match {
+        case Select(implConv@ImplicitlyConverted(prefix, fun), termName)
+          if termName.isTermName && implConv.tpe <:< typeOf[WildcardMemberAccess] =>
+
+          Some(prefix, termName.decoded)
+
+        case _ =>
+          None
+      }
+    }
+
+    def extractSymbols(body: Tree): List[(Type, Symbol, Option[Symbol])] = body match {
+      case WildcardMemberAccessMethod(prefix, "anyMethod") =>
+        accessSpecsFor(prefix.tpe, _.isMethod)
+
+      case Apply(WildcardMemberAccessMethod(prefix, "anyMethodNamed"), List(memberNameLiteral@LiteralString(memberName))) =>
+        accessSpecsForMethodNamed(prefix.tpe, newTermName(memberName).encodedName).getOrElse {
           c.error(memberNameLiteral.pos, s"${prefix.tpe.map(_.widen)} has no members named $memberName")
           Nil
         }
 
-      case Select(implConv@ImplicitlyConverted(prefix, fun), termName)
-        if termName == newTermName("anyConstructor") && implConv.tpe <:< typeOf[WildcardMemberAccess] =>
-
-        allMemberSpecsNamed(prefix.tpe, nme.CONSTRUCTOR).getOrElse {
+      case WildcardMemberAccessMethod(prefix, "anyConstructor") =>
+        accessSpecsForMethodNamed(prefix.tpe, nme.CONSTRUCTOR).getOrElse {
           c.error(body.pos, s"${prefix.tpe.map(_.widen)} has no constructors")
           Nil
         }
+
+      case Apply(WildcardMemberAccessMethod(prefix, "constructorWithSignature"), List(signatureLiteral@LiteralString(signature))) =>
+        val constructors = prefix.tpe.member(nme.CONSTRUCTOR).asTerm.alternatives
+        constructors.find(ctor => ctor.typeSignature.toString == signature) match {
+          case Some(symbol) => List((prefix.tpe, symbol, None))
+          case None =>
+            val widenedTpe = prefix.tpe.map(_.widen)
+            val availableSignatures = constructors.map(_.typeSignature.toString).mkString("; ")
+
+            c.error(signatureLiteral.pos,
+              s"$widenedTpe has no constructor with signature $signature. " +
+                s"Available constructors have signatures: $availableSignatures")
+
+            Nil
+        }
+
+      case WildcardMemberAccessMethod(prefix, "anyScalaGetter") =>
+        accessSpecsFor(prefix.tpe, s => s.isMethod && s.asMethod.isGetter)
+
+      case WildcardMemberAccessMethod(prefix, "anyScalaSetter") =>
+        accessSpecsFor(prefix.tpe, s => s.isMethod && s.asMethod.isSetter)
+
+      case WildcardMemberAccessMethod(prefix, "anyBeanGetter") =>
+        accessSpecsFor(prefix.tpe, isBeanGetter)
+
+      case WildcardMemberAccessMethod(prefix, "anyBeanSetter") =>
+        accessSpecsFor(prefix.tpe, isBeanSetter)
 
       case Select(ImplicitlyConverted(prefix, fun)) =>
         List(accessSpec(prefix, body, Some(fun)))
@@ -139,7 +207,7 @@ object SymbolValidator {
     def reifySignature(symbol: Symbol) =
       c.literal(memberSignature(symbol))
 
-    def reifyTypeCreator(tpe: Type) = {
+    def reifyTypeInfo(tpe: Type) = {
       val widenedTpe = tpe.map(_.widen)
 
       val Block(List(_, _), Apply(_, List(_, typeCreatorTree))) =
@@ -147,7 +215,7 @@ object SymbolValidator {
 
       reify(new TypeInfo(
         c.Expr[TypeCreator](typeCreatorTree).splice,
-        reifyRuntimeClassOpt(c)(tpe).splice,
+        reifyRuntimeClassOpt(tpe).splice,
         c.literal(tpe.typeSymbol.isJava).splice,
         c.literal(widenedTpe.toString).splice))
     }
@@ -155,9 +223,9 @@ object SymbolValidator {
     val reifiedAccessSpecs: List[Tree] = rawAccessSpecs.map {
       case (tpe, ms, ic) => reify(
         MemberAccessSpec(
-          reifyTypeCreator(tpe).splice,
+          reifyTypeInfo(tpe).splice,
           reifySignature(ms).splice,
-          reifyOption(c)(ic, reifySignature(_: Symbol)).splice,
+          reifyOption(ic, reifySignature(_: Symbol)).splice,
           c.literal(allow).splice))
         .tree
     }

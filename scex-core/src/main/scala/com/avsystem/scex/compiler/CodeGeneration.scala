@@ -6,14 +6,14 @@ import java.{util => ju, lang => jl}
 import scala.Some
 import scala.language.existentials
 import scala.reflect.runtime.{universe => ru}
+import com.avsystem.scex.util.CommonUtils
 
 trait CodeGeneration extends JavaTypeParsing {
 
+  import CommonUtils._
+
   // extractor object for java getters
   private object JavaGetter {
-    val getterPattern = "get([A-Z][a-z0-9_]*)+".r
-    val booleanGetterPattern = "is([A-Z][a-z0-9_]*)+".r
-
     def unapply(method: Method): Option[(String, Boolean)] =
       if (method.getParameterTypes.isEmpty && method.getTypeParameters.isEmpty) {
 
@@ -23,9 +23,9 @@ trait CodeGeneration extends JavaTypeParsing {
           clazz == classOf[Boolean] || clazz == classOf[jl.Boolean]
 
         method.getName match {
-          case getterPattern(capitalizedName) =>
+          case BeanGetterNamePattern(capitalizedName) =>
             Some((uncapitalize(capitalizedName), false))
-          case booleanGetterPattern(capitalizedName) if isBoolOrBoolean(method.getReturnType) =>
+          case BooleanBeanGetterNamePattern(capitalizedName) if isBoolOrBoolean(method.getReturnType) =>
             Some((uncapitalize(capitalizedName), true))
           case _ => None
         }
@@ -34,8 +34,8 @@ trait CodeGeneration extends JavaTypeParsing {
         None
   }
 
-  protected val expressionClassName = "Expression"
-  protected val profileObjectName = "Profile"
+  protected val ExpressionClassName = "Expression"
+  protected val ProfileObjectName = "Profile"
 
   protected def adapterName(clazz: Class[_]) =
     "Adapter_" + clazz.getName.replaceAll("\\.", "_")
@@ -102,10 +102,10 @@ trait CodeGeneration extends JavaTypeParsing {
     }
 
     s"""
-    |class $expressionClassName extends (($contextType) => $resultType) {
+    |class $ExpressionClassName extends (($contextType) => $resultType) {
     |  def apply(_ctx: $contextType): $resultType = {
     |    $header
-    |    import $profileObjectPkg.$profileObjectName._
+    |    import $profileObjectPkg.$ProfileObjectName._
     |    import _ctx._
     |    $contextGetterAdapterCode
     |    com.avsystem.scex.validation.ExpressionValidator.validate[$contextType, $resultType](
@@ -134,7 +134,7 @@ trait CodeGeneration extends JavaTypeParsing {
     }
 
     s"""
-    |object $profileObjectName {
+    |object $ProfileObjectName {
     |${adapters.mkString}
     |}
     |

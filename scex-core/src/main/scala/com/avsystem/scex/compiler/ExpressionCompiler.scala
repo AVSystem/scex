@@ -110,7 +110,7 @@ class ExpressionCompiler(config: ExpressionCompilerConfig) extends CodeGeneratio
 
   private def loadCompiledRawExpression(exprDef: ExpressionDef): Try[RawExpression] = synchronized {
     expressionCompilationResultsCache.get(exprDef).map { pkgName =>
-      Class.forName(s"$pkgName.$expressionClassName", true, classLoader).newInstance.asInstanceOf[RawExpression]
+      Class.forName(s"$pkgName.$ExpressionClassName", true, classLoader).newInstance.asInstanceOf[RawExpression]
     }
   }
 

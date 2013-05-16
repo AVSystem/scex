@@ -7,6 +7,7 @@ import scala.reflect.macros.Context
 import scala.util.DynamicVariable
 import com.avsystem.scex.util.CommonUtils._
 import com.avsystem.scex.compiler.annotation.{ContextAdapter, JavaGetterAdapter, BooleanIsGetter}
+import com.avsystem.scex.util.MacroUtils
 
 /**
  * Object used during expression compilation to validate the expression (syntax, invocations, etc.)
@@ -21,6 +22,9 @@ object ExpressionValidator {
 
   def validate_impl[C: c.WeakTypeTag, R](c: Context)(expr: c.Expr[R]): c.Expr[R] = {
     import c.universe._
+    val macroUtils = MacroUtils(c)
+    import macroUtils._
+
     val profile = profileVar.value
 
     expr.tree.foreach { subtree =>
@@ -58,16 +62,8 @@ object ExpressionValidator {
       val prefix = if (isBooleanGetterAdapter(symbol)) "is" else "get"
       val name = prefix + symbol.name.toString.capitalize
 
-      def fail = throw new Error(s"Could not get java getter for $symbol on $javaTpe")
-
-      javaTpe.member(newTermName(name)) match {
-        case s if isJavaParameterlessMethod(s) => s
-        case overloaded: TermSymbol => overloaded.alternatives.find(isJavaParameterlessMethod) match {
-          case Some(s) => s
-          case None => fail
-        }
-        case _ => fail
-      }
+      def fail = throw new Error(s"Could not get Java getter for $symbol on $javaTpe")
+      javaTpe.member(newTermName(name)).asTerm.alternatives.find(isBeanGetter).getOrElse(fail)
     }
 
     lazy val contextTpe = weakTypeOf[C]
@@ -77,8 +73,7 @@ object ExpressionValidator {
         case tree@Select(contextAdapter@Ident(_), _) if isContextAdapter(contextAdapter.symbol) =>
           validateAccess(tree.pos, contextTpe, getJavaGetter(tree.symbol, contextTpe), None)
 
-        case tree@Select(apply@Apply(fun, List(qualifier)), _)
-          if isStaticImplicitConversion(fun.symbol) && apply.pos == qualifier.pos =>
+        case tree@Select(apply@ImplicitlyConverted(qualifier, fun), _) =>
 
           if (isAdapter(apply.tpe)) {
             validateAccess(tree.pos, qualifier.tpe, getJavaGetter(tree.symbol, qualifier.tpe), None)
