@@ -17,5 +17,5 @@ class TypeInfo(typeCreator: TypeCreator, val clazz: Option[Class[_]], val isJava
   def typeIn(u: Universe): u.Type =
     cache.get(u, u.TypeTag[Any](u.rootMirror, typeCreator).tpe).asInstanceOf[u.Type]
 
-  override def toString = s"TypeInfo($typeRepr)"
+  override def toString = typeRepr
 }

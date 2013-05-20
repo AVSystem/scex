@@ -149,7 +149,7 @@ object SymbolValidatorMacros {
         extractSymbols(prefixTpe, actualBody)
 
       case Block(stats, finalExpr) =>
-        (finalExpr :: stats).flatMap(extractSymbols(prefixTpe, _: Tree))
+        (stats :+ finalExpr).flatMap(extractSymbols(prefixTpe, _: Tree))
 
       case _ =>
         c.error(body.pos, "Bad symbol specification syntax: ")

@@ -1,11 +1,10 @@
 import com.avsystem.scex.compiler.{ExpressionProfile, ExpressionCompiler, ExpressionCompilerConfig}
-import com.avsystem.scex.util.CommonUtils
 import com.avsystem.scex.validation._
 import java.{util => ju, lang => jl}
 import reflect.macros.Universe
 import scala.Some
-import scala.reflect.runtime.{universe => ru}
 import scala.language.existentials
+import scala.reflect.runtime.{universe => ru}
 
 object ValidationTest {
 
@@ -45,7 +44,6 @@ object ValidationTest {
       String.valueOf(_: Boolean)
       new B
       new JavaLol
-      CommonUtils.toString
 
       on { tl: TypedLol[_] =>
         tl.toString
