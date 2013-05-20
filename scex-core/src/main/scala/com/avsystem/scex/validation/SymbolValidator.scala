@@ -50,9 +50,14 @@ object SymbolValidator {
 
   implicit class WildcardMemberAccess(wrapped: Any) {
     /**
-     * Allows for calling any method on given type
+     * Allows for calling any method on given type, excluding constructors
      */
     def anyMethod = elidedByMacro
+
+    /**
+     * Allows for calling any method on given type declared in class that defines this type, excluding constructors
+     */
+    def anyDeclaredMethod = elidedByMacro
 
     /**
      * Allows for calling any overloaded variant of method with given name

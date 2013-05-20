@@ -1,5 +1,6 @@
 
 import java.{util => ju, lang => jl}
+import scala.beans.BeanProperty
 import scala.collection.mutable
 import scala.reflect.runtime.{universe => ru}
 
@@ -57,25 +58,5 @@ object Playground {
     } else {
       None
     }
-
   }
-}
-
-class Target {
-  var counter = 0
-
-  def getSomeValue(x: Double, y: Double): Double = {
-    counter += 1
-    x + y * y
-  }
-
-  def doSomeWork(x: Double): Double = math.sin(x)
-
-  def getStuff() = 5
-
-  def someValue: Double = 7.234234
-
-  def fuu = 5
-
-  def fuu(int: Int) = int
 }

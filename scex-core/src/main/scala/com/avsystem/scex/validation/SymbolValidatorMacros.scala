@@ -35,15 +35,24 @@ object SymbolValidatorMacros {
 
     def accessSpecsForMethodNamed(tpe: Type, name: Name) = {
       val member = tpe.member(name)
-      if (member.isTerm) {
-        Some(member.asTerm.alternatives.withFilter(_.isMethod).map(symbol => (tpe, symbol, None)))
+      val viableMethods = if (member.isTerm) {
+        member.asTerm.alternatives.filter(s => s.isPublic && s.isMethod)
+      } else {
+        Nil
+      }
+      if (viableMethods.nonEmpty) {
+        Some(viableMethods.map(symbol => (tpe, symbol, None)))
       } else {
         None
       }
     }
 
     def accessSpecsFor(tpe: Type, predicate: Symbol => Boolean) = {
-      tpe.members.withFilter(predicate).map(symbol => (tpe, symbol, None)).toList
+      tpe.members.withFilter(s => s.isPublic && predicate(s)).map(symbol => (tpe, symbol, None)).toList
+    }
+
+    def accessSpecsForDeclarations(tpe: Type, predicate: Symbol => Boolean) = {
+      tpe.declarations.withFilter(s => s.isPublic && predicate(s)).map(symbol => (tpe, symbol, None)).toList
     }
 
     // extractor that matches calls to WildcardMemberAccess methods
@@ -71,12 +80,15 @@ object SymbolValidatorMacros {
 
     def extractSymbols(prefixTpe: Option[Type], body: Tree): List[(Type, Symbol, Option[Symbol])] = body match {
       case WildcardMemberAccessMethod(prefix, "anyMethod") =>
-        accessSpecsFor(checkPrefixTpe(prefixTpe, prefix), _.isMethod)
+        accessSpecsFor(checkPrefixTpe(prefixTpe, prefix), s => s.isMethod && !s.asMethod.isConstructor)
 
-      case Apply(WildcardMemberAccessMethod(prefix, "anyMethodNamed"), List(memberNameLiteral@LiteralString(memberName))) =>
+      case WildcardMemberAccessMethod(prefix, "anyDeclaredMethod") =>
+        accessSpecsForDeclarations(checkPrefixTpe(prefixTpe, prefix), s => s.isMethod && !s.asMethod.isConstructor)
+
+      case Apply(WildcardMemberAccessMethod(prefix, "anyMethodNamed"), List(memberNameLiteral@LiteralString(methodName))) =>
         val tpe = checkPrefixTpe(prefixTpe, prefix)
-        accessSpecsForMethodNamed(tpe, newTermName(memberName).encodedName).getOrElse {
-          c.error(memberNameLiteral.pos, s"${tpe.map(_.widen)} has no members named $memberName")
+        accessSpecsForMethodNamed(tpe, newTermName(methodName).encodedName).getOrElse {
+          c.error(memberNameLiteral.pos, s"${tpe.map(_.widen)} has no methods named $methodName")
           Nil
         }
 
