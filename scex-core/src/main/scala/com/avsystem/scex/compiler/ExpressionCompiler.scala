@@ -3,7 +3,7 @@ package com.avsystem.scex.compiler
 import com.avsystem.scex.compiler.ExpressionCompiler.CompilationFailedException
 import com.avsystem.scex.compiler.ExpressionCompiler.CompileError
 import com.avsystem.scex.util.CacheImplicits._
-import com.avsystem.scex.validation.ExpressionValidator
+import com.avsystem.scex.validation.{SymbolValidator, SyntaxValidator, ExpressionValidator}
 import com.avsystem.scex.{TypeTag, Expression}
 import com.google.common.cache.{RemovalNotification, CacheBuilder}
 import java.lang.reflect.Type
@@ -91,6 +91,9 @@ class ExpressionCompiler(config: ExpressionCompilerConfig) extends CodeGeneratio
 
   private var classLoader = createClassLoader
 
+  // class loader that will never be cleaned; used mainly for on-demand compiled syntax/symbol validators
+  private val persistentClassLoader = createClassLoader
+
   /**
    * VARIOUS CACHES
    */
@@ -151,6 +154,16 @@ class ExpressionCompiler(config: ExpressionCompilerConfig) extends CodeGeneratio
   private def newAdapterPackage() = {
     idx += 1
     "_scex_adapter$" + idx
+  }
+
+  private def newSyntaxValidatorPackage() = {
+    idx += 1
+    "_scex_syntax_validator$" + idx
+  }
+
+  private def newSymbolValidatorPackage() = {
+    idx += 1
+    "_scex_symbol_validator$" + idx
   }
 
   private def compileFullJavaGetterAdapter(clazz: Class[_]): Try[String] = {
@@ -313,6 +326,34 @@ class ExpressionCompiler(config: ExpressionCompilerConfig) extends CodeGeneratio
     new Expression[C, R] {
       def apply(context: C): R =
         loadExpressionHolder.rawExpression.asInstanceOf[C => R].apply(context)
+    }
+  }
+
+  @throws[CompilationFailedException]
+  def compileSyntaxValidator(code: String): SyntaxValidator = synchronized {
+    val pkgName = newSyntaxValidatorPackage()
+    val codeToCompile = wrapInSource(generateSyntaxValidator(code), pkgName)
+
+    compile("(scex syntax validator)", codeToCompile) match {
+      case Nil =>
+        Class.forName(s"$pkgName.$SyntaxValidatorClassName", true, persistentClassLoader)
+          .newInstance.asInstanceOf[SyntaxValidator]
+      case errors =>
+        throw new CompilationFailedException(codeToCompile, errors)
+    }
+  }
+
+  @throws[CompilationFailedException]
+  def compileSymbolValidator(code: String): SymbolValidator = synchronized {
+    val pkgName = newSymbolValidatorPackage()
+    val codeToCompile = wrapInSource(generateSymbolValidator(code), pkgName)
+
+    compile("(scex symbol validator)", codeToCompile) match {
+      case Nil =>
+        Class.forName(s"$pkgName.$SymbolValidatorClassName", true, persistentClassLoader)
+          .newInstance.asInstanceOf[SymbolValidator]
+      case errors =>
+        throw new CompilationFailedException(codeToCompile, errors)
     }
   }
 }

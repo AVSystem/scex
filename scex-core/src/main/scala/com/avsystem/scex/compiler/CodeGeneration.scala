@@ -36,6 +36,8 @@ trait CodeGeneration extends JavaTypeParsing {
 
   protected val ExpressionClassName = "Expression"
   protected val ProfileObjectName = "Profile"
+  protected val SyntaxValidatorClassName = "SyntaxValidator"
+  protected val SymbolValidatorClassName = "SymbolValidator"
 
   protected def adapterName(clazz: Class[_]) =
     "Adapter_" + clazz.getName.replaceAll("\\.", "_")
@@ -138,6 +140,22 @@ trait CodeGeneration extends JavaTypeParsing {
     |${adapters.mkString}
     |}
     |
+    """.stripMargin
+  }
+
+  protected def generateSyntaxValidator(code: String) = {
+    s"""
+      |class $SyntaxValidatorClassName extends com.avsystem.scex.validation.SyntaxValidator {
+      |$code
+      |}
+    """.stripMargin
+  }
+
+  protected def generateSymbolValidator(accessSpecs: String) = {
+    s"""
+      |class $SymbolValidatorClassName extends com.avsystem.scex.validation.SymbolValidator({
+      |$accessSpecs
+      |})
     """.stripMargin
   }
 
