@@ -54,4 +54,7 @@ object CommonUtils {
     fill(clazz)
     resultBuilder.result()
   }
+
+  def pluralize(count: Int, noun: String) =
+    s"$count $noun" + (if (count != 1) "s" else "")
 }
