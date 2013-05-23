@@ -21,6 +21,8 @@ import scala.tools.nsc.reporters.AbstractReporter
 import scala.tools.nsc.{Global, Settings}
 import scala.util.{Failure, Success, Try}
 import com.avsystem.scex.util.CommonUtils._
+import JavaTypeParsing._
+import CodeGeneration._
 
 /**
  * Central class for expression compilation. Encapsulates Scala compiler, so it is
@@ -28,7 +30,7 @@ import com.avsystem.scex.util.CommonUtils._
  * It can be used safely from multiple threads. Expression compilation,
  * classloading and instantiation is synchronized and results are cached.
  */
-class ExpressionCompiler(config: ExpressionCompilerConfig) extends CodeGeneration {
+class ExpressionCompiler(config: ExpressionCompilerConfig) {
 
   private class ExpressionHolder(val pkgName: String) {
     @volatile private var _rawExpression = loadCompiledRawExpression(pkgName)

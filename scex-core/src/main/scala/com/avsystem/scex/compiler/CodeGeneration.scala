@@ -6,11 +6,10 @@ import java.{util => ju, lang => jl}
 import scala.Some
 import scala.language.existentials
 import scala.reflect.runtime.{universe => ru}
-import com.avsystem.scex.util.CommonUtils
+import com.avsystem.scex.util.CommonUtils._
+import JavaTypeParsing._
 
-trait CodeGeneration extends JavaTypeParsing {
-
-  import CommonUtils._
+object CodeGeneration {
 
   // extractor object for java getters
   private object JavaGetter {
@@ -34,19 +33,19 @@ trait CodeGeneration extends JavaTypeParsing {
         None
   }
 
-  protected val ExpressionClassName = "Expression"
-  protected val ProfileObjectName = "Profile"
-  protected val SyntaxValidatorClassName = "SyntaxValidator"
-  protected val SymbolValidatorClassName = "SymbolValidator"
+  val ExpressionClassName = "Expression"
+  val ProfileObjectName = "Profile"
+  val SyntaxValidatorClassName = "SyntaxValidator"
+  val SymbolValidatorClassName = "SymbolValidator"
 
-  protected def adapterName(clazz: Class[_]) =
+  def adapterName(clazz: Class[_]) =
     "Adapter_" + clazz.getName.replaceAll("\\.", "_")
 
   /**
    * Generates code of implicit view for given Java class that adds Scala-style getters
    * forwarding to existing Java-style getters of given class.
    */
-  protected def generateJavaGetterAdapter(clazz: Class[_], full: Boolean): Option[String] = {
+  def generateJavaGetterAdapter(clazz: Class[_], full: Boolean): Option[String] = {
     // generate scala getters
     val javaGetters =
       if (full) clazz.getMethods else clazz.getDeclaredMethods
@@ -61,9 +60,9 @@ trait CodeGeneration extends JavaTypeParsing {
 
       val classBody = scalaGetters.mkString
 
-      val ClassExistential(polyTpe, typeVariables) = classToExistential(clazz)
+      val ExistentialType(polyTpe, typeVariables) = classToExistential(clazz)
       val wrappedTpe = javaTypeAsScalaType(polyTpe)
-      val adapterWithGenerics = adapterName(clazz) + boundedTypeVariables(typeVariables)
+      val adapterWithGenerics = adapterName(clazz) + appliedBoundedTypes(typeVariables)
 
       val result =
         s"""
@@ -81,7 +80,7 @@ trait CodeGeneration extends JavaTypeParsing {
     } else None
   }
 
-  protected def generateExpressionClass(
+  def generateExpressionClass(
     profile: ExpressionProfile,
     expression: String,
     fullAdapterClassNameOpt: Option[String],
@@ -119,13 +118,13 @@ trait CodeGeneration extends JavaTypeParsing {
     """.stripMargin
   }
 
-  protected def generateProfileObject(profile: ExpressionProfile) = {
+  def generateProfileObject(profile: ExpressionProfile) = {
     val adapters = profile.symbolValidator.referencedJavaClasses.flatMap { clazz =>
       generateJavaGetterAdapter(clazz, full = false).map { adapterCode =>
-        val ClassExistential(polyTpe, typeVariables) = classToExistential(clazz)
+        val ExistentialType(polyTpe, typeVariables) = classToExistential(clazz)
         val wrappedTpe = javaTypeAsScalaType(polyTpe)
         val adapter = adapterName(clazz)
-        val adapterWithGenerics = adapter + boundedTypeVariables(typeVariables)
+        val adapterWithGenerics = adapter + appliedBoundedTypes(typeVariables)
 
         s"""
           |@com.avsystem.scex.compiler.annotation.JavaGetterAdapterConversion
@@ -143,7 +142,7 @@ trait CodeGeneration extends JavaTypeParsing {
     """.stripMargin
   }
 
-  protected def generateSyntaxValidator(code: String) = {
+  def generateSyntaxValidator(code: String) = {
     s"""
       |class $SyntaxValidatorClassName extends com.avsystem.scex.validation.SyntaxValidator {
       |$code
@@ -151,7 +150,7 @@ trait CodeGeneration extends JavaTypeParsing {
     """.stripMargin
   }
 
-  protected def generateSymbolValidator(accessSpecs: String) = {
+  def generateSymbolValidator(accessSpecs: String) = {
     s"""
       |class $SymbolValidatorClassName extends com.avsystem.scex.validation.SymbolValidator({
       |$accessSpecs
@@ -159,7 +158,7 @@ trait CodeGeneration extends JavaTypeParsing {
     """.stripMargin
   }
 
-  protected def wrapInSource(code: String, pkgName: String) = {
+  def wrapInSource(code: String, pkgName: String) = {
     s"""
       |package $pkgName
       |

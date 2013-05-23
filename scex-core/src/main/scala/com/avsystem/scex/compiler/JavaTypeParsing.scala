@@ -9,14 +9,48 @@ import scala.Some
 import scala.collection.mutable
 import scala.reflect.runtime.{universe => ru}
 import scala.language.existentials
+import scala.collection.mutable.ListBuffer
 
-trait JavaTypeParsing {
+object JavaTypeParsing {
+
+  trait BoundedType extends Type {
+    def name: String
+
+    def upperBounds: Array[Type]
+
+    def lowerBounds: Array[Type]
+  }
+
+  case class WildcardBoundedType(wc: WildcardType) extends BoundedType {
+    def name = "_"
+
+    def upperBounds = wc.getUpperBounds
+
+    def lowerBounds = wc.getLowerBounds
+  }
+
+  case class TypeVariableBoundedType(tv: TypeVariable[_ <: GenericDeclaration]) extends BoundedType {
+    def name = tv.getName
+
+    def upperBounds = tv.getBounds
+
+    def lowerBounds = Array.empty
+  }
+
+  case class ScalaTypeVariable(name: String, upperBounds: Array[Type], lowerBounds: Array[Type]) extends BoundedType
+
+  object BoundedType {
+    def unapply(boundedType: BoundedType) =
+      Some((boundedType.name, boundedType.upperBounds, boundedType.lowerBounds))
+  }
 
   case class TypeVariableRef(name: String) extends Type
 
   case class RawClass(clazz: Class[_]) extends Type
 
-  case class ClassExistential(polyType: Type, typeVars: List[TypeVariable[_]]) extends Type
+  case class ExistentialType(polyType: Type, typeVars: List[BoundedType]) extends Type
+
+  case class WrappedParameterizedType(rawType: Type, ownerType: Type, typeArgs: Array[Type]) extends Type
 
   // extractors for java.lang.reflect.Type subinterfaces
   private object WildcardType {
@@ -54,9 +88,9 @@ trait JavaTypeParsing {
     classOf[Double] -> "Double"
   )
 
-  protected def javaTypeAsScalaType(tpe: Type): String = {
+  def javaTypeAsScalaType(tpe: Type): String = {
     // for recursive generic type definitions like "Class C[T <: C[T]]"
-    val alreadyConvertedVariables = new mutable.HashSet[TypeVariable[_]]
+    val alreadyConvertedBoundedTypes = new mutable.HashSet[BoundedType]
 
     def javaTypeAsScalaTypeIn(tpe: Type): String = tpe match {
       case clazz: Class[_] =>
@@ -65,35 +99,41 @@ trait JavaTypeParsing {
       case TypeTag(underlyingType) =>
         javaTypeAsScalaTypeIn(underlyingType)
 
-      case WildcardType(upperBounds, lowerBounds) =>
+      case wildcardType: WildcardType =>
+        javaTypeAsScalaTypeIn(WildcardBoundedType(wildcardType))
+
+      case typeVariable: TypeVariable[_] =>
+        javaTypeAsScalaTypeIn(TypeVariableBoundedType(typeVariable))
+
+      case boundedType@BoundedType(name, _, _) if alreadyConvertedBoundedTypes.contains(boundedType) =>
+        name
+
+      case boundedType@BoundedType(name, upperBounds, lowerBounds) =>
+        alreadyConvertedBoundedTypes += boundedType
+
         val upperBoundsRepr = upperBounds.filter(_ != classOf[Object]).map(javaTypeAsScalaTypeIn).mkString(" with ")
         val lowerBoundsRepr = lowerBounds.map(javaTypeAsScalaTypeIn).mkString(" with ")
 
-        "_" + (if (upperBoundsRepr.nonEmpty) (" >: " + upperBoundsRepr) else "") +
+        name + (if (upperBoundsRepr.nonEmpty) (" <: " + upperBoundsRepr) else "") +
           (if (lowerBoundsRepr.nonEmpty) (" >: " + lowerBoundsRepr) else "")
 
-      case typeVariable@TypeVariable(name, _) if alreadyConvertedVariables.contains(typeVariable) =>
-        name
-
-      case typeVariable@TypeVariable(name, bounds) =>
-        alreadyConvertedVariables += typeVariable
-        val boundsRepr = bounds.filter(_ != classOf[Object]).map(javaTypeAsScalaTypeIn).mkString(" with ")
-        name + (if (boundsRepr.nonEmpty) (" <: " + boundsRepr) else "")
-
-      case ParameterizedType(rawType, ownerType, typeArguments) =>
+      case WrappedParameterizedType(rawType, ownerType, typeArguments) =>
         val clazz = rawType.asInstanceOf[Class[_]]
         val typeArgumentsRepr = if (typeArguments.nonEmpty) typeArguments.map(javaTypeAsScalaTypeIn).mkString("[", ", ", "]") else ""
 
         if (ownerType != null) {
-          javaTypeAsScalaTypeIn(ownerType) + (if (isStatic(clazz)) "." else "#") + clazz.getSimpleName + typeArgumentsRepr
+          javaTypeAsScalaTypeIn(ownerType) + "#" + clazz.getSimpleName + typeArgumentsRepr
         } else {
           javaTypeAsScalaTypeIn(RawClass(clazz)) + typeArgumentsRepr
         }
 
+      case paramType: ParameterizedType =>
+        javaTypeAsScalaTypeIn(parameterizedTypeToExistential(paramType))
+
       case GenericArrayType(componentType) =>
         s"Array[${javaTypeAsScalaTypeIn(componentType)}]"
 
-      case ClassExistential(polyType, typeVars) =>
+      case ExistentialType(polyType, typeVars) =>
         def typeVarDefs = typeVars.map(tv => s"type ${javaTypeAsScalaType(tv)}").mkString(" forSome {", "; ", "}")
         javaTypeAsScalaTypeIn(polyType) + (if (typeVars.nonEmpty) typeVarDefs else "")
 
@@ -104,7 +144,7 @@ trait JavaTypeParsing {
         primitiveTypes(clazz)
 
       case RawClass(clazz) if !clazz.isAnonymousClass && !clazz.isSynthetic =>
-        clazz.getName
+        clazz.getCanonicalName
 
       case TypeVariableRef(name) =>
         name
@@ -116,7 +156,7 @@ trait JavaTypeParsing {
     javaTypeAsScalaTypeIn(tpe)
   }
 
-  protected def erasureOf(tpe: Type): Class[_] = tpe match {
+  def erasureOf(tpe: Type): Class[_] = tpe match {
     case clazz: Class[_] =>
       clazz
     case RawClass(clazz) =>
@@ -131,35 +171,70 @@ trait JavaTypeParsing {
       throw new IllegalArgumentException(s"Type $tpe does not have erasure")
   }
 
+  def parameterizedTypeToExistential(paramType: ParameterizedType): ExistentialType = {
+    var i = 0
+    def newTypeVarName() = {
+      i += 1
+      s"T$i"
+    }
+
+    // example: transforms type arguments <? extends A, ? super C> into [T1, T2] forSome {type T1 <: A; type T2 >: C}
+    def transformTypeArgs(typeArgs: Array[Type]): (Array[Type], List[BoundedType]) = {
+      val typeVariablesBuffer = new ListBuffer[BoundedType]
+
+      val transformedArgs = typeArgs.map {
+        case wc: WildcardType =>
+          val name = newTypeVarName()
+          typeVariablesBuffer += ScalaTypeVariable(name, wc.getUpperBounds, wc.getLowerBounds)
+          TypeVariableRef(name)
+        case tpe: Type =>
+          tpe
+      }
+
+      (transformedArgs, typeVariablesBuffer.result())
+    }
+
+    def parameterizedTypeToExistentialIn(paramType: ParameterizedType): ExistentialType = {
+      val ParameterizedType(rawType, ownerType, typeArgs) = paramType
+      val ExistentialType(newOwnerType, ownerTypeVariables) = ownerType match {
+        case ownerType: ParameterizedType => parameterizedTypeToExistentialIn(ownerType)
+        case _ => ExistentialType(null, Nil)
+      }
+
+      val (newTypeArgs, typeVariables) = transformTypeArgs(typeArgs)
+
+      ExistentialType(WrappedParameterizedType(rawType, newOwnerType, newTypeArgs), ownerTypeVariables ::: typeVariables)
+    }
+
+    parameterizedTypeToExistentialIn(paramType)
+  }
+
   // lifts raw class into an existential type, e.g. java.util.List becomes java.util.List[T] forSome {type T}
-  protected def classToExistential(clazz: Class[_]): ClassExistential = {
+  def classToExistential(clazz: Class[_]): ExistentialType = {
     val enclosingClass = clazz.getEnclosingClass
 
-    val ClassExistential(ownerType, ownerTypeVariables) =
+    val ExistentialType(ownerType, ownerTypeVariables) =
       if (enclosingClass != null && !isStatic(clazz))
         classToExistential(enclosingClass)
       else
-        ClassExistential(enclosingClass, Nil)
+        ExistentialType(null, Nil)
 
-    val typeVariables =
-      ownerTypeVariables ::: List[TypeVariable[_]](clazz.getTypeParameters: _*)
+    val typeVariables = ownerTypeVariables ::: clazz.getTypeParameters.map(TypeVariableBoundedType).toList
 
     val typeArgs: Array[Type] =
       clazz.getTypeParameters.map(typeParam => TypeVariableRef(typeParam.getName))
 
-    val tpe =
-      new ParameterizedType {
-        def getActualTypeArguments: Array[Type] = typeArgs
-
-        def getRawType: Type = clazz
-
-        def getOwnerType: Type = ownerType
-      }
-
-    ClassExistential(tpe, typeVariables)
+    ExistentialType(WrappedParameterizedType(clazz, ownerType, typeArgs), typeVariables)
   }
 
-  protected def boundedTypeVariables(typeVars: List[TypeVariable[_]]): String = {
+  /**
+   * Example: returns string <tt>[T <: java.lang.Cloneable, _ >: String]</tt> when passed list of two BoundedTypes
+   * representing type variable <tt>T extends java.lang.Cloneable</tt> and wildcard type <tt>? super String</tt>.
+   *
+   * @param typeVars
+   * @return
+   */
+  def appliedBoundedTypes(typeVars: List[BoundedType]): String = {
     if (typeVars.nonEmpty)
       typeVars.map(javaTypeAsScalaType).mkString("[", ", ", "]")
     else

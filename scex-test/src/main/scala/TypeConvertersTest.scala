@@ -10,12 +10,10 @@ object TypeConvertersTest {
   def main(args: Array[String]) {
     val clazz = classOf[TypedLol[T]#Dafuq[F] forSome {type T; type F}]
 
-    new JavaTypeParsing {
-      println(javaTypeAsScalaType(clazz))
-      println(javaTypeAsScalaType(classOf[JavaLol#InnerLol]))
-      println(boundedTypeVariables(classToExistential(clazz).typeVars))
-    }
+    import JavaTypeParsing._
 
-    CommonUtils.hierarchy(classOf[ju.ArrayList[_]]) foreach println
+    println(javaTypeAsScalaType(clazz))
+    println(javaTypeAsScalaType(classOf[JavaLol#InnerLol]))
+    println(appliedBoundedTypes(classToExistential(clazz).typeVars))
   }
 }
