@@ -131,7 +131,7 @@ object ValidationTest {
 
     val symbolValidator = new SymbolValidator(memberAccessSpecs)
 
-    val profile = new ExpressionProfile(syntaxValidator, symbolValidator, null)
+    val profile = new ExpressionProfile(syntaxValidator, symbolValidator, "def immaUtil = \"util, lol\"", "")
     val compiler = new ScexCompiler(new ScexCompilerConfig)
 
     val myexpr =
@@ -144,6 +144,7 @@ object ValidationTest {
         |  new ValidationTest.B
         |  (new JavaLol).foo
         |  new JavaLol + s"fuu ${new JavaLol}"
+        |  immaUtil
         |}
       """.stripMargin
 

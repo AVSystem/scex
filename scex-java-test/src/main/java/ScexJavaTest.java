@@ -16,7 +16,7 @@ public class ScexJavaTest {
         SyntaxValidator syntaxValidator = compiler.compileSyntaxValidator(readResource("/syntaxValidator.scala"));
         SymbolValidator symbolValidator = compiler.compileSymbolValidator(readResource("/symbolValidator.scala"));
 
-        ExpressionProfile profile = new ExpressionProfile(syntaxValidator, symbolValidator, "");
+        ExpressionProfile profile = new ExpressionProfile(syntaxValidator, symbolValidator, "", "");
 
         Expression<Void, String> expression = compiler.getCompiledExpression(
                 profile, "new JavaCostam(\"dafuq\").toString", void.class, String.class);

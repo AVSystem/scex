@@ -23,7 +23,7 @@ object MemoryTest {
       }
     )
 
-    val profile = new ExpressionProfile(SyntaxValidator.SimpleExpressions, symbolValidator, "")
+    val profile = new ExpressionProfile(SyntaxValidator.SimpleExpressions, symbolValidator, "", "")
 
     var i = 0
     while (true) {

@@ -1,7 +1,7 @@
 package com.avsystem.scex.validation
 
 import com.avsystem.scex.compiler.ExpressionProfile
-import com.avsystem.scex.compiler.annotation.{ContextAdapter, JavaGetterAdapter, BooleanIsGetter}
+import com.avsystem.scex.compiler.annotation.{ExpressionUtil, ContextAdapter, JavaGetterAdapter, BooleanIsGetter}
 import com.avsystem.scex.util.MacroUtils
 import java.{util => ju, lang => jl}
 import scala.language.experimental.macros
@@ -24,6 +24,13 @@ object ExpressionValidator {
     val macroUtils = MacroUtils(c)
     import macroUtils._
 
+    lazy val contextTpe = weakTypeOf[C]
+
+    lazy val adapterAnnotType = typeOf[JavaGetterAdapter]
+    lazy val booleanGetterAnnotType = typeOf[BooleanIsGetter]
+    lazy val contextAdapterAnnotType = typeOf[ContextAdapter]
+    lazy val expressionUtilAnnotType = typeOf[ExpressionUtil]
+
     val profile = profileVar.value
 
     def isForbiddenThisReference(tree: Tree) = tree match {
@@ -40,8 +47,12 @@ object ExpressionValidator {
       }
     }
 
+    def isExpressionUtil(symbol: Symbol): Boolean = {
+      symbol != NoSymbol && (symbol.annotations.exists(_.tpe =:= expressionUtilAnnotType) || isExpressionUtil(symbol.owner))
+    }
+
     def needsValidation(symbol: Symbol) =
-      symbol != null && (symbol.isMethod || isJavaField(symbol))
+      symbol != NoSymbol && (symbol.isMethod || isJavaField(symbol)) && !isExpressionUtil(symbol)
 
     def validateAccess(pos: Position, tpe: Type, symbol: Symbol, icSymbol: Option[Symbol]) {
       if (needsValidation(symbol)) {
@@ -51,12 +62,8 @@ object ExpressionValidator {
       }
     }
 
-    lazy val adapterAnnotType = typeOf[JavaGetterAdapter]
-    lazy val booleanGetterAnnotType = typeOf[BooleanIsGetter]
-    lazy val contextAdapterAnnotType = typeOf[ContextAdapter]
-
     def isAdapter(tpe: Type) =
-      tpe != null && tpe.typeSymbol.annotations.exists(_.tpe =:= adapterAnnotType)
+      tpe != NoType && tpe.typeSymbol.annotations.exists(_.tpe =:= adapterAnnotType)
 
     def isContextAdapter(symbol: Symbol) =
       symbol.annotations.exists(_.tpe =:= contextAdapterAnnotType)
@@ -73,14 +80,12 @@ object ExpressionValidator {
       javaTpe.member(newTermName(name)).asTerm.alternatives.find(isBeanGetter).getOrElse(fail)
     }
 
-    lazy val contextTpe = weakTypeOf[C]
-
     def validateTree(tree: Tree) {
       tree match {
         case tree@Select(contextAdapter@Ident(_), _) if isContextAdapter(contextAdapter.symbol) =>
           validateAccess(tree.pos, contextTpe, getJavaGetter(tree.symbol, contextTpe), None)
 
-        case tree@Select(apply@ImplicitlyConverted(qualifier, fun), _) =>
+        case tree@Select(apply@ImplicitlyConverted(qualifier, fun), _) if !isExpressionUtil(fun.symbol) =>
 
           if (isAdapter(apply.tpe)) {
             validateAccess(tree.pos, qualifier.tpe, getJavaGetter(tree.symbol, qualifier.tpe), None)

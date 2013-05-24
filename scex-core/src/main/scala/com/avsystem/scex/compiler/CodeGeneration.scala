@@ -105,9 +105,10 @@ object CodeGeneration {
     s"""
     |class $ExpressionClassName extends (($contextType) => $resultType) {
     |  def apply(_ctx: $contextType): $resultType = {
-    |    $header
     |    import $profileObjectPkg.$ProfileObjectName._
+    |    import Utils._
     |    import _ctx._
+    |    $header
     |    $contextGetterAdapterCode
     |    com.avsystem.scex.validation.ExpressionValidator.validate[$contextType, $resultType](
     |$expression
@@ -137,6 +138,9 @@ object CodeGeneration {
     s"""
     |object $ProfileObjectName {
     |${adapters.mkString}
+    |  @com.avsystem.scex.compiler.annotation.ExpressionUtil object Utils {
+    |${profile.expressionUtils}
+    |  }
     |}
     |
     """.stripMargin
