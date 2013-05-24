@@ -76,7 +76,7 @@ object ExpressionValidator {
       val prefix = if (isBooleanGetterAdapter(symbol)) "is" else "get"
       val name = prefix + symbol.name.toString.capitalize
 
-      def fail = throw new Error(s"Could not get Java getter for $symbol on $javaTpe")
+      def fail = throw new Error(s"Could not find Java getter for $name on $javaTpe")
       javaTpe.member(newTermName(name)).asTerm.alternatives.find(isBeanGetter).getOrElse(fail)
     }
 
