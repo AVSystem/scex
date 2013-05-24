@@ -1,5 +1,6 @@
-import com.avsystem.scex.compiler.{ExpressionProfile, ExpressionCompiler, ExpressionCompilerConfig}
+import com.avsystem.scex.compiler.{ExpressionProfile, ScexCompiler, ScexCompilerConfig}
 import com.avsystem.scex.validation._
+import java.util.Collections
 import java.{util => ju, lang => jl}
 import reflect.macros.Universe
 import scala.Some
@@ -42,6 +43,7 @@ object ValidationTest {
       String.CASE_INSENSITIVE_ORDER
       Some.apply _
       String.valueOf(_: Boolean)
+      Collections.emptyList
       new B
       new JavaLol
 
@@ -130,18 +132,17 @@ object ValidationTest {
     val symbolValidator = new SymbolValidator(memberAccessSpecs)
 
     val profile = new ExpressionProfile(syntaxValidator, symbolValidator, null)
-    val compiler = new ExpressionCompiler(new ExpressionCompilerConfig)
+    val compiler = new ScexCompiler(new ScexCompilerConfig)
 
     val myexpr =
       """
         |{
         |  stuff
         |  null: String
-        |  new java.util.ArrayList[String](null)
+        |  new java.util.ArrayList[String](java.util.Collections.emptyList)
         |  String.CASE_INSENSITIVE_ORDER
         |  new ValidationTest.B
         |  (new JavaLol).foo
-        |  com.avsystem.scex.util.CommonUtils.toString
         |  new JavaLol + s"fuu ${new JavaLol}"
         |}
       """.stripMargin

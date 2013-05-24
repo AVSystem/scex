@@ -1,5 +1,5 @@
 import com.avsystem.scex.Expression;
-import com.avsystem.scex.compiler.ExpressionCompiler;
+import com.avsystem.scex.compiler.ScexCompiler;
 
 public class JavaLol {
     public static class StaticLol {
@@ -27,7 +27,7 @@ public class JavaLol {
     }
 
     public static void main(String[] args) throws Exception {
-        ExpressionCompiler compiler = new ExpressionCompiler(null);
+        ScexCompiler compiler = new ScexCompiler(null);
         Expression<String, Object> expr = compiler.getCompiledExpression(null, null, String.class, Object.class);
     }
 }

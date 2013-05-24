@@ -11,6 +11,9 @@ import scala.reflect.runtime.{universe => ru}
 import scala.language.existentials
 import scala.collection.mutable.ListBuffer
 
+/**
+ * Utils for conversions of Java types into string representations of their Scala counterparts.
+ */
 object JavaTypeParsing {
 
   trait BoundedType extends Type {
@@ -171,6 +174,12 @@ object JavaTypeParsing {
       throw new IllegalArgumentException(s"Type $tpe does not have erasure")
   }
 
+  /**
+   * Example: transforms java type <tt>A<? extends B, C>.D<? super E></tt> into Scala type
+   * <tt>A[T1,C]#D[T2] forSome {type T1 <: B; type T2 >: E}</tt>
+   * @param paramType
+   * @return
+   */
   def parameterizedTypeToExistential(paramType: ParameterizedType): ExistentialType = {
     var i = 0
     def newTypeVarName() = {
@@ -182,6 +191,7 @@ object JavaTypeParsing {
     def transformTypeArgs(typeArgs: Array[Type]): (Array[Type], List[BoundedType]) = {
       val typeVariablesBuffer = new ListBuffer[BoundedType]
 
+      // little ugly: relying on side effects inside map
       val transformedArgs = typeArgs.map {
         case wc: WildcardType =>
           val name = newTypeVarName()

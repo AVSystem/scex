@@ -8,7 +8,7 @@ import scala.language.experimental.macros
 import scala.language.implicitConversions
 import scala.reflect.macros.Context
 
-class SymbolValidator(accessSpecs: List[MemberAccessSpec]) {
+class SymbolValidator(val accessSpecs: List[MemberAccessSpec]) {
 
   lazy val referencedJavaClasses = accessSpecs.collect({
     case MemberAccessSpec(typeInfo, _, _, true)
@@ -67,7 +67,7 @@ object SymbolValidator {
 
   implicit class WildcardMemberAccess(wrapped: Any) {
     /**
-     * Allows for calling any method on given type, excluding constructors.
+     * Allows for calling any method on given type (from given type and its supertypes), excluding constructors.
      */
     def anyMethod = elidedByMacro
 

@@ -1,7 +1,7 @@
 package com.avsystem.scex.compiler
 
-import com.avsystem.scex.compiler.ExpressionCompiler.CompilationFailedException
-import com.avsystem.scex.compiler.ExpressionCompiler.CompileError
+import com.avsystem.scex.compiler.ScexCompiler.CompilationFailedException
+import com.avsystem.scex.compiler.ScexCompiler.CompileError
 import com.avsystem.scex.util.CacheImplicits._
 import com.avsystem.scex.validation.{SymbolValidator, SyntaxValidator, ExpressionValidator}
 import com.avsystem.scex.{TypeTag, Expression}
@@ -23,43 +23,53 @@ import scala.util.{Failure, Success, Try}
 import com.avsystem.scex.util.CommonUtils._
 import JavaTypeParsing._
 import CodeGeneration._
+import scala.ref.WeakReference
 
 /**
  * Central class for expression compilation. Encapsulates Scala compiler, so it is
- * VERY heavy - it is probably undesirable to have more that one instance of ExpressionCompiler in JVM.
+ * VERY heavy - it is probably undesirable to have more that one instance of ScexCompiler in JVM.
  * It can be used safely from multiple threads. Expression compilation,
  * classloading and instantiation is synchronized and results are cached.
  */
-class ExpressionCompiler(config: ExpressionCompilerConfig) {
+class ScexCompiler(config: ScexCompilerConfig) {
+  compiler =>
 
-  private class ExpressionHolder(val pkgName: String) {
-    @volatile private var _rawExpression = loadCompiledRawExpression(pkgName)
+  /**
+   * Wrapper that avoids holding strong reference to actual compiled expression.
+   */
+  private class ExpressionWrapper[C, R](exprDef: ExpressionDef) extends Expression[C, R] {
+    var expressionRef = new WeakReference(loadRawExpression)
 
-    def rawExpression = {
-      if (_rawExpression == null) {
-        _rawExpression = loadCompiledRawExpression(pkgName)
+    private def loadRawExpression = expressionCache.get(exprDef).get.asInstanceOf[C => R]
+
+    private def rawExpression: C => R =
+      expressionRef.get match {
+        case Some(expr) => expr
+        case None =>
+          expressionRef = new WeakReference(loadRawExpression)
+          rawExpression
       }
-      _rawExpression
-    }
 
-    def reset() {
-      _rawExpression = null
-    }
+    def apply(context: C) =
+      rawExpression.apply(context)
   }
 
-  private val virtualDirectory = new VirtualDirectory("(scex)", None)
+  private class ScexClassLoader(val classfileDirectory: VirtualDirectory, parent: ClassLoader)
+    extends AbstractFileClassLoader(classfileDirectory, parent)
 
   private val settings = new Settings
   settings.usejavacp.value = true
   settings.exposeEmptyPackage.value = true
-  settings.outputDirs.setSingleOutput(virtualDirectory)
 
+  /**
+   * Scala compiler issues reporter
+   */
   private object reporter extends AbstractReporter {
     private val errorsBuffer = new ListBuffer[CompileError]
 
     def compileErrors = errorsBuffer.result()
 
-    val settings: Settings = ExpressionCompiler.this.settings
+    val settings: Settings = ScexCompiler.this.settings
 
     def display(pos: Position, msg: String, severity: Severity) {
       if (severity == ERROR) {
@@ -83,63 +93,53 @@ class ExpressionCompiler(config: ExpressionCompilerConfig) {
     resultType: String) {
   }
 
-  private type RawExpression = Function[Any, Nothing]
+  private type RawExpression = Function[Any, Any]
 
-  private def createGlobal = new Global(settings, reporter)
+  private var global: Global = _
 
-  private val global = createGlobal
+  /**
+   * Classloader for stuff that will be never reclaimed after compilation -
+   * profiles, validators, custom util classes, etc.
+   */
+  private var persistentClassLoader: ScexClassLoader = _
 
-  private def createClassLoader = new AbstractFileClassLoader(virtualDirectory, getClass.getClassLoader)
+  private var compilationCount: Int = _
 
-  private var classLoader = createClassLoader
-
-  // class loader that will never be cleaned; used mainly for on-demand compiled syntax/symbol validators
-  private val persistentClassLoader = createClassLoader
+  private def instantiatePersistent[T](className: String) =
+    Class.forName(className, true, persistentClassLoader).newInstance.asInstanceOf[T]
 
   /**
    * VARIOUS CACHES
    */
 
-  private val holdersSet = new mutable.HashSet[ExpressionHolder]
-
   private val expressionCache = CacheBuilder.newBuilder
     .expireAfterAccess(config.expressionExpirationTime, TimeUnit.MILLISECONDS)
-    .removalListener(onExprRemove _)
-    .build[ExpressionDef, Try[ExpressionHolder]](compileExpression _)
+    .build[ExpressionDef, Try[RawExpression]](compileExpression _)
 
   // holds names of packages to which profiles are compiled
   private val profileCompilationResultsCache =
     CacheBuilder.newBuilder.build[ExpressionProfile, Try[String]](compileProfileObject _)
 
+  // holds code of implicit adapters over Java classes that add Scala-style getters to Java bean getters
   private val fullJavaGetterAdaptersCache =
     CacheBuilder.newBuilder.build[Class[_], Try[String]](compileFullJavaGetterAdapter _)
+
+  def reset() {
+    synchronized {
+      compilationCount = 0
+      global = new Global(settings, reporter)
+      persistentClassLoader = new ScexClassLoader(new VirtualDirectory("(scex_persistent)", None), getClass.getClassLoader)
+      expressionCache.invalidateAll()
+      profileCompilationResultsCache.invalidateAll()
+      fullJavaGetterAdaptersCache.invalidateAll()
+    }
+  }
+
+  reset()
 
   /**
    * CACHE BUILDER AND REMOVAL METHODS
    */
-
-  // clean up stuff associated with expression holder, mainly compiled classfile
-  private def onExprRemove(notification: RemovalNotification[ExpressionDef, Try[ExpressionHolder]]) {
-    notification.getValue match {
-      case Success(holder) => synchronized {
-        holdersSet.remove(holder)
-        virtualDirectory.lookupPath(holder.pkgName.replaceAllLiterally(".", "/"), directory = true).delete()
-      }
-      case _ => ()
-    }
-  }
-
-  private def loadCompiledRawExpression(pkgName: String): RawExpression = synchronized {
-    Class.forName(s"$pkgName.$ExpressionClassName", true, classLoader).newInstance.asInstanceOf[RawExpression]
-  }
-
-  def cleanUp() {
-    expressionCache.cleanUp()
-    synchronized {
-      classLoader = createClassLoader
-      holdersSet.foreach(_.reset())
-    }
-  }
 
   private var idx = 0
 
@@ -174,7 +174,7 @@ class ExpressionCompiler(config: ExpressionCompilerConfig) {
     val codeToCompile =
       wrapInSource(generateJavaGetterAdapter(clazz, full = true).get, pkgName)
 
-    compile("(scex adapter)", codeToCompile) match {
+    compile("(scex adapter)", codeToCompile, persistentClassLoader) match {
       case Nil => Success(pkgName)
       case errors => Failure(new CompilationFailedException(codeToCompile, errors))
     }
@@ -186,13 +186,13 @@ class ExpressionCompiler(config: ExpressionCompilerConfig) {
     val codeToCompile =
       wrapInSource(generateProfileObject(profile), pkgName)
 
-    compile("(scex profile)", codeToCompile) match {
+    compile("(scex profile)", codeToCompile, persistentClassLoader) match {
       case Nil => Success(pkgName)
       case errors => Failure(new CompilationFailedException(codeToCompile, errors))
     }
   }
 
-  private def compileExpression(exprDef: ExpressionDef): Try[ExpressionHolder] = synchronized {
+  private def compileExpression(exprDef: ExpressionDef): Try[RawExpression] = synchronized {
     val ExpressionDef(profile, expression, contextClass, contextType, resultType) = exprDef
 
     val fullAdapterClassNameOpt =
@@ -211,23 +211,42 @@ class ExpressionCompiler(config: ExpressionCompilerConfig) {
     val codeToCompile = wrapInSource(generateExpressionClass(
       profile, expression, fullAdapterClassNameOpt, profileObjectPkg, contextType, resultType), pkgName)
 
-    ExpressionValidator.profileVar.withValue(exprDef.profile) {
-      compile("(scex expression)", codeToCompile) match {
-        case Nil =>
-          val holder = new ExpressionHolder(pkgName)
-          holdersSet += holder
-          Success(holder)
+    // every single expression has its own classloader and virtual directory
+    val classLoader = new ScexClassLoader(new VirtualDirectory("(scex)", None), persistentClassLoader)
 
-        case errors =>
-          Failure(new CompilationFailedException(codeToCompile, errors))
+    def result =
+      ExpressionValidator.profileVar.withValue(exprDef.profile) {
+        compile("(scex expression)", codeToCompile, classLoader) match {
+          case Nil =>
+            Class.forName(s"$pkgName.$ExpressionClassName", true, classLoader).newInstance.asInstanceOf[RawExpression]
+
+          case errors =>
+            throw new CompilationFailedException(codeToCompile, errors)
+        }
       }
-    }
+
+    Try(result)
   }
 
-  private def compile(name: String, code: String): List[CompileError] = {
-    val global = this.global
-    val run = new global.Run
-    run.compileSources(List(new BatchSourceFile(name, code)))
+  private def compile(name: String, code: String, classLoader: ScexClassLoader): List[CompileError] = {
+    settings.outputDirs.setSingleOutput(classLoader.classfileDirectory)
+
+    // Every ClassLoader not registered as parallel-capable loads its classes while being locked on itself
+    // (see sources of ClassLoader). ScexClassLoader loads classes from its virtual directory, which is not thread safe.
+    // Compiler writes classes to this virtual directory, so synchronization over classLoader is needed during compilation.
+    // So, compilation is effectively under two locks: ScexCompiler and ScexClassLoader, in that order.
+    // There should not be deadlocks, because nobody locks first over ScexClassLoader and then over ScexCompiler.
+    classLoader.synchronized {
+      val global = this.global
+      val run = new global.Run
+      run.compileSources(List(new BatchSourceFile(name, code)))
+    }
+
+    compilationCount += 1
+    if (compilationCount >= config.resetAfterCompilationCount) {
+      reset()
+    }
+
     reporter.compileErrors
   }
 
@@ -295,7 +314,7 @@ class ExpressionCompiler(config: ExpressionCompilerConfig) {
 
   /**
    * Returns compiled expression ready to be evaluated. Returned expression is actually a proxy that
-   * looks up ExpressionCompiler's cache on every access (evaluation).
+   * looks up ScexCompiler's cache on every access (evaluation).
    *
    * @param profile expression profile to compile this expression with
    * @param expression the expression
@@ -317,18 +336,7 @@ class ExpressionCompiler(config: ExpressionCompilerConfig) {
     val exprDef = ExpressionDef(profile, expression, erasureOf(contextType),
       javaTypeAsScalaType(contextType), javaTypeAsScalaType(resultType))
 
-    def loadExpressionHolder =
-      expressionCache.get(exprDef).get
-
-    // force expression compilation
-    loadExpressionHolder
-
-    // return delegate that loads actual expression from cache on every access
-    // this way actual expression can be GCed when expression compiler is cleaned up
-    new Expression[C, R] {
-      def apply(context: C): R =
-        loadExpressionHolder.rawExpression.asInstanceOf[C => R].apply(context)
-    }
+    new ExpressionWrapper(exprDef)
   }
 
   @throws[CompilationFailedException]
@@ -336,10 +344,9 @@ class ExpressionCompiler(config: ExpressionCompilerConfig) {
     val pkgName = newSyntaxValidatorPackage()
     val codeToCompile = wrapInSource(generateSyntaxValidator(code), pkgName)
 
-    compile("(scex syntax validator)", codeToCompile) match {
+    compile("(scex syntax validator)", codeToCompile, persistentClassLoader) match {
       case Nil =>
-        Class.forName(s"$pkgName.$SyntaxValidatorClassName", true, persistentClassLoader)
-          .newInstance.asInstanceOf[SyntaxValidator]
+        instantiatePersistent[SyntaxValidator](s"$pkgName.$SyntaxValidatorClassName")
       case errors =>
         throw new CompilationFailedException(codeToCompile, errors)
     }
@@ -350,17 +357,16 @@ class ExpressionCompiler(config: ExpressionCompilerConfig) {
     val pkgName = newSymbolValidatorPackage()
     val codeToCompile = wrapInSource(generateSymbolValidator(code), pkgName)
 
-    compile("(scex symbol validator)", codeToCompile) match {
+    compile("(scex symbol validator)", codeToCompile, persistentClassLoader) match {
       case Nil =>
-        Class.forName(s"$pkgName.$SymbolValidatorClassName", true, persistentClassLoader)
-          .newInstance.asInstanceOf[SymbolValidator]
+        instantiatePersistent[SymbolValidator](s"$pkgName.$SymbolValidatorClassName")
       case errors =>
         throw new CompilationFailedException(codeToCompile, errors)
     }
   }
 }
 
-object ExpressionCompiler {
+object ScexCompiler {
 
   case class CompileError(line: String, column: Int, msg: String) {
     override def toString = s"$msg:\n${line.stripLineEnd}\n${" " * (column - 1)}^"

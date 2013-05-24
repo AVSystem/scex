@@ -12,7 +12,7 @@ import com.avsystem.scex.util.MacroUtils
 /**
  * Object used during expression compilation to validate the expression (syntax, invocations, etc.)
  * This must be a Scala object and not a class because it contains macros. Validation is performed against
- * given ExpressionProfile which is injected into this object by ExpressionCompiler by means of a dynamic variable.
+ * given ExpressionProfile which is injected into this object by ScexCompiler by means of a dynamic variable.
  */
 object ExpressionValidator {
 
@@ -27,7 +27,15 @@ object ExpressionValidator {
 
     val profile = profileVar.value
 
+    def isThis(tree: Tree) = tree match {
+      case This(tpnme.EMPTY) => true
+      case _ => false
+    }
+
     expr.tree.foreach { subtree =>
+      if (isThis(subtree)) {
+        c.error(subtree.pos, s"Cannot refer to 'this'")
+      }
       if (!profile.syntaxValidator.isSyntaxAllowed(c.universe)(subtree)) {
         c.error(subtree.pos, s"Cannot use language construct: ${subtree.getClass.getSimpleName}")
       }
