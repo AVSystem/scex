@@ -7,8 +7,8 @@ import scala.reflect.macros.Context
 
 class MacroUtils[C <: Context with Singleton] private(val context: C) {
 
-  import context.{Expr, reifyRuntimeClass}
   import context.universe._
+  import context.{Expr, reifyRuntimeClass}
 
   object LiteralString {
     def unapply(tree: Tree) = tree match {

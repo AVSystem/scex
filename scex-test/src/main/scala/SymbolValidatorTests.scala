@@ -1,6 +1,6 @@
 import com.avsystem.scex.validation.SymbolValidator._
 import java.{util => ju, lang => jl}
-import scala.reflect.runtime.{universe => ru}
+
 
 object SymbolValidatorTests {
 

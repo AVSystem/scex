@@ -2,7 +2,7 @@ package com.avsystem.scex.validation
 
 import java.{util => ju, lang => jl}
 import reflect.macros.Universe
-import scala.reflect.runtime.{universe => ru}
+
 
 /**
  * Trait for expression syntax validator. This validator validates only language constructs, invocation validation

@@ -4,7 +4,7 @@ import com.avsystem.scex.util.CacheImplicits
 import com.google.common.cache.CacheBuilder
 import java.{util => ju, lang => jl}
 import reflect.api.{Universe, TypeCreator}
-import scala.reflect.runtime.{universe => ru}
+
 
 class TypeInfo(typeCreator: TypeCreator, val clazz: Option[Class[_]], val isJava: Boolean, typeRepr: String) {
 

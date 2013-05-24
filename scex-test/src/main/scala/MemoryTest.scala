@@ -1,7 +1,7 @@
 import com.avsystem.scex.compiler.{ExpressionProfile, ScexCompilerConfig, ScexCompiler}
 import com.avsystem.scex.validation.{SyntaxValidator, SymbolValidator}
 import java.{util => ju, lang => jl}
-import scala.reflect.runtime.{universe => ru}
+
 
 object MemoryTest {
 

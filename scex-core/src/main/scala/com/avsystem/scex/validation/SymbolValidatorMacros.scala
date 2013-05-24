@@ -4,7 +4,7 @@ import com.avsystem.scex.util.MacroUtils
 import java.{util => ju, lang => jl}
 import scala.reflect.api.TypeCreator
 import scala.reflect.macros.Context
-import scala.reflect.runtime.{universe => ru}
+
 
 object SymbolValidatorMacros {
 

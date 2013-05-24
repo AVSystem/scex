@@ -4,7 +4,7 @@ import com.google.common.cache.{RemovalNotification, RemovalListener, CacheLoade
 import java.util.concurrent.Callable
 import java.{util => ju, lang => jl}
 import scala.language.implicitConversions
-import scala.reflect.runtime.{universe => ru}
+
 
 object CacheImplicits {
   implicit def funToCacheLoader[K, V](fun: K => V) =

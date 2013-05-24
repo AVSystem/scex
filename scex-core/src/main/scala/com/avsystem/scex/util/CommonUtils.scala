@@ -1,7 +1,5 @@
 package com.avsystem.scex.util
 
-import scala.reflect.api.Universe
-import scala.reflect.macros.Context
 
 /**
  * Created with IntelliJ IDEA.

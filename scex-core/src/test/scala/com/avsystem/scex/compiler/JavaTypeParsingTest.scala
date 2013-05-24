@@ -1,8 +1,8 @@
 package com.avsystem.scex.compiler
 
 import java.{util => ju, lang => jl}
-import scala.reflect.runtime.{universe => ru}
 import org.scalatest._
+
 
 class JavaTypeParsingTest extends FlatSpec {
 

@@ -1,29 +1,28 @@
 package com.avsystem.scex.compiler
 
+import CodeGeneration._
+import JavaTypeParsing._
 import com.avsystem.scex.compiler.ScexCompiler.CompilationFailedException
 import com.avsystem.scex.compiler.ScexCompiler.CompileError
 import com.avsystem.scex.util.CacheImplicits._
+import com.avsystem.scex.util.CommonUtils._
 import com.avsystem.scex.validation.{SymbolValidator, SyntaxValidator, ExpressionValidator}
 import com.avsystem.scex.{TypeTag, Expression}
-import com.google.common.cache.{RemovalNotification, CacheBuilder}
+import com.google.common.cache.CacheBuilder
 import java.lang.reflect.Type
 import java.util.concurrent.TimeUnit
 import java.{util => ju, lang => jl}
 import org.apache.commons.lang.StringEscapeUtils
 import scala.Some
-import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 import scala.language.existentials
+import scala.ref.WeakReference
 import scala.reflect.internal.util.{BatchSourceFile, Position}
 import scala.reflect.io.VirtualDirectory
 import scala.tools.nsc.interpreter.AbstractFileClassLoader
 import scala.tools.nsc.reporters.AbstractReporter
 import scala.tools.nsc.{Global, Settings}
 import scala.util.{Failure, Success, Try}
-import com.avsystem.scex.util.CommonUtils._
-import JavaTypeParsing._
-import CodeGeneration._
-import scala.ref.WeakReference
 
 /**
  * Central class for expression compilation. Encapsulates Scala compiler, so it is

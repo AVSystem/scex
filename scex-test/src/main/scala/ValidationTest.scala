@@ -5,7 +5,7 @@ import java.{util => ju, lang => jl}
 import reflect.macros.Universe
 import scala.Some
 import scala.language.existentials
-import scala.reflect.runtime.{universe => ru}
+
 
 object ValidationTest {
 

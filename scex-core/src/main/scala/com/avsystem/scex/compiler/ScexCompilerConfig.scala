@@ -3,7 +3,6 @@ package com.avsystem.scex.compiler
 import ScexCompilerConfig._
 import java.{util => ju, lang => jl}
 import scala.beans.BeanProperty
-import scala.reflect.runtime.{universe => ru}
 
 
 object ScexCompilerConfig {

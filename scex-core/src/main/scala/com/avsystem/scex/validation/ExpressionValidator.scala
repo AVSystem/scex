@@ -1,13 +1,12 @@
 package com.avsystem.scex.validation
 
 import com.avsystem.scex.compiler.ExpressionProfile
+import com.avsystem.scex.compiler.annotation.{ContextAdapter, JavaGetterAdapter, BooleanIsGetter}
+import com.avsystem.scex.util.MacroUtils
 import java.{util => ju, lang => jl}
 import scala.language.experimental.macros
 import scala.reflect.macros.Context
 import scala.util.DynamicVariable
-import com.avsystem.scex.util.CommonUtils._
-import com.avsystem.scex.compiler.annotation.{ContextAdapter, JavaGetterAdapter, BooleanIsGetter}
-import com.avsystem.scex.util.MacroUtils
 
 /**
  * Object used during expression compilation to validate the expression (syntax, invocations, etc.)
@@ -27,14 +26,14 @@ object ExpressionValidator {
 
     val profile = profileVar.value
 
-    def isThis(tree: Tree) = tree match {
-      case This(tpnme.EMPTY) => true
+    def isForbiddenThisReference(tree: Tree) = tree match {
+      case tree: This if !tree.symbol.isPackage && !tree.symbol.isPackageClass => true
       case _ => false
     }
 
     expr.tree.foreach { subtree =>
-      if (isThis(subtree)) {
-        c.error(subtree.pos, s"Cannot refer to 'this'")
+      if (isForbiddenThisReference(subtree)) {
+        c.error(subtree.pos, s"Cannot refer to 'this' or outer instances")
       }
       if (!profile.syntaxValidator.isSyntaxAllowed(c.universe)(subtree)) {
         c.error(subtree.pos, s"Cannot use language construct: ${subtree.getClass.getSimpleName}")

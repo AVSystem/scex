@@ -1,7 +1,6 @@
 import com.avsystem.scex.compiler.JavaTypeParsing
-import com.avsystem.scex.util.CommonUtils
 import java.{util => ju, lang => jl}
-import scala.reflect.runtime.{universe => ru}
+
 
 object TypeConvertersTest {
 

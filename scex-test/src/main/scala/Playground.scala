@@ -1,21 +1,12 @@
 
 import java.{util => ju, lang => jl}
-import scala.beans.BeanProperty
-import scala.collection.mutable
-import scala.reflect.runtime.{universe => ru}
 
-/**
- * Created with IntelliJ IDEA.
- * User: ghik
- * Date: 25.01.13
- * Time: 20:40
- */
 object Playground {
   def main(args: Array[String]) {
   }
 
   private def generateAdapter(clazz: Class[_]) = {
-    val classSymbol = ru.runtimeMirror(clazz.getClassLoader).classSymbol(clazz)
+    val classSymbol = scala.reflect.runtime.universe.runtimeMirror(clazz.getClassLoader).classSymbol(clazz)
     val tpe = classSymbol.toType
 
     val keywords = List("class")

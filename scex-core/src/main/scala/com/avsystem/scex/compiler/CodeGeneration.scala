@@ -1,13 +1,13 @@
 package com.avsystem.scex.compiler
 
+import JavaTypeParsing._
+import com.avsystem.scex.util.CommonUtils._
 import java.lang.reflect._
 import java.lang.{reflect => jlr}
 import java.{util => ju, lang => jl}
 import scala.Some
 import scala.language.existentials
-import scala.reflect.runtime.{universe => ru}
-import com.avsystem.scex.util.CommonUtils._
-import JavaTypeParsing._
+
 
 object CodeGeneration {
 

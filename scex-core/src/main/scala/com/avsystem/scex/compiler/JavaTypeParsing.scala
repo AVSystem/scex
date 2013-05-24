@@ -7,9 +7,9 @@ import java.{util => ju, lang => jl}
 import scala.Array
 import scala.Some
 import scala.collection.mutable
-import scala.reflect.runtime.{universe => ru}
-import scala.language.existentials
 import scala.collection.mutable.ListBuffer
+import scala.language.existentials
+
 
 /**
  * Utils for conversions of Java types into string representations of their Scala counterparts.
