@@ -4,6 +4,7 @@ import com.avsystem.scex.util.MacroUtils
 import java.{util => ju, lang => jl}
 import scala.reflect.api.TypeCreator
 import scala.reflect.macros.Context
+import scala.collection.mutable.ListBuffer
 
 
 object SymbolValidatorMacros {
@@ -12,6 +13,8 @@ object SymbolValidatorMacros {
 
   // marks trees that were wrapped in SymbolValidator.on[T] invocation
   object SymbolValidatorOnMark
+
+  object AlreadyReified
 
   def allow_impl(c: Context)(expr: c.Expr[Any]) =
     extractMemberAccessSpecs(c)(expr, allow = true)
@@ -24,139 +27,25 @@ object SymbolValidatorMacros {
     expr
   }
 
+  // transforms list of expressions of type List[MemberAccessSpec] to single expression
+  // of type List[MemberAccessSpec] that represents flattened original list of lists
+  private def reifyFlattenLists(c: Context)(listExprs: List[c.Expr[List[MemberAccessSpec]]]) = {
+    import c.universe._
+
+    val addToBuilderStatements = listExprs.map { listExpr =>
+      Apply(Select(Ident(newTermName("b")), newTermName("++=").encodedName), List(listExpr.tree))
+    }
+    reify {
+      val b = new ListBuffer[MemberAccessSpec]
+      c.Expr[Unit](Block(addToBuilderStatements, c.literalUnit.tree)).splice
+      b.result()
+    }
+  }
+
   private def extractMemberAccessSpecs(c: Context)(expr: c.Expr[Any], allow: Boolean): c.Expr[List[MemberAccessSpec]] = {
     import c.universe._
     val macroUtils = MacroUtils(c)
     import macroUtils._
-
-    def accessSpec(prefixTpe: Type, body: Tree, implConv: Option[Tree]) = {
-      (prefixTpe, body.symbol, implConv.map(_.symbol))
-    }
-
-    def accessSpecsForMethodNamed(tpe: Type, name: Name) = {
-      val member = tpe.member(name)
-      val viableMethods = if (member.isTerm) {
-        member.asTerm.alternatives.filter(s => s.isPublic && s.isMethod)
-      } else {
-        Nil
-      }
-      if (viableMethods.nonEmpty) {
-        Some(viableMethods.map(symbol => (tpe, symbol, None)))
-      } else {
-        None
-      }
-    }
-
-    def accessSpecsFor(tpe: Type, predicate: Symbol => Boolean) = {
-      tpe.members.withFilter(s => s.isPublic && predicate(s)).map(symbol => (tpe, symbol, None)).toList
-    }
-
-    def accessSpecsForDeclarations(tpe: Type, predicate: Symbol => Boolean) = {
-      tpe.declarations.withFilter(s => s.isPublic && predicate(s)).map(symbol => (tpe, symbol, None)).toList
-    }
-
-    // extractor that matches calls to WildcardMemberAccess methods
-    object WildcardMemberAccessMethod {
-      def unapply(tree: Tree) = tree match {
-        case Select(implConv@ImplicitlyConverted(prefix, fun), termName)
-          if termName.isTermName && implConv.tpe <:< typeOf[WildcardMemberAccess] =>
-
-          Some(prefix, termName.decoded)
-
-        case _ =>
-          None
-      }
-    }
-
-    def checkPrefixTpe(required: Option[Type], prefix: Tree) = required match {
-      case Some(requiredTpe) if prefix.tpe <:< requiredTpe =>
-        requiredTpe
-      case None =>
-        prefix.tpe
-      case _ =>
-        c.error(prefix.pos, "Bad symbol specification syntax:")
-        typeOf[Nothing]
-    }
-
-    def extractSymbols(prefixTpe: Option[Type], body: Tree): List[(Type, Symbol, Option[Symbol])] = body match {
-      case WildcardMemberAccessMethod(prefix, "anyMethod") =>
-        accessSpecsFor(checkPrefixTpe(prefixTpe, prefix), s => s.isMethod && !s.asMethod.isConstructor)
-
-      case WildcardMemberAccessMethod(prefix, "anyDeclaredMethod") =>
-        accessSpecsForDeclarations(checkPrefixTpe(prefixTpe, prefix), s => s.isMethod && !s.asMethod.isConstructor)
-
-      case Apply(WildcardMemberAccessMethod(prefix, "anyMethodNamed"), List(memberNameLiteral@LiteralString(methodName))) =>
-        val tpe = checkPrefixTpe(prefixTpe, prefix)
-        accessSpecsForMethodNamed(tpe, newTermName(methodName).encodedName).getOrElse {
-          c.error(memberNameLiteral.pos, s"${tpe.map(_.widen)} has no methods named $methodName")
-          Nil
-        }
-
-      case WildcardMemberAccessMethod(prefix, "anyConstructor") =>
-        val tpe = checkPrefixTpe(prefixTpe, prefix)
-        accessSpecsForMethodNamed(tpe, nme.CONSTRUCTOR).getOrElse {
-          c.error(body.pos, s"${tpe.map(_.widen)} has no constructors")
-          Nil
-        }
-
-      case Apply(WildcardMemberAccessMethod(prefix, "constructorWithSignature"), List(signatureLiteral@LiteralString(signature))) =>
-
-        val tpe = checkPrefixTpe(prefixTpe, prefix)
-        val constructors = tpe.member(nme.CONSTRUCTOR).asTerm.alternatives
-        constructors.find(ctor => ctor.typeSignature.toString == signature) match {
-          case Some(symbol) => List((tpe, symbol, None))
-          case None =>
-            val widenedTpe = tpe.map(_.widen)
-            val availableSignatures = constructors.map(_.typeSignature.toString).mkString("; ")
-
-            c.error(signatureLiteral.pos,
-              s"$widenedTpe has no constructor with signature $signature. " +
-                s"Available constructors have signatures: $availableSignatures")
-
-            Nil
-        }
-
-      case WildcardMemberAccessMethod(prefix, "anyScalaGetter") =>
-        accessSpecsFor(checkPrefixTpe(prefixTpe, prefix), s => s.isMethod && s.asMethod.isGetter)
-
-      case WildcardMemberAccessMethod(prefix, "anyScalaSetter") =>
-        accessSpecsFor(checkPrefixTpe(prefixTpe, prefix), s => s.isMethod && s.asMethod.isSetter)
-
-      case WildcardMemberAccessMethod(prefix, "anyBeanGetter") =>
-        accessSpecsFor(checkPrefixTpe(prefixTpe, prefix), isBeanGetter)
-
-      case WildcardMemberAccessMethod(prefix, "anyBeanSetter") =>
-        accessSpecsFor(checkPrefixTpe(prefixTpe, prefix), isBeanSetter)
-
-      case Select(ImplicitlyConverted(prefix, fun), _) =>
-        List(accessSpec(checkPrefixTpe(prefixTpe, prefix), body, Some(fun)))
-
-      case Select(prefix, _) =>
-        List(accessSpec(checkPrefixTpe(prefixTpe, prefix), body, None))
-
-      case Apply(inner, _) =>
-        extractSymbols(prefixTpe, inner)
-
-      case TypeApply(inner, _) =>
-        extractSymbols(prefixTpe, inner)
-
-      case Function(List(ValDef(_, _, prefixTpeTree, _)), actualBody)
-        if body.attachments.get[SymbolValidatorOnMark.type].isDefined =>
-
-        extractSymbols(Some(prefixTpeTree.tpe), actualBody)
-
-      case Function(_, actualBody) =>
-        extractSymbols(prefixTpe, actualBody)
-
-      case Block(stats, finalExpr) =>
-        (stats :+ finalExpr).flatMap(extractSymbols(prefixTpe, _: Tree))
-
-      case _ =>
-        c.error(body.pos, "Bad symbol specification syntax: ")
-        Nil
-    }
-
-    val rawAccessSpecs = extractSymbols(None, expr.tree)
 
     def reifySignature(symbol: Symbol) =
       c.literal(memberSignature(symbol))
@@ -174,20 +63,142 @@ object SymbolValidatorMacros {
         c.literal(widenedTpe.toString).splice))
     }
 
-    val reifiedAccessSpecs: List[Tree] = rawAccessSpecs.map {
-      case (tpe, ms, ic) => reify(
-        MemberAccessSpec(
-          reifyTypeInfo(tpe).splice,
-          reifySignature(ms).splice,
-          reifyOption(ic, reifySignature(_: Symbol)).splice,
-          c.literal(allow).splice))
-        .tree
+    def reifyAccessSpec(prefixTpe: Type, body: Tree, implConv: Option[Tree]) = reify {
+      List(MemberAccessSpec(
+        reifyTypeInfo(prefixTpe).splice,
+        reifySignature(body.symbol).splice,
+        reifyOption(implConv.map(_.symbol), reifySignature(_: Symbol)).splice,
+        c.literal(allow).splice))
     }
 
-    val typesAndMethodsListExpr: c.Expr[List[MemberAccessSpec]] =
-      c.Expr(Apply(Select(reify(List).tree, newTermName("apply")), reifiedAccessSpecs))
+    def checkPrefixTpe(required: Option[Type], prefix: Tree) = required match {
+      case Some(requiredTpe) if prefix.tpe <:< requiredTpe =>
+        requiredTpe
+      case None =>
+        prefix.tpe
+      case _ =>
+        c.error(prefix.pos, "Bad symbol specification syntax:")
+        typeOf[Nothing]
+    }
 
-    typesAndMethodsListExpr
+    def extractSymbols(prefixTpe: Option[Type], body: Tree): c.Expr[List[MemberAccessSpec]] = body match {
+      case _ if body.attachments.get[AlreadyReified.type].isDefined =>
+        c.Expr[List[MemberAccessSpec]](body)
+
+      case Block(stats, finalExpr) =>
+        reifyFlattenLists(c)((stats :+ finalExpr).map(extractSymbols(prefixTpe, _)))
+
+      case _ if body.tpe <:< typeOf[CompleteWildcardSelector] =>
+        parseWildcardSelector(c)(body)
+
+      case Select(ImplicitlyConverted(prefix, fun), _) =>
+        reifyAccessSpec(checkPrefixTpe(prefixTpe, prefix), body, Some(fun))
+
+      case Select(prefix, _) =>
+        reifyAccessSpec(checkPrefixTpe(prefixTpe, prefix), body, None)
+
+      case Apply(inner, _) =>
+        extractSymbols(prefixTpe, inner)
+
+      case TypeApply(inner, _) =>
+        extractSymbols(prefixTpe, inner)
+
+      case Function(List(ValDef(_, _, prefixTpeTree, _)), actualBody)
+        if body.attachments.get[SymbolValidatorOnMark.type].isDefined =>
+
+        extractSymbols(Some(prefixTpeTree.tpe), actualBody)
+
+      case Function(_, actualBody) =>
+        extractSymbols(prefixTpe, actualBody)
+
+      case _ =>
+        c.error(body.pos, "Bad symbol specification syntax: ")
+        reify(Nil)
+    }
+
+    val result = extractSymbols(None, expr.tree)
+    result.tree.updateAttachment(AlreadyReified)
+    result
   }
 
+  private def parseWildcardSelector(c: Context)(tree: c.universe.Tree) = {
+    import c.universe._
+    val macroUtils = MacroUtils(c)
+    import macroUtils._
+
+    def prefixes(tree: Tree): List[Tree] = tree match {
+      case ImplicitlyConverted(ident@Ident(_), _) if tree.tpe <:< typeOf[DirectWildcardSelector] => ident :: Nil
+      case Apply(TypeApply(Select(prefix, _), _), _) => tree :: prefixes(prefix)
+      case Apply(Select(prefix, _), _) => tree :: prefixes(prefix)
+      case TypeApply(Select(prefix, _), _) => tree :: prefixes(prefix)
+      case Select(prefix, _) => tree :: prefixes(prefix)
+      case _ => c.error(tree.pos, "Bad wildcard member selector syntax: "); Nil
+    }
+
+    val prefixTrees = prefixes(tree)
+    val ident = prefixTrees.last
+    val identTypeSymbol = ident.tpe.map(_.widen).typeSymbol
+
+    def publicMethods(tpe: Type) =
+      tpe.members.collect { case s if s.isPublic && s.isMethod => s.asMethod}
+
+    /* extractors for wildcard selector methods */
+
+    // <p>.implicitlyAs[T]
+    object ImplicitlyAs {
+      def unapply(tree: Tree) = tree match {
+        case TypeApply(Select(prefix, name), List(implicitlyAsTpe))
+          if prefix.tpe <:< typeOf[DirectWildcardSelector] && name == newTermName("implicitlyAs") =>
+          Some(implicitlyAsTpe.tpe)
+        case _ =>
+          None
+      }
+    }
+
+    // <p>.all
+    object All {
+      def unapply(tree: Tree) = tree match {
+        case Select(prefix, name)
+          if prefix.tpe <:< typeOf[WildcardSelector] && name == newTermName("all") =>
+          true
+        case _ =>
+          false
+      }
+    }
+
+    def parseSelectorLtr(prefixes: List[Tree]): (Iterable[MethodSymbol], Option[Symbol]) = {
+      val head :: tail = prefixes
+      val (scope, implConv) = tail match {
+        case Nil => (Nil, None)
+        case _ => parseSelectorLtr(tail)
+      }
+
+      head match {
+        case ImplicitlyAs(implicitTpe) =>
+          c.inferImplicitView(ident, ident.tpe, implicitTpe, silent = true, withMacrosDisabled = false, tree.pos) match {
+            case ImplicitlyConverted(_, fun) =>
+              (scope, Some(fun.symbol))
+            case _ =>
+              c.error(head.pos, s"No static implicit conversion to type $implicitTpe found: ")
+              (scope, implConv)
+          }
+
+        case Ident(_) =>
+          (publicMethods(head.tpe), implConv)
+
+        case All() =>
+          (scope, implConv)
+
+        //TODO TODO TODO
+
+      }
+    }
+
+    reify(Nil)
+  }
+
+  def methodsNamed_impl(c: Context)(name: c.Expr[String]): c.Expr[CompleteWildcardSelector] = {
+    import c.universe._
+    reify((c.prefix.asInstanceOf[c.Expr[MethodSubsets]]).splice.methodsNamed.selectDynamic(name.splice))
+  }
 }

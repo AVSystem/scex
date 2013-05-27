@@ -6,6 +6,7 @@ import com.avsystem.scex.util.MacroUtils
 import java.{util => ju, lang => jl}
 import scala.language.experimental.macros
 import scala.language.implicitConversions
+import scala.language.dynamics
 import scala.reflect.macros.Context
 
 class SymbolValidator(val accessSpecs: List[MemberAccessSpec]) {
@@ -54,6 +55,9 @@ class SymbolValidator(val accessSpecs: List[MemberAccessSpec]) {
 }
 
 object SymbolValidator {
+
+  import SymbolValidatorMacros._
+
   private def elidedByMacro =
     throw new NotImplementedError("You cannot use this outside of symbol validator DSL")
 
@@ -65,57 +69,56 @@ object SymbolValidator {
     }
   }
 
-  implicit class WildcardMemberAccess(wrapped: Any) {
-    /**
-     * Allows for calling any method on given type (from given type and its supertypes), excluding constructors.
-     */
-    def anyMethod = elidedByMacro
+  implicit def toDirectWildcardSelector(any: Any): DirectWildcardSelector = elidedByMacro
 
-    /**
-     * Allows for calling any method on given type declared in class that defines this type, excluding constructors.
-     */
-    def anyDeclaredMethod = elidedByMacro
+  // indicates end of wildcard selector
+  trait CompleteWildcardSelector
 
-    /**
-     * Allows for calling any overloaded variant of method with given name.
-     */
-    def anyMethodNamed(name: String) = elidedByMacro
-
-    /**
-     * Allows for creating new instances of given type using any public constructor.
-     */
-    def anyConstructor = elidedByMacro
-
-    /**
-     * Allows for creating new instances of given type using constructor with given signature.
-     * Used mainly when given constructor cannot be expressed as plain invocation in SymbolValidator DSL.
-     */
-    def constructorWithSignature(signature: String) = elidedByMacro
-
-    /**
-     * Allows for calling any Scala val or var getters.
-     */
-    def anyScalaGetter = elidedByMacro
-
-    /**
-     * Allows for calling any Scala var setters.
-     */
-    def anyScalaSetter = elidedByMacro
-
-    /**
-     * Allows for calling any Java bean getters.
-     */
-    def anyBeanGetter = elidedByMacro
-
-    /**
-     * Allows for calling any Java bean setters.
-     */
-    def anyBeanSetter = elidedByMacro
+  trait WildcardSelector {
+    def all: ScopeSpecifiers with MethodSubsets
   }
 
-  def allow(expr: Any): List[SymbolValidator.MemberAccessSpec] = macro SymbolValidatorMacros.allow_impl
+  trait DirectWildcardSelector extends WildcardSelector {
+    def all: ScopeSpecifiers with DirectMethodSubsets
 
-  def deny(expr: Any): List[SymbolValidator.MemberAccessSpec] = macro SymbolValidatorMacros.deny_impl
+    def constructorWithSignature(signature: String)
 
-  def on[T](expr: T => Any): T => Any = macro SymbolValidatorMacros.on_impl[T]
+    def implicitlyAs[T]: WildcardSelector
+  }
+
+  trait ScopeSpecifiers {
+    def declared: MethodSubsets
+
+    def introduced: MethodSubsets
+  }
+
+  trait MethodSubsets {
+    def methods: CompleteWildcardSelector
+
+    def methodsNamed: MethodsNamed
+
+    def methodsNamed(name: String): CompleteWildcardSelector = macro methodsNamed_impl
+
+    def scalaGetters: CompleteWildcardSelector
+
+    def scalaSetters: CompleteWildcardSelector
+
+    def beanGetters: CompleteWildcardSelector
+
+    def beanSetters: CompleteWildcardSelector
+  }
+
+  trait DirectMethodSubsets extends MethodSubsets {
+    def constructors: CompleteWildcardSelector
+  }
+
+  trait MethodsNamed extends Dynamic {
+    def selectDynamic(name: String): CompleteWildcardSelector
+  }
+
+  def allow(expr: Any): List[SymbolValidator.MemberAccessSpec] = macro allow_impl
+
+  def deny(expr: Any): List[SymbolValidator.MemberAccessSpec] = macro deny_impl
+
+  def on[T](expr: T => Any): T => Any = macro on_impl[T]
 }

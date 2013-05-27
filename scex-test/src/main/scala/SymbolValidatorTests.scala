@@ -13,63 +13,63 @@ object SymbolValidatorTests {
 
     specs = allow {
       on { t: Target =>
-        t.anyMethod
+        t.all.methods
       }
     }
     printSpecs()
 
     specs = allow {
       on { t: Target =>
-        t.anyDeclaredMethod
+        t.all.declared.methods
       }
     }
     printSpecs()
 
     specs = allow {
       on { t: Target =>
-        t.anyConstructor
+        t.all.constructors
       }
     }
     printSpecs()
 
     specs = allow {
       on { t: Target =>
-        t.anyScalaGetter
+        t.all.scalaGetters
       }
     }
     printSpecs()
 
     specs = allow {
       on { t: Target =>
-        t.anyScalaSetter
+        t.all.scalaSetters
       }
     }
     printSpecs()
 
     specs = allow {
       on { t: Target =>
-        t.anyBeanGetter
+        t.all.beanGetters
       }
     }
     printSpecs()
 
     specs = allow {
       on { t: Target =>
-        t.anyBeanSetter
+        t.all.beanSetters
       }
     }
     printSpecs()
 
     specs = allow {
       on { t: Target =>
-        t.anyMethodNamed("a")
+        t.all.methodsNamed.a
       }
     }
     printSpecs()
 
     specs = allow {
       on { t: Target =>
-        t.anyMethodNamed("c")
+        t.all.methodsNamed.c
       }
     }
     printSpecs()

@@ -21,8 +21,11 @@ class MacroUtils[C <: Context with Singleton] private(val context: C) {
 
   // extractor that matches compiler-generated applications of static implicit conversions
   object ImplicitlyConverted {
-    def unapply(tree: Tree) = tree match {
-      case Apply(fun, List(prefix)) if isStaticImplicitConversion(fun.symbol) && tree.pos == prefix.pos =>
+    def unapply(tree: Tree): Option[(Tree, Tree)] = tree match {
+      case TypeApply(prefix, _) =>
+        unapply(prefix)
+      case Apply(fun, List(prefix))
+        if isStaticImplicitConversion(fun.symbol) && (tree.pos == NoPosition || tree.pos == prefix.pos) =>
         Some((prefix, fun))
       case _ =>
         None
@@ -92,6 +95,11 @@ class MacroUtils[C <: Context with Singleton] private(val context: C) {
         methodSymbol.returnType =:= typeOf[Unit] &&
         BeanSetterNamePattern.pattern.matcher(name).matches
     }
+
+  def wrapInFunction[T](expr: context.Expr[T]) = reify {
+    def result = expr.splice
+    result
+  }
 }
 
 object MacroUtils {

@@ -88,8 +88,8 @@ object ValidationTest {
       }
 
       on { i: Int =>
-        i.anyConstructor
-        i.anyMethodNamed("+")
+        i.all.constructors
+        i.all.methodsNamed("+")
       }
 
       on { jl: JavaLol =>

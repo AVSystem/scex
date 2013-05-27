@@ -38,8 +38,8 @@ allow {
   }
 
   on { i: Int =>
-    i.anyConstructor
-    i.anyMethodNamed("+")
+    i.allConstructors
+    i.allMethodsNamed("+")
   }
 
 } ++ deny {
