@@ -42,7 +42,7 @@ object ValidationTest {
       ValidationTest.Foo.Bar.c
       String.CASE_INSENSITIVE_ORDER
       Some.apply _
-      String.valueOf(_: Boolean)
+      allStatic[String].methods
       Collections.emptyList
       new B
       new JavaLol
@@ -56,6 +56,7 @@ object ValidationTest {
       }
 
       on { s: String =>
+        s.all.introduced.methods
         s.length
         s.concat _
         s.matches _

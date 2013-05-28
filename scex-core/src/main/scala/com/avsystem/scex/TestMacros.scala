@@ -4,6 +4,7 @@ import java.{util => ju, lang => jl}
 import reflect.api.TypeCreator
 import reflect.macros.Context
 import scala.language.experimental.macros
+import scala.runtime.StringAdd
 
 object TestMacros {
   def lol[T]: TypeCreator = macro impl[T]
@@ -20,12 +21,6 @@ object TestMacros {
   def gimme[T](expr: T) = macro gimme_impl[T]
 
   def gimme_impl[T](c: Context)(expr: c.Expr[T]) = {
-    import c.universe._
-
-    expr.tree foreach {
-      tree => println(tree.tpe + " " + showRaw(tree))
-    }
-
     expr
   }
 }

@@ -32,6 +32,19 @@ class MacroUtils[C <: Context with Singleton] private(val context: C) {
     }
   }
 
+  object NewInstance {
+    def unapply(tree: Tree) = tree match {
+      case Apply(Select(New(tpeTree), nme.CONSTRUCTOR), args) =>
+        Some((tpeTree, args))
+      case _ =>
+        None
+    }
+  }
+
+  object TermName {
+    def unapply(termName: TermName) = Some(termName.decoded)
+  }
+
   def isModuleOrPackage(symbol: Symbol) = symbol != null &&
     (symbol.isModule || symbol.isModuleClass || symbol.isPackage || symbol.isPackageClass)
 
@@ -41,6 +54,7 @@ class MacroUtils[C <: Context with Singleton] private(val context: C) {
   def memberSignature(s: Symbol) =
     if (s != null) s"${s.fullName}:${s.typeSignature}" else null
 
+  // is this a symbol of globally available (static) implicit conversion?
   def isStaticImplicitConversion(symbol: Symbol) =
     symbol != null && symbol.isMethod && symbol.isStatic && symbol.isImplicit
 
@@ -52,6 +66,9 @@ class MacroUtils[C <: Context with Singleton] private(val context: C) {
     val symbol = tpe.typeSymbol
     symbol != null && symbol.isJava && isModuleOrPackage(symbol)
   }
+
+  def isJavaClass(symbol: Symbol) =
+    symbol.isJava && symbol.isClass && !symbol.isModuleClass && !symbol.isPackageClass
 
   def isStaticOrConstructor(symbol: Symbol) =
     symbol.isStatic || (symbol.isMethod && symbol.asMethod.isConstructor)
@@ -100,6 +117,12 @@ class MacroUtils[C <: Context with Singleton] private(val context: C) {
     def result = expr.splice
     result
   }
+
+  def publicMethods(tpe: Type) =
+    tpe.members.toList.collect { case s if s.isPublic && s.isMethod => s.asMethod}
+
+  def hasType[T: TypeTag](tree: Tree) =
+    tree.tpe <:< typeOf[T]
 }
 
 object MacroUtils {

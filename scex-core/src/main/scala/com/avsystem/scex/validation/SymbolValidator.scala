@@ -64,7 +64,7 @@ object SymbolValidator {
   case class MemberAccessSpec(typeInfo: TypeInfo, member: String, implicitConv: Option[String], allow: Boolean) {
     override def toString = {
       (if (allow) "Allowed" else "Denied") +
-        s" method $member on type $typeInfo" +
+        s" on type $typeInfo method $member" +
         implicitConv.map(ic => s" by implicit conversion $ic").getOrElse("")
     }
   }
@@ -81,15 +81,15 @@ object SymbolValidator {
   trait DirectWildcardSelector extends WildcardSelector {
     def all: ScopeSpecifiers with DirectMethodSubsets
 
-    def constructorWithSignature(signature: String)
+    def constructorWithSignature(signature: String): CompleteWildcardSelector
 
     def implicitlyAs[T]: WildcardSelector
   }
 
   trait ScopeSpecifiers {
-    def declared: MethodSubsets
+    def declared: ScalaMethodSubsets
 
-    def introduced: MethodSubsets
+    def introduced: ScalaMethodSubsets
   }
 
   trait MethodSubsets {
@@ -99,16 +99,18 @@ object SymbolValidator {
 
     def methodsNamed(name: String): CompleteWildcardSelector = macro methodsNamed_impl
 
-    def scalaGetters: CompleteWildcardSelector
-
-    def scalaSetters: CompleteWildcardSelector
-
     def beanGetters: CompleteWildcardSelector
 
     def beanSetters: CompleteWildcardSelector
   }
 
-  trait DirectMethodSubsets extends MethodSubsets {
+  trait ScalaMethodSubsets extends MethodSubsets {
+    def scalaGetters: CompleteWildcardSelector
+
+    def scalaSetters: CompleteWildcardSelector
+  }
+
+  trait DirectMethodSubsets extends ScalaMethodSubsets {
     def constructors: CompleteWildcardSelector
   }
 
@@ -121,4 +123,6 @@ object SymbolValidator {
   def deny(expr: Any): List[SymbolValidator.MemberAccessSpec] = macro deny_impl
 
   def on[T](expr: T => Any): T => Any = macro on_impl[T]
+
+  def allStatic[T]: MethodSubsets = elidedByMacro
 }
