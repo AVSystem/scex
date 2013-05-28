@@ -119,7 +119,7 @@ class MacroUtils[C <: Context with Singleton] private(val context: C) {
   }
 
   def publicMethods(tpe: Type) =
-    tpe.members.toList.collect { case s if s.isPublic && s.isMethod => s.asMethod}
+    tpe.members.toList.collect { case s if s.isPublic && s.isMethod && !s.isImplementationArtifact => s.asMethod}
 
   def hasType[T: TypeTag](tree: Tree) =
     tree.tpe <:< typeOf[T]
