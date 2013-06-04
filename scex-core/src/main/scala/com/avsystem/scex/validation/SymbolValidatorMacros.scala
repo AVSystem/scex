@@ -29,7 +29,7 @@ object SymbolValidatorMacros {
   private def extractMemberAccessSpecs(c: Context)(expr: c.Expr[Any], allow: Boolean): c.Expr[List[MemberAccessSpec]] = {
     import c.universe._
     val macroUtils = MacroUtils(c)
-    import macroUtils._
+    import macroUtils.{c => _, _}
 
     // transforms list of expressions of type List[MemberAccessSpec] to single expression
     // of type List[MemberAccessSpec] that represents flattened original list of lists
@@ -130,7 +130,7 @@ object SymbolValidatorMacros {
         val implicitTpe = implicitTpeTree.tpe
 
         val implConv = c.inferImplicitView(EmptyTree, prefixTpe, implicitTpe, true, false, tree.pos)
-        if (isStaticImplicitConversion(implConv.symbol)) {
+        if (isImplicitConversion(implConv.symbol)) {
           val newScope = publicMethods(implicitTpe).filterNot(_.isConstructor)
           ParsedWildcardSelector(prefixTpe, implicitTpe, newScope, implConv.symbol)
         } else {

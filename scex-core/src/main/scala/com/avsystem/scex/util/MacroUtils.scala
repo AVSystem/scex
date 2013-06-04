@@ -5,10 +5,10 @@ import java.{util => ju, lang => jl}
 import scala.Some
 import scala.reflect.macros.Context
 
-class MacroUtils[C <: Context with Singleton] private(val context: C) {
+class MacroUtils[C <: Context with Singleton] private(val c: C) {
 
-  import context.universe._
-  import context.{Expr, reifyRuntimeClass}
+  import c.universe._
+  import c.{Expr, reifyRuntimeClass}
 
   object LiteralString {
     def unapply(tree: Tree) = tree match {
@@ -25,7 +25,7 @@ class MacroUtils[C <: Context with Singleton] private(val context: C) {
       case TypeApply(prefix, _) =>
         unapply(prefix)
       case Apply(fun, List(prefix))
-        if isStaticImplicitConversion(fun.symbol) && (tree.pos == NoPosition || tree.pos == prefix.pos) =>
+        if isImplicitConversion(fun.symbol) && (tree.pos == NoPosition || tree.pos == prefix.pos) =>
         Some((prefix, fun))
       case _ =>
         None
@@ -54,9 +54,8 @@ class MacroUtils[C <: Context with Singleton] private(val context: C) {
   def memberSignature(s: Symbol) =
     if (s != null) s"${s.fullName}:${s.typeSignature}" else null
 
-  // is this a symbol of globally available (static) implicit conversion?
-  def isStaticImplicitConversion(symbol: Symbol) =
-    symbol != null && symbol.isMethod && symbol.isStatic && symbol.isImplicit
+  def isImplicitConversion(symbol: Symbol) =
+    symbol != null && symbol.isMethod && symbol.isImplicit
 
   def isJavaParameterlessMethod(symbol: Symbol) =
     symbol != null && symbol.isPublic && symbol.isJava && symbol.isMethod &&
@@ -113,7 +112,7 @@ class MacroUtils[C <: Context with Singleton] private(val context: C) {
         BeanSetterNamePattern.pattern.matcher(name).matches
     }
 
-  def wrapInFunction[T](expr: context.Expr[T]) = reify {
+  def wrapInFunction[T](expr: c.Expr[T]) = reify {
     def result = expr.splice
     result
   }

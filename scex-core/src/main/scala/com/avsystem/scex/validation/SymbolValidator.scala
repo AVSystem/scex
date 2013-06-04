@@ -31,7 +31,7 @@ class SymbolValidator(val accessSpecs: List[MemberAccessSpec]) {
     (objType: c.universe.Type, invokedSymbol: c.universe.Symbol, invokedConvOpt: Option[c.universe.Symbol]): Boolean = {
 
     val macroUtils = MacroUtils(c)
-    import macroUtils._
+    import macroUtils.{c => _, _}
 
     val invocationConvSignatureOpt: Option[String] = invokedConvOpt.map(memberSignature)
 
@@ -75,42 +75,131 @@ object SymbolValidator {
   trait CompleteWildcardSelector
 
   trait WildcardSelector {
+    /**
+     * Starts "wildcard" notation to allow or deny calling multiple methods on some type,
+     * in single DSL statement. Example:
+     *
+     * <pre>
+     * on { s: String =>
+     * &nbsp;&nbsp;s.all.declared.methods
+     * }
+     * </pre>
+     *
+     * @return
+     */
     def all: ScopeSpecifiers with MethodSubsets
   }
 
   trait DirectWildcardSelector extends WildcardSelector {
     def all: ScopeSpecifiers with DirectMethodSubsets
 
-    def constructorWithSignature(signature: String): CompleteWildcardSelector
-
+    /**
+     * Starts "wildcard" notation to allow or deny calling multiple methods available through implicit conversion
+     * on some type, in single DSL statement. Example:
+     *
+     * <pre>
+     * on { i: Int =>
+     * &nbsp;&nbsp;i.implicitlyAs[RichInt].all.declared.methods
+     * }
+     * </pre>
+     *
+     * @tparam T
+     * @return
+     */
     def implicitlyAs[T]: WildcardSelector
   }
 
   trait ScopeSpecifiers {
+    /**
+     * Filters out methods specified by "wildcard" notation leaving only these declared in class
+     * that represents given type.
+     * @return
+     */
     def declared: ScalaMethodSubsets
 
+    /**
+     * Filters out methods specified by "wildcard" notation leaving only these introduced in class
+     * that represents given type, where 'introduced' means declared and not overriding anything.
+     * @return
+     */
     def introduced: ScalaMethodSubsets
   }
 
   trait MethodSubsets {
+    /**
+     * Allows or denies calling all methods (not constructors) available for given type, on this type.
+     * @return
+     */
     def methods: CompleteWildcardSelector
 
+    /**
+     * Allows or denies calling all overloaded variants of method with given name available for given type, on this type.
+     * Uses Dynamic notation, for example:
+     *
+     * <pre>
+     * on { s: String =>
+     * &nbsp;&nbsp;s.all.methodsNamed.getBytes
+     * }
+     * </pre>
+     *
+     * @return
+     */
     def methodsNamed: MethodsNamed
 
+    /**
+     * Allows or denies calling all overloaded variants of method with given name available for given type, on this type.
+     * For example:
+     *
+     * <pre>
+     * on { s: String =>
+     * &nbsp;&nbsp;s.all.methodsNamed("getBytes")
+     * }
+     * </pre>
+     *
+     * @return
+     */
     def methodsNamed(name: String): CompleteWildcardSelector = macro methodsNamed_impl
 
+    /**
+     * Allows or denies calling all JavaBean getters available for given type, on this type.
+     * JavaBean getter is defined as a method taking no parameters or type parameters,
+     * with name starting with <tt>get</tt> (or <tt>is</tt> if it returns <tt>boolean</tt> or <tt>java.lang.Boolean</tt>)
+     * followed by capitalized name of bean property.
+     *
+     * @return
+     */
     def beanGetters: CompleteWildcardSelector
 
+    /**
+     * Allows or denies calling all JavaBean setters available for given type, on this type.
+     * JavaBean setter is defined as a method returning <tt>void</tt>, taking single parameter and no type parameters,
+     * with name starting with <tt>set</tt> followed by capitalized name of bean property.
+     *
+     * @return
+     */
     def beanSetters: CompleteWildcardSelector
   }
 
   trait ScalaMethodSubsets extends MethodSubsets {
+    /**
+     * Allows or denies calling getters for Scala <tt>val</tt>s or <tt>var</tt>s available for given type, on this type.
+     * @return
+     */
     def scalaGetters: CompleteWildcardSelector
 
+    /**
+     * Allows or denies calling setters for Scala <tt>var</tt>s available for given type, on this type.
+     * @return
+     */
     def scalaSetters: CompleteWildcardSelector
   }
 
   trait DirectMethodSubsets extends ScalaMethodSubsets {
+    /**
+     * Allows or denies creating new instances of given type (or subtypes if they still correspond to the same class)
+     * using any available constructor.
+     * @return
+     */
     def constructors: CompleteWildcardSelector
   }
 
@@ -118,11 +207,48 @@ object SymbolValidator {
     def selectDynamic(name: String): CompleteWildcardSelector
   }
 
+  /**
+   * Encompases block of expressions that specify methods that are allowed to be called in expressions.
+   * Multiple allow/deny blocks joined with <tt>++</tt> operator form an ACL-like structure.
+   * @param expr
+   * @return
+   */
   def allow(expr: Any): List[SymbolValidator.MemberAccessSpec] = macro allow_impl
 
+  /**
+   * Encompases block of expressions that specify methods that are not allowed to be called in expressions.
+   * Multiple allow/deny blocks joined with <tt>++</tt> operator form an ACL-like structure.
+   * @param expr
+   * @return
+   */
   def deny(expr: Any): List[SymbolValidator.MemberAccessSpec] = macro deny_impl
 
+  /**
+   * Starts a block that allows or denies calling some methods on instances of some type. This is expressed using
+   * lambda expression like this:
+   *
+   * <pre>
+   * on { s: String =>
+   * &nbsp;&nbsp;s.compareTo _
+   * &nbsp;&nbsp;s.charAt _
+   * &nbsp;&nbsp;s.length
+   * }
+   * @param expr
+   * @tparam T
+   * @return
+   */
   def on[T](expr: T => Any): T => Any = macro on_impl[T]
 
+  /**
+   * Starts "wildcard" notation to allow or deny calling multiple Java static methods, with single DSL statement.
+   * For example:
+   *
+   * <pre>
+   * allStatic[String].methodsNamed.valueOf
+   * </pre>
+   *
+   * @tparam T
+   * @return
+   */
   def allStatic[T]: MethodSubsets = elidedByMacro
 }

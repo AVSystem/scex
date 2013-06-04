@@ -69,7 +69,7 @@ object ValidationTest {
       }
 
       on { al: ju.ArrayList[_] =>
-        al.constructorWithSignature("(x$1: java.util.Collection[_ <: E])java.util.ArrayList[E]")
+        new ju.ArrayList(_: ju.Collection[_])
       }
 
       on { any: Any =>

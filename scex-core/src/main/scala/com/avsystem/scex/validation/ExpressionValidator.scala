@@ -22,7 +22,7 @@ object ExpressionValidator {
   def validate_impl[C: c.WeakTypeTag, R](c: Context)(expr: c.Expr[R]): c.Expr[R] = {
     import c.universe._
     val macroUtils = MacroUtils(c)
-    import macroUtils._
+    import macroUtils.{c => _, _}
 
     lazy val contextTpe = weakTypeOf[C]
 
