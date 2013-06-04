@@ -66,7 +66,7 @@ object SymbolValidatorMacros {
       List(MemberAccessSpec(
         reifyTypeInfo(prefixTpe).splice,
         reifySignature(symbol).splice,
-        reifyOption(if (implConv != NoSymbol) Some(implConv) else None, reifySignature(_: Symbol)).splice,
+        reifySignature(implConv).splice,
         c.literal(allow).splice))
     }
 

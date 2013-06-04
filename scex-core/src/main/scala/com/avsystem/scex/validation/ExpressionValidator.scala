@@ -54,7 +54,7 @@ object ExpressionValidator {
     def needsValidation(symbol: Symbol) =
       symbol != NoSymbol && (symbol.isMethod || isJavaField(symbol)) && !isExpressionUtil(symbol)
 
-    def validateAccess(pos: Position, tpe: Type, symbol: Symbol, icSymbol: Option[Symbol]) {
+    def validateAccess(pos: Position, tpe: Type, symbol: Symbol, icSymbol: Symbol) {
       if (needsValidation(symbol)) {
         if (!profile.symbolValidator.isInvocationAllowed(c)(tpe, symbol, icSymbol)) {
           c.error(pos, s"Cannot call ${memberSignature(symbol)} on ${tpe.typeSymbol.fullName}")
@@ -83,20 +83,20 @@ object ExpressionValidator {
     def validateTree(tree: Tree) {
       tree match {
         case tree@Select(contextAdapter@Ident(_), _) if isContextAdapter(contextAdapter.symbol) =>
-          validateAccess(tree.pos, contextTpe, getJavaGetter(tree.symbol, contextTpe), None)
+          validateAccess(tree.pos, contextTpe, getJavaGetter(tree.symbol, contextTpe), NoSymbol)
 
         case tree@Select(apply@ImplicitlyConverted(qualifier, fun), _) if !isExpressionUtil(fun.symbol) =>
 
           if (isAdapter(apply.tpe)) {
-            validateAccess(tree.pos, qualifier.tpe, getJavaGetter(tree.symbol, qualifier.tpe), None)
+            validateAccess(tree.pos, qualifier.tpe, getJavaGetter(tree.symbol, qualifier.tpe), NoSymbol)
           } else {
-            validateAccess(tree.pos, qualifier.tpe, tree.symbol, Some(fun.symbol))
+            validateAccess(tree.pos, qualifier.tpe, tree.symbol, fun.symbol)
           }
 
           validateTree(qualifier)
 
         case tree@Select(qualifier, _) =>
-          validateAccess(tree.pos, qualifier.tpe, tree.symbol, None)
+          validateAccess(tree.pos, qualifier.tpe, tree.symbol, NoSymbol)
           validateTree(qualifier)
 
         case _ =>

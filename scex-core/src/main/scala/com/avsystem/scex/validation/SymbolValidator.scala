@@ -17,28 +17,28 @@ class SymbolValidator(val accessSpecs: List[MemberAccessSpec]) {
       hierarchy(typeInfo.clazz.get)
   }).flatten.toSet
 
-  private type SignatureWithConversion = (String, Option[String])
+  private type SignatureWithConversion = (String, String)
   // MemberAccessSpec with its index in ACL (accessSpecs)
   private type SpecWithIndex = (MemberAccessSpec, Int)
 
   private val bySignaturesMap: Map[SignatureWithConversion, List[SpecWithIndex]] =
     accessSpecs.zipWithIndex.groupBy {
-      case (MemberAccessSpec(_, methodSignature, implicitConvSignatureOpt, _), _) =>
-        (methodSignature, implicitConvSignatureOpt)
+      case (MemberAccessSpec(_, methodSignature, implicitConvSignature, _), _) =>
+        (methodSignature, implicitConvSignature)
     }.toMap.withDefaultValue(Nil)
 
   def isInvocationAllowed(c: Context)
-    (objType: c.universe.Type, invokedSymbol: c.universe.Symbol, invokedConvOpt: Option[c.universe.Symbol]): Boolean = {
+                         (objType: c.universe.Type, invokedSymbol: c.universe.Symbol, invokedConv: c.universe.Symbol): Boolean = {
 
     val macroUtils = MacroUtils(c)
     import macroUtils.{c => _, _}
 
-    val invocationConvSignatureOpt: Option[String] = invokedConvOpt.map(memberSignature)
+    val invocationConvSignature = memberSignature(invokedConv)
 
     // signatures of invoked symbol and all symbols overridden by it
     val allSignatures: List[SignatureWithConversion] =
       (invokedSymbol :: invokedSymbol.allOverriddenSymbols).map {
-        symbol => (memberSignature(symbol), invocationConvSignatureOpt)
+        symbol => (memberSignature(symbol), invocationConvSignature)
       }.toSet.toList
 
     // MemberAccessSpecs that match this invocation
@@ -61,11 +61,11 @@ object SymbolValidator {
   private def elidedByMacro =
     throw new NotImplementedError("You cannot use this outside of symbol validator DSL")
 
-  case class MemberAccessSpec(typeInfo: TypeInfo, member: String, implicitConv: Option[String], allow: Boolean) {
+  case class MemberAccessSpec(typeInfo: TypeInfo, member: String, implicitConv: String, allow: Boolean) {
     override def toString = {
       (if (allow) "Allowed" else "Denied") +
         s" on type $typeInfo method $member" +
-        implicitConv.map(ic => s" by implicit conversion $ic").getOrElse("")
+        s" by implicit conversion $implicitConv"
     }
   }
 
