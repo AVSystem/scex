@@ -2,11 +2,15 @@ package com.avsystem.scex.validation
 
 import com.avsystem.scex.util.MacroUtils
 import java.{util => ju, lang => jl}
-import scala.reflect.api.TypeCreator
+import scala.reflect.api.{Mirror, Universe, TypeCreator}
 import scala.reflect.macros.Context
 import scala.collection.mutable.ListBuffer
 
 object SymbolValidatorMacros {
+
+  object NoTypeCreator extends TypeCreator {
+    def apply[U <: Universe with Singleton](m: Mirror[U]): U#Type = m.universe.NoType
+  }
 
   import SymbolValidator._
 
@@ -46,27 +50,28 @@ object SymbolValidatorMacros {
       }
     }
 
-    def reifySignature(symbol: Symbol) =
-      c.literal(memberSignature(symbol))
-
     def reifyTypeInfo(tpe: Type) = {
       val widenedTpe = tpe.map(_.widen)
 
-      val Block(List(_, _), Apply(_, List(_, typeCreatorTree))) =
-        c.reifyType(treeBuild.mkRuntimeUniverseRef, EmptyTree, widenedTpe)
+      val typeCreatorExpr = if (widenedTpe != NoType) {
+        val Block(List(_, _), Apply(_, List(_, typeCreatorTree))) =
+          c.reifyType(treeBuild.mkRuntimeUniverseRef, EmptyTree, widenedTpe)
+        c.Expr[TypeCreator](typeCreatorTree)
+      } else reify(NoTypeCreator)
 
       reify(new TypeInfo(
-        c.Expr[TypeCreator](typeCreatorTree).splice,
+        typeCreatorExpr.splice,
         reifyRuntimeClassOpt(tpe).splice,
         c.literal(tpe.typeSymbol.isJava).splice,
         c.literal(widenedTpe.toString).splice))
     }
 
-    def reifyAccessSpec(prefixTpe: Type, symbol: Symbol, implConv: Symbol) = reify {
+    def reifyAccessSpec(prefixTpe: Type, symbol: Symbol, implConv: Tree, implicitType: Type) = reify {
       List(MemberAccessSpec(
         reifyTypeInfo(prefixTpe).splice,
-        reifySignature(symbol).splice,
-        reifySignature(implConv).splice,
+        c.literal(memberSignature(symbol)).splice,
+        c.literal(path(implConv)).splice,
+        reifyTypeInfo(implicitType).splice,
         c.literal(allow).splice))
     }
 
@@ -91,7 +96,7 @@ object SymbolValidatorMacros {
         typeOf[Nothing]
     }
 
-    case class ParsedWildcardSelector(prefixTpe: Type, sourceTpe: Type, scope: List[MethodSymbol], implConv: Symbol) {
+    case class ParsedWildcardSelector(prefixTpe: Type, scope: List[MethodSymbol], implConv: Tree, implicitTpe: Type) {
       def filterScope(pred: MethodSymbol => Boolean) =
         copy(scope = scope.filter(pred))
 
@@ -99,24 +104,27 @@ object SymbolValidatorMacros {
         copy(scope = scope.filterNot(pred))
 
       def reifyMemberAccessSpecs = reifyFlattenLists(scope.map { method =>
-        reifyAccessSpec(prefixTpe, method, implConv)
+        reifyAccessSpec(prefixTpe, method, implConv, implicitTpe)
       })
+
+      def sourceTpe =
+        if (implicitTpe != NoType) implicitTpe else prefixTpe
     }
 
-    val InvalidParsedWildcardSelector = ParsedWildcardSelector(NoType, NoType, Nil, NoSymbol)
+    val InvalidParsedWildcardSelector = ParsedWildcardSelector(NoType, Nil, EmptyTree, NoType)
 
     def parseWildcardSelector(requiredPrefix: Option[(Symbol, Type)], tree: Tree): ParsedWildcardSelector = tree match {
       // prefix implicitly converted to DirectWildcardSelector
       case ImplicitlyConverted(prefix, _) if hasType[DirectWildcardSelector](tree) =>
         val tpe = checkPrefix(requiredPrefix, prefix)
-        ParsedWildcardSelector(tpe, tpe, publicMethods(tpe), NoSymbol)
+        ParsedWildcardSelector(tpe, publicMethods(tpe), EmptyTree, NoType)
 
       // SymbolValidator.allStatic[T]
       case TypeApply(Select(symbolValidatorModule, TermName("allStatic")), List(tpeTree))
         if hasType[SymbolValidator.type](symbolValidatorModule) && isJavaClass(tpeTree.symbol) =>
 
         val tpeWithStatics = tpeTree.symbol.companionSymbol.typeSignature
-        ParsedWildcardSelector(tpeWithStatics, tpeWithStatics, publicMethods(tpeWithStatics), NoSymbol)
+        ParsedWildcardSelector(tpeWithStatics, publicMethods(tpeWithStatics), EmptyTree, NoType)
 
       // <prefix>.all
       case Select(prefix, TermName("all")) if hasType[WildcardSelector](prefix) =>
@@ -129,10 +137,10 @@ object SymbolValidatorMacros {
         val prefixTpe = parseWildcardSelector(requiredPrefix, prefix).prefixTpe
         val implicitTpe = implicitTpeTree.tpe
 
-        val implConv = c.inferImplicitView(EmptyTree, prefixTpe, implicitTpe, true, false, tree.pos)
-        if (isImplicitConversion(implConv.symbol)) {
+        val implConv = c.inferImplicitView(EmptyTree, prefixTpe, implicitTpe, silent = true, withMacrosDisabled = false, tree.pos)
+        if (isGlobalImplicitConversion(implConv)) {
           val newScope = publicMethods(implicitTpe).filterNot(_.isConstructor)
-          ParsedWildcardSelector(prefixTpe, implicitTpe, newScope, implConv.symbol)
+          ParsedWildcardSelector(prefixTpe, newScope, implConv, implicitTpe)
         } else {
           c.error(tree.pos, s"No globally available implicit conversion from ${prefixTpe.widen} to $implicitTpe found.")
           InvalidParsedWildcardSelector
@@ -150,7 +158,7 @@ object SymbolValidatorMacros {
             val availableSignatures = prevSelector.scope.collect {
               case method if method.isConstructor => method.typeSignature.toString
             }
-            c.error(tree.pos, s"Type ${prevSelector.sourceTpe.widen} has no constructor with signature $signature\n" +
+            c.error(tree.pos, s"Type ${prevSelector.prefixTpe.widen} has no constructor with signature $signature\n" +
               s"Signatures of available constructors are: ${availableSignatures.mkString(", ")}")
             InvalidParsedWildcardSelector
         }
@@ -217,13 +225,13 @@ object SymbolValidatorMacros {
         parseWildcardSelector(requiredPrefix, body).reifyMemberAccessSpecs
 
       case NewInstance(tpeTree, _) =>
-        reifyAccessSpec(checkNewInstanceTpe(requiredPrefix, tpeTree), body.symbol, NoSymbol)
+        reifyAccessSpec(checkNewInstanceTpe(requiredPrefix, tpeTree), body.symbol, EmptyTree, NoType)
 
-      case Select(ImplicitlyConverted(prefix, fun), _) =>
-        reifyAccessSpec(checkPrefix(requiredPrefix, prefix), body.symbol, fun.symbol)
+      case Select(ic@ImplicitlyConverted(prefix, fun), _) =>
+        reifyAccessSpec(checkPrefix(requiredPrefix, prefix), body.symbol, fun, ic.tpe)
 
       case Select(prefix, _) =>
-        reifyAccessSpec(checkPrefix(requiredPrefix, prefix), body.symbol, NoSymbol)
+        reifyAccessSpec(checkPrefix(requiredPrefix, prefix), body.symbol, EmptyTree, NoType)
 
       case Apply(inner, _) =>
         extractSymbols(requiredPrefix, inner)

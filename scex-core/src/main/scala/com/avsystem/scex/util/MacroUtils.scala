@@ -25,7 +25,7 @@ class MacroUtils[C <: Context with Singleton] private(val c: C) {
       case TypeApply(prefix, _) =>
         unapply(prefix)
       case Apply(fun, List(prefix))
-        if isImplicitConversion(fun.symbol) && (tree.pos == NoPosition || tree.pos == prefix.pos) =>
+        if isGlobalImplicitConversion(fun) && (tree.pos == NoPosition || tree.pos == prefix.pos) =>
         Some((prefix, fun))
       case _ =>
         None
@@ -54,8 +54,41 @@ class MacroUtils[C <: Context with Singleton] private(val c: C) {
   def memberSignature(s: Symbol) =
     if (s != null) s"${s.fullName}:${s.typeSignature}" else null
 
-  def isImplicitConversion(symbol: Symbol) =
-    symbol != null && symbol.isMethod && symbol.isImplicit
+  def path(tree: Tree): String = tree match {
+    case TypeApply(prefix, _) => path(prefix)
+    case Select(prefix, name) => s"${path(prefix)}.${name.decoded}"
+    case Ident(name) => name.decoded
+    case This(name) => name.decoded
+    case EmptyTree => "<none>"
+    case _ => throw new IllegalArgumentException("This tree does not represent simple path: " + showRaw(tree))
+  }
+
+  /**
+   * Does this tree represent access to globally visible, stable identifier (i.e. a path from package through
+   * objects and vals)?
+   *
+   * @param tree
+   * @return
+   */
+  def refersToStableGlobalValue(tree: Tree): Boolean = tree.symbol.isPackage ||
+    (tree match {
+      case Select(prefix, name) =>
+        tree.symbol.isTerm && tree.symbol.asTerm.isStable && refersToStableGlobalValue(prefix)
+      case _ => false
+    })
+
+  def isValGetter(symbol: Symbol) =
+    symbol.isMethod && symbol.asMethod.isGetter && {
+      val accessed = symbol.asMethod.accessed
+      accessed.isTerm && accessed.asTerm.isVal
+    }
+
+  def isGlobalImplicitConversion(tree: Tree): Boolean = tree match {
+    case TypeApply(prefix, _) => isGlobalImplicitConversion(prefix)
+    //TODO handle apply method on implicit function values
+    case Select(prefix, name) => tree.symbol.isMethod && tree.symbol.isImplicit && refersToStableGlobalValue(prefix)
+    case _ => false
+  }
 
   def isJavaParameterlessMethod(symbol: Symbol) =
     symbol != null && symbol.isPublic && symbol.isJava && symbol.isMethod &&
@@ -78,7 +111,7 @@ class MacroUtils[C <: Context with Singleton] private(val c: C) {
   }
 
   def reifyRuntimeClassOpt(tpe: Type): Expr[Option[Class[_]]] =
-    if (isJavaStaticType(tpe)) {
+    if (tpe == NoType || isJavaStaticType(tpe)) {
       reify(None)
     } else {
       reify(Some(Expr[Class[_]](reifyRuntimeClass(tpe)).splice))

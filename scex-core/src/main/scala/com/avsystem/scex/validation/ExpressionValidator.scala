@@ -54,10 +54,14 @@ object ExpressionValidator {
     def needsValidation(symbol: Symbol) =
       symbol != NoSymbol && (symbol.isMethod || isJavaField(symbol)) && !isExpressionUtil(symbol)
 
-    def validateAccess(pos: Position, tpe: Type, symbol: Symbol, icSymbol: Symbol) {
+    def validateAccess(pos: Position, tpe: Type, symbol: Symbol, implicitConv: Tree, implicitType: Type) {
       if (needsValidation(symbol)) {
-        if (!profile.symbolValidator.isInvocationAllowed(c)(tpe, symbol, icSymbol)) {
-          c.error(pos, s"Cannot call ${memberSignature(symbol)} on ${tpe.typeSymbol.fullName}")
+        if (!profile.symbolValidator.isInvocationAllowed(c)(tpe, symbol, implicitConv, implicitType)) {
+          val implicitlyConvertedMsg =
+            if (implicitConv != EmptyTree || implicitType != NoType)
+              s"implicitly converted to $implicitType by ${path(implicitConv)}}"
+            else ""
+          c.error(pos, s"Cannot call ${memberSignature(symbol)} on ${tpe.map(_.widen)} $implicitlyConvertedMsg")
         }
       }
     }
@@ -83,20 +87,20 @@ object ExpressionValidator {
     def validateTree(tree: Tree) {
       tree match {
         case tree@Select(contextAdapter@Ident(_), _) if isContextAdapter(contextAdapter.symbol) =>
-          validateAccess(tree.pos, contextTpe, getJavaGetter(tree.symbol, contextTpe), NoSymbol)
+          validateAccess(tree.pos, contextTpe, getJavaGetter(tree.symbol, contextTpe), EmptyTree, NoType)
 
         case tree@Select(apply@ImplicitlyConverted(qualifier, fun), _) if !isExpressionUtil(fun.symbol) =>
 
           if (isAdapter(apply.tpe)) {
-            validateAccess(tree.pos, qualifier.tpe, getJavaGetter(tree.symbol, qualifier.tpe), NoSymbol)
+            validateAccess(tree.pos, qualifier.tpe, getJavaGetter(tree.symbol, qualifier.tpe), EmptyTree, NoType)
           } else {
-            validateAccess(tree.pos, qualifier.tpe, tree.symbol, fun.symbol)
+            validateAccess(tree.pos, qualifier.tpe, tree.symbol, fun, apply.tpe)
           }
 
           validateTree(qualifier)
 
         case tree@Select(qualifier, _) =>
-          validateAccess(tree.pos, qualifier.tpe, tree.symbol, NoSymbol)
+          validateAccess(tree.pos, qualifier.tpe, tree.symbol, EmptyTree, NoType)
           validateTree(qualifier)
 
         case _ =>

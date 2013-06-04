@@ -3,6 +3,7 @@ import com.avsystem.scex.validation._
 import java.util.Collections
 import java.{util => ju, lang => jl}
 import reflect.macros.Universe
+import scala.runtime.RichInt
 import scala.Some
 import scala.language.existentials
 
@@ -89,6 +90,7 @@ object ValidationTest {
       }
 
       on { i: Int =>
+        i.implicitlyAs[RichInt].all.methodsNamed.to
         i.all.constructors
         i.all.methodsNamed("+")
       }

@@ -12,7 +12,7 @@ import scala.reflect.macros.Context
 class SymbolValidator(val accessSpecs: List[MemberAccessSpec]) {
 
   lazy val referencedJavaClasses = accessSpecs.collect({
-    case MemberAccessSpec(typeInfo, _, _, true)
+    case MemberAccessSpec(typeInfo, _, _, _, true)
       if typeInfo.clazz.isDefined && typeInfo.isJava =>
       hierarchy(typeInfo.clazz.get)
   }).flatten.toSet
@@ -23,28 +23,33 @@ class SymbolValidator(val accessSpecs: List[MemberAccessSpec]) {
 
   private val bySignaturesMap: Map[SignatureWithConversion, List[SpecWithIndex]] =
     accessSpecs.zipWithIndex.groupBy {
-      case (MemberAccessSpec(_, methodSignature, implicitConvSignature, _), _) =>
+      case (MemberAccessSpec(_, methodSignature, implicitConvSignature, _, _), _) =>
         (methodSignature, implicitConvSignature)
     }.toMap.withDefaultValue(Nil)
 
-  def isInvocationAllowed(c: Context)
-                         (objType: c.universe.Type, invokedSymbol: c.universe.Symbol, invokedConv: c.universe.Symbol): Boolean = {
+  def isInvocationAllowed(c: Context)(
+    objType: c.universe.Type,
+    invokedSymbol: c.universe.Symbol,
+    implicitConv: c.universe.Tree,
+    implicitTpe: c.universe.Type): Boolean = {
 
     val macroUtils = MacroUtils(c)
     import macroUtils.{c => _, _}
 
-    val invocationConvSignature = memberSignature(invokedConv)
+    val implicitConvPath = path(implicitConv)
 
     // signatures of invoked symbol and all symbols overridden by it
     val allSignatures: List[SignatureWithConversion] =
       (invokedSymbol :: invokedSymbol.allOverriddenSymbols).map {
-        symbol => (memberSignature(symbol), invocationConvSignature)
+        symbol => (memberSignature(symbol), implicitConvPath)
       }.toSet.toList
 
     // MemberAccessSpecs that match this invocation
     val matchingSpecs: List[SpecWithIndex] = allSignatures.flatMap { signature =>
       bySignaturesMap(signature).filter {
-        case (accessSpec, _) => objType <:< accessSpec.typeInfo.typeIn(c.universe)
+        case (accessSpec, _) =>
+          objType <:< accessSpec.typeInfo.typeIn(c.universe) &&
+            implicitTpe <:< accessSpec.implicitTypeInfo.typeIn(c.universe) // NoType <:< NoType returns true
       }
     }
 
@@ -61,11 +66,11 @@ object SymbolValidator {
   private def elidedByMacro =
     throw new NotImplementedError("You cannot use this outside of symbol validator DSL")
 
-  case class MemberAccessSpec(typeInfo: TypeInfo, member: String, implicitConv: String, allow: Boolean) {
+  case class MemberAccessSpec(typeInfo: TypeInfo, member: String, implicitConvPath: String, implicitTypeInfo: TypeInfo, allow: Boolean) {
     override def toString = {
       (if (allow) "Allowed" else "Denied") +
         s" on type $typeInfo method $member" +
-        s" by implicit conversion $implicitConv"
+        s" implicitly converted to $implicitTypeInfo by $implicitConvPath"
     }
   }
 
