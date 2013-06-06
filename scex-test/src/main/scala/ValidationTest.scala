@@ -3,7 +3,7 @@ import com.avsystem.scex.validation._
 import java.util.Collections
 import java.{util => ju, lang => jl}
 import reflect.macros.Universe
-import scala.runtime.RichInt
+import scala.runtime.{StringAdd, RichInt}
 import scala.Some
 import scala.language.existentials
 
@@ -38,7 +38,11 @@ object ValidationTest {
 
     import com.avsystem.scex.validation.SymbolValidator._
 
-    val memberAccessSpecs = allow {
+    val memberAccessSpecs = deny {
+      on { sa: StringAdd =>
+        sa + (_: String)
+      }
+    } ++ allow {
       StringContext.apply _
       ValidationTest.Foo.Bar.c
       String.CASE_INSENSITIVE_ORDER
