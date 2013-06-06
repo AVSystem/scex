@@ -136,6 +136,7 @@ object SymbolValidatorMacros {
         val implConv = stripTypeApply(c.inferImplicitView(EmptyTree, prefixTpe, implicitTpe,
           silent = true, withMacrosDisabled = false, tree.pos))
 
+        //TODO: filter out members that already exist in original type
         if (isGlobalImplicitConversion(implConv)) {
           val newScope = publicMethods(implicitTpe).filterNot(_.isConstructor)
           ParsedWildcardSelector(prefixTpe, newScope, Some((implConv, implicitTpe)))
