@@ -1,8 +1,7 @@
 package com.avsystem.scex.validation
 
 import com.avsystem.scex.compiler.ExpressionProfile
-import com.avsystem.scex.compiler.annotation.{ExpressionUtil, ContextAdapter, JavaGetterAdapter, BooleanIsGetter}
-import com.avsystem.scex.util.MacroUtils
+import com.avsystem.scex.compiler.annotation._
 import java.{util => ju, lang => jl}
 import scala.language.experimental.macros
 import scala.reflect.macros.Context
@@ -21,15 +20,10 @@ object ExpressionValidator {
 
   def validate_impl[C: c.WeakTypeTag, R](c: Context)(expr: c.Expr[R]): c.Expr[R] = {
     import c.universe._
-    val macroUtils = MacroUtils(c)
-    import macroUtils.{c => _, _}
+    val validationContext = ValidationContext(c)
+    import validationContext.{c => _, _}
 
     lazy val contextTpe = weakTypeOf[C]
-
-    lazy val adapterAnnotType = typeOf[JavaGetterAdapter]
-    lazy val booleanGetterAnnotType = typeOf[BooleanIsGetter]
-    lazy val contextAdapterAnnotType = typeOf[ContextAdapter]
-    lazy val expressionUtilAnnotType = typeOf[ExpressionUtil]
 
     val profile = profileVar.value
 
@@ -47,68 +41,52 @@ object ExpressionValidator {
       }
     }
 
-    def isExpressionUtil(symbol: Symbol): Boolean = {
-      symbol != NoSymbol && (symbol.annotations.exists(_.tpe =:= expressionUtilAnnotType) || isExpressionUtil(symbol.owner))
-    }
+    // when selectionPrefix = true, validation is slightly loosened (see validateAccess)
+    def extractAccess(tree: Tree, selectionPrefix: Boolean): MemberAccess = {
+      def needsValidation(symbol: Symbol) =
+        symbol != null && symbol.isTerm && !symbol.isPackage
 
-    def needsValidation(symbol: Symbol) =
-      symbol != NoSymbol && (symbol.isMethod || isJavaField(symbol)) && !isExpressionUtil(symbol)
+      def isAllowedByDefault(tree: Tree) =
+        isExpressionUtil(tree.symbol) || (selectionPrefix && isStableGlobalValue(tree))
 
-    def validateAccess(pos: Position, tpe: Type, symbol: Symbol, implicitConv: Tree, implicitType: Type) {
-      if (needsValidation(symbol)) {
-        if (!profile.symbolValidator.isInvocationAllowed(c)(tpe, symbol, implicitConv, implicitType)) {
-          val implicitlyConvertedMsg =
-            if (implicitConv != EmptyTree || implicitType != NoType)
-              s"implicitly converted to $implicitType by ${path(implicitConv)}}"
-            else ""
-          c.error(pos, s"Cannot call ${memberSignature(symbol)} on ${tpe.map(_.widen)} $implicitlyConvertedMsg")
-        }
-      }
-    }
-
-    def isAdapter(tpe: Type) =
-      tpe != NoType && tpe.typeSymbol.annotations.exists(_.tpe =:= adapterAnnotType)
-
-    def isContextAdapter(symbol: Symbol) =
-      symbol.annotations.exists(_.tpe =:= contextAdapterAnnotType)
-
-    def isBooleanGetterAdapter(symbol: Symbol) =
-      symbol.annotations.exists(_.tpe =:= booleanGetterAnnotType)
-
-    // gets Java getter called by implicit wrapper
-    def getJavaGetter(symbol: Symbol, javaTpe: Type): Symbol = {
-      val prefix = if (isBooleanGetterAdapter(symbol)) "is" else "get"
-      val name = prefix + symbol.name.toString.capitalize
-
-      def fail = throw new Error(s"Could not find Java getter for $name on $javaTpe")
-      javaTpe.member(newTermName(name)).asTerm.alternatives.find(isBeanGetter).getOrElse(fail)
-    }
-
-    def validateTree(tree: Tree) {
       tree match {
-        case tree@Select(contextAdapter@Ident(_), _) if isContextAdapter(contextAdapter.symbol) =>
-          validateAccess(tree.pos, contextTpe, getJavaGetter(tree.symbol, contextTpe), EmptyTree, NoType)
+        case Select(contextAdapter@Ident(_), _) if isContextAdapter(contextAdapter.symbol) =>
+          val symbol = getJavaGetter(tree.symbol, contextTpe)
 
-        case tree@Select(apply@ImplicitlyConverted(qualifier, fun), _) if !isExpressionUtil(fun.symbol) =>
+          SimpleMemberAccess(contextTpe, symbol, None, allowedByDefault = false, tree.pos)
 
-          if (isAdapter(apply.tpe)) {
-            validateAccess(tree.pos, qualifier.tpe, getJavaGetter(tree.symbol, qualifier.tpe), EmptyTree, NoType)
-          } else {
-            validateAccess(tree.pos, qualifier.tpe, tree.symbol, fun, apply.tpe)
-          }
+        case Select(apply@ImplicitlyConverted(qualifier, fun), _) if !isScexSynthetic(fun.symbol) =>
+          val accessByImplicit = SimpleMemberAccess(qualifier.tpe, tree.symbol,
+            Some(ImplicitConversion(fun, apply.tpe)), isAllowedByDefault(tree), tree.pos)
 
-          validateTree(qualifier)
+          val implicitConversionAccess = extractAccess(fun, selectionPrefix = false)
+          val plainAccess = SimpleMemberAccess(apply.tpe, tree.symbol, None, isAllowedByDefault(tree), tree.pos)
+          val access = AlternativeMemberAccess(List(accessByImplicit, MultipleMemberAccesses(List(implicitConversionAccess, plainAccess))))
 
-        case tree@Select(qualifier, _) =>
-          validateAccess(tree.pos, qualifier.tpe, tree.symbol, EmptyTree, NoType)
-          validateTree(qualifier)
+          MultipleMemberAccesses(List(access, extractAccess(qualifier, selectionPrefix = false)))
+
+        case Select(apply@ImplicitlyConverted(qualifier, fun), _) if isAdapter(apply.tpe) =>
+          val symbol = getJavaGetter(tree.symbol, qualifier.tpe)
+          val access = SimpleMemberAccess(qualifier.tpe, symbol, None, allowedByDefault = false, tree.pos)
+
+          MultipleMemberAccesses(List(access, extractAccess(qualifier, selectionPrefix = false)))
+
+        case Select(qualifier, _) if needsValidation(tree.symbol) =>
+          val access = SimpleMemberAccess(qualifier.tpe, tree.symbol, None, isAllowedByDefault(tree), tree.pos)
+
+          MultipleMemberAccesses(List(access, extractAccess(qualifier, selectionPrefix = true)))
 
         case _ =>
-          tree.children.foreach(child => validateTree(child))
+          MultipleMemberAccesses(tree.children.map(child => extractAccess(child, selectionPrefix = false)))
       }
     }
 
-    validateTree(expr.tree)
+    val access = extractAccess(expr.tree, selectionPrefix = false)
+    val validationResult = profile.symbolValidator.isMemberAccessAllowed(validationContext)(access)
+
+    validationResult.deniedAccesses.foreach { access =>
+      c.error(access.pos, s"Member access forbidden: $access")
+    }
 
     expr
   }

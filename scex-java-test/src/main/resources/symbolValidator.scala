@@ -14,6 +14,7 @@ allow {
   }
 
   on { s: String =>
+    s.all.constructors
     s.length
     s.concat _
     s.matches _
@@ -38,8 +39,7 @@ allow {
   }
 
   on { i: Int =>
-    i.allConstructors
-    i.allMethodsNamed("+")
+    i.all.methodsNamed("+")
   }
 
 } ++ deny {

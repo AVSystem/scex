@@ -5,7 +5,8 @@ import java.{util => ju, lang => jl}
 import scala.Some
 import scala.reflect.macros.Context
 
-class MacroUtils[C <: Context with Singleton] private(val c: C) {
+trait MacroUtils {
+  val c: Context
 
   import c.universe._
   import c.{Expr, reifyRuntimeClass}
@@ -54,8 +55,12 @@ class MacroUtils[C <: Context with Singleton] private(val c: C) {
   def memberSignature(s: Symbol) =
     if (s != null) s"${s.fullName}:${s.typeSignature}" else null
 
+  def stripTypeApply(tree: Tree): Tree = tree match {
+    case TypeApply(prefix, _) => stripTypeApply(prefix)
+    case _ => tree
+  }
+
   def path(tree: Tree): String = tree match {
-    case TypeApply(prefix, _) => path(prefix)
     case Select(prefix, name) => s"${path(prefix)}.${name.decoded}"
     case Ident(name) => name.decoded
     case This(name) => name.decoded
@@ -64,29 +69,37 @@ class MacroUtils[C <: Context with Singleton] private(val c: C) {
   }
 
   /**
-   * Does this tree represent access to globally visible, stable identifier (i.e. a path from package through
-   * objects and vals)?
+   * Is this tree a path that starts with package and goes through stable symbols (vals and objects)?
    *
    * @param tree
    * @return
    */
-  def refersToStableGlobalValue(tree: Tree): Boolean = tree.symbol.isPackage ||
-    (tree match {
-      case Select(prefix, name) =>
-        tree.symbol.isTerm && tree.symbol.asTerm.isStable && refersToStableGlobalValue(prefix)
+  def isStableGlobalPath(tree: Tree): Boolean = {
+    //TODO: cache using tree attachments?
+    val s = tree.symbol
+    s.isPackage || (tree match {
+      case Select(prefix, _) => isStableGlobalPath(prefix)
       case _ => false
     })
+  }
 
-  def isValGetter(symbol: Symbol) =
-    symbol.isMethod && symbol.asMethod.isGetter && {
-      val accessed = symbol.asMethod.accessed
-      accessed.isTerm && accessed.asTerm.isVal
-    }
+  /**
+   * Does this tree represent access to stable, global value?, i.e. is this tree a path that starts with
+   * toplevel symbol and goes through objects and vals?
+   */
+  def isStableGlobalValue(tree: Tree): Boolean = {
+    //TODO: cache using tree attachments?
+    val s = tree.symbol
+    s.isTerm && s.asTerm.isStable && (s.isStatic || (tree match {
+      case Select(prefix, _) => isStableGlobalValue(prefix)
+      case _ => false
+    }))
+  }
 
   def isGlobalImplicitConversion(tree: Tree): Boolean = tree match {
     case TypeApply(prefix, _) => isGlobalImplicitConversion(prefix)
     //TODO handle apply method on implicit function values
-    case Select(prefix, name) => tree.symbol.isMethod && tree.symbol.isImplicit && refersToStableGlobalValue(prefix)
+    case Select(prefix, name) => tree.symbol.isMethod && tree.symbol.isImplicit && isStableGlobalPath(prefix)
     case _ => false
   }
 
@@ -158,5 +171,7 @@ class MacroUtils[C <: Context with Singleton] private(val c: C) {
 }
 
 object MacroUtils {
-  def apply(c: Context) = new MacroUtils[c.type](c)
+  def apply(ctx: Context) = new MacroUtils {
+    val c: ctx.type = ctx
+  }
 }

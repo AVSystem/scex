@@ -64,15 +64,15 @@ class ScexCompiler(config: ScexCompilerConfig) {
    * Scala compiler issues reporter
    */
   private object reporter extends AbstractReporter {
-    private val errorsBuffer = new ListBuffer[CompileError]
+    private val errorsBuilder = IndexedSeq.newBuilder[CompileError]
 
-    def compileErrors = errorsBuffer.result()
+    def compileErrors = errorsBuilder.result()
 
     val settings: Settings = ScexCompiler.this.settings
 
     def display(pos: Position, msg: String, severity: Severity) {
       if (severity == ERROR) {
-        errorsBuffer += CompileError(pos.lineContent, if (pos.isDefined) pos.column else 1, msg)
+        errorsBuilder += CompileError(pos.lineContent, if (pos.isDefined) pos.column else 1, msg)
       }
     }
 
@@ -80,7 +80,7 @@ class ScexCompiler(config: ScexCompilerConfig) {
 
     override def reset() {
       super.reset()
-      errorsBuffer.clear()
+      errorsBuilder.clear()
     }
   }
 
@@ -227,7 +227,7 @@ class ScexCompiler(config: ScexCompilerConfig) {
     Try(result)
   }
 
-  private def compile(name: String, code: String, classLoader: ScexClassLoader): List[CompileError] = {
+  private def compile(name: String, code: String, classLoader: ScexClassLoader): Seq[CompileError] = {
     settings.outputDirs.setSingleOutput(classLoader.classfileDirectory)
 
     // Every ClassLoader not registered as parallel-capable loads its classes while being locked on itself
@@ -371,7 +371,7 @@ object ScexCompiler {
     override def toString = s"$msg:\n${line.stripLineEnd}\n${" " * (column - 1)}^"
   }
 
-  case class CompilationFailedException(source: String, errors: List[CompileError])
+  case class CompilationFailedException(source: String, errors: Seq[CompileError])
     extends Exception(s"Compilation failed with ${pluralize(errors.size, "error")}:\n${errors.mkString("\n")}")
 
 }

@@ -47,6 +47,8 @@ object ValidationTest {
       Collections.emptyList
       new B
       new JavaLol
+      None
+      Tuple2.apply _
 
       on { tl: TypedLol[_] =>
         tl.toString
@@ -148,6 +150,7 @@ object ValidationTest {
         |  (new JavaLol).foo
         |  new JavaLol + s"fuu ${new JavaLol}"
         |  immaUtil
+        |  Some((3, "50"))
         |}
       """.stripMargin
 

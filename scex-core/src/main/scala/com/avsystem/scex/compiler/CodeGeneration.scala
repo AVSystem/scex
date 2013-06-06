@@ -136,6 +136,7 @@ object CodeGeneration {
     }
 
     s"""
+    |@com.avsystem.scex.compiler.annotation.ProfileObject
     |object $ProfileObjectName {
     |${adapters.mkString}
     |  @com.avsystem.scex.compiler.annotation.ExpressionUtil object Utils {

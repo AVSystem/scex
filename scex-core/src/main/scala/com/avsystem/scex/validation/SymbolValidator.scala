@@ -2,61 +2,77 @@ package com.avsystem.scex.validation
 
 import SymbolValidator._
 import com.avsystem.scex.util.CommonUtils._
-import com.avsystem.scex.util.MacroUtils
 import java.{util => ju, lang => jl}
+import scala.language.dynamics
 import scala.language.experimental.macros
 import scala.language.implicitConversions
-import scala.language.dynamics
-import scala.reflect.macros.Context
 
 class SymbolValidator(val accessSpecs: List[MemberAccessSpec]) {
 
-  lazy val referencedJavaClasses = accessSpecs.collect({
-    case MemberAccessSpec(typeInfo, _, _, _, true)
-      if typeInfo.clazz.isDefined && typeInfo.isJava =>
+  val referencedJavaClasses = accessSpecs.collect({
+    case MemberAccessSpec(typeInfo, _, _, true) if typeInfo.clazz.isDefined && typeInfo.isJava =>
       hierarchy(typeInfo.clazz.get)
   }).flatten.toSet
 
-  private type SignatureWithConversion = (String, String)
+  private val lowestPriority = accessSpecs.length
+
   // MemberAccessSpec with its index in ACL (accessSpecs)
   private type SpecWithIndex = (MemberAccessSpec, Int)
 
-  private val bySignaturesMap: Map[SignatureWithConversion, List[SpecWithIndex]] =
-    accessSpecs.zipWithIndex.groupBy {
-      case (MemberAccessSpec(_, methodSignature, implicitConvSignature, _, _), _) =>
-        (methodSignature, implicitConvSignature)
-    }.toMap.withDefaultValue(Nil)
+  private val bySignaturesMap: Map[String, List[SpecWithIndex]] =
+    accessSpecs.zipWithIndex.groupBy(_._1.memberSignature).toMap.withDefaultValue(Nil)
 
-  def isInvocationAllowed(c: Context)(
-    objType: c.universe.Type,
-    invokedSymbol: c.universe.Symbol,
-    implicitConv: c.universe.Tree,
-    implicitTpe: c.universe.Type): Boolean = {
+  def isMemberAccessAllowed(vc: ValidationContext)(access: vc.MemberAccess): vc.ValidationResult = {
+    import vc.{c => _, _}
 
-    val macroUtils = MacroUtils(c)
-    import macroUtils.{c => _, _}
-
-    val implicitConvPath = path(implicitConv)
-
-    // signatures of invoked symbol and all symbols overridden by it
-    val allSignatures: List[SignatureWithConversion] =
-      (invokedSymbol :: invokedSymbol.allOverriddenSymbols).map {
-        symbol => (memberSignature(symbol), implicitConvPath)
-      }.toSet.toList
-
-    // MemberAccessSpecs that match this invocation
-    val matchingSpecs: List[SpecWithIndex] = allSignatures.flatMap { signature =>
-      bySignaturesMap(signature).filter {
-        case (accessSpec, _) =>
-          objType <:< accessSpec.typeInfo.typeIn(c.universe) &&
-            implicitTpe <:< accessSpec.implicitTypeInfo.typeIn(c.universe) // NoType <:< NoType returns true
+    def implicitConversionsMatch(actual: Option[ImplicitConversion], fromSpec: Option[(String, TypeInfo)]) =
+      (actual, fromSpec) match {
+        case (Some(ImplicitConversion(actualPathTree, actualImplicitTpe)), Some((specPath, specImplicitTypeInfo))) =>
+          path(actualPathTree) == specPath && actualImplicitTpe <:< specImplicitTypeInfo.typeIn(vc.c.universe)
+        case (None, None) => true
+        case _ => false
       }
+
+    access match {
+      case access@SimpleMemberAccess(tpe, symbol, implicitConv, allowedByDefault, position) =>
+        val signatures: List[String] =
+          (symbol :: symbol.allOverriddenSymbols).map(memberSignature)
+
+        // MemberAccessSpecs that match this invocation
+        val matchingSpecs: List[SpecWithIndex] = signatures.flatMap { signature =>
+          bySignaturesMap(signature).filter { case (accessSpec, _) =>
+            signature == accessSpec.memberSignature &&
+              tpe <:< accessSpec.typeInfo.typeIn(vc.c.universe) &&
+              implicitConversionsMatch(implicitConv, accessSpec.implicitConv)
+          }
+        }
+
+        // get 'allow' field from matching spec that appeared first in ACL or false if there was no matching spec
+        val (allow, index) = if (matchingSpecs.nonEmpty) {
+          val (spec, index) = matchingSpecs.minBy(_._2)
+          (spec.allow, index)
+        } else (allowedByDefault, lowestPriority)
+
+        ValidationResult(index, if (allow) Nil else List(access))
+
+      case MultipleMemberAccesses(accesses) =>
+        // all must be allowed
+        val (allowed, denied) = accesses.map(a => isMemberAccessAllowed(vc)(a)).partition(_.deniedAccesses.isEmpty)
+        if (denied.nonEmpty)
+          ValidationResult(denied.minBy(_.priority).priority, denied.flatMap(_.deniedAccesses))
+        else if (allowed.nonEmpty)
+          ValidationResult(allowed.maxBy(_.priority).priority, Nil)
+        else
+          ValidationResult(lowestPriority, Nil)
+
+      case AlternativeMemberAccess(accesses) =>
+        // take the soonest-validated alternative
+        if (accesses.nonEmpty)
+          accesses.map(a => isMemberAccessAllowed(vc)(a)).minBy(_.priority)
+        else
+          ValidationResult(lowestPriority, Nil)
     }
-
-    // get 'allow' field from matching spec that appeared first in ACL or false if there was no matching spec
-    if (matchingSpecs.nonEmpty) matchingSpecs.minBy(_._2)._1.allow else false
   }
-
 }
 
 object SymbolValidator {
@@ -66,11 +82,13 @@ object SymbolValidator {
   private def elidedByMacro =
     throw new NotImplementedError("You cannot use this outside of symbol validator DSL")
 
-  case class MemberAccessSpec(typeInfo: TypeInfo, member: String, implicitConvPath: String, implicitTypeInfo: TypeInfo, allow: Boolean) {
+  case class MemberAccessSpec(typeInfo: TypeInfo, memberSignature: String, implicitConv: Option[(String, TypeInfo)], allow: Boolean) {
     override def toString = {
-      (if (allow) "Allowed" else "Denied") +
-        s" on type $typeInfo method $member" +
-        s" implicitly converted to $implicitTypeInfo by $implicitConvPath"
+      val implicitConvRepr = implicitConv match {
+        case Some((implicitConvPath, implicitTypeInfo)) => s"when implicitly converted to |$implicitTypeInfo| by |$implicitConvPath|"
+        case None => ""
+      }
+      (if (allow) "Allowed" else "Denied") + s" on type |$typeInfo| member |$memberSignature| $implicitConvRepr"
     }
   }
 
@@ -108,10 +126,14 @@ object SymbolValidator {
      * }
      * </pre>
      *
+     * Implicit conversion used in SymbolValidator DSL must be globally visible (e.g. method in non-nested Scala object)
+     *
      * @tparam T
      * @return
      */
     def implicitlyAs[T]: WildcardSelector
+
+    def constructorWithSignature(signature: String): CompleteWildcardSelector
   }
 
   trait ScopeSpecifiers {
