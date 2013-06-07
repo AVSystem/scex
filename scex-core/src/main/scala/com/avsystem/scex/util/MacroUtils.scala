@@ -103,6 +103,14 @@ trait MacroUtils {
     case _ => false
   }
 
+  lazy val toplevelSymbols = Set(typeOf[Any], typeOf[AnyRef], typeOf[AnyVal]).map(_.typeSymbol)
+
+  def isStaticModule(symbol: Symbol) =
+    symbol != null && symbol.isModule && symbol.isStatic
+
+  def isFromToplevelType(symbol: Symbol) =
+    (symbol :: symbol.allOverriddenSymbols).exists(toplevelSymbols contains _.owner)
+
   def isJavaParameterlessMethod(symbol: Symbol) =
     symbol != null && symbol.isPublic && symbol.isJava && symbol.isMethod &&
       symbol.asMethod.paramss == List(List()) && !symbol.typeSignature.takesTypeArgs

@@ -24,12 +24,12 @@ abstract class ValidationContext protected extends MacroUtils {
           (if (allowedByDefault) "allowed" else "denied") + " by default"
 
       case MultipleMemberAccesses(accesses) =>
-        val reprs = accesses.map(_.repr(prefix + " ")).filter(_.nonEmpty)
+        val reprs = accesses.map(_.repr(prefix)).filter(_.nonEmpty)
         reprs.mkString("\n")
 
       case AlternativeMemberAccess(accesses) =>
         val reprs = accesses.map(_.repr(prefix + " ")).filter(_.nonEmpty)
-        reprs.mkString("\n" + prefix + "OR\n")
+        reprs.mkString(prefix + "--\n", "\n" + prefix + "OR\n", "\n" + prefix + "--")
     }
   }
 
@@ -65,9 +65,12 @@ abstract class ValidationContext protected extends MacroUtils {
     symbol != null && symbol != NoSymbol &&
       (symbol.annotations.exists(_.tpe =:= expressionUtilAnnotType) || isExpressionUtil(symbol.owner))
 
+  def isProfileObject(symbol: Symbol) =
+    symbol != null && symbol.annotations.exists(_.tpe =:= profileObjectAnnotType)
+
   def isScexSynthetic(symbol: Symbol): Boolean =
     symbol != null && symbol != NoSymbol &&
-      (symbol.annotations.exists(_.tpe =:= profileObjectAnnotType) || isScexSynthetic(symbol.owner))
+      (isProfileObject(symbol) || isScexSynthetic(symbol.owner))
 
   def isAdapter(tpe: Type) =
     tpe != NoType && tpe.typeSymbol.annotations.exists(_.tpe =:= adapterAnnotType)

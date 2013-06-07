@@ -20,18 +20,13 @@ object Playground {
     val getterPattern = "get([A-Z][a-z0-9]*)+"
     def propNameFromGetter(getter: String) = getter(3).toLower + getter.substring(4)
 
-    val propsWithGetters = tpe.members.withFilter {
-      member =>
-        val name = member.name.decoded
-        member.isMethod &&
-          member.isPublic &&
-          member.asMethod.paramss == List(List()) &&
-          name.matches(getterPattern) &&
-          !keywords.contains(propNameFromGetter(name))
-    } map {
-      member =>
-        val name = member.name.decoded
-        (propNameFromGetter(name), name)
+    val propsWithGetters = tpe.members.withFilter { member =>
+      val name = member.name.decoded
+      member.isMethod && member.isPublic && member.asMethod.paramss == List(List()) &&
+        name.matches(getterPattern) && !keywords.contains(propNameFromGetter(name))
+    } map { member =>
+      val name = member.name.decoded
+      (propNameFromGetter(name), name)
     }
 
     if (propsWithGetters.nonEmpty) {

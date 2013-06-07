@@ -38,11 +38,7 @@ object ValidationTest {
 
     import com.avsystem.scex.validation.SymbolValidator._
 
-    val memberAccessSpecs = deny {
-      on { sa: StringAdd =>
-        sa + (_: String)
-      }
-    } ++ allow {
+    val memberAccessSpecs = allow {
       StringContext.apply _
       ValidationTest.Foo.Bar.c
       String.CASE_INSENSITIVE_ORDER
@@ -154,6 +150,7 @@ object ValidationTest {
         |  (new JavaLol).foo
         |  new JavaLol + s"fuu ${new JavaLol}"
         |  immaUtil
+        |  None.hashCode
         |  Some((3, "50"))
         |}
       """.stripMargin

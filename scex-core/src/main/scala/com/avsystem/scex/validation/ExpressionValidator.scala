@@ -41,13 +41,9 @@ object ExpressionValidator {
       }
     }
 
-    // when selectionPrefix = true, validation is slightly loosened (see validateAccess)
-    def extractAccess(tree: Tree, selectionPrefix: Boolean): MemberAccess = {
+    def extractAccess(tree: Tree, staticAccess: Boolean): MemberAccess = {
       def needsValidation(symbol: Symbol) =
-        symbol != null && symbol.isTerm && !symbol.isPackage
-
-      def isAllowedByDefault(tree: Tree) =
-        isExpressionUtil(tree.symbol) || (selectionPrefix && isStableGlobalValue(tree))
+        symbol != null && symbol.isTerm && !symbol.isPackage && !isExpressionUtil(symbol) && !isProfileObject(symbol)
 
       tree match {
         case Select(contextAdapter@Ident(_), _) if isContextAdapter(contextAdapter.symbol) =>
@@ -57,31 +53,34 @@ object ExpressionValidator {
 
         case Select(apply@ImplicitlyConverted(qualifier, fun), _) if !isScexSynthetic(fun.symbol) =>
           val accessByImplicit = SimpleMemberAccess(qualifier.tpe, tree.symbol,
-            Some(ImplicitConversion(fun, apply.tpe)), isAllowedByDefault(tree), tree.pos)
+            Some(ImplicitConversion(fun, apply.tpe)), allowedByDefault = false, tree.pos)
 
-          val implicitConversionAccess = extractAccess(fun, selectionPrefix = false)
-          val plainAccess = SimpleMemberAccess(apply.tpe, tree.symbol, None, isAllowedByDefault(tree), tree.pos)
+          val implicitConversionAccess = extractAccess(fun, staticAccess = false)
+          val plainAccess = SimpleMemberAccess(apply.tpe, tree.symbol, None, allowedByDefault = false, tree.pos)
           val access = AlternativeMemberAccess(List(accessByImplicit, MultipleMemberAccesses(List(implicitConversionAccess, plainAccess))))
 
-          MultipleMemberAccesses(List(access, extractAccess(qualifier, selectionPrefix = false)))
+          MultipleMemberAccesses(List(access, extractAccess(qualifier, staticAccess = false)))
 
         case Select(apply@ImplicitlyConverted(qualifier, fun), _) if isAdapter(apply.tpe) =>
           val symbol = getJavaGetter(tree.symbol, qualifier.tpe)
           val access = SimpleMemberAccess(qualifier.tpe, symbol, None, allowedByDefault = false, tree.pos)
 
-          MultipleMemberAccesses(List(access, extractAccess(qualifier, selectionPrefix = false)))
+          MultipleMemberAccesses(List(access, extractAccess(qualifier, staticAccess = false)))
 
         case Select(qualifier, _) if needsValidation(tree.symbol) =>
-          val access = SimpleMemberAccess(qualifier.tpe, tree.symbol, None, isAllowedByDefault(tree), tree.pos)
-
-          MultipleMemberAccesses(List(access, extractAccess(qualifier, selectionPrefix = true)))
+          val access = SimpleMemberAccess(qualifier.tpe, tree.symbol, None, staticAccess, tree.pos)
+          // When accessing member of static module (that includes Java statics) not from Any/AnyVal/AnyRef
+          // the static module access itself is allowed by default.
+          val staticMember = isStaticModule(qualifier.symbol) && !isFromToplevelType(tree.symbol)
+          MultipleMemberAccesses(List(access, extractAccess(qualifier, staticMember)))
 
         case _ =>
-          MultipleMemberAccesses(tree.children.map(child => extractAccess(child, selectionPrefix = false)))
+          MultipleMemberAccesses(tree.children.map(child => extractAccess(child, staticAccess = false)))
       }
     }
 
-    val access = extractAccess(expr.tree, selectionPrefix = false)
+    val access = extractAccess(expr.tree, staticAccess = false)
+    println(s"VALIDATING\n${access.repr}")
     val validationResult = profile.symbolValidator.isMemberAccessAllowed(validationContext)(access)
 
     validationResult.deniedAccesses.foreach { access =>

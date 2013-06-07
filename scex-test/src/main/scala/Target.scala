@@ -26,3 +26,11 @@ class Target {
 
   def isJ() = true
 }
+
+object OTarget extends Target {
+
+  object Inner {
+    def lol = 5
+  }
+
+}
