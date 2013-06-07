@@ -80,7 +80,6 @@ object ExpressionValidator {
     }
 
     val access = extractAccess(expr.tree, staticAccess = false)
-    println(s"VALIDATING\n${access.repr}")
     val validationResult = profile.symbolValidator.isMemberAccessAllowed(validationContext)(access)
 
     validationResult.deniedAccesses.foreach { access =>
