@@ -14,7 +14,6 @@ import java.util.concurrent.TimeUnit
 import java.{util => ju, lang => jl}
 import org.apache.commons.lang.StringEscapeUtils
 import scala.Some
-import scala.collection.mutable.ListBuffer
 import scala.language.existentials
 import scala.ref.WeakReference
 import scala.reflect.internal.util.{BatchSourceFile, Position}
@@ -199,9 +198,7 @@ class ScexCompiler(config: ScexCompilerConfig) {
         val adapterPkg = fullJavaGetterAdaptersCache.get(exprDef.contextClass).get
         val adapterClassName = adapterName(contextClass)
         Some(s"$adapterPkg.$adapterClassName")
-      } else {
-        None
-      }
+      } else None
 
     val profileObjectPkg = profileCompilationResultsCache.get(exprDef.profile).get
 

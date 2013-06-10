@@ -93,11 +93,11 @@ object SymbolValidatorMacros {
         typeOf[Nothing]
     }
 
-    case class ParsedWildcardSelector(prefixTpe: Type, scope: List[MethodSymbol], implConv: Option[(Tree, Type)]) {
-      def filterScope(pred: MethodSymbol => Boolean) =
+    case class ParsedWildcardSelector(prefixTpe: Type, scope: List[TermSymbol], implConv: Option[(Tree, Type)]) {
+      def filterScope(pred: TermSymbol => Boolean) =
         copy(scope = scope.filter(pred))
 
-      def filterScopeNot(pred: MethodSymbol => Boolean) =
+      def filterScopeNot(pred: TermSymbol => Boolean) =
         copy(scope = scope.filterNot(pred))
 
       def reifyMemberAccessSpecs = reifyFlattenLists(scope.map { method =>
@@ -113,14 +113,14 @@ object SymbolValidatorMacros {
       // prefix implicitly converted to DirectWildcardSelector
       case ImplicitlyConverted(prefix, _) if hasType[DirectWildcardSelector](tree) =>
         val tpe = checkPrefix(requiredPrefix, prefix)
-        ParsedWildcardSelector(tpe, publicMethods(tpe), None)
+        ParsedWildcardSelector(tpe, accessibleMembers(tpe), None)
 
       // SymbolValidator.allStatic[T]
       case TypeApply(Select(symbolValidatorModule, TermName("allStatic")), List(tpeTree))
         if hasType[SymbolValidator.type](symbolValidatorModule) && isJavaClass(tpeTree.symbol) =>
 
         val tpeWithStatics = tpeTree.symbol.companionSymbol.typeSignature
-        ParsedWildcardSelector(tpeWithStatics, publicMethods(tpeWithStatics), None)
+        ParsedWildcardSelector(tpeWithStatics, accessibleMembers(tpeWithStatics), None)
 
       // <prefix>.all
       case Select(prefix, TermName("all")) if hasType[WildcardSelector](prefix) =>
@@ -138,7 +138,7 @@ object SymbolValidatorMacros {
 
         //TODO: filter out members that already exist in original type
         if (isGlobalImplicitConversion(implConv)) {
-          val newScope = publicMethods(implicitTpe).filterNot(_.isConstructor)
+          val newScope = accessibleMembers(implicitTpe).filterNot(isConstructor)
           ParsedWildcardSelector(prefixTpe, newScope, Some((implConv, implicitTpe)))
         } else {
           c.error(tree.pos, s"No globally available implicit conversion from ${prefixTpe.widen} to $implicitTpe found.")
@@ -150,12 +150,12 @@ object SymbolValidatorMacros {
         if hasType[DirectWildcardSelector](prefix) =>
 
         val prevSelector = parseWildcardSelector(requiredPrefix, prefix)
-        prevSelector.scope.find(p => p.isConstructor && p.typeSignature.toString == signature) match {
+        prevSelector.scope.find(p => isConstructor(p) && p.typeSignature.toString == signature) match {
           case Some(ctor) =>
             prevSelector.copy(scope = List(ctor))
           case None =>
             val availableSignatures = prevSelector.scope.collect {
-              case method if method.isConstructor => method.typeSignature.toString
+              case member if isConstructor(member) => member.typeSignature.toString
             }
             c.error(tree.pos, s"Type ${prevSelector.prefixTpe.widen} has no constructor with signature $signature\n" +
               s"Signatures of available constructors are: ${availableSignatures.mkString(", ")}")
@@ -176,43 +176,53 @@ object SymbolValidatorMacros {
         prevSelector.filterScope(m => m.owner == sourceTpeSymbol && m.allOverriddenSymbols.isEmpty)
 
       // <prefix>.constructors
-      case Select(prefix, TermName("constructors")) if hasType[DirectMethodSubsets](prefix) =>
-        parseWildcardSelector(requiredPrefix, prefix).filterScope(_.isConstructor)
+      case Select(prefix, TermName("constructors")) if hasType[DirectMemberSubsets](prefix) =>
+        parseWildcardSelector(requiredPrefix, prefix).filterScope(isConstructor)
 
       // <prefix>.methods
-      case Select(prefix, TermName("methods")) if hasType[MethodSubsets](prefix) =>
-        parseWildcardSelector(requiredPrefix, prefix).filterScopeNot(_.isConstructor)
+      case Select(prefix, TermName("members")) if hasType[MemberSubsets](prefix) =>
+        parseWildcardSelector(requiredPrefix, prefix).filterScopeNot(isConstructor)
 
-      // <prefix>.methodsNamed.<methodName> or <prefix>.methodsNamed(<methodName>)
-      case Apply(Select(Select(prefix, TermName("methodsNamed")), TermName("selectDynamic")), List(Literal(Constant(methodName: String))))
-        if hasType[MethodSubsets](prefix) =>
+      // <prefix>.membersNamed.<methodName> or <prefix>.membersNamed(<methodName>)
+      case Apply(Select(prefix, TermName("membersNamed")), nameTrees)
+        if hasType[MemberSubsets](prefix) =>
 
-        val result = parseWildcardSelector(requiredPrefix, prefix).filterScope(_.name.decoded == methodName)
-        if (result.scope.isEmpty) {
-          c.error(tree.pos, s"No method named $methodName found in type ${result.sourceTpe.widen}")
+        val names = nameTrees.collect {
+          case LiteralString(name) => name
+          case invalidTree =>
+            c.error(invalidTree.pos, "You must specify member name with literal string")
+            "<invalid>"
+        }.toSet
+
+        val result = parseWildcardSelector(requiredPrefix, prefix).filterScope(names contains _.name.decoded)
+        val absentMembers = names diff result.scope.map(_.name.decoded).toSet
+        if (absentMembers.nonEmpty) {
+          absentMembers.foreach {
+            name => c.error(tree.pos, s"No method named $name found in type ${result.sourceTpe.widen}")
+          }
           InvalidParsedWildcardSelector
         } else {
           result
         }
 
       // <prefix>.beanGetters
-      case Select(prefix, TermName("beanGetters")) if hasType[MethodSubsets](prefix) =>
+      case Select(prefix, TermName("beanGetters")) if hasType[MemberSubsets](prefix) =>
         parseWildcardSelector(requiredPrefix, prefix).filterScope(isBeanGetter)
 
       // <prefix>.beanSetters
-      case Select(prefix, TermName("beanSetters")) if hasType[MethodSubsets](prefix) =>
+      case Select(prefix, TermName("beanSetters")) if hasType[MemberSubsets](prefix) =>
         parseWildcardSelector(requiredPrefix, prefix).filterScope(isBeanSetter)
 
       // <prefix>.scalaGetters
-      case Select(prefix, TermName("scalaGetters")) if hasType[ScalaMethodSubsets](prefix) =>
+      case Select(prefix, TermName("scalaGetters")) if hasType[ScalaMemberSubsets](prefix) =>
         parseWildcardSelector(requiredPrefix, prefix).filterScope(_.isGetter)
 
       // <prefix>.scalaSetters
-      case Select(prefix, TermName("scalaSetters")) if hasType[ScalaMethodSubsets](prefix) =>
+      case Select(prefix, TermName("scalaSetters")) if hasType[ScalaMemberSubsets](prefix) =>
         parseWildcardSelector(requiredPrefix, prefix).filterScope(_.isSetter)
 
       case _ =>
-        c.error(tree.pos, "Bad wildcard selector syntax: ")
+        c.error(tree.pos, "Bad wildcard selector syntax: " + showRaw(tree))
         InvalidParsedWildcardSelector
     }
 
@@ -254,8 +264,20 @@ object SymbolValidatorMacros {
     extractSymbols(None, expr.tree)
   }
 
-  def methodsNamed_impl(c: Context {type PrefixType = MethodSubsets})(name: c.Expr[String]): c.Expr[CompleteWildcardSelector] = {
+  /**
+   * Translates '<prefix>.membersNamed.costam' into '<prefix>.membersNamed("costam")'
+   */
+  def methodsNamed_selectDynamic_impl(c: Context)(name: c.Expr[String]): c.Expr[CompleteWildcardSelector] = {
     import c.universe._
-    reify(c.prefix.splice.methodsNamed.selectDynamic(name.splice))
+    val macroUtils = MacroUtils(c)
+    import macroUtils.{c => _, _}
+
+    c.prefix.tree match {
+      case Select(methodSubsets, TermName("membersNamed")) if hasType[MemberSubsets](methodSubsets) =>
+        c.Expr[CompleteWildcardSelector](Apply(Select(methodSubsets, newTermName("membersNamed")), List(name.tree)))
+      case _ =>
+        c.error(c.enclosingPosition, "Bad symbol specification syntax:")
+        c.literalNull
+    }
   }
 }

@@ -1,5 +1,6 @@
 rootProject.name = "scex"
 
 include "scex-core"
+include "scex-util"
 include "scex-test"
 include "scex-java-test"

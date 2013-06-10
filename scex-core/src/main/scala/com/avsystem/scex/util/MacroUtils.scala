@@ -23,8 +23,6 @@ trait MacroUtils {
   // extractor that matches compiler-generated applications of static implicit conversions
   object ImplicitlyConverted {
     def unapply(tree: Tree): Option[(Tree, Tree)] = tree match {
-      case TypeApply(prefix, _) =>
-        unapply(prefix)
       case Apply(fun, List(prefix))
         if isGlobalImplicitConversion(fun) && (tree.pos == NoPosition || tree.pos == prefix.pos) =>
         Some((prefix, fun))
@@ -52,8 +50,14 @@ trait MacroUtils {
   def isJavaField(symbol: Symbol) =
     symbol != null && symbol.isJava && symbol.isTerm && !symbol.isMethod && !isModuleOrPackage(symbol)
 
+  def isConstructor(s: Symbol) =
+    s.isMethod && s.asMethod.isConstructor
+
   def memberSignature(s: Symbol) =
     if (s != null) s"${s.fullName}:${s.typeSignature}" else null
+
+  def isStableTerm(s: Symbol) =
+    s.isTerm && s.asTerm.isStable
 
   def stripTypeApply(tree: Tree): Tree = tree match {
     case TypeApply(prefix, _) => stripTypeApply(prefix)
@@ -71,35 +75,20 @@ trait MacroUtils {
   /**
    * Is this tree a path that starts with package and goes through stable symbols (vals and objects)?
    *
-   * @param tree
    * @return
    */
-  def isStableGlobalPath(tree: Tree): Boolean = {
-    //TODO: cache using tree attachments?
-    val s = tree.symbol
-    s.isPackage || (tree match {
-      case Select(prefix, _) => isStableGlobalPath(prefix)
-      case _ => false
-    })
-  }
-
-  /**
-   * Does this tree represent access to stable, global value?, i.e. is this tree a path that starts with
-   * toplevel symbol and goes through objects and vals?
-   */
-  def isStableGlobalValue(tree: Tree): Boolean = {
-    //TODO: cache using tree attachments?
-    val s = tree.symbol
-    s.isTerm && s.asTerm.isStable && (s.isStatic || (tree match {
-      case Select(prefix, _) => isStableGlobalValue(prefix)
-      case _ => false
-    }))
+  def isStableGlobalPath(tree: Tree): Boolean = tree match {
+    case Select(prefix, _) => isStableTerm(tree.symbol) && isStableGlobalPath(prefix)
+    case Ident(_) => tree.symbol.isStatic && isStableTerm(tree.symbol)
+    case This(_) => tree.symbol.isPackageClass
+    case _ => false
   }
 
   def isGlobalImplicitConversion(tree: Tree): Boolean = tree match {
     case TypeApply(prefix, _) => isGlobalImplicitConversion(prefix)
     //TODO handle apply method on implicit function values
-    case Select(prefix, name) => tree.symbol.isMethod && tree.symbol.isImplicit && isStableGlobalPath(prefix)
+    case Select(prefix, name) =>
+      tree.symbol.isMethod && tree.symbol.isImplicit && isStableGlobalPath(prefix)
     case _ => false
   }
 
@@ -171,8 +160,13 @@ trait MacroUtils {
     result
   }
 
-  def publicMethods(tpe: Type) =
-    tpe.members.toList.collect { case s if s.isPublic && s.isMethod && !s.isImplementationArtifact => s.asMethod}
+  /**
+   * Methods, modules, val/var setters and getters, Java fields
+   */
+  def accessibleMembers(tpe: Type) =
+    tpe.members.toList.collect { case s if s.isPublic && s.isTerm &&
+      !s.asTerm.isVal && !s.asTerm.isVar && !s.isImplementationArtifact => s.asTerm
+    }
 
   def hasType[T: TypeTag](tree: Tree) =
     tree.tpe <:< typeOf[T]

@@ -13,14 +13,14 @@ object SymbolValidatorTests {
 
     specs = allow {
       on { t: Target =>
-        t.all.methods
+        t.all.members
       }
     }
     printSpecs()
 
     specs = allow {
       on { t: Target =>
-        t.all.declared.methods
+        t.all.declared.members
       }
     }
     printSpecs()
@@ -62,14 +62,14 @@ object SymbolValidatorTests {
 
     specs = allow {
       on { t: Target =>
-        t.all.methodsNamed.a
+        t.all.membersNamed.a
       }
     }
     printSpecs()
 
     specs = allow {
       on { t: Target =>
-        t.all.methodsNamed.c
+        t.all.membersNamed.c
       }
     }
     printSpecs()

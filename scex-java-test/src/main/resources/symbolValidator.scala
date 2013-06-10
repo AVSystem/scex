@@ -39,7 +39,7 @@ allow {
   }
 
   on { i: Int =>
-    i.all.methodsNamed("+")
+    i.all.membersNamed("+")
   }
 
 } ++ deny {

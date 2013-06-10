@@ -95,9 +95,9 @@ object SymbolValidator {
   implicit def toDirectWildcardSelector(any: Any): DirectWildcardSelector = elidedByMacro
 
   // indicates end of wildcard selector
-  trait CompleteWildcardSelector
+  trait CompleteWildcardSelector extends Any
 
-  trait WildcardSelector {
+  trait WildcardSelector extends Any {
     /**
      * Starts "wildcard" notation to allow or deny calling multiple methods on some type,
      * in single DSL statement. Example:
@@ -110,11 +110,11 @@ object SymbolValidator {
      *
      * @return
      */
-    def all: ScopeSpecifiers with MethodSubsets
+    def all: ScopeSpecifiers with MemberSubsets
   }
 
   trait DirectWildcardSelector extends WildcardSelector {
-    def all: ScopeSpecifiers with DirectMethodSubsets
+    def all: ScopeSpecifiers with DirectMemberSubsets
 
     /**
      * Starts "wildcard" notation to allow or deny calling multiple methods available through implicit conversion
@@ -136,28 +136,28 @@ object SymbolValidator {
     def constructorWithSignature(signature: String): CompleteWildcardSelector
   }
 
-  trait ScopeSpecifiers {
+  trait ScopeSpecifiers extends Any {
     /**
      * Filters out methods specified by "wildcard" notation leaving only these declared in class
      * that represents given type.
      * @return
      */
-    def declared: ScalaMethodSubsets
+    def declared: ScalaMemberSubsets
 
     /**
      * Filters out methods specified by "wildcard" notation leaving only these introduced in class
      * that represents given type, where 'introduced' means declared and not overriding anything.
      * @return
      */
-    def introduced: ScalaMethodSubsets
+    def introduced: ScalaMemberSubsets
   }
 
-  trait MethodSubsets {
+  trait MemberSubsets extends Any {
     /**
      * Allows or denies calling all methods (not constructors) available for given type, on this type.
      * @return
      */
-    def methods: CompleteWildcardSelector
+    def members: CompleteWildcardSelector
 
     /**
      * Allows or denies calling all overloaded variants of method with given name available for given type, on this type.
@@ -165,27 +165,27 @@ object SymbolValidator {
      *
      * <pre>
      * on { s: String =>
-     * &nbsp;&nbsp;s.all.methodsNamed.getBytes
+     * &nbsp;&nbsp;s.all.membersNamed.getBytes
      * }
      * </pre>
      *
      * @return
      */
-    def methodsNamed: MethodsNamed
+    def membersNamed: MethodsNamed
 
     /**
-     * Allows or denies calling all overloaded variants of method with given name available for given type, on this type.
+     * Allows or denies calling all methods with given names available for given type, on this type.
      * For example:
      *
      * <pre>
      * on { s: String =>
-     * &nbsp;&nbsp;s.all.methodsNamed("getBytes")
+     * &nbsp;&nbsp;s.all.membersNamed("getBytes")
      * }
      * </pre>
      *
      * @return
      */
-    def methodsNamed(name: String): CompleteWildcardSelector = macro methodsNamed_impl
+    def membersNamed(names: String*): CompleteWildcardSelector
 
     /**
      * Allows or denies calling all JavaBean getters available for given type, on this type.
@@ -207,7 +207,7 @@ object SymbolValidator {
     def beanSetters: CompleteWildcardSelector
   }
 
-  trait ScalaMethodSubsets extends MethodSubsets {
+  trait ScalaMemberSubsets extends MemberSubsets {
     /**
      * Allows or denies calling getters for Scala <tt>val</tt>s or <tt>var</tt>s available for given type, on this type.
      * @return
@@ -221,7 +221,7 @@ object SymbolValidator {
     def scalaSetters: CompleteWildcardSelector
   }
 
-  trait DirectMethodSubsets extends ScalaMethodSubsets {
+  trait DirectMemberSubsets extends ScalaMemberSubsets {
     /**
      * Allows or denies creating new instances of given type (or subtypes if they still correspond to the same class)
      * using any available constructor.
@@ -230,8 +230,8 @@ object SymbolValidator {
     def constructors: CompleteWildcardSelector
   }
 
-  trait MethodsNamed extends Dynamic {
-    def selectDynamic(name: String): CompleteWildcardSelector
+  trait MethodsNamed extends Any with Dynamic {
+    def selectDynamic(name: String): CompleteWildcardSelector = macro methodsNamed_selectDynamic_impl
   }
 
   /**
@@ -271,11 +271,11 @@ object SymbolValidator {
    * For example:
    *
    * <pre>
-   * allStatic[String].methodsNamed.valueOf
+   * allStatic[String].membersNamed.valueOf
    * </pre>
    *
    * @tparam T
    * @return
    */
-  def allStatic[T]: MethodSubsets = elidedByMacro
+  def allStatic[T]: MemberSubsets = elidedByMacro
 }

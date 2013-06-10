@@ -43,7 +43,7 @@ object ValidationTest {
       ValidationTest.Foo.Bar.c
       String.CASE_INSENSITIVE_ORDER
       Some.apply _
-      allStatic[String].methods
+      allStatic[String].members
       Collections.emptyList
       new B
       new JavaLol
@@ -59,7 +59,7 @@ object ValidationTest {
       }
 
       on { s: String =>
-        s.all.introduced.methods
+        s.all.introduced.members
         s.length
         s.concat _
         s.matches _
@@ -92,9 +92,9 @@ object ValidationTest {
       }
 
       on { i: Int =>
-        i.implicitlyAs[RichInt].all.methodsNamed.to
+        i.implicitlyAs[RichInt].all.membersNamed.to
         i.all.constructors
-        i.all.methodsNamed("+")
+        i.all.membersNamed("+")
       }
 
       on { jl: JavaLol =>

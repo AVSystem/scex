@@ -6,7 +6,7 @@ object WildcardsTest {
 
     allow {
       on { i: Int =>
-        i.implicitlyAs[RichInt].all.methods
+        i.implicitlyAs[RichInt].all.members
       }
     } foreach println
   }

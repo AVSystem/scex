@@ -1,7 +1,6 @@
 package com.avsystem.scex.validation
 
 import com.avsystem.scex.compiler.ExpressionProfile
-import com.avsystem.scex.compiler.annotation._
 import java.{util => ju, lang => jl}
 import scala.language.experimental.macros
 import scala.reflect.macros.Context

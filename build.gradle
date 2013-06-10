@@ -49,6 +49,16 @@ project("scex-core") {
     }
 }
 
+project("scex-util") {
+    apply plugin: 'scala'
+
+    dependencies {
+        compile "org.scala-lang:scala-library:$scalaVersion"
+
+        compile(project(":scex-core"))
+    }
+}
+
 project("scex-test") {
     apply plugin: 'scala'
 
