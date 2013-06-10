@@ -100,9 +100,21 @@ object SymbolValidatorMacros {
       def filterScopeNot(pred: TermSymbol => Boolean) =
         copy(scope = scope.filterNot(pred))
 
-      def reifyMemberAccessSpecs = reifyFlattenLists(scope.map { method =>
-        reifyAccessSpec(prefixTpe, method, implConv)
-      })
+      private def reifyAccessSpec(member: TermSymbol) = reify {
+        List(MemberAccessSpec(
+          c.Expr[TypeInfo](Ident(newTermName("prefixTypeInfo"))).splice,
+          c.literal(memberSignature(member)).splice,
+          c.Expr[Option[(String, TypeInfo)]](Ident(newTermName("implConvOpt"))).splice,
+          c.literal(allow).splice))
+      }
+
+      def reifyMemberAccessSpecs = reify {
+        val prefixTypeInfo = reifyTypeInfo(prefixTpe).splice
+        val implConvOpt = reifyOption(implConv, reifyImplicitConvSpec).splice
+        // separate method to avoid "Code size too large" error
+        def fromWildcard = reifyFlattenLists(scope.map(m => reifyAccessSpec(m))).splice
+        fromWildcard
+      }
 
       val sourceTpe = implConv.map(_._2).getOrElse(prefixTpe)
     }

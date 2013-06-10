@@ -2,6 +2,7 @@ package com.avsystem.scex.validation
 
 import java.{util => ju, lang => jl}
 import scala.language.experimental.macros
+import scala.runtime._
 
 object CommonMemberSets {
 
@@ -26,27 +27,35 @@ object CommonMemberSets {
     }
     on { b: Boolean =>
       b.all.introduced.members
+      b.implicitlyAs[RichBoolean].all.members
     }
     on { c: Char =>
       c.all.introduced.members
+      c.implicitlyAs[RichChar].all.members
     }
     on { b: Byte =>
       b.all.introduced.members
+      b.implicitlyAs[RichByte].all.members
     }
     on { s: Short =>
       s.all.introduced.members
+      s.implicitlyAs[RichShort].all.members
     }
     on { i: Int =>
       i.all.introduced.members
+      i.implicitlyAs[RichInt].all.members
     }
     on { l: Long =>
       l.all.introduced.members
+      l.implicitlyAs[RichLong].all.members
     }
     on { f: Float =>
       f.all.introduced.members
+      f.implicitlyAs[RichFloat].all.members
     }
     on { d: Double =>
       d.all.introduced.members
+      d.implicitlyAs[RichDouble].all.members
     }
   }
 
