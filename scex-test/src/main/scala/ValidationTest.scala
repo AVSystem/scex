@@ -148,7 +148,7 @@ object ValidationTest {
         |  String.CASE_INSENSITIVE_ORDER
         |  new ValidationTest.B
         |  (new JavaLol).foo
-        |  new JavaLol + s"fuu ${new JavaLol}"
+        |  new JavaLol + s"fuu ${new JavaLol}" + 42
         |  immaUtil
         |  None.hashCode
         |  Some((3, "50"))

@@ -8,7 +8,7 @@ object CommonMemberSets {
 
   import SymbolValidator._
 
-  def basicOperationsProfile = deny {
+  def basicSymbolsProfile = deny {
     on { any: Any =>
       any.equals _
       any.hashCode
@@ -23,43 +23,43 @@ object CommonMemberSets {
       any.!= _
     }
     on { u: Unit =>
-      u.all.introduced.members
+      u.all.members
     }
     on { b: Boolean =>
-      b.all.introduced.members
+      b.all.members
       b.implicitlyAs[RichBoolean].all.members
     }
     on { c: Char =>
-      c.all.introduced.members
+      c.all.members
       c.implicitlyAs[RichChar].all.members
     }
     on { b: Byte =>
-      b.all.introduced.members
+      b.all.members
       b.implicitlyAs[RichByte].all.members
     }
     on { s: Short =>
-      s.all.introduced.members
+      s.all.members
       s.implicitlyAs[RichShort].all.members
     }
     on { i: Int =>
-      i.all.introduced.members
+      i.all.members
       i.implicitlyAs[RichInt].all.members
     }
     on { l: Long =>
-      l.all.introduced.members
+      l.all.members
       l.implicitlyAs[RichLong].all.members
     }
     on { f: Float =>
-      f.all.introduced.members
+      f.all.members
       f.implicitlyAs[RichFloat].all.members
     }
     on { d: Double =>
-      d.all.introduced.members
+      d.all.members
       d.implicitlyAs[RichDouble].all.members
     }
   }
 
   def main(args: Array[String]) {
-    basicOperationsProfile foreach println
+    basicSymbolsProfile foreach println
   }
 }

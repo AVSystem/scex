@@ -193,6 +193,12 @@ trait MacroUtils {
 
   def hasType[T: TypeTag](tree: Tree) =
     tree.tpe <:< typeOf[T]
+
+  def toStringSymbol(tpe: Type) =
+    tpe.member(newTermName("toString")).asTerm.alternatives.find(s => s.isTerm && isParameterless(s.asTerm)).get
+
+  lazy val standardStringInterpolations =
+    Set("s", "f", "raw").map(name => typeOf[StringContext].member(newTermName(name)))
 }
 
 object MacroUtils {
