@@ -139,6 +139,29 @@ trait MacroUtils {
         BooleanBeanGetterNamePattern.pattern.matcher(name).matches && isBooleanType(methodSymbol.returnType))
   }
 
+  def isParameterless(s: TermSymbol) =
+    !s.isMethod || {
+      val paramss = s.asMethod.paramss
+      paramss == Nil || paramss == List(Nil)
+    }
+
+  def methodTypesMatch(originalTpe: Type, implicitTpe: Type): Boolean = {
+    def paramsMatch(origParams: List[Symbol], implParams: List[Symbol]): Boolean =
+      (origParams, implParams) match {
+        case (origHead :: origTail, implHead :: implTail) =>
+          implHead.typeSignature <:< origHead.typeSignature && paramsMatch(origTail, implTail)
+        case (Nil, Nil) => true
+        case _ => false
+      }
+
+    (originalTpe, implicitTpe) match {
+      case (MethodType(origParams, origResultType), MethodType(implParams, implResultType)) =>
+        paramsMatch(origParams, implParams) && methodTypesMatch(origResultType, implResultType)
+      case (MethodType(_, _), _) | (_, MethodType(_, _)) => false
+      case (_, _) => true
+    }
+  }
+
   def takesSingleParameter(symbol: MethodSymbol) =
     symbol.paramss match {
       case List(List(_)) => true
@@ -161,7 +184,7 @@ trait MacroUtils {
   }
 
   /**
-   * Methods, modules, val/var setters and getters, Java fields
+   * Methods, modules, val/var setters and getters, Java fields.
    */
   def accessibleMembers(tpe: Type) =
     tpe.members.toList.collect { case s if s.isPublic && s.isTerm &&

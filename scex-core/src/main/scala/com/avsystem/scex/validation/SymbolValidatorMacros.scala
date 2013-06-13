@@ -100,6 +100,7 @@ object SymbolValidatorMacros {
       def filterScopeNot(pred: TermSymbol => Boolean) =
         copy(scope = scope.filterNot(pred))
 
+      // have one reified type and implicit conversion spec for all MemberAccessSpecs generated from wildcard
       private def reifyAccessSpec(member: TermSymbol) = reify {
         List(MemberAccessSpec(
           c.Expr[TypeInfo](Ident(newTermName("prefixTypeInfo"))).splice,
@@ -191,9 +192,9 @@ object SymbolValidatorMacros {
       case Select(prefix, TermName("constructors")) if hasType[DirectMemberSubsets](prefix) =>
         parseWildcardSelector(requiredPrefix, prefix).filterScope(isConstructor)
 
-      // <prefix>.methods
+      // <prefix>.members
       case Select(prefix, TermName("members")) if hasType[MemberSubsets](prefix) =>
-        parseWildcardSelector(requiredPrefix, prefix).filterScopeNot(isConstructor)
+        parseWildcardSelector(requiredPrefix, prefix).filterScopeNot(m => isConstructor(m) || isFromToplevelType(m))
 
       // <prefix>.membersNamed.<methodName> or <prefix>.membersNamed(<methodName>)
       case Apply(Select(prefix, TermName("membersNamed")), nameTrees)
