@@ -101,6 +101,32 @@ object Utils {
       d.implicitlyAs[RichDouble].all.members
     }
 
+    // Boxed Java primitive types
+    on { b: jl.Boolean =>
+      b.toString
+    }
+    on { c: jl.Character =>
+      c.toString
+    }
+    on { b: jl.Byte =>
+      b.toString
+    }
+    on { s: jl.Short =>
+      s.toString
+    }
+    on { i: jl.Integer =>
+      i.toString
+    }
+    on { l: jl.Long =>
+      l.toString
+    }
+    on { f: jl.Float =>
+      f.toString
+    }
+    on { d: jl.Double =>
+      d.toString
+    }
+
     // Implicit conversions between primitive and boxed types
     Predef.Boolean2boolean _
     Predef.boolean2Boolean _
