@@ -9,9 +9,9 @@ package com.avsystem.scex.util
  */
 object CommonUtils {
 
-  val BeanGetterNamePattern = "get([A-Z][a-z0-9_]*)+".r
-  val BooleanBeanGetterNamePattern = "is([A-Z][a-z0-9_]*)+".r
-  val BeanSetterNamePattern = "set([A-Z][a-z0-9_]*)+".r
+  val BeanGetterNamePattern = "get(([A-Z][a-z0-9_]*)+)".r
+  val BooleanBeanGetterNamePattern = "is(([A-Z][a-z0-9_]*)+)".r
+  val BeanSetterNamePattern = "set(([A-Z][a-z0-9_]*)+)".r
 
   implicit class EnhancedInt(val i: Int) extends AnyVal {
     def times(expr: => Any) {

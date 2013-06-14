@@ -236,6 +236,8 @@ class ScexCompiler(config: ScexCompilerConfig) {
   private def compile(name: String, code: String, classLoader: ScexClassLoader): Seq[CompileError] = {
     settings.outputDirs.setSingleOutput(classLoader.classfileDirectory)
 
+    println("Compiling: " + code)
+
     // Every ClassLoader not registered as parallel-capable loads its classes while being locked on itself
     // (see sources of ClassLoader). ScexClassLoader loads classes from its virtual directory, which is not thread safe.
     // Compiler writes classes to this virtual directory, so synchronization over classLoader is needed during compilation.

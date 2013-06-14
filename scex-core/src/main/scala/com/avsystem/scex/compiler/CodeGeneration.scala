@@ -22,9 +22,9 @@ object CodeGeneration {
           clazz == classOf[Boolean] || clazz == classOf[jl.Boolean]
 
         method.getName match {
-          case BeanGetterNamePattern(capitalizedName) =>
+          case BeanGetterNamePattern(capitalizedName, _) =>
             Some((uncapitalize(capitalizedName), false))
-          case BooleanBeanGetterNamePattern(capitalizedName) if isBoolOrBoolean(method.getReturnType) =>
+          case BooleanBeanGetterNamePattern(capitalizedName, _) if isBoolOrBoolean(method.getReturnType) =>
             Some((uncapitalize(capitalizedName), true))
           case _ => None
         }

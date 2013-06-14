@@ -124,6 +124,7 @@ object Utils {
       sc.raw _
     }
     on { s: String =>
+      s + (_: Any)
       s.charAt _
       s.codePointAt _
       s.codePointBefore _
