@@ -188,7 +188,7 @@ trait MacroUtils {
    */
   def accessibleMembers(tpe: Type) =
     tpe.members.toList.collect { case s if s.isPublic && s.isTerm &&
-      !s.asTerm.isVal && !s.asTerm.isVar && !s.isImplementationArtifact => s.asTerm
+      (s.isJava || (!s.asTerm.isVal && !s.asTerm.isVar)) && !s.isImplementationArtifact => s.asTerm
     }
 
   def hasType[T: TypeTag](tree: Tree) =
