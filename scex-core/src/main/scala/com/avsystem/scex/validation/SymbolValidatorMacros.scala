@@ -76,7 +76,7 @@ object SymbolValidatorMacros {
       case (Some((requiredSymbol, requiredTpe)), Ident(_))
         if prefix.symbol == requiredSymbol && prefix.tpe <:< requiredTpe =>
         requiredTpe
-      case (None, _) if isModuleOrPackage(prefix.symbol) =>
+      case (None, _) if prefix.symbol.isModule =>
         prefix.tpe
       case _ =>
         c.error(prefix.pos, "Bad prefix: " + show(prefix))

@@ -198,7 +198,7 @@ trait MacroUtils {
     tpe.member(newTermName("toString")).asTerm.alternatives.find(s => s.isTerm && isParameterless(s.asTerm)).get
 
   lazy val standardStringInterpolations =
-    Set("s", "f", "raw").map(name => typeOf[StringContext].member(newTermName(name)))
+    Set("s", "raw").map(name => typeOf[StringContext].member(newTermName(name)))
 }
 
 object MacroUtils {

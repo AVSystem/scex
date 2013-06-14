@@ -66,11 +66,13 @@ project("scex-test") {
         compile "org.scala-lang:scala-library:$scalaVersion"
 
         compile(project(":scex-core"))
+        compile(project(":scex-util"))
     }
 }
 
 project("scex-java-test") {
     dependencies {
         compile(project(":scex-core"))
+        compile(project(":scex-util"))
     }
 }

@@ -134,7 +134,10 @@ object ValidationTest {
       }
     }
 
-    val symbolValidator = new SymbolValidator(memberAccessSpecs)
+    val symbolValidator = new SymbolValidator(CommonMemberSets.basicOperations ++ allow {
+      Some.apply _
+      Tuple2.apply _
+    })
 
     val profile = new ExpressionProfile(syntaxValidator, symbolValidator, "def immaUtil = \"util, lol\"", "")
     val compiler = new ScexCompiler(new ScexCompilerConfig)
@@ -155,6 +158,8 @@ object ValidationTest {
         |}
       """.stripMargin
 
+    val expr = """ Some((3, "50")) """
+
     class TL extends TypedLol[TL]
 
     val typedLol = new TL
@@ -162,7 +167,7 @@ object ValidationTest {
 
     type Typ = TypedLol[T]#Dafuq[F] forSome {type T; type F}
 
-    println(compiler.getCompiledExpression[Typ, Object](profile, myexpr, classOf[Typ], classOf[Object]).apply(dafuq))
+    println(compiler.getCompiledExpression[Typ, Object](profile, expr, classOf[Typ], classOf[Object]).apply(dafuq))
     println(compiler.getCompiledStringExpression[Object](profile, "${1+5+10} hahaha \" dafuq \"", classOf[Object]).apply(null))
   }
 
