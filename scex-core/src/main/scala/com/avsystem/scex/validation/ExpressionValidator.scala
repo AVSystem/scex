@@ -105,7 +105,6 @@ object ExpressionValidator {
     }
 
     val access = extractAccess(expr.tree)
-    println(access.repr)
     val validationResult = profile.symbolValidator.isMemberAccessAllowed(validationContext)(access)
 
     validationResult.deniedAccesses.foreach { access =>

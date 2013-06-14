@@ -38,7 +38,8 @@ class ScexCompiler(config: ScexCompilerConfig) {
   private class ExpressionWrapper[C, R](exprDef: ExpressionDef) extends Expression[C, R] {
     var expressionRef = new WeakReference(loadRawExpression)
 
-    private def loadRawExpression = expressionCache.get(exprDef).get.asInstanceOf[C => R]
+    private def loadRawExpression =
+      expressionCache.get(exprDef).get.asInstanceOf[C => R]
 
     private def rawExpression: C => R =
       expressionRef.get match {
@@ -65,7 +66,11 @@ class ScexCompiler(config: ScexCompilerConfig) {
   private object reporter extends AbstractReporter {
     private val errorsBuilder = IndexedSeq.newBuilder[CompileError]
 
-    def compileErrors = errorsBuilder.result()
+    def compileErrors() = {
+      val result = errorsBuilder.result()
+      reset()
+      result
+    }
 
     val settings: Settings = ScexCompiler.this.settings
 
@@ -172,10 +177,12 @@ class ScexCompiler(config: ScexCompilerConfig) {
     val codeToCompile =
       wrapInSource(generateJavaGetterAdapter(clazz, full = true).get, pkgName)
 
-    compile("(scex adapter)", codeToCompile, persistentClassLoader) match {
-      case Nil => Success(pkgName)
-      case errors => Failure(new CompilationFailedException(codeToCompile, errors))
+    def result = compile("(scex adapter)", codeToCompile, persistentClassLoader) match {
+      case Nil => pkgName
+      case errors => throw new CompilationFailedException(codeToCompile, errors)
     }
+
+    Try(result)
   }
 
   private def compileProfileObject(profile: ExpressionProfile): Try[String] = {
@@ -184,10 +191,12 @@ class ScexCompiler(config: ScexCompilerConfig) {
     val codeToCompile =
       wrapInSource(generateProfileObject(profile), pkgName)
 
-    compile("(scex profile)", codeToCompile, persistentClassLoader) match {
-      case Nil => Success(pkgName)
-      case errors => Failure(new CompilationFailedException(codeToCompile, errors))
+    def result = compile("(scex profile)", codeToCompile, persistentClassLoader) match {
+      case Nil => pkgName
+      case errors => throw new CompilationFailedException(codeToCompile, errors)
     }
+
+    Try(result)
   }
 
   private def compileExpression(exprDef: ExpressionDef): Try[RawExpression] = synchronized {
@@ -243,7 +252,7 @@ class ScexCompiler(config: ScexCompilerConfig) {
       reset()
     }
 
-    reporter.compileErrors
+    reporter.compileErrors()
   }
 
   // lots of adapter methods for Java usage

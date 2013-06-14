@@ -270,7 +270,7 @@ object SymbolValidatorMacros {
         extractSymbols(requiredPrefix, actualBody)
 
       case _ =>
-        c.error(body.pos, "Bad symbol specification syntax: ")
+        c.error(body.pos, "Bad symbol specification syntax: " + showRaw(body))
         reify(Nil)
     }
 

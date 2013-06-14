@@ -1,4 +1,5 @@
 import com.avsystem.scex.compiler.{ExpressionProfile, ScexCompiler, ScexCompilerConfig}
+import com.avsystem.scex.Utils
 import com.avsystem.scex.validation._
 import java.util.Collections
 import java.{util => ju, lang => jl}
@@ -134,7 +135,7 @@ object ValidationTest {
       }
     }
 
-    val symbolValidator = new SymbolValidator(CommonMemberSets.basicOperations ++ allow {
+    val symbolValidator = new SymbolValidator(Utils.basicOperations ++ allow {
       Some.apply _
       Tuple2.apply _
     })

@@ -8,7 +8,7 @@ object Utils {
 
   import SymbolValidator._
 
-  def basicOperations = deny {
+  val basicOperations = deny {
     // Methods on toplevel types
     on { any: Any =>
       any.equals _
@@ -174,7 +174,7 @@ object Utils {
       s.slice(_: Int, _: Int)
     }
 
-    // math functions
+    // Math functions
     math.`package`.all.members
   }
 }

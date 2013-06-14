@@ -30,10 +30,10 @@ project("scex-core") {
     apply plugin: 'scala'
 
     dependencies {
-        compile "org.scala-lang:scala-library:$scalaVersion"
-        compile "org.scala-lang:scala-reflect:$scalaVersion"
-        compile "org.scala-lang:scala-compiler:$scalaVersion"
-        compile "org.scala-lang:jline:$scalaVersion"
+        compile("org.scala-lang:scala-library:$scalaVersion")
+        compile("org.scala-lang:scala-reflect:$scalaVersion")
+        compile("org.scala-lang:scala-compiler:$scalaVersion")
+        compile("org.scala-lang:jline:$scalaVersion")
 
         compile("commons-io:commons-io:2.1")
         compile("commons-lang:commons-lang:2.6")
@@ -42,20 +42,22 @@ project("scex-core") {
         compile("commons-cli:commons-cli:1.2")
         compile("commons-codec:commons-codec:1.7")
 
-        compile "com.google.guava:guava:13.0.1"
-        compile "com.google.code.findbugs:jsr305:2.0.1"
+        compile("com.google.guava:guava:13.0.1")
+        compile("com.google.code.findbugs:jsr305:2.0.1")
 
-        testCompile "org.scalatest:scalatest_2.10:1.9.1"
+        testCompile("org.scalatest:scalatest_2.10:1.9.1")
     }
 }
 
-project("scex-util") {
+project("scex-derived") {
     apply plugin: 'scala'
 
     dependencies {
-        compile "org.scala-lang:scala-library:$scalaVersion"
+        compile("org.scala-lang:scala-library:$scalaVersion")
 
         compile(project(":scex-core"))
+
+        testCompile("org.scalatest:scalatest_2.10:1.9.1")
     }
 }
 
@@ -66,13 +68,15 @@ project("scex-test") {
         compile "org.scala-lang:scala-library:$scalaVersion"
 
         compile(project(":scex-core"))
-        compile(project(":scex-util"))
+        compile(project(":scex-derived"))
+
+        testCompile("org.scalatest:scalatest_2.10:1.9.1")
     }
 }
 
 project("scex-java-test") {
     dependencies {
         compile(project(":scex-core"))
-        compile(project(":scex-util"))
+        compile(project(":scex-derived"))
     }
 }
