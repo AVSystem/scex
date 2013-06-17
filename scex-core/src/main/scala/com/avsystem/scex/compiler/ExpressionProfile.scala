@@ -7,5 +7,5 @@ import java.{util => ju, lang => jl}
 class ExpressionProfile(
   val syntaxValidator: SyntaxValidator,
   val symbolValidator: SymbolValidator,
-  val expressionUtils: String,
-  val expressionHeader: String)
+  val expressionHeader: String,
+  val expressionUtils: String)

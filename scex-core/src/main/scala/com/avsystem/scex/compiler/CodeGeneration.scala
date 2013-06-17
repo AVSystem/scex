@@ -29,8 +29,7 @@ object CodeGeneration {
           case _ => None
         }
 
-      } else
-        None
+      } else None
   }
 
   val ExpressionClassName = "Expression"
@@ -103,13 +102,13 @@ object CodeGeneration {
     }
 
     s"""
-    |class $ExpressionClassName extends (($contextType) => $resultType) {
+    |final class $ExpressionClassName extends (($contextType) => $resultType) {
     |  def apply(_ctx: $contextType): $resultType = {
     |    import $profileObjectPkg.$ProfileObjectName._
     |    import Utils._
     |    import _ctx._
-    |    $header
     |    $contextGetterAdapterCode
+    |    $header
     |    com.avsystem.scex.validation.ExpressionValidator.validate[$contextType, $resultType](
     |$expression
     |    )
@@ -149,7 +148,7 @@ object CodeGeneration {
 
   def generateSyntaxValidator(code: String) = {
     s"""
-      |class $SyntaxValidatorClassName extends com.avsystem.scex.validation.SyntaxValidator {
+      |final class $SyntaxValidatorClassName extends com.avsystem.scex.validation.SyntaxValidator {
       |$code
       |}
     """.stripMargin
@@ -157,7 +156,7 @@ object CodeGeneration {
 
   def generateSymbolValidator(accessSpecs: String) = {
     s"""
-      |class $SymbolValidatorClassName extends com.avsystem.scex.validation.SymbolValidator({
+      |final class $SymbolValidatorClassName extends com.avsystem.scex.validation.SymbolValidator({
       |$accessSpecs
       |})
     """.stripMargin

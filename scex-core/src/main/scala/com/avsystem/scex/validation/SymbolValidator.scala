@@ -156,7 +156,7 @@ object SymbolValidator {
     /**
      * Allows or denies calling all methods (not constructors) available for given type, on this type, except
      * for members from `Any`/`AnyVal`/`AnyRef`.
-     *@return
+     * @return
      */
     def members: CompleteWildcardSelector
 
