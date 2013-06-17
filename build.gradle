@@ -29,15 +29,29 @@ allprojects {
     }
 }
 
-jar {
-    def projs = [project(":scex-core"), project(":scex-derived")]
-    dependsOn(projs.assemble)
+def projectParts = [project(":scex-core"), project(":scex-derived")]
 
-    projs.each { proj ->
+jar {
+    dependsOn(projectParts.assemble)
+
+    projectParts.each { proj ->
         from proj.configurations.archives.allArtifacts.files.collect {
             zipTree(it)
         }
     }
+}
+
+task sourcesJar(type: Jar) {
+    classifier = 'sources'
+    dependsOn(projectParts.classes)
+
+    projectParts.each { proj ->
+        from proj.sourceSets.main.allSource
+    }
+}
+
+artifacts {
+    archives sourcesJar
 }
 
 project("scex-core") {
