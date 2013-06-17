@@ -2,11 +2,14 @@ task wrapper(type: Wrapper) {
     gradleVersion = "1.6"
 }
 
+apply plugin: 'maven'
+
 allprojects {
     apply plugin: 'java'
     apply plugin: 'idea'
 
-    version = '1.0-SNAPSHOT'
+    group = "com.avsystem"
+    version = '0.9'
 
     repositories {
         mavenCentral()
@@ -22,6 +25,17 @@ allprojects {
         module {
             downloadJavadoc = true
             downloadSources = true
+        }
+    }
+}
+
+jar {
+    def projs = [project(":scex-core"), project(":scex-derived")]
+    dependsOn(projs.assemble)
+
+    projs.each { proj ->
+        from proj.configurations.archives.allArtifacts.files.collect {
+            zipTree(it)
         }
     }
 }
