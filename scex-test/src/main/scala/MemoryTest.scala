@@ -15,7 +15,7 @@ object MemoryTest {
     val compiler = new ScexCompiler(config)
 
     import SymbolValidator._
-    val symbolValidator = new SymbolValidator(
+    val symbolValidator = SymbolValidator(
       Utils.basicOperations ++ allow {
         on { dummy: Dummy =>
           new Dummy(_)

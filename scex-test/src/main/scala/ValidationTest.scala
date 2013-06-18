@@ -135,7 +135,7 @@ object ValidationTest {
       }
     }
 
-    val symbolValidator = new SymbolValidator(Utils.basicOperations ++ allow {
+    val symbolValidator = SymbolValidator(Utils.basicOperations ++ allow {
       Some.apply _
       Tuple2.apply _
     })

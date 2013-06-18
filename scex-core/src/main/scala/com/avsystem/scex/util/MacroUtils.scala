@@ -130,11 +130,14 @@ trait MacroUtils {
   def isBooleanType(tpe: Type) =
     tpe <:< typeOf[Boolean] || tpe <:< typeOf[jl.Boolean]
 
+  lazy val getClassSymbol = typeOf[Any].member(newTermName("getClass"))
+
   def isBeanGetter(symbol: Symbol) = symbol.isMethod && {
     val methodSymbol = symbol.asMethod
     val name = symbol.name.decoded
 
-    methodSymbol.paramss == List(List()) && methodSymbol.typeParams.isEmpty &&
+    methodSymbol != getClassSymbol && !methodSymbol.allOverriddenSymbols.contains(getClassSymbol) &&
+      methodSymbol.paramss == List(List()) && methodSymbol.typeParams.isEmpty &&
       (BeanGetterNamePattern.pattern.matcher(name).matches ||
         BooleanBeanGetterNamePattern.pattern.matcher(name).matches && isBooleanType(methodSymbol.returnType))
   }

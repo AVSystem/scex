@@ -37,6 +37,7 @@ object CodeGeneration {
   val SyntaxValidatorClassName = "SyntaxValidator"
   val SymbolValidatorClassName = "SymbolValidator"
 
+
   def adapterName(clazz: Class[_]) =
     "Adapter_" + clazz.getName.replaceAll("\\.", "_")
 
@@ -79,6 +80,13 @@ object CodeGeneration {
     } else None
   }
 
+  private val DollarBracketsPattern = "\\s*^\\$\\{(.*)\\}$\\s*".r
+
+  def stripDollarBrackets(expression: String) = expression match {
+    case DollarBracketsPattern(actualExpression) => actualExpression
+    case _ => expression
+  }
+
   def generateExpressionClass(
     profile: ExpressionProfile,
     expression: String,
@@ -110,7 +118,7 @@ object CodeGeneration {
     |    $contextGetterAdapterCode
     |    $header
     |    com.avsystem.scex.validation.ExpressionValidator.validate[$contextType, $resultType](
-    |$expression
+    |${stripDollarBrackets(expression)}
     |    )
     |  }
     |}
@@ -156,9 +164,9 @@ object CodeGeneration {
 
   def generateSymbolValidator(accessSpecs: String) = {
     s"""
-      |final class $SymbolValidatorClassName extends com.avsystem.scex.validation.SymbolValidator({
-      |$accessSpecs
-      |})
+      |final class $SymbolValidatorClassName extends com.avsystem.scex.validation.SymbolValidator {
+      |  val accessSpecs = {$accessSpecs}
+      |}
     """.stripMargin
   }
 

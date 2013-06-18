@@ -6,6 +6,7 @@ import java.{util => ju, lang => jl}
 import org.scalatest.FunSuite
 import com.avsystem.scex.{TypeTag, Utils}
 import com.avsystem.scex.compiler.ParameterizedClass.StaticInnerGeneric
+import scala.collection.immutable.StringOps
 
 class CompilationTest extends FunSuite {
 
@@ -20,7 +21,7 @@ class CompilationTest extends FunSuite {
   }
 
   def createProfile(acl: List[MemberAccessSpec], header: String = "import com.avsystem.scex.compiler._", utils: String = "") =
-    new ExpressionProfile(SyntaxValidator.SimpleExpressions, new SymbolValidator(acl), header, utils)
+    new ExpressionProfile(SyntaxValidator.SimpleExpressions, SymbolValidator(acl), header, utils)
 
   def assertMemberAccessForbidden(expr: => Any) {
     try expr catch {
@@ -31,12 +32,23 @@ class CompilationTest extends FunSuite {
 
   test("trivial compilation test") {
     val cexpr = compiler.getCompiledExpression(createProfile(Nil), "()", classOf[Unit], classOf[Unit])
-    expectResult(())(cexpr(()))
+    assert(() === cexpr(()))
   }
 
   test("simple arithmetic expression") {
     val cexpr = compiler.getCompiledExpression(createProfile(Nil), "1+5+250+42", classOf[Unit], classOf[Int])
-    expectResult(298)(cexpr(()))
+    assert(298 === cexpr(()))
+  }
+
+  test("strip dollar and brackets test") {
+    val cexpr = compiler.getCompiledExpression(createProfile(Nil), "${1+5+250+42}", classOf[Unit], classOf[Int])
+    assert(298 === cexpr(()))
+  }
+
+  test("string expression test") {
+    val expr = "bippy ${42/7} rest"
+    val cexpr = compiler.getCompiledStringExpression(createProfile(Utils.basicOperations), expr, classOf[Unit])
+    assert("bippy 6 rest" === cexpr(()))
   }
 
   test("simple syntax validation test") {
@@ -237,7 +249,57 @@ class CompilationTest extends FunSuite {
     }
   }
 
-  // various implicit conversion validation tests
+  test("explicit member-by-implicit validation test") {
+    val acl = allow {
+      on { s: String =>
+        s.reverse
+      }
+    }
+    val expr = "\"bippy\".reverse"
+    val cexpr = compiler.getCompiledExpression(createProfile(acl), expr, classOf[Unit], classOf[String])
+    assert("yppib" === cexpr(()))
+  }
 
-  // various wildcard tests
+  test("plain implicit conversion validation test") {
+    val acl = allow {
+      Predef.augmentString _
+      on { s: StringOps =>
+        s.reverse
+      }
+    }
+    acl foreach println
+    val expr = "\"bippy\".reverse"
+    val cexpr = compiler.getCompiledExpression(createProfile(acl), expr, classOf[Unit], classOf[String])
+    assert("yppib" === cexpr(()))
+  }
+
+  test("mixed access implicit conversion validation test 1") {
+    val acl = deny {
+      Predef.augmentString _
+    } ++ allow {
+      on { s: String =>
+        s.reverse
+      }
+    }
+    val expr = "\"bippy\".reverse"
+    assertMemberAccessForbidden {
+      compiler.getCompiledExpression(createProfile(acl), expr, classOf[Unit], classOf[String])
+    }
+  }
+
+  test("mixed access implicit conversion validation test 2") {
+    val acl = deny {
+      on { s: StringOps =>
+        s.reverse
+      }
+    } ++ allow {
+      on { s: String =>
+        s.reverse
+      }
+    }
+    val expr = "\"bippy\".reverse"
+    assertMemberAccessForbidden {
+      compiler.getCompiledExpression(createProfile(acl), expr, classOf[Unit], classOf[String])
+    }
+  }
 }

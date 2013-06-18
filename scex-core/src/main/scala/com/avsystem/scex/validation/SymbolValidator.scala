@@ -7,19 +7,23 @@ import scala.language.dynamics
 import scala.language.experimental.macros
 import scala.language.implicitConversions
 
-class SymbolValidator(val accessSpecs: List[MemberAccessSpec]) {
+trait SymbolValidator {
+  val accessSpecs: List[MemberAccessSpec]
 
-  val referencedJavaClasses = accessSpecs.collect({
+  lazy val referencedJavaClasses = accessSpecs.collect({
     case MemberAccessSpec(typeInfo, _, _, true) if typeInfo.clazz.isDefined && typeInfo.isJava =>
       hierarchy(typeInfo.clazz.get)
   }).flatten.toSet
 
-  private val lowestPriority = accessSpecs.length
+  private lazy val specsLength = accessSpecs.length
+
+  private def lowestPriority(allowedByDefault: Boolean) =
+    if (allowedByDefault) specsLength else specsLength + 1
 
   // MemberAccessSpec with its index in ACL (accessSpecs)
   private type SpecWithIndex = (MemberAccessSpec, Int)
 
-  private val bySignaturesMap: Map[String, List[SpecWithIndex]] =
+  private lazy val bySignaturesMap: Map[String, List[SpecWithIndex]] =
     accessSpecs.zipWithIndex.groupBy(_._1.memberSignature).toMap.withDefaultValue(Nil)
 
   def isMemberAccessAllowed(vc: ValidationContext)(access: vc.MemberAccess): vc.ValidationResult = {
@@ -51,7 +55,7 @@ class SymbolValidator(val accessSpecs: List[MemberAccessSpec]) {
         val (allow, index) = if (matchingSpecs.nonEmpty) {
           val (spec, index) = matchingSpecs.minBy(_._2)
           (spec.allow, index)
-        } else (allowedByDefault, lowestPriority)
+        } else (allowedByDefault, lowestPriority(allowedByDefault))
 
         ValidationResult(index, if (allow) Nil else List(access))
 
@@ -63,14 +67,14 @@ class SymbolValidator(val accessSpecs: List[MemberAccessSpec]) {
         else if (allowed.nonEmpty)
           ValidationResult(allowed.maxBy(_.priority).priority, Nil)
         else
-          ValidationResult(lowestPriority, Nil)
+          ValidationResult(lowestPriority(allowedByDefault = true), Nil)
 
       case AlternativeMemberAccess(accesses) =>
         // take the soonest-validated alternative
         if (accesses.nonEmpty)
           accesses.map(a => isMemberAccessAllowed(vc)(a)).minBy(_.priority)
         else
-          ValidationResult(lowestPriority, Nil)
+          ValidationResult(lowestPriority(allowedByDefault = true), Nil)
     }
   }
 }
@@ -91,6 +95,11 @@ object SymbolValidator {
       (if (allow) "Allowed" else "Denied") + s" on type |$typeInfo| member |$memberSignature| $implicitConvRepr"
     }
   }
+
+  def apply(acl: List[MemberAccessSpec]): SymbolValidator =
+    new SymbolValidator {
+      val accessSpecs = acl
+    }
 
   implicit def toDirectWildcardSelector(any: Any): DirectWildcardSelector = elidedByMacro
 
