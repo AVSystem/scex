@@ -1,4 +1,4 @@
-import com.avsystem.scex.compiler.{ExpressionProfile, ScexCompiler, ScexCompilerConfig}
+import com.avsystem.scex.compiler.{JavaScexCompiler, ExpressionProfile, ScexCompiler, ScexCompilerConfig}
 import com.avsystem.scex.PredefinedAccessSpecs
 import com.avsystem.scex.validation._
 import java.util.Collections
@@ -141,7 +141,7 @@ object ValidationTest {
     })
 
     val profile = new ExpressionProfile(syntaxValidator, symbolValidator, "def immaUtil = \"util, lol\"", "")
-    val compiler = new ScexCompiler(new ScexCompilerConfig)
+    val compiler = new JavaScexCompiler(new ScexCompilerConfig)
 
     val myexpr =
       """

@@ -1,15 +1,13 @@
 package com.avsystem.scex.compiler
 
 import CodeGeneration._
-import JavaTypeParsing._
+import com.avsystem.scex.Expression
 import com.avsystem.scex.compiler.ScexCompiler.CompilationFailedException
 import com.avsystem.scex.compiler.ScexCompiler.CompileError
 import com.avsystem.scex.util.CacheImplicits._
 import com.avsystem.scex.util.CommonUtils._
 import com.avsystem.scex.validation.{SymbolValidator, SyntaxValidator, ExpressionValidator}
-import com.avsystem.scex.{TypeTag, Expression}
 import com.google.common.cache.CacheBuilder
-import java.lang.reflect.Type
 import java.util.concurrent.TimeUnit
 import java.{util => ju, lang => jl}
 import org.apache.commons.lang.StringEscapeUtils
@@ -18,10 +16,12 @@ import scala.language.existentials
 import scala.ref.WeakReference
 import scala.reflect.internal.util.{BatchSourceFile, Position}
 import scala.reflect.io.VirtualDirectory
+import scala.reflect.runtime.currentMirror
+import scala.reflect.runtime.universe.{typeOf, TypeTag}
 import scala.tools.nsc.interpreter.AbstractFileClassLoader
 import scala.tools.nsc.reporters.AbstractReporter
 import scala.tools.nsc.{Global, Settings}
-import scala.util.{Failure, Success, Try}
+import scala.util.Try
 
 /**
  * Central class for expression compilation. Encapsulates Scala compiler, so it is
@@ -72,7 +72,7 @@ class ScexCompiler(config: ScexCompilerConfig) {
       result
     }
 
-    val settings: Settings = ScexCompiler.this.settings
+    val settings: Settings = compiler.settings
 
     def display(pos: Position, msg: String, severity: Severity) {
       if (severity == ERROR) {
@@ -255,93 +255,81 @@ class ScexCompiler(config: ScexCompilerConfig) {
     reporter.compileErrors()
   }
 
-  // lots of adapter methods for Java usage
-
+  /**
+   * <p>Returns compiled string expression, ready to be evaluated. String expression is compiled as Scala string
+   * interpolation. Example: <tt>Your name is $name and you are ${max(0, age)} years old</tt>.</p>
+   *
+   * <p>This method uses runtime scala reflection, you
+   * may want to avoid using it until scala reflection becomes stable.
+   * See <a href="https://issues.scala-lang.org/browse/SI/component/10400">open scala reflection issues</a>,
+   * especially <a href="https://issues.scala-lang.org/browse/SI-6240">SI-6240</a>,
+   * <a href="https://issues.scala-lang.org/browse/SI-6826">SI-6826</a> and
+   * <a href="https://issues.scala-lang.org/browse/SI-6412">SI-6412</a>.</p>
+   */
   @throws[CompilationFailedException]
-  def getCompiledStringExpression[C](
+  def getCompiledStringExpression[C: TypeTag](
     profile: ExpressionProfile,
-    expression: String,
-    contextType: Class[C]): Expression[C, String] = {
+    expression: String): Expression[C, String] = {
 
-    val stringExpr = "s\"\"\"" + StringEscapeUtils.escapeJava(expression) + "\"\"\""
-    getCompiledExpression(profile, stringExpr, contextType: Type, classOf[String])
-  }
+    val contextType = typeOf[C]
+    val contextClass = currentMirror.runtimeClass(contextType)
 
-  @throws[CompilationFailedException]
-  def getCompiledStringExpression[C](
-    profile: ExpressionProfile,
-    expression: String,
-    contextType: TypeTag[C]): Expression[C, String] = {
-
-    val stringExpr = "s\"\"\"" + StringEscapeUtils.escapeJava(expression) + "\"\"\""
-    getCompiledExpression(profile, stringExpr, contextType: Type, classOf[String])
-  }
-
-  @throws[CompilationFailedException]
-  def getCompiledExpression[C, R](
-    profile: ExpressionProfile,
-    expression: String,
-    contextType: Class[C],
-    resultType: Class[R]): Expression[C, R] = {
-
-    getCompiledExpression[C, R](profile, expression, contextType: Type, resultType: Type)
-  }
-
-  @throws[CompilationFailedException]
-  def getCompiledExpression[C, R](
-    profile: ExpressionProfile,
-    expression: String,
-    contextType: Class[C],
-    resultType: TypeTag[R]): Expression[C, R] = {
-
-    getCompiledExpression[C, R](profile, expression, contextType: Type, resultType: Type)
-  }
-
-  @throws[CompilationFailedException]
-  def getCompiledExpression[C, R](
-    profile: ExpressionProfile,
-    expression: String,
-    contextType: TypeTag[C],
-    resultType: Class[R]): Expression[C, R] = {
-
-    getCompiledExpression[C, R](profile, expression, contextType: Type, resultType: Type)
-  }
-
-  @throws[CompilationFailedException]
-  def getCompiledExpression[C, R](
-    profile: ExpressionProfile,
-    expression: String,
-    contextType: TypeTag[C],
-    resultType: TypeTag[R]): Expression[C, R] = {
-
-    getCompiledExpression[C, R](profile, expression, contextType: Type, resultType: Type)
+    getCompiledStringExpression(profile, expression, contextType.toString, contextClass)
   }
 
   /**
-   * Returns compiled expression ready to be evaluated. Returned expression is actually a proxy that
-   * looks up ScexCompiler's cache on every access (evaluation).
-   *
-   * @param profile expression profile to compile this expression with
-   * @param expression the expression
-   * @param contextType expression context class
-   * @param resultType expression result class
+   * <p>Returns compiled string expression, ready to be evaluated. String expression is compiled as Scala string
+   * interpolation. Example: <tt>Your name is $name and you are ${max(0, age)} years old</tt>.</p>
    */
   @throws[CompilationFailedException]
-  def getCompiledExpression[C, R](
+  def getCompiledStringExpression[C](
     profile: ExpressionProfile,
     expression: String,
-    contextType: Type,
-    resultType: Type): Expression[C, R] = {
+    contextType: String,
+    contextClass: Class[_]): Expression[C, String] = {
+
+    val stringExpr = "s\"\"\"" + StringEscapeUtils.escapeJava(expression) + "\"\"\""
+    getCompiledExpression(profile, stringExpr, contextType, contextClass, "String")
+  }
+
+  /**
+   * <p>Returns compiled expression ready to be evaluated.</p>
+   *
+   * <p>This method uses runtime scala reflection, you
+   * may want to avoid using it until scala reflection becomes stable.
+   *
+   * See <a href="https://issues.scala-lang.org/browse/SI/component/10400">open scala reflection issues</a>,
+   * especially <a href="https://issues.scala-lang.org/browse/SI-6240">SI-6240</a>,
+   * <a href="https://issues.scala-lang.org/browse/SI-6826">SI-6826</a> and
+   * <a href="https://issues.scala-lang.org/browse/SI-6412">SI-6412</a>.</p>
+   */
+  @throws[CompilationFailedException]
+  def getCompiledExpression[C: TypeTag, R: TypeTag](
+    profile: ExpressionProfile,
+    expression: String): Expression[C, R] = {
+
+    val contextType = typeOf[C]
+    val resultType = typeOf[R]
+    val contextClass = currentMirror.runtimeClass(contextType)
+
+    getCompiledExpression(profile, expression, contextType.toString, contextClass, resultType.toString)
+  }
+
+  @throws[CompilationFailedException]
+  protected def getCompiledExpression[C, R](
+    profile: ExpressionProfile,
+    expression: String,
+    contextType: String,
+    contextClass: Class[_],
+    resultType: String): Expression[C, R] = {
 
     require(profile != null, "Profile cannot be null")
     require(expression != null, "Expression cannot be null")
     require(contextType != null, "Context type cannot be null")
+    require(contextClass != null, "Context class cannot be null")
     require(resultType != null, "Result type cannot be null")
 
-    val exprDef = ExpressionDef(profile, expression, erasureOf(contextType),
-      javaTypeAsScalaType(contextType), javaTypeAsScalaType(resultType))
-
-    new ExpressionWrapper(exprDef)
+    new ExpressionWrapper(ExpressionDef(profile, expression, contextClass, contextType, resultType))
   }
 
   @throws[CompilationFailedException]

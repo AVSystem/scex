@@ -3,15 +3,16 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 
 import com.avsystem.scex.Expression;
+import com.avsystem.scex.compiler.ExpressionProfile;
+import com.avsystem.scex.compiler.JavaScexCompiler;
 import com.avsystem.scex.compiler.ScexCompiler;
 import com.avsystem.scex.compiler.ScexCompilerConfig;
-import com.avsystem.scex.compiler.ExpressionProfile;
 import com.avsystem.scex.validation.SymbolValidator;
 import com.avsystem.scex.validation.SyntaxValidator;
 
 public class ScexJavaTest {
     public static void main(String[] args) throws Exception {
-        ScexCompiler compiler = new ScexCompiler(new ScexCompilerConfig());
+        JavaScexCompiler compiler = new JavaScexCompiler(new ScexCompilerConfig());
 
         SyntaxValidator syntaxValidator = compiler.compileSyntaxValidator(readResource("/syntaxValidator.scala"));
         SymbolValidator symbolValidator = compiler.compileSymbolValidator(readResource("/symbolValidator.scala"));

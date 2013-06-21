@@ -12,7 +12,7 @@ class CompilationTest extends FunSuite {
 
   import SymbolValidator._
 
-  val compiler = new ScexCompiler(new ScexCompilerConfig)
+  val compiler = new JavaScexCompiler(new ScexCompilerConfig)
 
   def catchAndPrint(code: => Any) {
     try code catch {
