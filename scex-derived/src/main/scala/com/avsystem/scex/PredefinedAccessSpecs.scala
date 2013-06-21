@@ -4,7 +4,7 @@ import com.avsystem.scex.validation.SymbolValidator
 import java.{util => ju, lang => jl}
 import scala.runtime._
 
-object Utils {
+object PredefinedAccessSpecs {
 
   import SymbolValidator._
 

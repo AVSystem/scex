@@ -1,5 +1,5 @@
 import com.avsystem.scex.compiler.{ExpressionProfile, ScexCompilerConfig, ScexCompiler}
-import com.avsystem.scex.Utils
+import com.avsystem.scex.PredefinedAccessSpecs
 import com.avsystem.scex.validation.{SyntaxValidator, SymbolValidator}
 import java.{util => ju, lang => jl}
 
@@ -16,7 +16,7 @@ object MemoryTest {
 
     import SymbolValidator._
     val symbolValidator = SymbolValidator(
-      Utils.basicOperations ++ allow {
+      PredefinedAccessSpecs.basicOperations ++ allow {
         on { dummy: Dummy =>
           new Dummy(_)
           dummy.toString

@@ -1,5 +1,5 @@
 import com.avsystem.scex.compiler.{ExpressionProfile, ScexCompiler, ScexCompilerConfig}
-import com.avsystem.scex.Utils
+import com.avsystem.scex.PredefinedAccessSpecs
 import com.avsystem.scex.validation._
 import java.util.Collections
 import java.{util => ju, lang => jl}
@@ -135,7 +135,7 @@ object ValidationTest {
       }
     }
 
-    val symbolValidator = SymbolValidator(Utils.basicOperations ++ allow {
+    val symbolValidator = SymbolValidator(PredefinedAccessSpecs.basicOperations ++ allow {
       Some.apply _
       Tuple2.apply _
     })

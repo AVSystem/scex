@@ -4,7 +4,7 @@ import com.avsystem.scex.compiler.ScexCompiler.CompilationFailedException
 import com.avsystem.scex.validation.{SymbolValidator, SyntaxValidator}
 import java.{util => ju, lang => jl}
 import org.scalatest.FunSuite
-import com.avsystem.scex.{TypeTag, Utils}
+import com.avsystem.scex.{TypeTag, PredefinedAccessSpecs}
 import com.avsystem.scex.compiler.ParameterizedClass.StaticInnerGeneric
 import scala.collection.immutable.StringOps
 
@@ -47,7 +47,7 @@ class CompilationTest extends FunSuite {
 
   test("string expression test") {
     val expr = "bippy ${42/7} rest"
-    val cexpr = compiler.getCompiledStringExpression(createProfile(Utils.basicOperations), expr, classOf[Unit])
+    val cexpr = compiler.getCompiledStringExpression(createProfile(PredefinedAccessSpecs.basicOperations), expr, classOf[Unit])
     assert("bippy 6 rest" === cexpr(()))
   }
 
@@ -70,7 +70,7 @@ class CompilationTest extends FunSuite {
   }
 
   test("context access test with java getter adapters") {
-    val acl = Utils.basicOperations ++ allow {
+    val acl = PredefinedAccessSpecs.basicOperations ++ allow {
       on { jc: JavaContext =>
         jc.all.members
       }
@@ -81,7 +81,7 @@ class CompilationTest extends FunSuite {
   }
 
   test("complicated context type test with java getter adapters") {
-    val acl = Utils.basicOperations ++ allow {
+    val acl = PredefinedAccessSpecs.basicOperations ++ allow {
       on { m: ju.Map[_, _] =>
         m.toString
       }
@@ -97,7 +97,7 @@ class CompilationTest extends FunSuite {
   }
 
   test("non-context java getter adapters test") {
-    val acl = Utils.basicOperations ++ allow {
+    val acl = PredefinedAccessSpecs.basicOperations ++ allow {
       on { jc: JavaContext =>
         new JavaContext
         jc.all.members
