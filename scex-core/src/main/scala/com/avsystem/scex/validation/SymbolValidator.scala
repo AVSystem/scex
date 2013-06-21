@@ -101,6 +101,8 @@ object SymbolValidator {
       val accessSpecs = acl
     }
 
+  val empty: SymbolValidator = apply(Nil)
+
   implicit def toDirectWildcardSelector(any: Any): DirectWildcardSelector = elidedByMacro
 
   // indicates end of wildcard selector

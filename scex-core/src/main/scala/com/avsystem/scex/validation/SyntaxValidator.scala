@@ -13,7 +13,7 @@ trait SyntaxValidator {
 }
 
 object SyntaxValidator {
-  val SimpleExpressions = new SyntaxValidator {
+  val SimpleExpressions: SyntaxValidator = new SyntaxValidator {
     def isSyntaxAllowed(u: Universe)(tree: u.Tree): Boolean = {
       import u._
 
