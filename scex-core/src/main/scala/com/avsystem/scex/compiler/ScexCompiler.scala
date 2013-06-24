@@ -10,7 +10,6 @@ import com.avsystem.scex.validation.{SymbolValidator, SyntaxValidator, Expressio
 import com.google.common.cache.CacheBuilder
 import java.util.concurrent.TimeUnit
 import java.{util => ju, lang => jl}
-import org.apache.commons.lang.StringEscapeUtils
 import scala.Some
 import scala.language.existentials
 import scala.ref.WeakReference
@@ -288,7 +287,7 @@ class ScexCompiler(config: ScexCompilerConfig) {
     contextType: String,
     contextClass: Class[_]): Expression[C, String] = {
 
-    val stringExpr = "s\"\"\"" + StringEscapeUtils.escapeJava(expression) + "\"\"\""
+    val stringExpr = "raw\"\"\"" + expression + "\"\"\""
     getCompiledExpression(profile, stringExpr, contextType, contextClass, "String")
   }
 
@@ -366,6 +365,6 @@ object ScexCompiler {
   }
 
   case class CompilationFailedException(source: String, errors: Seq[CompileError])
-    extends Exception(s"Compilation failed with ${pluralize(errors.size, "error")}:\n${errors.mkString("\n")}")
+    extends RuntimeException(s"Compilation failed with ${pluralize(errors.size, "error")}:\n${errors.mkString("\n")}")
 
 }

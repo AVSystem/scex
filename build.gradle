@@ -63,13 +63,6 @@ project("scex-core") {
         compile("org.scala-lang:scala-compiler:$scalaVersion")
         compile("org.scala-lang:jline:$scalaVersion")
 
-        compile("commons-io:commons-io:2.1")
-        compile("commons-lang:commons-lang:2.6")
-        compile("commons-net:commons-net:3.0.1")
-        compile("commons-pool:commons-pool:1.6")
-        compile("commons-cli:commons-cli:1.2")
-        compile("commons-codec:commons-codec:1.7")
-
         compile("com.google.guava:guava:13.0.1")
         compile("com.google.code.findbugs:jsr305:2.0.1")
 

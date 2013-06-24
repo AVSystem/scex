@@ -46,9 +46,9 @@ class CompilationTest extends FunSuite {
   }
 
   test("string expression test") {
-    val expr = "bippy ${42/7} rest"
+    val expr = "bippy \"${42/7}\" rest"
     val cexpr = compiler.getCompiledStringExpression(createProfile(PredefinedAccessSpecs.basicOperations), expr, classOf[Unit])
-    assert("bippy 6 rest" === cexpr(()))
+    assert("bippy \"6\" rest" === cexpr(()))
   }
 
   test("simple syntax validation test") {

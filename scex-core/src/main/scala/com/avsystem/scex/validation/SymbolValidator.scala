@@ -83,7 +83,7 @@ object SymbolValidator {
 
   import SymbolValidatorMacros._
 
-  private def elidedByMacro =
+  private def stub =
     throw new NotImplementedError("You cannot use this outside of symbol validator DSL")
 
   case class MemberAccessSpec(typeInfo: TypeInfo, memberSignature: String, implicitConv: Option[(String, TypeInfo)], allow: Boolean) {
@@ -103,7 +103,7 @@ object SymbolValidator {
 
   val empty: SymbolValidator = apply(Nil)
 
-  implicit def toDirectWildcardSelector(any: Any): DirectWildcardSelector = elidedByMacro
+  implicit def toDirectWildcardSelector(any: Any): DirectWildcardSelector = stub
 
   // indicates end of wildcard selector
   trait CompleteWildcardSelector extends Any
@@ -183,7 +183,7 @@ object SymbolValidator {
      *
      * @return
      */
-    def membersNamed: MethodsNamed
+    def membersNamed: MembersNamed
 
     /**
      * Allows or denies calling all methods with given names available for given type, on this type.
@@ -242,7 +242,7 @@ object SymbolValidator {
     def constructors: CompleteWildcardSelector
   }
 
-  trait MethodsNamed extends Any with Dynamic {
+  trait MembersNamed extends Any with Dynamic {
     def selectDynamic(name: String): CompleteWildcardSelector = macro methodsNamed_selectDynamic_impl
   }
 
@@ -289,5 +289,5 @@ object SymbolValidator {
    * @tparam T
    * @return
    */
-  def allStatic[T]: MemberSubsets = elidedByMacro
+  def allStatic[T]: MemberSubsets = stub
 }
