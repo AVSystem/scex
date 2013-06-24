@@ -132,12 +132,14 @@ trait MacroUtils {
 
   lazy val getClassSymbol = typeOf[Any].member(newTermName("getClass"))
 
+  def isGetClass(symbol: Symbol) =
+    symbol.name == newTermName("getClass") && (symbol :: symbol.allOverriddenSymbols).contains(getClassSymbol)
+
   def isBeanGetter(symbol: Symbol) = symbol.isMethod && {
     val methodSymbol = symbol.asMethod
     val name = symbol.name.decoded
 
-    methodSymbol != getClassSymbol && !methodSymbol.allOverriddenSymbols.contains(getClassSymbol) &&
-      methodSymbol.paramss == List(List()) && methodSymbol.typeParams.isEmpty &&
+    !isGetClass(methodSymbol) && methodSymbol.paramss == List(List()) && methodSymbol.typeParams.isEmpty &&
       (BeanGetterNamePattern.pattern.matcher(name).matches ||
         BooleanBeanGetterNamePattern.pattern.matcher(name).matches && isBooleanType(methodSymbol.returnType))
   }
