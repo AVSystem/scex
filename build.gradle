@@ -54,6 +54,15 @@ artifacts {
     archives sourcesJar
 }
 
+dependencies {
+    compile("org.scala-lang:scala-library:$scalaVersion")
+    compile("org.scala-lang:scala-reflect:$scalaVersion")
+    compile("org.scala-lang:scala-compiler:$scalaVersion")
+
+    compile("com.google.guava:guava:14.0.1")
+    compile("com.google.code.findbugs:jsr305:2.0.1")
+}
+
 project("scex-core") {
     apply plugin: 'scala'
 
@@ -61,9 +70,8 @@ project("scex-core") {
         compile("org.scala-lang:scala-library:$scalaVersion")
         compile("org.scala-lang:scala-reflect:$scalaVersion")
         compile("org.scala-lang:scala-compiler:$scalaVersion")
-        compile("org.scala-lang:jline:$scalaVersion")
 
-        compile("com.google.guava:guava:13.0.1")
+        compile("com.google.guava:guava:14.0.1")
         compile("com.google.code.findbugs:jsr305:2.0.1")
 
         testCompile("org.scalatest:scalatest_2.10:1.9.1")
