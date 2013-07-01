@@ -37,7 +37,6 @@ object CodeGeneration {
   val SyntaxValidatorClassName = "SyntaxValidator"
   val SymbolValidatorClassName = "SymbolValidator"
 
-
   def adapterName(clazz: Class[_]) =
     "Adapter_" + clazz.getName.replaceAll("\\.", "_")
 

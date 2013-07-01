@@ -24,7 +24,7 @@ trait SymbolValidator {
   private type SpecWithIndex = (MemberAccessSpec, Int)
 
   private lazy val bySignaturesMap: Map[String, List[SpecWithIndex]] =
-    accessSpecs.zipWithIndex.groupBy(_._1.memberSignature).toMap.withDefaultValue(Nil)
+    accessSpecs.zipWithIndex.groupBy(_._1.memberSignature).withDefaultValue(Nil)
 
   def isMemberAccessAllowed(vc: ValidationContext)(access: vc.MemberAccess): vc.ValidationResult = {
     import vc.{c => _, _}
