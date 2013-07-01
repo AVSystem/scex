@@ -51,6 +51,11 @@ object ValidationTest {
       None
       Tuple2.apply _
 
+      on { anyRef: AnyRef =>
+        anyRef == (_: AnyRef)
+        anyRef != (_: AnyRef)
+      }
+
       on { tl: TypedLol[_] =>
         tl.toString
       }

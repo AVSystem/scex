@@ -116,9 +116,9 @@ object CodeGeneration {
     |    import _ctx._
     |    $contextGetterAdapterCode
     |    $header
-    |    com.avsystem.scex.validation.ExpressionValidator.validate[$contextType, $resultType](
+    |    com.avsystem.scex.validation.ExpressionValidator.validate[$contextType, $resultType]({
     |${stripDollarBrackets(expression)}
-    |    )
+    |    })
     |  }
     |}
     |

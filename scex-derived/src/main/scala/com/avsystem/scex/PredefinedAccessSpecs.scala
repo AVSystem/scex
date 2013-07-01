@@ -35,6 +35,10 @@ object PredefinedAccessSpecs {
       any + (_: String)
       any -> (_: Any)
     }
+    on { anyRef: AnyRef =>
+      anyRef == (_: AnyRef)
+      anyRef != (_: AnyRef)
+    }
 
     // Operations on primitive types
     on { u: Unit =>
