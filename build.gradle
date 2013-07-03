@@ -16,6 +16,10 @@ allprojects {
         mavenLocal()
     }
 
+    configurations {
+        deployerJars
+    }
+
     sourceCompatibility = 1.7
     targetCompatibility = 1.7
 
@@ -29,32 +33,9 @@ allprojects {
     }
 }
 
-def projectParts = [project(":scex-core"), project(":scex-derived")]
-
-jar {
-    dependsOn(projectParts.assemble)
-
-    projectParts.each { proj ->
-        from proj.configurations.archives.allArtifacts.files.collect {
-            zipTree(it)
-        }
-    }
-}
-
-task sourcesJar(type: Jar) {
-    classifier = 'sources'
-    dependsOn(projectParts.classes)
-
-    projectParts.each { proj ->
-        from proj.sourceSets.main.allSource
-    }
-}
-
-artifacts {
-    archives sourcesJar
-}
-
 dependencies {
+    deployerJars("org.apache.maven.wagon:wagon-http:2.2")
+
     compile("org.scala-lang:scala-library:$scalaVersion")
     compile("org.scala-lang:scala-reflect:$scalaVersion")
     compile("org.scala-lang:scala-compiler:$scalaVersion")
@@ -107,5 +88,41 @@ project("scex-java-test") {
     dependencies {
         compile(project(":scex-core"))
         compile(project(":scex-derived"))
+    }
+}
+
+def projectParts = [project(":scex-core"), project(":scex-derived")]
+
+jar {
+    dependsOn(projectParts.assemble)
+
+    projectParts.each { proj ->
+        from proj.configurations.archives.allArtifacts.files.collect {
+            zipTree(it)
+        }
+    }
+}
+
+task sourcesJar(type: Jar) {
+    classifier = 'sources'
+    dependsOn(projectParts.classes)
+
+    projectParts.each { proj ->
+        from proj.sourceSets.main.allSource
+    }
+}
+
+artifacts {
+    archives sourcesJar
+}
+
+uploadArchives {
+    repositories {
+        mavenDeployer {
+            configuration = configurations.deployerJars
+            repository(url: 'http://repo.avsystem.com/libs-snapshots-local/') {
+                authentication(userName: artifactoryUser, password: artifactoryPassword)
+            }
+        }
     }
 }
