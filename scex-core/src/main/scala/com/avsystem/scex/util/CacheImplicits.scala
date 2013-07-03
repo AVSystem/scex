@@ -19,7 +19,7 @@ object CacheImplicits {
       }
     }
 
-  implicit def exprToCallable[T](expr: => T) =
+  implicit def exprToCallable[T](expr: => T): Callable[T] =
     new Callable[T] {
       def call(): T = expr
     }

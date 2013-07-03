@@ -1,12 +1,19 @@
 package com.avsystem.scex.compiler
 
+import JavaTypeParsing._
 import com.avsystem.scex.compiler.ScexCompiler.CompilationFailedException
+import com.avsystem.scex.util.CacheImplicits
 import com.avsystem.scex.{TypeTag, Expression}
+import com.google.common.cache.CacheBuilder
 import java.lang.reflect.Type
 import java.{util => ju, lang => jl}
-import JavaTypeParsing._
 
 class JavaScexCompiler(config: ScexCompilerConfig) extends ScexCompiler(config) {
+
+  import CacheImplicits._
+
+  private val typesCache = CacheBuilder.newBuilder.weakKeys
+    .build[Type, String](javaTypeAsScalaType _)
 
   @throws[CompilationFailedException]
   def getCompiledStringExpression[C](
@@ -32,7 +39,7 @@ class JavaScexCompiler(config: ScexCompilerConfig) extends ScexCompiler(config) 
     expression: String,
     contextType: Type): Expression[C, String] = {
 
-    val scalaContextType = javaTypeAsScalaType(contextType)
+    val scalaContextType = typesCache.get(contextType)
     val contextClass = erasureOf(contextType)
 
     getCompiledStringExpression(profile, expression, scalaContextType, contextClass)
@@ -85,9 +92,9 @@ class JavaScexCompiler(config: ScexCompilerConfig) extends ScexCompiler(config) 
     contextType: Type,
     resultType: Type): Expression[C, R] = {
 
-    val scalaContextType = javaTypeAsScalaType(contextType)
+    val scalaContextType = typesCache.get(contextType)
     val contextClass = erasureOf(contextType)
-    val scalaResultType = javaTypeAsScalaType(resultType)
+    val scalaResultType = typesCache.get(resultType)
 
     getCompiledExpression[C, R](profile, expression, scalaContextType, contextClass, scalaResultType)
   }
