@@ -1,6 +1,6 @@
 package com.avsystem.scex.validation
 
-import com.avsystem.scex.util.{CommonUtils, CacheImplicits}
+import com.avsystem.scex.util.CommonUtils
 import com.google.common.cache.CacheBuilder
 import java.{util => ju, lang => jl}
 import reflect.api.{Universe, TypeCreator}

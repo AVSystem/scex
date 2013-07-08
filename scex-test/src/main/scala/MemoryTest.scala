@@ -1,5 +1,5 @@
-import com.avsystem.scex.compiler.{JavaScexCompiler, ExpressionProfile, ScexCompilerConfig}
 import com.avsystem.scex.PredefinedAccessSpecs
+import com.avsystem.scex.compiler.{JavaScexCompiler, ExpressionProfile, ScexCompilerConfig}
 import com.avsystem.scex.validation.{SyntaxValidator, SymbolValidator}
 import java.{util => ju, lang => jl}
 

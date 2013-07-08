@@ -1,11 +1,11 @@
 package com.avsystem.scex.util
 
-import java.{util => ju, lang => jl}
-
 import collection.JavaConversions
 import collection.mutable
 import java.util.Collections
+import java.{util => ju, lang => jl}
 import scala.language.dynamics
+
 
 /**
  * Interfaces and utilities to allow Java implementations of {@link scala.Dynamic}.

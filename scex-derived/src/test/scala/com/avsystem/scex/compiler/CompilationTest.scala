@@ -1,12 +1,12 @@
 package com.avsystem.scex.compiler
 
+import com.avsystem.scex.compiler.ParameterizedClass.StaticInnerGeneric
+import com.avsystem.scex.compiler.ScexCompiler.CompilationFailedException
 import com.avsystem.scex.validation.{SymbolValidator, SyntaxValidator}
+import com.avsystem.scex.{TypeTag, PredefinedAccessSpecs}
 import java.{util => ju, lang => jl}
 import org.scalatest.FunSuite
-import com.avsystem.scex.{TypeTag, PredefinedAccessSpecs}
-import com.avsystem.scex.compiler.ParameterizedClass.StaticInnerGeneric
 import scala.collection.immutable.StringOps
-import com.avsystem.scex.compiler.ScexCompiler.CompilationFailedException
 
 class CompilationTest extends FunSuite {
 

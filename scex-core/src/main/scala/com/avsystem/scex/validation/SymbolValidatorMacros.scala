@@ -2,9 +2,9 @@ package com.avsystem.scex.validation
 
 import com.avsystem.scex.util.MacroUtils
 import java.{util => ju, lang => jl}
+import scala.collection.mutable.ListBuffer
 import scala.reflect.api.TypeCreator
 import scala.reflect.macros.Context
-import scala.collection.mutable.ListBuffer
 
 object SymbolValidatorMacros {
 
@@ -28,8 +28,8 @@ object SymbolValidatorMacros {
 
   private def extractMemberAccessSpecs(c: Context)(expr: c.Expr[Any], allow: Boolean): c.Expr[List[MemberAccessSpec]] = {
     import c.universe._
-    val macroUtils = MacroUtils(c)
     import macroUtils.{c => _, _}
+    val macroUtils = MacroUtils(c)
 
     // transforms list of expressions of type List[MemberAccessSpec] to single expression
     // of type List[MemberAccessSpec] that represents flattened original list of lists
@@ -285,8 +285,8 @@ object SymbolValidatorMacros {
    */
   def methodsNamed_selectDynamic_impl(c: Context)(name: c.Expr[String]): c.Expr[CompleteWildcardSelector] = {
     import c.universe._
-    val macroUtils = MacroUtils(c)
     import macroUtils.{c => _, _}
+    val macroUtils = MacroUtils(c)
 
     c.prefix.tree match {
       case Select(methodSubsets, TermName("membersNamed")) if hasType[MemberSubsets](methodSubsets) =>

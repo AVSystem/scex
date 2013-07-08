@@ -1,12 +1,11 @@
 import com.avsystem.scex.compiler.{JavaScexCompiler, ExpressionProfile, ScexCompilerConfig}
-import com.avsystem.scex.PredefinedAccessSpecs
 import com.avsystem.scex.validation._
 import java.util.Collections
 import java.{util => ju, lang => jl}
 import reflect.macros.Universe
-import scala.runtime.{StringAdd, RichInt}
 import scala.Some
 import scala.language.existentials
+import scala.runtime.RichInt
 
 
 object ValidationTest {

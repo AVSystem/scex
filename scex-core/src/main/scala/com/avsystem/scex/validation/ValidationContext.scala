@@ -1,8 +1,8 @@
 package com.avsystem.scex.validation
 
-import scala.reflect.macros.Context
-import com.avsystem.scex.util.MacroUtils
 import com.avsystem.scex.compiler.annotation._
+import com.avsystem.scex.util.MacroUtils
+import scala.reflect.macros.Context
 
 abstract class ValidationContext protected extends MacroUtils {
   val c: Context

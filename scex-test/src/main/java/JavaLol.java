@@ -1,7 +1,3 @@
-import com.avsystem.scex.Expression;
-import com.avsystem.scex.compiler.JavaScexCompiler;
-import com.avsystem.scex.compiler.ScexCompiler;
-
 public class JavaLol {
     public static class StaticLol {
 

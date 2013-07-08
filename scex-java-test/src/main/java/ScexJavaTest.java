@@ -6,7 +6,6 @@ import com.avsystem.scex.Expression;
 import com.avsystem.scex.compiler.ExpressionProfile;
 import com.avsystem.scex.compiler.JavaScexCompiler;
 import com.avsystem.scex.compiler.JavaScexCompiler$;
-import com.avsystem.scex.compiler.ScexCompiler;
 import com.avsystem.scex.compiler.ScexCompilerConfig;
 import com.avsystem.scex.validation.SymbolValidator;
 import com.avsystem.scex.validation.SyntaxValidator;
