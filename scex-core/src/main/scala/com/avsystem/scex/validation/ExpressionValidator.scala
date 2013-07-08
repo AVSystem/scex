@@ -105,7 +105,7 @@ object ExpressionValidator {
     }
 
     val access = extractAccess(expr.tree)
-    val validationResult = profile.symbolValidator.isMemberAccessAllowed(validationContext)(access)
+    val validationResult = profile.symbolValidator.validateMemberAccess(validationContext)(access)
 
     validationResult.deniedAccesses.foreach { access =>
       c.error(access.pos, s"Member access forbidden: $access")

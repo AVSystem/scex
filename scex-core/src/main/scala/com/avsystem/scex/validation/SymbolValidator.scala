@@ -26,7 +26,7 @@ trait SymbolValidator {
   private lazy val bySignaturesMap: Map[String, List[SpecWithIndex]] =
     accessSpecs.zipWithIndex.groupBy(_._1.memberSignature).withDefaultValue(Nil)
 
-  def isMemberAccessAllowed(vc: ValidationContext)(access: vc.MemberAccess): vc.ValidationResult = {
+  def validateMemberAccess(vc: ValidationContext)(access: vc.MemberAccess): vc.ValidationResult = {
     import vc.{c => _, _}
 
     def implicitConversionsMatch(actual: Option[ImplicitConversion], fromSpec: Option[(String, TypeInfo)]) =
@@ -61,7 +61,7 @@ trait SymbolValidator {
 
       case MultipleMemberAccesses(accesses) =>
         // all must be allowed
-        val (allowed, denied) = accesses.map(a => isMemberAccessAllowed(vc)(a)).partition(_.deniedAccesses.isEmpty)
+        val (allowed, denied) = accesses.map(a => validateMemberAccess(vc)(a)).partition(_.deniedAccesses.isEmpty)
         if (denied.nonEmpty)
           ValidationResult(denied.minBy(_.priority).priority, denied.flatMap(_.deniedAccesses))
         else if (allowed.nonEmpty)
@@ -72,7 +72,7 @@ trait SymbolValidator {
       case AlternativeMemberAccess(accesses) =>
         // take the soonest-validated alternative
         if (accesses.nonEmpty)
-          accesses.map(a => isMemberAccessAllowed(vc)(a)).minBy(_.priority)
+          accesses.map(a => validateMemberAccess(vc)(a)).minBy(_.priority)
         else
           ValidationResult(lowestPriority(allowedByDefault = true), Nil)
     }

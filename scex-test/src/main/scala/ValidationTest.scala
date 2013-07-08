@@ -1,4 +1,4 @@
-import com.avsystem.scex.compiler.{JavaScexCompiler, ExpressionProfile, ScexCompiler, ScexCompilerConfig}
+import com.avsystem.scex.compiler.{JavaScexCompiler, ExpressionProfile, ScexCompilerConfig}
 import com.avsystem.scex.PredefinedAccessSpecs
 import com.avsystem.scex.validation._
 import java.util.Collections
@@ -140,26 +140,18 @@ object ValidationTest {
       }
     }
 
-    val symbolValidator = SymbolValidator(PredefinedAccessSpecs.basicOperations ++ allow {
-      Some.apply _
-      Tuple2.apply _
-    })
+    val symbolValidator = SymbolValidator(memberAccessSpecs)
 
-    val profile = new ExpressionProfile(syntaxValidator, symbolValidator, "def immaUtil = \"util, lol\"", "")
-    val compiler = new JavaScexCompiler(new ScexCompilerConfig)
+    val profile = new ExpressionProfile(syntaxValidator, symbolValidator, "", "def immaUtil = \"util, lol\"")
+    val compiler = JavaScexCompiler(new ScexCompilerConfig)
 
     val myexpr =
       """
         |{
-        |  stuff
         |  null: String
         |  new java.util.ArrayList[String](java.util.Collections.emptyList)
         |  String.CASE_INSENSITIVE_ORDER
-        |  new ValidationTest.B
-        |  (new JavaLol).foo
-        |  new JavaLol + s"fuu ${new JavaLol}" + 42
         |  immaUtil
-        |  None.hashCode
         |  Some((3, "50"))
         |}
       """.stripMargin
@@ -173,8 +165,8 @@ object ValidationTest {
 
     type Typ = TypedLol[T]#Dafuq[F] forSome {type T; type F}
 
-    println(compiler.getCompiledExpression[Typ, Object](profile, expr, classOf[Typ], classOf[Object]).apply(dafuq))
-    println(compiler.getCompiledStringExpression[Object](profile, "${1+5+10} hahaha \" dafuq \"", classOf[Object]).apply(null))
+    compiler.interactiveContext(profile, classOf[Unit], classOf[Object]).getErrors(myexpr) foreach println
+
   }
 
 }

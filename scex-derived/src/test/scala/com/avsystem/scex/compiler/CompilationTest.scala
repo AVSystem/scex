@@ -1,18 +1,18 @@
 package com.avsystem.scex.compiler
 
-import com.avsystem.scex.compiler.ScexCompiler.CompilationFailedException
 import com.avsystem.scex.validation.{SymbolValidator, SyntaxValidator}
 import java.{util => ju, lang => jl}
 import org.scalatest.FunSuite
 import com.avsystem.scex.{TypeTag, PredefinedAccessSpecs}
 import com.avsystem.scex.compiler.ParameterizedClass.StaticInnerGeneric
 import scala.collection.immutable.StringOps
+import com.avsystem.scex.compiler.ScexCompiler.CompilationFailedException
 
 class CompilationTest extends FunSuite {
 
   import SymbolValidator._
 
-  val compiler = new JavaScexCompiler(new ScexCompilerConfig)
+  val compiler = JavaScexCompiler(new ScexCompilerConfig)
 
   def catchAndPrint(code: => Any) {
     try code catch {

@@ -8,7 +8,8 @@ import com.google.common.cache.CacheBuilder
 import java.lang.reflect.Type
 import java.{util => ju, lang => jl}
 
-class JavaScexCompiler(config: ScexCompilerConfig) extends ScexCompiler(config) {
+trait JavaScexCompiler extends ScexCompiler {
+  this: ScexPresentationCompiler =>
 
   import CacheImplicits._
 
@@ -99,4 +100,22 @@ class JavaScexCompiler(config: ScexCompilerConfig) extends ScexCompiler(config) 
     getCompiledExpression[C, R](profile, expression, scalaContextType, contextClass, scalaResultType)
   }
 
+  def interactiveContext(profile: ExpressionProfile,
+    contextType: Type,
+    resultType: Type): InteractiveContext = {
+
+    val scalaContextType = typesCache.get(contextType)
+    val contextClass = erasureOf(contextType)
+    val scalaResultType = typesCache.get(resultType)
+
+    interactiveContext(profile, scalaContextType, contextClass, scalaResultType)
+  }
+}
+
+object JavaScexCompiler {
+  def apply(compilerConfig: ScexCompilerConfig): JavaScexCompiler =
+    new JavaScexCompiler with CachingScexCompiler with ScexPresentationCompiler {
+      // must be lazy or inside early initializer
+      lazy val config = compilerConfig
+    }
 }

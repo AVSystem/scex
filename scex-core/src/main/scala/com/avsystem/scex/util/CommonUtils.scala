@@ -1,5 +1,7 @@
 package com.avsystem.scex.util
 
+import java.util.concurrent.Callable
+
 
 /**
  * Created with IntelliJ IDEA.
@@ -55,4 +57,9 @@ object CommonUtils {
 
   def pluralize(count: Int, noun: String) =
     s"$count $noun" + (if (count != 1) "s" else "")
+
+  def callable[T](expr: => T) =
+    new Callable[T] {
+      def call() = expr
+    }
 }

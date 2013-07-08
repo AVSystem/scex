@@ -26,9 +26,4 @@ public class JavaLol {
     public boolean isFoo() {
         return true;
     }
-
-    public static void main(String[] args) throws Exception {
-        JavaScexCompiler compiler = new JavaScexCompiler(null);
-        Expression<String, Object> expr = compiler.getCompiledExpression(null, null, String.class, Object.class);
-    }
 }
