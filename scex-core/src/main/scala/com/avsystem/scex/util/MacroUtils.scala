@@ -3,13 +3,12 @@ package com.avsystem.scex.util
 import com.avsystem.scex.util.CommonUtils._
 import java.{util => ju, lang => jl}
 import scala.Some
-import scala.reflect.macros.Context
+import scala.reflect.macros.Universe
 
 trait MacroUtils {
-  val c: Context
+  val universe: Universe
 
-  import c.universe._
-  import c.{Expr, reifyRuntimeClass}
+  import universe._
 
   object LiteralString {
     def unapply(tree: Tree) = tree match {
@@ -62,6 +61,18 @@ trait MacroUtils {
   def stripTypeApply(tree: Tree): Tree = tree match {
     case TypeApply(prefix, _) => stripTypeApply(prefix)
     case _ => tree
+  }
+
+  def paramsOf(tpe: Type): List[List[Symbol]] = tpe match {
+    case MethodType(params, resultType) =>
+      params :: paramsOf(resultType)
+    case _ => Nil
+  }
+
+  def resultTypeOf(tpe: Type): Type = tpe match {
+    case tpe: MethodType => resultTypeOf(tpe.resultType)
+    case tpe: NullaryMethodType => tpe.resultType
+    case _ => tpe
   }
 
   def path(tree: Tree): String = tree match {
@@ -120,13 +131,6 @@ trait MacroUtils {
     case None => reify(None)
   }
 
-  def reifyRuntimeClassOpt(tpe: Type): Expr[Option[Class[_]]] =
-    if (tpe == NoType || isJavaStaticType(tpe)) {
-      reify(None)
-    } else {
-      reify(Some(Expr[Class[_]](reifyRuntimeClass(tpe)).splice))
-    }
-
   def isBooleanType(tpe: Type) =
     tpe <:< typeOf[Boolean] || tpe <:< typeOf[jl.Boolean]
 
@@ -183,11 +187,6 @@ trait MacroUtils {
         BeanSetterNamePattern.pattern.matcher(name).matches
     }
 
-  def wrapInFunction[T](expr: c.Expr[T]) = reify {
-    def result = expr.splice
-    result
-  }
-
   /**
    * Methods, modules, val/var setters and getters, Java fields.
    */
@@ -207,7 +206,7 @@ trait MacroUtils {
 }
 
 object MacroUtils {
-  def apply(ctx: Context) = new MacroUtils {
-    val c: ctx.type = ctx
+  def apply(u: Universe) = new MacroUtils {
+    val universe: u.type = u
   }
 }

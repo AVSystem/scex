@@ -2,8 +2,7 @@ package com.avsystem.scex.compiler
 
 import JavaTypeParsing._
 import com.avsystem.scex.util.CommonUtils._
-import java.lang.reflect._
-import java.lang.{reflect => jlr}
+import java.lang.reflect.{Modifier, Method}
 import java.{util => ju, lang => jl}
 import scala.Some
 import scala.language.existentials
@@ -22,7 +21,7 @@ object CodeGeneration {
           clazz == classOf[Boolean] || clazz == classOf[jl.Boolean]
 
         method.getName match {
-          case BeanGetterNamePattern(capitalizedName, _) =>
+          case name@BeanGetterNamePattern(capitalizedName, _) if name != "getClass" =>
             Some((uncapitalize(capitalizedName), false))
           case BooleanBeanGetterNamePattern(capitalizedName, _) if isBoolOrBoolean(method.getReturnType) =>
             Some((uncapitalize(capitalizedName), true))
@@ -67,7 +66,7 @@ object CodeGeneration {
         s"""
         |@com.avsystem.scex.compiler.annotation.JavaGetterAdapter
         |class $adapterWithGenerics
-        |  (val wrapped: $wrappedTpe) extends AnyVal {
+        |  (@com.avsystem.scex.compiler.annotation.WrappedInAdapter val wrapped: $wrappedTpe) extends AnyVal {
         |
         |$classBody
         |}
@@ -108,21 +107,30 @@ object CodeGeneration {
         ""
     }
 
-    s"""
-    |final class $ExpressionClassName extends (($contextType) => $resultType) {
-    |  def apply(_ctx: $contextType): $resultType = {
-    |    import $profileObjectPkg.$ProfileObjectName._
-    |    import Utils._
-    |    import _ctx._
-    |    $contextGetterAdapterCode
-    |    $header
-    |    com.avsystem.scex.validation.ExpressionValidator.validate[$contextType, $resultType]({
-    |${stripDollarBrackets(expression)}
-    |    })
-    |  }
-    |}
-    |
-    """.stripMargin
+    val prefix =
+      s"""
+        |final class $ExpressionClassName extends (($contextType) => $resultType) {
+        |  def apply(_ctx: $contextType): $resultType = {
+        |    import $profileObjectPkg.$ProfileObjectName._
+        |    import Utils._
+        |    import _ctx._
+        |    $contextGetterAdapterCode
+        |    $header
+        |    com.avsystem.scex.validation.ExpressionValidator.validate[$contextType, $resultType]({
+        |""".stripMargin
+
+    val postfix =
+      """
+        |    })
+        |  }
+        |}
+        |
+      """.stripMargin
+
+    val exprCode = prefix + stripDollarBrackets(expression) + postfix
+    val exprOffset = prefix.length
+
+    (exprCode, exprOffset)
   }
 
   def generateProfileObject(profile: ExpressionProfile) = {
@@ -142,14 +150,14 @@ object CodeGeneration {
     }
 
     s"""
-    |@com.avsystem.scex.compiler.annotation.ProfileObject
-    |object $ProfileObjectName {
-    |${adapters.mkString}
-    |  @com.avsystem.scex.compiler.annotation.ExpressionUtil object Utils {
-    |${profile.expressionUtils}
-    |  }
-    |}
-    |
+      |@com.avsystem.scex.compiler.annotation.ProfileObject
+      |object $ProfileObjectName {
+      |${adapters.mkString}
+      |  @com.avsystem.scex.compiler.annotation.ExpressionUtil object Utils {
+      |${profile.expressionUtils}
+      |  }
+      |}
+      |
     """.stripMargin
   }
 
@@ -169,7 +177,7 @@ object CodeGeneration {
     """.stripMargin
   }
 
-  def wrapInSource(code: String, pkgName: String) = {
+  def wrapInSource(code: String, pkgName: String): String = {
     s"""
       |package $pkgName
       |
@@ -177,4 +185,13 @@ object CodeGeneration {
     """.stripMargin
   }
 
+  def wrapInSource(code: String, offset: Int, pkgName: String): (String, Int) = {
+    val prefix =
+      s"""
+      |package $pkgName
+      |
+      |""".stripMargin
+
+    (prefix + code, prefix.length + offset)
+  }
 }

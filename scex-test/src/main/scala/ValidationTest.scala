@@ -78,6 +78,7 @@ object ValidationTest {
 
       on { al: ju.ArrayList[_] =>
         new ju.ArrayList(_: ju.Collection[_])
+        al.all.members
       }
 
       on { any: Any =>
@@ -125,7 +126,7 @@ object ValidationTest {
 
     }
 
-    memberAccessSpecs foreach println
+    //memberAccessSpecs foreach println
 
     val syntaxValidator = new SyntaxValidator {
       def isSyntaxAllowed(u: Universe)(tree: u.Tree): Boolean = {
@@ -144,16 +145,7 @@ object ValidationTest {
     val profile = new ExpressionProfile(syntaxValidator, symbolValidator, "", "def immaUtil = \"util, lol\"")
     val compiler = JavaScexCompiler(new ScexCompilerConfig)
 
-    val myexpr =
-      """
-        |{
-        |  null: String
-        |  new java.util.ArrayList[String](java.util.Collections.emptyList)
-        |  String.CASE_INSENSITIVE_ORDER
-        |  immaUtil
-        |  Some((3, "50"))
-        |}
-      """.stripMargin
+    val myexpr = "\"asdfasdfasdf\""
 
     val expr = """ Some((3, "50")) """
 
@@ -164,7 +156,7 @@ object ValidationTest {
 
     type Typ = TypedLol[T]#Dafuq[F] forSome {type T; type F}
 
-    compiler.interactiveContext(profile, classOf[Unit], classOf[Object]).getErrors(myexpr) foreach println
+    compiler.getInteractiveContext(profile, classOf[ju.ArrayList[_]], classOf[Object]).getScopeCompletion(myexpr, 0) foreach println
 
   }
 

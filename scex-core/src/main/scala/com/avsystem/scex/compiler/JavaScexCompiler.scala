@@ -1,15 +1,15 @@
 package com.avsystem.scex.compiler
 
 import JavaTypeParsing._
-import com.avsystem.scex.compiler.ScexCompiler.CompilationFailedException
+import com.avsystem.scex.compiler.ScexCompiler.{CompileError, CompilationFailedException}
 import com.avsystem.scex.util.CacheImplicits
 import com.avsystem.scex.{TypeTag, Expression}
 import com.google.common.cache.CacheBuilder
 import java.lang.reflect.Type
 import java.{util => ju, lang => jl}
+import com.avsystem.scex.compiler.ScexPresentationCompiler.Param
 
-trait JavaScexCompiler extends ScexCompiler {
-  this: ScexPresentationCompiler =>
+trait JavaScexCompiler extends ScexPresentationCompiler {
 
   import CacheImplicits._
 
@@ -100,22 +100,48 @@ trait JavaScexCompiler extends ScexCompiler {
     getCompiledExpression[C, R](profile, expression, scalaContextType, contextClass, scalaResultType)
   }
 
-  def interactiveContext(profile: ExpressionProfile,
+  class JavaInteractiveContext(profile: ExpressionProfile, contextType: Type, resultType: Type)
+    extends InteractiveContext(profile, typesCache.get(contextType), erasureOf(contextType), typesCache.get(resultType)) {
+
+    import scala.collection.JavaConverters._
+
+    private def memberToJava(scalaMember: ScexPresentationCompiler.Member) = scalaMember match {
+      case ScexPresentationCompiler.Member(name, params, tpe) =>
+        JavaScexCompiler.Member(name, params.map(_.asJavaCollection).asJavaCollection, tpe)
+    }
+
+    private def completionToJava(scalaCompletion: ScexPresentationCompiler.Completion) = scalaCompletion match {
+      case ScexPresentationCompiler.Completion(members, errors) =>
+        JavaScexCompiler.Completion(members.map(memberToJava).asJavaCollection, errors.asJavaCollection)
+    }
+
+    def getErrorsForJava(expression: String) =
+      getErrors(expression).asJavaCollection
+
+    def getScopeCompletionForJava(expression: String, position: Int) =
+      completionToJava(getScopeCompletion(expression, position))
+
+    def getTypeCompletionForJava(expression: String, position: Int) =
+      completionToJava(getTypeCompletion(expression, position))
+  }
+
+  def getInteractiveContext(profile: ExpressionProfile,
     contextType: Type,
-    resultType: Type): InteractiveContext = {
+    resultType: Type): JavaInteractiveContext = {
 
-    val scalaContextType = typesCache.get(contextType)
-    val contextClass = erasureOf(contextType)
-    val scalaResultType = typesCache.get(resultType)
-
-    interactiveContext(profile, scalaContextType, contextClass, scalaResultType)
+    new JavaInteractiveContext(profile, contextType, resultType)
   }
 }
 
 object JavaScexCompiler {
   def apply(compilerConfig: ScexCompilerConfig): JavaScexCompiler =
-    new JavaScexCompiler with CachingScexCompiler with ScexPresentationCompiler {
+    new JavaScexCompiler with CachingScexCompiler {
       // must be lazy or inside early initializer
       lazy val config = compilerConfig
     }
+
+  case class Member(name: String, params: ju.Collection[ju.Collection[Param]], tpe: String)
+
+  case class Completion(members: ju.Collection[Member], errors: ju.Collection[CompileError])
+
 }

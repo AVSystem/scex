@@ -19,9 +19,13 @@ public class ScexJavaTest {
 
         ExpressionProfile profile = new ExpressionProfile(syntaxValidator, symbolValidator, "", "");
 
-        Expression<Void, String> expression = compiler.getCompiledExpression(
-                profile, "new JavaCostam(\"dafuq\").toString", void.class, String.class);
-        System.out.println(expression.apply(null));
+        JavaScexCompiler.JavaInteractiveContext ctx = compiler.getInteractiveContext(profile, void.class, String.class);
+        System.out.println("FUUUUUUU");
+
+        System.out.println(ctx.getTypeCompletionForJava("asdfasdfasdf", 1));
+        System.out.println(ctx.getTypeCompletionForJava("new JavaCostam(\"asdfasdaasd\").toString", 1));
+        System.out.println(ctx.getTypeCompletionForJava("new JavaCostam(\"asdfasdfasdf\").toString", 1));
+        System.out.println(ctx.getTypeCompletionForJava("new JavaCostam(\"asdssdfasdfasdfasdfasd\").toString", 1));
     }
 
     private static String readResource(String resource) throws IOException {

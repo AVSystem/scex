@@ -26,13 +26,17 @@ trait SymbolValidator {
   private lazy val bySignaturesMap: Map[String, List[SpecWithIndex]] =
     accessSpecs.zipWithIndex.groupBy(_._1.memberSignature).withDefaultValue(Nil)
 
+  //TODO: cache?
+  def referencesModuleMember(moduleSymbolFullName: String) =
+    accessSpecs.exists(spec => spec.allow && spec.memberSignature.startsWith(moduleSymbolFullName + "."))
+
   def validateMemberAccess(vc: ValidationContext)(access: vc.MemberAccess): vc.ValidationResult = {
-    import vc.{c => _, _}
+    import vc._
 
     def implicitConversionsMatch(actual: Option[ImplicitConversion], fromSpec: Option[(String, TypeInfo)]) =
       (actual, fromSpec) match {
         case (Some(ImplicitConversion(actualPathTree, actualImplicitTpe)), Some((specPath, specImplicitTypeInfo))) =>
-          path(actualPathTree) == specPath && actualImplicitTpe <:< specImplicitTypeInfo.typeIn(vc.c.universe)
+          path(actualPathTree) == specPath && actualImplicitTpe <:< specImplicitTypeInfo.typeIn(vc.universe)
         case (None, None) => true
         case _ => false
       }
@@ -46,7 +50,7 @@ trait SymbolValidator {
         val matchingSpecs: List[SpecWithIndex] = signatures.flatMap { signature =>
           bySignaturesMap(signature).filter { case (accessSpec, _) =>
             signature == accessSpec.memberSignature &&
-              tpe <:< accessSpec.typeInfo.typeIn(vc.c.universe) &&
+              tpe <:< accessSpec.typeInfo.typeIn(vc.universe) &&
               implicitConversionsMatch(implicitConv, accessSpec.implicitConv)
           }
         }

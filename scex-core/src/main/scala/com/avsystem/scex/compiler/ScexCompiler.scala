@@ -15,6 +15,7 @@ import scala.tools.nsc.interpreter.AbstractFileClassLoader
 import scala.tools.nsc.reporters.AbstractReporter
 import scala.tools.nsc.{Global, Settings}
 import scala.util.Try
+import scala.collection.mutable.ListBuffer
 
 trait ScexCompiler extends PackageGenerator {
 
@@ -29,7 +30,7 @@ trait ScexCompiler extends PackageGenerator {
   }
 
   class Reporter(val settings: Settings) extends AbstractReporter {
-    private val errorsBuilder = IndexedSeq.newBuilder[CompileError]
+    private val errorsBuilder = new ListBuffer[CompileError]
 
     def compileErrors() = {
       errorsBuilder.result()
@@ -147,7 +148,7 @@ trait ScexCompiler extends PackageGenerator {
     Try(result)
   }
 
-  protected def expressionCode(exprDef: ExpressionDef, pkgName: String): String = {
+  protected def expressionCode(exprDef: ExpressionDef, pkgName: String): (String, Int) = {
     val ExpressionDef(profile, expression, contextClass, contextType, resultType) = exprDef
 
     val fullAdapterClassNameOpt =
@@ -158,14 +159,15 @@ trait ScexCompiler extends PackageGenerator {
       } else None
 
     val profileObjectPkg = compileProfileObject(exprDef.profile).get
+    val (expressionCode, offset) =
+      generateExpressionClass(profile, expression, fullAdapterClassNameOpt, profileObjectPkg, contextType, resultType)
 
-    wrapInSource(generateExpressionClass(
-      profile, expression, fullAdapterClassNameOpt, profileObjectPkg, contextType, resultType), pkgName)
+    wrapInSource(expressionCode, offset, pkgName)
   }
 
   protected def compileExpression(exprDef: ExpressionDef): Try[RawExpression] = synchronized {
     val pkgName = newExpressionPackage()
-    val codeToCompile = expressionCode(exprDef, pkgName)
+    val (codeToCompile, _) = expressionCode(exprDef, pkgName)
     // every single expression has its own classloader and virtual directory
     val classLoader = new ScexClassLoader(new VirtualDirectory("(scex)", None), persistentClassLoader)
     val sourceFile = new BatchSourceFile("(scex expression)", codeToCompile)
@@ -185,6 +187,11 @@ trait ScexCompiler extends PackageGenerator {
   }
 
   protected def compile(sourceFile: SourceFile, classLoader: ScexClassLoader, shared: Boolean): Seq[CompileError] = {
+    compilationCount += 1
+    if (compilationCount > config.resetAfterCompilationCount) {
+      reset()
+    }
+
     settings.outputDirs.setSingleOutput(classLoader.classfileDirectory)
     reporter.reset()
 
@@ -197,11 +204,6 @@ trait ScexCompiler extends PackageGenerator {
       val global = this.global
       val run = new global.Run
       run.compileSources(List(sourceFile))
-    }
-
-    compilationCount += 1
-    if (compilationCount >= config.resetAfterCompilationCount) {
-      reset()
     }
 
     reporter.compileErrors()
@@ -290,7 +292,7 @@ trait ScexCompiler extends PackageGenerator {
     val codeToCompile = wrapInSource(generateSyntaxValidator(code), pkgName)
     val sourceFile = new BatchSourceFile("(scex syntax validator)", codeToCompile)
 
-    compile(sourceFile, persistentClassLoader, shared = false) match {
+    compile(sourceFile, persistentClassLoader, shared = true) match {
       case Nil =>
         instantiatePersistent[SyntaxValidator](s"$pkgName.$SyntaxValidatorClassName")
       case errors =>
@@ -304,7 +306,7 @@ trait ScexCompiler extends PackageGenerator {
     val codeToCompile = wrapInSource(generateSymbolValidator(code), pkgName)
     val sourceFile = new BatchSourceFile("(scex symbol validator)", codeToCompile)
 
-    compile(sourceFile, persistentClassLoader, shared = false) match {
+    compile(sourceFile, persistentClassLoader, shared = true) match {
       case Nil =>
         instantiatePersistent[SymbolValidator](s"$pkgName.$SymbolValidatorClassName")
       case errors =>

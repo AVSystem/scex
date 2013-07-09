@@ -28,8 +28,8 @@ object SymbolValidatorMacros {
 
   private def extractMemberAccessSpecs(c: Context)(expr: c.Expr[Any], allow: Boolean): c.Expr[List[MemberAccessSpec]] = {
     import c.universe._
-    import macroUtils.{c => _, _}
-    val macroUtils = MacroUtils(c)
+    val macroUtils = MacroUtils(c.universe)
+    import macroUtils._
 
     // transforms list of expressions of type List[MemberAccessSpec] to single expression
     // of type List[MemberAccessSpec] that represents flattened original list of lists
@@ -45,6 +45,13 @@ object SymbolValidatorMacros {
         b.result()
       }
     }
+
+    def reifyRuntimeClassOpt(tpe: Type): Expr[Option[Class[_]]] =
+      if (tpe == NoType || isJavaStaticType(tpe)) {
+        reify(None)
+      } else {
+        reify(Some(c.Expr[Class[_]](c.reifyRuntimeClass(tpe)).splice))
+      }
 
     def reifyTypeInfo(tpe: Type) = {
       val widenedTpe = tpe.map(_.widen)
@@ -285,8 +292,8 @@ object SymbolValidatorMacros {
    */
   def methodsNamed_selectDynamic_impl(c: Context)(name: c.Expr[String]): c.Expr[CompleteWildcardSelector] = {
     import c.universe._
-    import macroUtils.{c => _, _}
-    val macroUtils = MacroUtils(c)
+    val macroUtils = MacroUtils(c.universe)
+    import macroUtils._
 
     c.prefix.tree match {
       case Select(methodSubsets, TermName("membersNamed")) if hasType[MemberSubsets](methodSubsets) =>
