@@ -9,9 +9,11 @@ import java.lang.reflect.Type
 import java.{util => ju, lang => jl}
 import com.avsystem.scex.compiler.ScexPresentationCompiler.Param
 
-trait JavaScexCompiler extends ScexPresentationCompiler {
+class JavaScexCompiler(compilerConfig: ScexCompilerConfig) extends ScexPresentationCompiler with CachingScexCompiler {
 
   import CacheImplicits._
+
+  lazy val config = compilerConfig
 
   private val typesCache = CacheBuilder.newBuilder.weakKeys
     .build[Type, String](javaTypeAsScalaType _)
@@ -134,11 +136,8 @@ trait JavaScexCompiler extends ScexPresentationCompiler {
 }
 
 object JavaScexCompiler {
-  def apply(compilerConfig: ScexCompilerConfig): JavaScexCompiler =
-    new JavaScexCompiler with CachingScexCompiler {
-      // must be lazy or inside early initializer
-      lazy val config = compilerConfig
-    }
+  def apply(compilerConfig: ScexCompilerConfig) =
+    new JavaScexCompiler(compilerConfig)
 
   case class Member(name: String, params: ju.Collection[ju.Collection[Param]], tpe: String)
 
