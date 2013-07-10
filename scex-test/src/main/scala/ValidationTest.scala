@@ -156,7 +156,7 @@ object ValidationTest {
 
     type Typ = TypedLol[T]#Dafuq[F] forSome {type T; type F}
 
-    compiler.getInteractiveContext(profile, classOf[ju.ArrayList[_]], classOf[Object]).getScopeCompletion(myexpr, 0) foreach println
+    compiler.getInteractiveContext(profile, classOf[ju.ArrayList[_]], classOf[Object]).getScopeCompletion(myexpr, 0)
 
   }
 

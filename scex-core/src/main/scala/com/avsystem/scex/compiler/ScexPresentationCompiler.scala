@@ -1,20 +1,23 @@
 package com.avsystem.scex.compiler
 
+import com.avsystem.scex.compiler.ScexCompiler.CompileError
 import com.avsystem.scex.validation.{ValidationContext, ExpressionValidator}
 import java.{util => ju, lang => jl}
 import scala.reflect.internal.util.{SourceFile, BatchSourceFile}
 import scala.tools.nsc.interactive.{Global => IGlobal}
-import com.avsystem.scex.compiler.ScexCompiler.CompileError
 
 trait ScexPresentationCompiler extends ScexCompiler {
   compiler =>
 
   import ScexPresentationCompiler.{Member => SMember, Param, Completion}
 
-  private val reporter = new Reporter(settings)
+  object lock
+
+  private var reporter: Reporter = _
   private var global: IGlobal = _
 
   private def init() {
+    reporter = new Reporter(settings)
     global = new IGlobal(settings, reporter)
   }
 
@@ -36,11 +39,12 @@ trait ScexPresentationCompiler extends ScexCompiler {
 
     val pkgName = newInteractiveExpressionPackage()
 
-    private def withGlobal[T](code: IGlobal => T) = compiler.synchronized {
+    private def withGlobal[T](code: IGlobal => T) = lock.synchronized {
       val global = compiler.global
       getOrThrow(global.askForResponse(() => ExpressionValidator.profileVar.value = profile))
       val result = code(global)
       getOrThrow(global.askForResponse(() => ExpressionValidator.profileVar.value = null))
+      reporter.reset()
       result
     }
 
@@ -138,26 +142,51 @@ trait ScexPresentationCompiler extends ScexCompiler {
       askTypeCompletion(pos, response)
       val scope = getOrThrow(response)
 
-      val tree = locateTree(pos)
-      val context = doLocateContext(pos)
+      val typedTreeResponse = new Response[Tree]
+      askTypeAt(pos, typedTreeResponse)
+      val typedTree = getOrThrow(typedTreeResponse)
 
-      // Implicit conversions (conversion tree and implicit type) must be obtained manually from the
+      // Hack: implicit conversions (conversion tree and implicit type) must be obtained manually from the
       // compiler because TypeMember contains only the implicit conversion symbol.
-      // This code is heavily based on [[scala.tools.nsc.interactive.Global#typeMembers]]
-      val implicitConversions: Map[Symbol, (Tree, Type)] =
+      // This code is taken from [[scala.tools.nsc.interactive.Global#typeMembers]]
+      val (tree, implicitConversions): (Tree, Map[Symbol, (Tree, Type)]) =
         getOrThrow(askForResponse { () =>
+          var tree = typedTree
+
+          tree match {
+            case Select(qual, name) if tree.tpe == ErrorType => tree = qual
+            case _ =>
+          }
+
+          val context = doLocateContext(pos)
+
+          if (tree.tpe == null)
+            tree = analyzer.newTyper(context).typedQualifier(tree)
+
+          val pre = stabilizedType(tree)
+
+          val ownerTpe = tree.tpe match {
+            case analyzer.ImportType(expr) => expr.tpe
+            case null => pre
+            case MethodType(List(), rtpe) => rtpe
+            case _ => tree.tpe
+          }
+
           val applicableViews: List[analyzer.SearchResult] =
-            new analyzer.ImplicitSearch(
-              tree, definitions.functionType(List(tree.tpe), definitions.AnyClass.tpe), isView = true,
+            if (ownerTpe == null || ownerTpe.isErroneous) Nil
+            else new analyzer.ImplicitSearch(
+              tree, definitions.functionType(List(ownerTpe), definitions.AnyClass.tpe), isView = true,
               context.makeImplicit(reportAmbiguousErrors = false), NoPosition).allImplicits
 
-          applicableViews.map { searchResult =>
+          val viewsMap: Map[Symbol, (Tree, Type)] = applicableViews.map { searchResult =>
             val implicitTpe = analyzer.newTyper(context.makeImplicit(reportAmbiguousErrors = false))
               .typed(Apply(searchResult.tree, List(tree)) setPos tree.pos)
               .onTypeError(EmptyTree).tpe
 
             (searchResult.tree.symbol, (searchResult.tree, implicitTpe))
           }.toMap
+
+          (tree, viewsMap)
         })
 
       def accessFromTypeMember(member: TypeMember) =
@@ -203,19 +232,23 @@ trait ScexPresentationCompiler extends ScexCompiler {
     val result = super.compile(sourceFile, classLoader, usedInExpressions)
 
     if (result.isEmpty && usedInExpressions) {
-      val global = this.global
-      val response = new global.Response[global.Tree]
-      global.askLoadedTyped(sourceFile, response)
-      getOrThrow(response)
+      lock.synchronized {
+        val global = this.global
+        val response = new global.Response[global.Tree]
+        global.askLoadedTyped(sourceFile, response)
+        getOrThrow(response)
+      }
     }
 
     result
   }
 
   override def reset() {
-    synchronized {
-      super.reset()
-      init()
+    lock.synchronized {
+      synchronized {
+        super.reset()
+        init()
+      }
     }
   }
 }

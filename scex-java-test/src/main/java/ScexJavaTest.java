@@ -22,10 +22,16 @@ public class ScexJavaTest {
         JavaScexCompiler.JavaInteractiveContext ctx = compiler.getInteractiveContext(profile, void.class, String.class);
         System.out.println("FUUUUUUU");
 
-        System.out.println(ctx.getTypeCompletionForJava("asdfasdfasdf", 1));
-        System.out.println(ctx.getTypeCompletionForJava("new JavaCostam(\"asdfasdaasd\").toString", 1));
-        System.out.println(ctx.getTypeCompletionForJava("new JavaCostam(\"asdfasdfasdf\").toString", 1));
-        System.out.println(ctx.getTypeCompletionForJava("new JavaCostam(\"asdssdfasdfasdfasdfasd\").toString", 1));
+        long start = System.currentTimeMillis();
+        for (int i = 0; i < 3000; i++) {
+            ctx.getScopeCompletionForJava("new JavaCostam(\"asdfasdaasd\").toSrslyWtf {{", 1);
+            if (i % 100 == 0) {
+                System.out.println(i);
+            }
+        }
+        System.out.println("FINISHED");
+        long duration = System.currentTimeMillis() - start;
+        System.out.println(3000000.0 / duration);
     }
 
     private static String readResource(String resource) throws IOException {

@@ -6,6 +6,7 @@ import java.{util => ju, lang => jl}
 import scala.language.dynamics
 import scala.language.experimental.macros
 import scala.language.implicitConversions
+import scala.collection.immutable.{SortedSet, TreeSet}
 
 trait SymbolValidator {
   val accessSpecs: List[MemberAccessSpec]
@@ -26,9 +27,14 @@ trait SymbolValidator {
   private lazy val bySignaturesMap: Map[String, List[SpecWithIndex]] =
     accessSpecs.zipWithIndex.groupBy(_._1.memberSignature).withDefaultValue(Nil)
 
-  //TODO: cache?
-  def referencesModuleMember(moduleSymbolFullName: String) =
-    accessSpecs.exists(spec => spec.allow && spec.memberSignature.startsWith(moduleSymbolFullName + "."))
+  private lazy val memberSignatures: SortedSet[String] =
+    bySignaturesMap.keys.to[TreeSet]
+
+  def referencesModuleMember(moduleSymbolFullName: String) = {
+    val prefix = moduleSymbolFullName + "."
+    val projection = memberSignatures.from(prefix)
+    projection.nonEmpty && projection.firstKey.startsWith(prefix)
+  }
 
   def validateMemberAccess(vc: ValidationContext)(access: vc.MemberAccess): vc.ValidationResult = {
     import vc._
