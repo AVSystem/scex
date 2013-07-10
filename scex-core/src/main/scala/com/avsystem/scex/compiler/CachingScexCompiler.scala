@@ -22,17 +22,14 @@ trait CachingScexCompiler extends ScexCompiler {
   private val fullJavaGetterAdaptersCache =
     CacheBuilder.newBuilder.build[Class[_], Try[String]]
 
-  override protected def compileExpression(exprDef: ExpressionDef) = {
+  override protected def compileExpression(exprDef: ExpressionDef) =
     expressionCache.get(exprDef, callable(super.compileExpression(exprDef)))
-  }
 
-  override protected def compileProfileObject(profile: ExpressionProfile) = {
+  override protected def compileProfileObject(profile: ExpressionProfile) =
     profileCompilationResultsCache.get(profile, callable(super.compileProfileObject(profile)))
-  }
 
-  override protected def compileFullJavaGetterAdapter(clazz: Class[_]) = {
+  override protected def compileFullJavaGetterAdapter(clazz: Class[_]) =
     fullJavaGetterAdaptersCache.get(clazz, callable(super.compileFullJavaGetterAdapter(clazz)))
-  }
 
   override def reset() {
     synchronized {
