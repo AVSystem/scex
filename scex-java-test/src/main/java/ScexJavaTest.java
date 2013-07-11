@@ -24,7 +24,7 @@ public class ScexJavaTest {
 
         long start = System.currentTimeMillis();
         for (int i = 0; i < 3000; i++) {
-            ctx.getScopeCompletionForJava("new JavaCostam(\"asdfasdaasd\").toSrslyWtf {{", 1);
+            ctx.getTypeCompletionForJava("new JavaCostam(\"asdfasdaasd\").toSrslyWtf {{", 1);
             if (i % 100 == 0) {
                 System.out.println(i);
             }

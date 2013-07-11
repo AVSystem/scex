@@ -1,7 +1,9 @@
 package com.avsystem.scex.compiler
 
 import com.avsystem.scex.compiler.ScexCompiler.CompileError
+import com.avsystem.scex.util.CommonUtils._
 import com.avsystem.scex.validation.{ValidationContext, ExpressionValidator}
+import com.google.common.cache.CacheBuilder
 import java.{util => ju, lang => jl}
 import scala.reflect.internal.util.{SourceFile, BatchSourceFile}
 import scala.tools.nsc.interactive.{Global => IGlobal}
@@ -15,6 +17,9 @@ trait ScexPresentationCompiler extends ScexCompiler {
 
   private var reporter: Reporter = _
   private var global: IGlobal = _
+
+  private val typeCompletionCache =
+    CacheBuilder.newBuilder.weakKeys.build[TypeWrapper, Completion]
 
   private def init() {
     reporter = new Reporter(settings)
@@ -138,40 +143,47 @@ trait ScexPresentationCompiler extends ScexCompiler {
       val vc = ValidationContext(global)(getContextTpe(global)(sourceTree))
       import vc._
 
-      val response = new Response[List[Member]]
-      askTypeCompletion(pos, response)
-      val scope = getOrThrow(response)
-
       val typedTreeResponse = new Response[Tree]
       askTypeAt(pos, typedTreeResponse)
       val typedTree = getOrThrow(typedTreeResponse)
 
       // Hack: implicit conversions (conversion tree and implicit type) must be obtained manually from the
       // compiler because TypeMember contains only the implicit conversion symbol.
-      // This code is taken from [[scala.tools.nsc.interactive.Global#typeMembers]]
-      val (tree, implicitConversions): (Tree, Map[Symbol, (Tree, Type)]) =
+      // Code fragments from [[scala.tools.nsc.interactive.Global#typeMembers]] are used here.
+
+      val context = doLocateContext(pos)
+
+      // this code is taken from [[scala.tools.nsc.interactive.Global#typeMembers]]
+      val (tree, ownerTpe) = getOrThrow(askForResponse { () =>
+        var tree = typedTree
+
+        tree match {
+          case Select(qual, name) if tree.tpe == ErrorType => tree = qual
+          case _ =>
+        }
+
+        if (tree.tpe == null)
+          tree = analyzer.newTyper(context).typedQualifier(tree)
+
+        val pre = stabilizedType(tree)
+
+        val ownerTpe = tree.tpe match {
+          case analyzer.ImportType(expr) => expr.tpe
+          case null => pre
+          case MethodType(List(), rtpe) => rtpe
+          case _ => tree.tpe
+        }
+
+        (tree, ownerTpe)
+      })
+
+      val result = typeCompletionCache.get(TypeWrapper(global)(ownerTpe), callable {
+        val response = new Response[List[Member]]
+        askTypeCompletion(pos, response)
+        val scope = getOrThrow(response)
+
         getOrThrow(askForResponse { () =>
-          var tree = typedTree
-
-          tree match {
-            case Select(qual, name) if tree.tpe == ErrorType => tree = qual
-            case _ =>
-          }
-
-          val context = doLocateContext(pos)
-
-          if (tree.tpe == null)
-            tree = analyzer.newTyper(context).typedQualifier(tree)
-
-          val pre = stabilizedType(tree)
-
-          val ownerTpe = tree.tpe match {
-            case analyzer.ImportType(expr) => expr.tpe
-            case null => pre
-            case MethodType(List(), rtpe) => rtpe
-            case _ => tree.tpe
-          }
-
+        // code based on [[scala.tools.nsc.interactive.Global#typeMembers]]
           val applicableViews: List[analyzer.SearchResult] =
             if (ownerTpe == null || ownerTpe.isErroneous) Nil
             else new analyzer.ImplicitSearch(
@@ -186,32 +198,32 @@ trait ScexPresentationCompiler extends ScexCompiler {
             (searchResult.tree.symbol, (searchResult.tree, implicitTpe))
           }.toMap
 
-          (tree, viewsMap)
+          // validation of members from type completion
+          def accessFromTypeMember(member: TypeMember) =
+            if (!member.implicitlyAdded)
+              extractAccess(Select(tree, member.sym))
+            else {
+              val (implicitTree, implicitTpe) = viewsMap(member.viaView)
+              extractAccess(Select(Apply(implicitTree, List(tree)).setSymbol(member.viaView).setType(implicitTpe), member.sym))
+            }
+
+          val members = scope.collect {
+            case member: TypeMember
+              if member.sym.isTerm && !member.sym.isConstructor && !isWrappedInAdapter(member.sym) =>
+              member
+          } filter { member =>
+            symbolValidator.validateMemberAccess(vc)(accessFromTypeMember(member)).deniedAccesses.isEmpty
+          } map translateMember(vc)
+
+          Completion(members, errors)
         })
-
-      def accessFromTypeMember(member: TypeMember) =
-        if (!member.implicitlyAdded)
-          extractAccess(Select(tree, member.sym))
-        else {
-          val (implicitTree, implicitTpe) = implicitConversions(member.viaView)
-          extractAccess(Select(Apply(implicitTree, List(tree)).setSymbol(member.viaView).setType(implicitTpe), member.sym))
-        }
-
-      val members = getOrThrow(askForResponse { () =>
-        scope.collect {
-          case member: TypeMember
-            if member.sym.isTerm && !member.sym.isConstructor && !isWrappedInAdapter(member.sym) =>
-            member
-        } filter { member =>
-          symbolValidator.validateMemberAccess(vc)(accessFromTypeMember(member)).deniedAccesses.isEmpty
-        } map translateMember(vc)
       })
 
       val deleteResponse = new Response[Unit]
       askFilesDeleted(List(sourceFile), deleteResponse)
       getOrThrow(deleteResponse)
 
-      Completion(members, errors)
+      result
     }
   }
 
@@ -247,6 +259,7 @@ trait ScexPresentationCompiler extends ScexCompiler {
     lock.synchronized {
       synchronized {
         super.reset()
+        typeCompletionCache.invalidateAll()
         init()
       }
     }

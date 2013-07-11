@@ -64,7 +64,6 @@ object ValidationTest {
       }
 
       on { s: String =>
-        s.all.introduced.members
         s.length
         s.concat _
         s.matches _
@@ -156,7 +155,7 @@ object ValidationTest {
 
     type Typ = TypedLol[T]#Dafuq[F] forSome {type T; type F}
 
-    compiler.getInteractiveContext(profile, classOf[ju.ArrayList[_]], classOf[Object]).getScopeCompletion(myexpr, 0)
+    compiler.getInteractiveContext(profile, classOf[ju.ArrayList[_]], classOf[Object]).getTypeCompletion(myexpr, 1).members foreach println
 
   }
 
