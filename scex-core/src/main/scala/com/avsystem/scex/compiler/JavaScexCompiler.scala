@@ -2,12 +2,12 @@ package com.avsystem.scex.compiler
 
 import JavaTypeParsing._
 import com.avsystem.scex.compiler.ScexCompiler.{CompileError, CompilationFailedException}
+import com.avsystem.scex.compiler.ScexPresentationCompiler.Param
 import com.avsystem.scex.util.CacheImplicits
 import com.avsystem.scex.{TypeTag, Expression}
 import com.google.common.cache.CacheBuilder
 import java.lang.reflect.Type
 import java.{util => ju, lang => jl}
-import com.avsystem.scex.compiler.ScexPresentationCompiler.Param
 
 class JavaScexCompiler(compilerConfig: ScexCompilerConfig) extends ScexPresentationCompiler with CachingScexCompiler {
 
@@ -24,7 +24,7 @@ class JavaScexCompiler(compilerConfig: ScexCompilerConfig) extends ScexPresentat
     expression: String,
     contextClass: Class[C]): Expression[C, String] = {
 
-    getCompiledStringExpression(profile, expression, contextClass: Type)
+    getCompiledStringExpressionByType(profile, expression, contextClass)
   }
 
   @throws[CompilationFailedException]
@@ -33,11 +33,11 @@ class JavaScexCompiler(compilerConfig: ScexCompilerConfig) extends ScexPresentat
     expression: String,
     contextType: TypeTag[C]): Expression[C, String] = {
 
-    getCompiledStringExpression(profile, expression, contextType: Type)
+    getCompiledStringExpressionByType(profile, expression, contextType)
   }
 
   @throws[CompilationFailedException]
-  private def getCompiledStringExpression[C](
+  def getCompiledStringExpressionByType[C](
     profile: ExpressionProfile,
     expression: String,
     contextType: Type): Expression[C, String] = {
@@ -55,7 +55,7 @@ class JavaScexCompiler(compilerConfig: ScexCompilerConfig) extends ScexPresentat
     contextType: Class[C],
     resultType: Class[R]): Expression[C, R] = {
 
-    getCompiledExpression(profile, expression, contextType: Type, resultType: Type)
+    getCompiledExpressionByTypes(profile, expression, contextType, resultType)
   }
 
   @throws[CompilationFailedException]
@@ -65,7 +65,7 @@ class JavaScexCompiler(compilerConfig: ScexCompilerConfig) extends ScexPresentat
     contextType: Class[C],
     resultType: TypeTag[R]): Expression[C, R] = {
 
-    getCompiledExpression(profile, expression, contextType: Type, resultType: Type)
+    getCompiledExpressionByTypes(profile, expression, contextType, resultType)
   }
 
   @throws[CompilationFailedException]
@@ -75,7 +75,7 @@ class JavaScexCompiler(compilerConfig: ScexCompilerConfig) extends ScexPresentat
     contextType: TypeTag[C],
     resultType: Class[R]): Expression[C, R] = {
 
-    getCompiledExpression(profile, expression, contextType: Type, resultType: Type)
+    getCompiledExpressionByTypes(profile, expression, contextType, resultType)
   }
 
   @throws[CompilationFailedException]
@@ -85,11 +85,11 @@ class JavaScexCompiler(compilerConfig: ScexCompilerConfig) extends ScexPresentat
     contextType: TypeTag[C],
     resultType: TypeTag[R]): Expression[C, R] = {
 
-    getCompiledExpression(profile, expression, contextType: Type, resultType: Type)
+    getCompiledExpressionByTypes(profile, expression, contextType, resultType)
   }
 
   @throws[CompilationFailedException]
-  private def getCompiledExpression[C, R](
+  def getCompiledExpressionByTypes[C, R](
     profile: ExpressionProfile,
     expression: String,
     contextType: Type,
