@@ -3,13 +3,16 @@ package com.avsystem.scex.validation
 import SymbolValidator._
 import com.avsystem.scex.util.CommonUtils._
 import java.{util => ju, lang => jl}
+import scala.collection.immutable.{SortedSet, TreeSet}
 import scala.language.dynamics
 import scala.language.experimental.macros
 import scala.language.implicitConversions
-import scala.collection.immutable.{SortedSet, TreeSet}
 
 trait SymbolValidator {
   val accessSpecs: List[MemberAccessSpec]
+
+  def combine(otherValidator: SymbolValidator) =
+    SymbolValidator(accessSpecs ++ otherValidator.accessSpecs)
 
   lazy val referencedJavaClasses = accessSpecs.collect({
     case MemberAccessSpec(typeInfo, _, _, true) if typeInfo.clazz.isDefined && typeInfo.isJava =>
