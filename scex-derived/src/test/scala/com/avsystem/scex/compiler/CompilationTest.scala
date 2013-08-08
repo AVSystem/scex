@@ -3,7 +3,7 @@ package com.avsystem.scex.compiler
 import com.avsystem.scex.compiler.ParameterizedClass.StaticInnerGeneric
 import com.avsystem.scex.compiler.ScexCompiler.CompilationFailedException
 import com.avsystem.scex.validation.{SymbolValidator, SyntaxValidator}
-import com.avsystem.scex.{TypeTag, PredefinedAccessSpecs}
+import com.avsystem.scex.{Expression, TypeTag, PredefinedAccessSpecs}
 import java.{util => ju, lang => jl}
 import org.scalatest.FunSuite
 import scala.collection.immutable.StringOps
@@ -301,5 +301,14 @@ class CompilationTest extends FunSuite {
     assertMemberAccessForbidden {
       compiler.getCompiledExpression(createProfile(acl), expr, classOf[Unit], classOf[String])
     }
+  }
+
+  test("dynamic test") {
+    val acl = allow {
+      SomeDynamic.selectDynamic _
+    }
+    val expr = "com.avsystem.scex.compiler.SomeDynamic.dynamicProperty"
+    val cexpr: Expression[Unit, String] = compiler.getCompiledExpression(createProfile(acl), expr, classOf[Unit], classOf[String])
+    assert("dynamicProperty" === cexpr(()))
   }
 }

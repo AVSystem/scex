@@ -4,6 +4,7 @@ import java.util.Collections
 import java.{util => ju, lang => jl}
 import reflect.macros.Universe
 import scala.Some
+import scala.language.dynamics
 import scala.language.existentials
 import scala.runtime.RichInt
 
@@ -32,6 +33,10 @@ object ValidationTest {
 
   class B extends A[Int] {
     override def costam(buu: Int) = buu * 2
+  }
+
+  object Dyn extends Dynamic {
+    def selectDynamic(attr: String) = attr
   }
 
   def main(args: Array[String]) {
@@ -107,6 +112,8 @@ object ValidationTest {
         jl.isFoo
       }
 
+      Dyn.selectDynamic _
+
     } ++ deny {
 
       on { any: Any =>
@@ -144,7 +151,7 @@ object ValidationTest {
     val profile = new ExpressionProfile(syntaxValidator, symbolValidator, "", "def immaUtil = \"util, lol\"")
     val compiler = JavaScexCompiler(new ScexCompilerConfig)
 
-    val myexpr = "\"asdfasdfasdf\""
+    val myexpr = "(null: A[_])"
 
     val expr = """ Some((3, "50")) """
 
@@ -155,7 +162,7 @@ object ValidationTest {
 
     type Typ = TypedLol[T]#Dafuq[F] forSome {type T; type F}
 
-    compiler.getInteractiveContext(profile, classOf[ju.ArrayList[_]], classOf[Object]).getTypeCompletion(myexpr, 1).members foreach println
+    compiler.getCompiledExpression(profile, "ValidationTest.Dyn.costam", classOf[Object], classOf[String])
 
   }
 
