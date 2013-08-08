@@ -107,6 +107,7 @@ object CodeGeneration {
         ""
     }
 
+    //_result is needed because: https://groups.google.com/forum/#!topic/scala-user/BAK-mU7o6nM
     val prefix =
       s"""
         |final class $ExpressionClassName extends (($contextType) => $resultType) {
