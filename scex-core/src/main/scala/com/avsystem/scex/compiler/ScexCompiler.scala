@@ -6,6 +6,7 @@ import com.avsystem.scex.compiler.ScexCompiler._
 import com.avsystem.scex.util.CommonUtils._
 import com.avsystem.scex.validation.{SymbolValidator, SyntaxValidator, ExpressionValidator}
 import java.{util => ju, lang => jl}
+import scala.collection.mutable.ListBuffer
 import scala.ref.WeakReference
 import scala.reflect.internal.util.{Position, SourceFile, BatchSourceFile}
 import scala.reflect.io.VirtualDirectory
@@ -15,7 +16,6 @@ import scala.tools.nsc.interpreter.AbstractFileClassLoader
 import scala.tools.nsc.reporters.AbstractReporter
 import scala.tools.nsc.{Global, Settings}
 import scala.util.Try
-import scala.collection.mutable.ListBuffer
 
 trait ScexCompiler extends PackageGenerator {
 

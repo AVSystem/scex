@@ -36,11 +36,19 @@ trait ScexPresentationCompiler extends ScexCompiler {
     case Right(t) => throw t
   }
 
-  class InteractiveContext(
+  final class InteractiveContext(
     profile: ExpressionProfile,
+    // translator is a bit hacky way to allow some custom transformations
+    // on expressions in classes/traits that extend ScexPresentationCompiler (like XmlFriendlyScexCompiler)
+    expressionTranslator: String => String,
     contextType: String,
     contextClass: Class[_],
     resultType: String) {
+
+    require(profile != null, "Profile cannot be null")
+    require(contextType != null, "Context type cannot be null")
+    require(contextClass != null, "Context class cannot be null")
+    require(resultType != null, "Result type cannot be null")
 
     val pkgName = newInteractiveExpressionPackage()
 
@@ -86,7 +94,7 @@ trait ScexPresentationCompiler extends ScexCompiler {
       import global.{sourceFile => _, position => _, _}
       val symbolValidator = profile.symbolValidator
 
-      val exprDef = ExpressionDef(profile, expression, contextClass, contextType, resultType)
+      val exprDef = ExpressionDef(profile, expressionTranslator(expression), contextClass, contextType, resultType)
       val (code, offset) = expressionCode(exprDef, pkgName)
       val sourceFile = new BatchSourceFile(pkgName, code)
 
@@ -130,7 +138,7 @@ trait ScexPresentationCompiler extends ScexCompiler {
       import global.{sourceFile => _, position => _, _}
       val symbolValidator = profile.symbolValidator
 
-      val exprDef = ExpressionDef(profile, expression, contextClass, contextType, resultType)
+      val exprDef = ExpressionDef(profile, expressionTranslator(expression), contextClass, contextType, resultType)
       val (code, offset) = expressionCode(exprDef, pkgName)
       val sourceFile = new BatchSourceFile(pkgName, code)
       val pos = sourceFile.position(offset + position)
@@ -232,12 +240,7 @@ trait ScexPresentationCompiler extends ScexCompiler {
     contextClass: Class[_],
     resultType: String): InteractiveContext = {
 
-    require(profile != null, "Profile cannot be null")
-    require(contextType != null, "Context type cannot be null")
-    require(contextClass != null, "Context class cannot be null")
-    require(resultType != null, "Result type cannot be null")
-
-    new InteractiveContext(profile, contextType, contextClass, resultType)
+    new InteractiveContext(profile, identity, contextType, contextClass, resultType)
   }
 
   override protected def compile(sourceFile: SourceFile, classLoader: ScexClassLoader, usedInExpressions: Boolean) = {

@@ -12,7 +12,7 @@ object MemoryTest {
     val config = new ScexCompilerConfig
     config.expressionExpirationTime = 500
 
-    val compiler = JavaScexCompiler(config)
+    val compiler = new JavaScexCompiler(config)
 
     import SymbolValidator._
     val symbolValidator = SymbolValidator(

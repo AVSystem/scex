@@ -149,7 +149,7 @@ object ValidationTest {
     val symbolValidator = SymbolValidator(memberAccessSpecs)
 
     val profile = new ExpressionProfile(syntaxValidator, symbolValidator, "", "def immaUtil = \"util, lol\"")
-    val compiler = JavaScexCompiler(new ScexCompilerConfig)
+    val compiler = new JavaScexCompiler(new ScexCompilerConfig)
 
     val myexpr = "(null: A[_])"
 
