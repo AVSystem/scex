@@ -33,7 +33,7 @@ object XmlFriendlyTranslator extends RegexParsers {
     concat("$" ~ (ident | block))
 
   def standardExpression: Parser[String] =
-    rep(ident | btident | stringlit | number | block | delim | operator | bracket | whitespace) ^^ (_.mkString)
+    rep(ident | btident | variable | stringlit | number | block | delim | operator | bracket | whitespace) ^^ (_.mkString)
 
   def ident: Parser[String] =
     "[A-Za-z_][A-Za-z_0-9]*".r ^^ xmlFriendlyOperators
@@ -61,6 +61,8 @@ object XmlFriendlyTranslator extends RegexParsers {
     "[~!@#$%^&*-=+<>/?\\\\|:]+".r ^^ xmlFriendlyOperators
 
   def delim = "[,;.]".r
+
+  def variable = "$" ~> ident ^^ ("_ctx." + _)
 
   def bracket: Parser[String] =
     "[()\\[\\]}]".r

@@ -117,11 +117,11 @@ object CodeGeneration {
         |    import _ctx._
         |    $contextGetterAdapterCode
         |    $header
-        |    val _result = com.avsystem.scex.validation.ExpressionValidator.validate[$contextType, $resultType]({
+        |    val _result = com.avsystem.scex.validation.ExpressionMacroProcessor.processExpression[$contextType, $resultType]({
         |""".stripMargin
 
     val postfix =
-      """
+      s"""
         |    })
         |    _result
         |  }

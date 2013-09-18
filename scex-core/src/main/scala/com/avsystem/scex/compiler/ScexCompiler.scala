@@ -4,7 +4,7 @@ import com.avsystem.scex.Expression
 import com.avsystem.scex.compiler.CodeGeneration._
 import com.avsystem.scex.compiler.ScexCompiler._
 import com.avsystem.scex.util.CommonUtils._
-import com.avsystem.scex.validation.{SymbolValidator, SyntaxValidator, ExpressionValidator}
+import com.avsystem.scex.validation.{SymbolValidator, SyntaxValidator, ExpressionMacroProcessor}
 import java.{util => ju, lang => jl}
 import scala.collection.mutable.ListBuffer
 import scala.ref.WeakReference
@@ -173,7 +173,7 @@ trait ScexCompiler extends PackageGenerator {
     val sourceFile = new BatchSourceFile("(scex expression)", codeToCompile)
 
     def result =
-      ExpressionValidator.profileVar.withValue(exprDef.profile) {
+      ExpressionMacroProcessor.profileVar.withValue(exprDef.profile) {
         compile(sourceFile, classLoader, shared = false) match {
           case Nil =>
             Class.forName(s"$pkgName.$ExpressionClassName", true, classLoader).newInstance.asInstanceOf[RawExpression]

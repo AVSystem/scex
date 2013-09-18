@@ -11,13 +11,13 @@ import scala.util.DynamicVariable
  * This must be a Scala object and not a class because it contains macros. Validation is performed against
  * given ExpressionProfile which is injected into this object by ScexCompiler by means of a dynamic variable.
  */
-object ExpressionValidator {
+object ExpressionMacroProcessor {
 
   val profileVar: DynamicVariable[ExpressionProfile] = new DynamicVariable(null)
 
-  def validate[C, R](expr: R): R = macro validate_impl[C, R]
+  def processExpression[C, R](expr: R): R = macro processExpression_impl[C, R]
 
-  def validate_impl[C: c.WeakTypeTag, R](c: Context)(expr: c.Expr[R]): c.Expr[R] = {
+  def processExpression_impl[C: c.WeakTypeTag, R](c: Context)(expr: c.Expr[R]): c.Expr[R] = {
     import c.universe._
     val validationContext = ValidationContext(c.universe)(weakTypeOf[C])
     import validationContext._

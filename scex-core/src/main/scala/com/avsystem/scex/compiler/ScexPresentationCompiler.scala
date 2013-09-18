@@ -2,7 +2,7 @@ package com.avsystem.scex.compiler
 
 import com.avsystem.scex.compiler.ScexCompiler.CompileError
 import com.avsystem.scex.util.CommonUtils._
-import com.avsystem.scex.validation.{ValidationContext, ExpressionValidator}
+import com.avsystem.scex.validation.{ValidationContext, ExpressionMacroProcessor}
 import com.google.common.cache.CacheBuilder
 import java.{util => ju, lang => jl}
 import scala.reflect.internal.util.{SourceFile, BatchSourceFile}
@@ -54,9 +54,9 @@ trait ScexPresentationCompiler extends ScexCompiler {
 
     private def withGlobal[T](code: IGlobal => T) = lock.synchronized {
       val global = compiler.global
-      getOrThrow(global.askForResponse(() => ExpressionValidator.profileVar.value = profile))
+      getOrThrow(global.askForResponse(() => ExpressionMacroProcessor.profileVar.value = profile))
       val result = code(global)
-      getOrThrow(global.askForResponse(() => ExpressionValidator.profileVar.value = null))
+      getOrThrow(global.askForResponse(() => ExpressionMacroProcessor.profileVar.value = null))
       reporter.reset()
       result
     }
