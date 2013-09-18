@@ -85,4 +85,17 @@ object DynamicAdapters {
    */
   def unnamedArgsAsJavaList[AV](args: (String, AV)*) =
     JavaConversions.seqAsJavaList(args.collect { case ("", arg) => arg})
+
+  /**
+   * Convenience trait that can be implemented by contexts passed as expression inputs to provide
+   * dynamic variable support.
+   *
+   * @tparam T
+   */
+  trait DynamicVariableSupport[T] extends Dynamic {
+    def selectDynamic(name: String): T
+
+    def updateDynamic(name: String)(value: T): Unit
+  }
+
 }

@@ -8,7 +8,7 @@ import java.{util => ju, lang => jl}
 import org.scalatest.FunSuite
 import scala.collection.immutable.StringOps
 
-class CompilationTest extends FunSuite {
+class ScexCompilerTest extends FunSuite {
 
   import SymbolValidator._
 

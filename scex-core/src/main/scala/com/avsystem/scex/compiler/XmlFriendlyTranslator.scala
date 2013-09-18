@@ -22,7 +22,7 @@ object XmlFriendlyTranslator extends RegexParsers {
 
   def translate(expr: String) = parse(expression, expr).getOrElse(expr)
 
-  def expression = concat((stringExpression | standardExpression) ~ arbitraryEnding)
+  val expression = concat((stringExpression | standardExpression) ~ arbitraryEnding)
 
   def stringExpression: Parser[String] =
     "raw\"\"\"" ~ rep("([^$]|\\$\\$)+".r | interpolatedParam) ~ opt("\"\"\"") ^^ {
@@ -30,7 +30,7 @@ object XmlFriendlyTranslator extends RegexParsers {
     }
 
   def interpolatedParam: Parser[String] =
-    concat("$" ~ (ident | block))
+    concat("$" ~ (ident ^^ (i => s"{_ctx.$i}") | block))
 
   def standardExpression: Parser[String] =
     rep(ident | btident | variable | stringlit | number | block | delim | operator | bracket | whitespace) ^^ (_.mkString)
