@@ -1,5 +1,5 @@
 import com.avsystem.scex.PredefinedAccessSpecs
-import com.avsystem.scex.compiler.{JavaScexCompiler, ExpressionProfile, ScexCompilerConfig}
+import com.avsystem.scex.compiler.{DefaultJavaScexCompiler, ExpressionProfile, ScexCompilerConfig}
 import com.avsystem.scex.validation.{SyntaxValidator, SymbolValidator}
 import java.{util => ju, lang => jl}
 
@@ -12,7 +12,7 @@ object MemoryTest {
     val config = new ScexCompilerConfig
     config.expressionExpirationTime = 500
 
-    val compiler = new JavaScexCompiler(config)
+    val compiler = new DefaultJavaScexCompiler(config)
 
     import SymbolValidator._
     val symbolValidator = SymbolValidator(
