@@ -7,7 +7,10 @@ import com.avsystem.scex.{Expression, TypeTag, PredefinedAccessSpecs}
 import java.{util => ju, lang => jl}
 import org.scalatest.FunSuite
 import scala.collection.immutable.StringOps
+import org.junit.runner.RunWith
+import org.scalatest.junit.JUnitRunner
 
+@RunWith(classOf[JUnitRunner])
 class ScexCompilerTest extends FunSuite {
 
   import SymbolValidator._

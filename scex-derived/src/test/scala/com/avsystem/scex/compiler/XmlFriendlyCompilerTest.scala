@@ -4,12 +4,15 @@ import com.avsystem.scex.PredefinedAccessSpecs
 import com.avsystem.scex.validation.SymbolValidator._
 import com.avsystem.scex.validation.{SymbolValidator, SyntaxValidator}
 import java.{util => ju, lang => jl}
+import org.junit.runner.RunWith
 import org.scalatest.FunSuite
+import org.scalatest.junit.JUnitRunner
 
 /**
  * Created: 17-09-2013
  * Author: ghik
  */
+@RunWith(classOf[JUnitRunner])
 class XmlFriendlyCompilerTest extends FunSuite {
 
   val compiler = new XmlFriendlyJavaScexCompiler(new ScexCompilerConfig)

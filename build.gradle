@@ -67,6 +67,7 @@ project("scex-derived") {
 
         compile(project(":scex-core"))
 
+        testCompile("junit:junit:4.11")
         testCompile("org.scalatest:scalatest_2.10:1.9.1")
     }
 }
@@ -80,6 +81,7 @@ project("scex-test") {
         compile(project(":scex-core"))
         compile(project(":scex-derived"))
 
+        testCompile("junit:junit:4.11")
         testCompile("org.scalatest:scalatest_2.10:1.9.1")
     }
 }

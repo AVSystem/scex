@@ -2,8 +2,10 @@ package com.avsystem.scex.compiler
 
 import java.{util => ju, lang => jl}
 import org.scalatest._
+import org.scalatest.junit.JUnitRunner
+import org.junit.runner.RunWith
 
-
+@RunWith(classOf[JUnitRunner])
 class JavaTypeParsingTest extends FunSuite {
 
   import JavaTypeParsing._
