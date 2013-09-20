@@ -104,7 +104,7 @@ abstract class ValidationContext protected extends MacroUtils {
     val name = prefix + symbol.name.toString.capitalize
 
     def fail = throw new Error(s"Could not find Java getter $name on $javaTpe")
-    javaTpe.member(newTermName(name)).asTerm.alternatives.find(isBeanGetter).getOrElse(fail)
+    alternatives(javaTpe.member(newTermName(name))).find(isBeanGetter).getOrElse(fail)
   }
 
   def toStringAccess(tree: Tree) =

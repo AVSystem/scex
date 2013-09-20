@@ -188,7 +188,7 @@ trait MacroUtils {
     }
 
   /**
-   * Methods, modules, val/var setters and getters, Java fields.
+   * Accessible members include methods, modules, val/var setters and getters and Java fields.
    */
   def accessibleMembers(tpe: Type) =
     tpe.members.toList.collect { case s if s.isPublic && s.isTerm &&
@@ -203,6 +203,12 @@ trait MacroUtils {
 
   lazy val standardStringInterpolations =
     Set("s", "raw").map(name => typeOf[StringContext].member(newTermName(name)))
+
+  def alternatives(sym: Symbol) = sym match {
+    case termSymbol: TermSymbol => termSymbol.alternatives
+    case NoSymbol => Nil
+    case _ => List(sym)
+  }
 }
 
 object MacroUtils {
