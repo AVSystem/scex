@@ -78,7 +78,10 @@ trait ScexPresentationCompiler extends ScexCompiler {
       def symbolToParam(sym: Symbol) =
         Param(sym.decodedName, sym.typeSignature.toString())
 
-      SMember(member.sym.decodedName, paramsOf(member.tpe).map(_.map(symbolToParam)), resultTypeOf(member.tpe).toString())
+      SMember(member.sym.decodedName,
+        paramsOf(member.tpe).map(_.map(symbolToParam)),
+        resultTypeOf(member.tpe).toString(),
+        member.implicitlyAdded)
     }
 
     def getErrors(expression: String) = withGlobal { global =>
@@ -118,7 +121,7 @@ trait ScexPresentationCompiler extends ScexCompiler {
 
       val members = getOrThrow(askForResponse { () =>
         scope.collect {
-          case member@ScopeMember(sym, _, true, viaImport)
+          case member@ScopeMember(sym, _, _, viaImport)
             if viaImport != EmptyTree && sym.isTerm && !sym.isPackage &&
               (!isScexSynthetic(sym) || (isExpressionUtil(sym) && !isExpressionUtilObject(sym))) =>
             member
@@ -273,7 +276,7 @@ object ScexPresentationCompiler {
 
   case class Param(name: String, tpe: String)
 
-  case class Member(name: String, params: List[List[Param]], tpe: String)
+  case class Member(name: String, params: List[List[Param]], tpe: String, implicitlyAdded: Boolean)
 
   case class Completion(members: List[Member], errors: List[CompileError])
 

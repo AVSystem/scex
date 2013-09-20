@@ -148,7 +148,7 @@ object ValidationTest {
 
     val symbolValidator = SymbolValidator(memberAccessSpecs)
 
-    val profile = new ExpressionProfile(syntaxValidator, symbolValidator, "", "def immaUtil = \"util, lol\"")
+    val profile = new ExpressionProfile(syntaxValidator, symbolValidator, "", "val lol = \"dafuq\"; def immaUtil = \"util, lol\"")
     val compiler = new DefaultJavaScexCompiler(new ScexCompilerConfig)
 
     val myexpr = "(null: A[_])"
@@ -162,7 +162,10 @@ object ValidationTest {
 
     type Typ = TypedLol[T]#Dafuq[F] forSome {type T; type F}
 
-    compiler.getCompiledExpression(profile, "ValidationTest.Dyn.costam", classOf[Object], classOf[String])
+    //compiler.getCompiledExpression(profile, "ValidationTest.Dyn.costam", classOf[Object], classOf[String])
+
+    val ic = compiler.getInteractiveContext(profile, "Object", classOf[Unit], "Object")
+    ic.getScopeCompletion("", 0).members foreach println
 
   }
 

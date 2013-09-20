@@ -71,7 +71,7 @@ abstract class ValidationContext protected extends MacroUtils {
 
   def isExpressionUtil(symbol: Symbol): Boolean =
     symbol != null && symbol != NoSymbol &&
-      (symbol.annotations.exists(_.tpe =:= expressionUtilAnnotType) || isExpressionUtil(symbol.owner))
+      (isExpressionUtilObject(symbol) || isExpressionUtil(symbol.owner))
 
   def isExpressionUtilObject(symbol: Symbol): Boolean =
     symbol != null && symbol != NoSymbol && symbol.annotations.exists(_.tpe =:= expressionUtilAnnotType)

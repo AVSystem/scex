@@ -8,6 +8,7 @@ import com.avsystem.scex.{TypeTag, Expression}
 import com.google.common.cache.CacheBuilder
 import java.lang.reflect.Type
 import java.{util => ju, lang => jl}
+import scala.beans.{BooleanBeanProperty, BeanProperty}
 
 trait JavaScexCompiler extends ScexPresentationCompiler {
 
@@ -105,8 +106,8 @@ trait JavaScexCompiler extends ScexPresentationCompiler {
     import scala.collection.JavaConverters._
 
     private def memberToJava(scalaMember: ScexPresentationCompiler.Member) = scalaMember match {
-      case ScexPresentationCompiler.Member(name, params, tpe) =>
-        JavaScexCompiler.Member(name, params.map(_.asJavaCollection).asJavaCollection, tpe)
+      case ScexPresentationCompiler.Member(name, params, tpe, implicitlyAdded) =>
+        JavaScexCompiler.Member(name, params.map(_.asJavaCollection).asJavaCollection, tpe, implicitlyAdded)
     }
 
     private def completionToJava(scalaCompletion: ScexPresentationCompiler.Completion) = scalaCompletion match {
@@ -114,13 +115,13 @@ trait JavaScexCompiler extends ScexPresentationCompiler {
         JavaScexCompiler.Completion(members.map(memberToJava).asJavaCollection, errors.asJavaCollection)
     }
 
-    def getErrorsForJava(expression: String) =
+    def getErrors(expression: String) =
       wrapped.getErrors(expression).asJavaCollection
 
-    def getScopeCompletionForJava(expression: String, position: Int) =
+    def getScopeCompletion(expression: String, position: Int) =
       completionToJava(wrapped.getScopeCompletion(expression, position))
 
-    def getTypeCompletionForJava(expression: String, position: Int) =
+    def getTypeCompletion(expression: String, position: Int) =
       completionToJava(wrapped.getTypeCompletion(expression, position))
   }
 
@@ -138,8 +139,9 @@ object JavaScexCompiler {
   def apply(compilerConfig: ScexCompilerConfig) =
     new DefaultJavaScexCompiler(compilerConfig)
 
-  case class Member(name: String, params: ju.Collection[ju.Collection[Param]], tpe: String)
+  case class Member(@BeanProperty name: String, @BeanProperty params: ju.Collection[ju.Collection[Param]],
+    @BeanProperty `type`: String, @BooleanBeanProperty implicitlyAdded: Boolean)
 
-  case class Completion(members: ju.Collection[Member], errors: ju.Collection[CompileError])
+  case class Completion(@BeanProperty members: ju.Collection[Member], @BeanProperty errors: ju.Collection[CompileError])
 
 }

@@ -4,6 +4,7 @@ import java.io.InputStreamReader;
 
 import com.avsystem.scex.compiler.DefaultJavaScexCompiler;
 import com.avsystem.scex.compiler.ExpressionProfile;
+import com.avsystem.scex.compiler.JavaScexCompiler;
 import com.avsystem.scex.compiler.ScexCompilerConfig;
 import com.avsystem.scex.validation.SymbolValidator;
 import com.avsystem.scex.validation.SyntaxValidator;
@@ -17,12 +18,12 @@ public class ScexJavaTest {
 
         ExpressionProfile profile = new ExpressionProfile(syntaxValidator, symbolValidator, "", "");
 
-        DefaultJavaScexCompiler.JavaInteractiveContext ctx = compiler.getJavaInteractiveContext(profile, void.class, String.class);
+        JavaScexCompiler.JavaInteractiveContext ctx = compiler.getJavaInteractiveContext(profile, void.class, String.class);
         System.out.println("FUUUUUUU");
 
         long start = System.currentTimeMillis();
         for (int i = 0; i < 3000; i++) {
-            ctx.getTypeCompletionForJava("new JavaCostam(\"asdfasdaasd\").toSrslyWtf {{", 1);
+            ctx.getTypeCompletion("new JavaCostam(\"asdfasdaasd\").toSrslyWtf {{", 1);
             if (i % 100 == 0) {
                 System.out.println(i);
             }
