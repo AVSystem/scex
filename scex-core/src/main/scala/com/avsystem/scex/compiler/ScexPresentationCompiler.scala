@@ -81,7 +81,7 @@ trait ScexPresentationCompiler extends ScexCompiler {
       SMember(member.sym.decodedName,
         paramsOf(member.tpe).map(_.map(symbolToParam)),
         resultTypeOf(member.tpe).toString(),
-        member.implicitlyAdded)
+        member.sym.isImplicit)
     }
 
     def getErrors(expression: String) = withGlobal { global =>
@@ -276,7 +276,7 @@ object ScexPresentationCompiler {
 
   case class Param(name: String, tpe: String)
 
-  case class Member(name: String, params: List[List[Param]], tpe: String, implicitlyAdded: Boolean)
+  case class Member(name: String, params: List[List[Param]], tpe: String, iimplicit: Boolean)
 
   case class Completion(members: List[Member], errors: List[CompileError])
 

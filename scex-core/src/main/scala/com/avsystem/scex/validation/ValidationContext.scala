@@ -115,7 +115,7 @@ abstract class ValidationContext protected extends MacroUtils {
 
   def extractAccess(tree: Tree, staticAccessAllowedByDefault: Boolean = false): MemberAccess = {
     tree match {
-      case Select(contextAdapter@Ident(_), _) if isContextAdapter(contextAdapter.symbol) =>
+      case Select(contextAdapter@Ident(_), _) if isContextAdapter(contextAdapter.symbol) && !isWrappedInAdapter(tree.symbol) =>
         val symbol = getJavaGetter(tree.symbol, contextTpe)
 
         SimpleMemberAccess(contextTpe, symbol, None, allowedByDefault = false, tree.pos)

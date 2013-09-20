@@ -8,7 +8,6 @@ import com.avsystem.scex.{TypeTag, Expression}
 import com.google.common.cache.CacheBuilder
 import java.lang.reflect.Type
 import java.{util => ju, lang => jl}
-import scala.beans.{BooleanBeanProperty, BeanProperty}
 
 trait JavaScexCompiler extends ScexPresentationCompiler {
 
@@ -139,9 +138,9 @@ object JavaScexCompiler {
   def apply(compilerConfig: ScexCompilerConfig) =
     new DefaultJavaScexCompiler(compilerConfig)
 
-  case class Member(@BeanProperty name: String, @BeanProperty params: ju.Collection[ju.Collection[Param]],
-    @BeanProperty `type`: String, @BooleanBeanProperty implicitlyAdded: Boolean)
+  case class Member(getName: String, getParams: ju.Collection[ju.Collection[Param]],
+    getType: String, isImplicit: Boolean)
 
-  case class Completion(@BeanProperty members: ju.Collection[Member], @BeanProperty errors: ju.Collection[CompileError])
+  case class Completion(getMembers: ju.Collection[Member], getErrors: ju.Collection[CompileError])
 
 }
