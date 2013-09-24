@@ -11,6 +11,8 @@ abstract class ValidationContext protected extends MacroUtils {
 
   val contextTpe: Type
 
+  private lazy val rootTpe = TypeRef(contextTpe, contextTpe.member(newTypeName("Root")), Nil)
+
   sealed abstract class MemberAccess {
     def repr: String = repr("")
 
@@ -59,10 +61,11 @@ abstract class ValidationContext protected extends MacroUtils {
 
   lazy val adapterAnnotType = typeOf[JavaGetterAdapter]
   lazy val booleanGetterAnnotType = typeOf[BooleanIsGetter]
-  lazy val contextAdapterAnnotType = typeOf[ContextAdapter]
+  lazy val contextAdapterAnnotType = typeOf[RootAdapter]
   lazy val expressionUtilAnnotType = typeOf[ExpressionUtil]
   lazy val profileObjectAnnotType = typeOf[ProfileObject]
   lazy val wrappedInAdapterAnnotType = typeOf[WrappedInAdapter]
+  lazy val notValidatedAnnotType = typeOf[NotValidated]
 
   lazy val any2stringadd = typeOf[Predef.type].member(newTermName("any2stringadd"))
   lazy val stringAddPlus = typeOf[StringAdd].member(newTermName("+").encodedName)
@@ -89,10 +92,13 @@ abstract class ValidationContext protected extends MacroUtils {
   def isAdapter(tpe: Type): Boolean =
     tpe != NoType && isAdapter(tpe.typeSymbol)
 
-  def isWrappedInAdapter(symbol: Symbol): Boolean =
+  /**
+   * Is this symbol the 'wrapped' field of Java getter adapter?
+   */
+  def isAdapterWrappedMember(symbol: Symbol): Boolean =
     symbol != NoSymbol && symbol.annotations.exists(_.tpe =:= wrappedInAdapterAnnotType)
 
-  def isContextAdapter(symbol: Symbol) =
+  def isRootAdapter(symbol: Symbol) =
     symbol.annotations.exists(_.tpe =:= contextAdapterAnnotType)
 
   def isBooleanGetterAdapter(symbol: Symbol) =
@@ -113,12 +119,15 @@ abstract class ValidationContext protected extends MacroUtils {
   def needsValidation(symbol: Symbol) =
     symbol != null && symbol.isTerm && !symbol.isPackage && !isExpressionUtil(symbol) && !isProfileObject(symbol)
 
-  def extractAccess(tree: Tree, staticAccessAllowedByDefault: Boolean = false): MemberAccess = {
+  def extractAccess(tree: Tree, allowedSelectionPrefix: Boolean = false): MemberAccess = {
     tree match {
-      case Select(contextAdapter@Ident(_), _) if isContextAdapter(contextAdapter.symbol) && !isWrappedInAdapter(tree.symbol) =>
-        val symbol = getJavaGetter(tree.symbol, contextTpe)
+      case (_: Select | _: Ident) if tree.symbol.annotations.exists(_.tpe <:< notValidatedAnnotType) =>
+        MultipleMemberAccesses(Nil)
 
-        SimpleMemberAccess(contextTpe, symbol, None, allowedByDefault = false, tree.pos)
+      case Select(rootAdapter: Ident, _) if isRootAdapter(rootAdapter.symbol) && !isAdapterWrappedMember(tree.symbol) =>
+        val symbol = getJavaGetter(tree.symbol, rootTpe)
+
+        SimpleMemberAccess(rootTpe, symbol, None, allowedByDefault = false, tree.pos)
 
       case Select(apply@ImplicitlyConverted(qualifier, fun), _) if !isScexSynthetic(fun.symbol) =>
         val accessByImplicit = SimpleMemberAccess(qualifier.tpe, tree.symbol,
@@ -145,10 +154,11 @@ abstract class ValidationContext protected extends MacroUtils {
         MultipleMemberAccesses(List(access, extractAccess(qualifier)))
 
       case Select(qualifier, _) if needsValidation(tree.symbol) =>
-        val access = SimpleMemberAccess(qualifier.tpe, tree.symbol, None, staticAccessAllowedByDefault, tree.pos)
-        // When accessing member of static module (that includes Java statics) not from Any/AnyVal/AnyRef
-        // the static module access itself is allowed by default.
+        val access = SimpleMemberAccess(qualifier.tpe, tree.symbol, None, allowedSelectionPrefix, tree.pos)
         val staticMember = isStaticModule(qualifier.symbol) && !isFromToplevelType(tree.symbol)
+        // When accessing member of static module (that includes Java statics), excluding getClass/equals/hashCode/toString/etc.
+        // the static module access itself (qualifier) is allowed by default. Also, qualifier is allowed by default if its member was
+        // allowed with @AlwaysAllowed annotation.
         MultipleMemberAccesses(List(access, extractAccess(qualifier, staticMember)))
 
       // special case for configuration convenience: string concatenation also forces validation of toString on its argument

@@ -1,17 +1,16 @@
 package com.avsystem.scex.compiler
 
-import com.avsystem.scex.Expression
 import com.avsystem.scex.compiler.CodeGeneration._
 import com.avsystem.scex.compiler.ScexCompiler._
 import com.avsystem.scex.util.CommonUtils._
 import com.avsystem.scex.validation.{SymbolValidator, SyntaxValidator, ExpressionMacroProcessor}
+import com.avsystem.scex.{ExpressionContext, Expression}
 import java.{util => ju, lang => jl}
 import scala.collection.mutable.ListBuffer
 import scala.ref.WeakReference
 import scala.reflect.internal.util.{Position, SourceFile, BatchSourceFile}
 import scala.reflect.io.VirtualDirectory
-import scala.reflect.runtime.currentMirror
-import scala.reflect.runtime.universe.{TypeTag, typeOf}
+import scala.reflect.runtime.universe.TypeTag
 import scala.tools.nsc.interpreter.AbstractFileClassLoader
 import scala.tools.nsc.reporters.AbstractReporter
 import scala.tools.nsc.{Global, Settings}
@@ -24,7 +23,7 @@ trait ScexCompiler extends PackageGenerator {
   protected case class ExpressionDef(
     profile: ExpressionProfile,
     expression: String,
-    contextClass: Class[_],
+    rootObjectClass: Class[_],
     contextType: String,
     resultType: String) {
   }
@@ -53,7 +52,7 @@ trait ScexCompiler extends PackageGenerator {
   /**
    * Wrapper that avoids holding strong reference to actual compiled expression.
    */
-  private class ExpressionWrapper[C, R](exprDef: ExpressionDef) extends Expression[C, R] {
+  private class ExpressionWrapper[C <: ExpressionContext, R](exprDef: ExpressionDef) extends Expression[C, R] {
     var expressionRef = new WeakReference(loadRawExpression)
 
     private def loadRawExpression =
@@ -149,12 +148,12 @@ trait ScexCompiler extends PackageGenerator {
   }
 
   protected def expressionCode(exprDef: ExpressionDef, pkgName: String): (String, Int) = {
-    val ExpressionDef(profile, expression, contextClass, contextType, resultType) = exprDef
+    val ExpressionDef(profile, expression, rootObjectClass, contextType, resultType) = exprDef
 
     val fullAdapterClassNameOpt =
-      if (profile.symbolValidator.referencedJavaClasses.contains(contextClass)) {
-        val adapterPkg = compileFullJavaGetterAdapter(exprDef.contextClass).get
-        val adapterClassName = adapterName(contextClass)
+      if (profile.symbolValidator.referencedJavaClasses.contains(rootObjectClass)) {
+        val adapterPkg = compileFullJavaGetterAdapter(exprDef.rootObjectClass).get
+        val adapterClassName = adapterName(rootObjectClass)
         Some(s"$adapterPkg.$adapterClassName")
       } else None
 
@@ -221,14 +220,17 @@ trait ScexCompiler extends PackageGenerator {
    * <a href="https://issues.scala-lang.org/browse/SI-6412">SI-6412</a>.</p>
    */
   @throws[CompilationFailedException]
-  def getCompiledStringExpression[C: TypeTag](
+  def getCompiledStringExpression[C <: ExpressionContext : TypeTag](
     profile: ExpressionProfile,
     expression: String): Expression[C, String] = {
 
-    val contextType = typeOf[C]
-    val contextClass = currentMirror.runtimeClass(contextType)
+    import scala.reflect.runtime.universe._
 
-    getCompiledStringExpression(profile, expression, contextType.toString, contextClass)
+    val mirror = typeTag[C].mirror
+    val contextType = typeOf[C]
+    val rootObjectClass = mirror.runtimeClass(TypeRef(contextType, contextType.member(newTypeName("Root")), Nil))
+
+    getCompiledStringExpression(profile, expression, contextType.toString, rootObjectClass)
   }
 
   /**
@@ -236,7 +238,7 @@ trait ScexCompiler extends PackageGenerator {
    * interpolation. Example: <tt>Your name is $name and you are ${max(0, age)} years old</tt>.</p>
    */
   @throws[CompilationFailedException]
-  def getCompiledStringExpression[C](
+  def getCompiledStringExpression[C <: ExpressionContext](
     profile: ExpressionProfile,
     expression: String,
     contextType: String,
@@ -258,32 +260,35 @@ trait ScexCompiler extends PackageGenerator {
    * <a href="https://issues.scala-lang.org/browse/SI-6412">SI-6412</a>.</p>
    */
   @throws[CompilationFailedException]
-  def getCompiledExpression[C: TypeTag, R: TypeTag](
+  def getCompiledExpression[C <: ExpressionContext : TypeTag, R: TypeTag](
     profile: ExpressionProfile,
     expression: String): Expression[C, R] = {
 
+    import scala.reflect.runtime.universe._
+
+    val mirror = typeTag[C].mirror
     val contextType = typeOf[C]
     val resultType = typeOf[R]
-    val contextClass = currentMirror.runtimeClass(contextType)
+    val rootObjectClass = mirror.runtimeClass(TypeRef(contextType, contextType.member(newTypeName("Root")), Nil))
 
-    getCompiledExpression(profile, expression, contextType.toString, contextClass, resultType.toString)
+    getCompiledExpression(profile, expression, contextType.toString, rootObjectClass, resultType.toString)
   }
 
   @throws[CompilationFailedException]
-  protected def getCompiledExpression[C, R](
+  protected def getCompiledExpression[C <: ExpressionContext, R](
     profile: ExpressionProfile,
     expression: String,
     contextType: String,
-    contextClass: Class[_],
+    rootObjectClass: Class[_],
     resultType: String): Expression[C, R] = {
 
     require(profile != null, "Profile cannot be null")
     require(expression != null, "Expression cannot be null")
     require(contextType != null, "Context type cannot be null")
-    require(contextClass != null, "Context class cannot be null")
+    require(rootObjectClass != null, "Root object class cannot be null")
     require(resultType != null, "Result type cannot be null")
 
-    new ExpressionWrapper(ExpressionDef(profile, expression, contextClass, contextType, resultType))
+    new ExpressionWrapper(ExpressionDef(profile, expression, rootObjectClass, contextType, resultType))
   }
 
   @throws[CompilationFailedException]

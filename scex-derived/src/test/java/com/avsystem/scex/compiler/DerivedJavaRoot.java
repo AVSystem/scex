@@ -1,6 +1,6 @@
 package com.avsystem.scex.compiler;
 
-public class DerivedJavaContext extends JavaContext {
+public class DerivedJavaRoot extends JavaRoot {
     @Override
     public void overriddenMethod() {
     }

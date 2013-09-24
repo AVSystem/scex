@@ -21,7 +21,7 @@ trait XmlFriendlyScexCompiler extends ScexPresentationCompiler {
   override def getInteractiveContext(
     profile: ExpressionProfile,
     contextType: String,
-    contextClass: Class[_],
-    resultType: String) = new InteractiveContext(profile, XmlFriendlyTranslator.translate, contextType, contextClass, resultType)
+    rootObjectClass: Class[_],
+    resultType: String) = new InteractiveContext(profile, XmlFriendlyTranslator.translate, contextType, rootObjectClass, resultType)
 
 }

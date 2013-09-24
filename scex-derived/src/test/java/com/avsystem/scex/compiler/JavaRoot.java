@@ -1,6 +1,6 @@
 package com.avsystem.scex.compiler;
 
-public class JavaContext {
+public class JavaRoot {
     public String getProperty() {
         return "property";
     }

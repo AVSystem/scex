@@ -220,7 +220,7 @@ trait ScexPresentationCompiler extends ScexCompiler {
 
           val members = scope.collect {
             case member: TypeMember
-              if member.sym.isTerm && !member.sym.isConstructor && !isWrappedInAdapter(member.sym) =>
+              if member.sym.isTerm && !member.sym.isConstructor && !isAdapterWrappedMember(member.sym) =>
               member
           } filter { member =>
             symbolValidator.validateMemberAccess(vc)(accessFromTypeMember(member)).deniedAccesses.isEmpty
@@ -240,10 +240,10 @@ trait ScexPresentationCompiler extends ScexCompiler {
 
   def getInteractiveContext(profile: ExpressionProfile,
     contextType: String,
-    contextClass: Class[_],
+    rootObjectClass: Class[_],
     resultType: String): InteractiveContext = {
 
-    new InteractiveContext(profile, identity, contextType, contextClass, resultType)
+    new InteractiveContext(profile, identity, contextType, rootObjectClass, resultType)
   }
 
   override protected def compile(sourceFile: SourceFile, classLoader: ScexClassLoader, usedInExpressions: Boolean) = {

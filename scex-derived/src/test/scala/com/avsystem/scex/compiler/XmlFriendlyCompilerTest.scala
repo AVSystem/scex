@@ -23,48 +23,40 @@ class XmlFriendlyCompilerTest extends FunSuite {
   test("single quotes test") {
     val profile = createProfile(Nil)
 
-    val expr = compiler.getCompiledExpression[Unit, String](profile, "'single quoted string'")
-    assert("single quoted string" === expr.apply(()))
+    val expr = compiler.getCompiledExpression[SimpleContext[Unit], String](profile, "'single quoted string'")
+    assert("single quoted string" === expr.apply(SimpleContext(())))
   }
 
   test("boolean expressions test") {
     val profile = createProfile(Nil)
 
-    val expr = compiler.getCompiledExpression[Unit, Boolean](profile, "true or true and false")
-    assert(true === expr.apply(()))
+    val expr = compiler.getCompiledExpression[SimpleContext[Unit], Boolean](profile, "true or true and false")
+    assert(true === expr.apply(SimpleContext(())))
   }
 
   test("complex expression test") {
     val profile = createProfile(PredefinedAccessSpecs.basicOperations)
     val stringExpr = "letters`'\"lol`'{{\"} $$srsly and or ${'sqs'} ${true or {true; false}}"
 
-    val expr = compiler.getCompiledStringExpression[Unit](profile, stringExpr)
-    assert("letters`'\"lol`'{{\"} $srsly and or sqs true" === expr.apply(()))
+    val expr = compiler.getCompiledStringExpression[SimpleContext[Unit]](profile, stringExpr)
+    assert("letters`'\"lol`'{{\"} $srsly and or sqs true" === expr.apply(SimpleContext(())))
   }
 
   test("dynamic variables test") {
-    val acl = PredefinedAccessSpecs.basicOperations ++ allow {
-      on { dv: DynamicVariables =>
-        dv.all.members
-      }
-    }
-    val expr = "$dafuq + 2345"
-    val context = new DynamicVariables
-    context.set("dafuq", "srsly")
-    val cexpr = compiler.getCompiledExpression[DynamicVariables, String](createProfile(acl), expr)
+    val acl = PredefinedAccessSpecs.basicOperations
+    val expr = "#dafuq + 2345"
+    val context = SimpleContext(())
+    context.setVariable("dafuq", "srsly")
+    val cexpr = compiler.getCompiledExpression[SimpleContext[Unit], String](createProfile(acl), expr)
     assert("srsly2345" === cexpr(context))
   }
 
   test("dynamic variables interpolation test") {
-    val acl = PredefinedAccessSpecs.basicOperations ++ allow {
-      on { dv: DynamicVariables =>
-        dv.all.members
-      }
-    }
-    val expr = "lol $dafuq wtf"
-    val context = new DynamicVariables
-    context.set("dafuq", "srsly")
-    val cexpr = compiler.getCompiledStringExpression[DynamicVariables](createProfile(acl), expr)
+    val acl = PredefinedAccessSpecs.basicOperations
+    val expr = "lol ${#dafuq} wtf"
+    val context = SimpleContext(())
+    context.setVariable("dafuq", "srsly")
+    val cexpr = compiler.getCompiledStringExpression[SimpleContext[Unit]](createProfile(acl), expr)
     assert("lol srsly wtf" === cexpr(context))
   }
 }

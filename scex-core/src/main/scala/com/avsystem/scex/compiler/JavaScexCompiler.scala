@@ -4,7 +4,7 @@ import JavaTypeParsing._
 import com.avsystem.scex.compiler.ScexCompiler.{CompileError, CompilationFailedException}
 import com.avsystem.scex.compiler.ScexPresentationCompiler.Param
 import com.avsystem.scex.util.CacheImplicits
-import com.avsystem.scex.{TypeTag, Expression}
+import com.avsystem.scex.{ExpressionContext, TypeTag, Expression}
 import com.google.common.cache.CacheBuilder
 import java.lang.reflect.Type
 import java.{util => ju, lang => jl}
@@ -17,87 +17,93 @@ trait JavaScexCompiler extends ScexPresentationCompiler {
     .build[Type, String](javaTypeAsScalaType _)
 
   @throws[CompilationFailedException]
-  def getCompiledStringExpression[C](
+  def getCompiledStringExpression[C <: ExpressionContext](
     profile: ExpressionProfile,
     expression: String,
-    contextClass: Class[C]): Expression[C, String] = {
+    contextClass: Class[C],
+    rootObjectClass: Class[_]): Expression[C, String] = {
 
-    getCompiledStringExpressionByType(profile, expression, contextClass)
+    getCompiledStringExpressionByType(profile, expression, contextClass, rootObjectClass)
   }
 
   @throws[CompilationFailedException]
-  def getCompiledStringExpression[C](
-    profile: ExpressionProfile,
-    expression: String,
-    contextType: TypeTag[C]): Expression[C, String] = {
-
-    getCompiledStringExpressionByType(profile, expression, contextType)
-  }
-
-  @throws[CompilationFailedException]
-  def getCompiledStringExpressionByType[C](
-    profile: ExpressionProfile,
-    expression: String,
-    contextType: Type): Expression[C, String] = {
-
-    val scalaContextType = typesCache.get(contextType)
-    val contextClass = erasureOf(contextType)
-
-    getCompiledStringExpression(profile, expression, scalaContextType, contextClass)
-  }
-
-  @throws[CompilationFailedException]
-  def getCompiledExpression[C, R](
-    profile: ExpressionProfile,
-    expression: String,
-    contextType: Class[C],
-    resultType: Class[R]): Expression[C, R] = {
-
-    getCompiledExpressionByTypes(profile, expression, contextType, resultType)
-  }
-
-  @throws[CompilationFailedException]
-  def getCompiledExpression[C, R](
-    profile: ExpressionProfile,
-    expression: String,
-    contextType: Class[C],
-    resultType: TypeTag[R]): Expression[C, R] = {
-
-    getCompiledExpressionByTypes(profile, expression, contextType, resultType)
-  }
-
-  @throws[CompilationFailedException]
-  def getCompiledExpression[C, R](
+  def getCompiledStringExpression[C <: ExpressionContext](
     profile: ExpressionProfile,
     expression: String,
     contextType: TypeTag[C],
-    resultType: Class[R]): Expression[C, R] = {
+    rootObjectClass: Class[_]): Expression[C, String] = {
 
-    getCompiledExpressionByTypes(profile, expression, contextType, resultType)
+    getCompiledStringExpressionByType(profile, expression, contextType, rootObjectClass)
   }
 
   @throws[CompilationFailedException]
-  def getCompiledExpression[C, R](
-    profile: ExpressionProfile,
-    expression: String,
-    contextType: TypeTag[C],
-    resultType: TypeTag[R]): Expression[C, R] = {
-
-    getCompiledExpressionByTypes(profile, expression, contextType, resultType)
-  }
-
-  @throws[CompilationFailedException]
-  def getCompiledExpressionByTypes[C, R](
+  def getCompiledStringExpressionByType[C <: ExpressionContext](
     profile: ExpressionProfile,
     expression: String,
     contextType: Type,
+    rootObjectClass: Class[_]): Expression[C, String] = {
+
+    val scalaContextType = typesCache.get(contextType)
+
+    getCompiledStringExpression(profile, expression, scalaContextType, rootObjectClass)
+  }
+
+  @throws[CompilationFailedException]
+  def getCompiledExpression[C <: ExpressionContext, R](
+    profile: ExpressionProfile,
+    expression: String,
+    contextType: Class[C],
+    rootObjectClass: Class[_],
+    resultType: Class[R]): Expression[C, R] = {
+
+    getCompiledExpressionByTypes(profile, expression, contextType, rootObjectClass, resultType)
+  }
+
+  @throws[CompilationFailedException]
+  def getCompiledExpression[C <: ExpressionContext, R](
+    profile: ExpressionProfile,
+    expression: String,
+    contextType: Class[C],
+    rootObjectClass: Class[_],
+    resultType: TypeTag[R]): Expression[C, R] = {
+
+    getCompiledExpressionByTypes(profile, expression, contextType, rootObjectClass, resultType)
+  }
+
+  @throws[CompilationFailedException]
+  def getCompiledExpression[C <: ExpressionContext, R](
+    profile: ExpressionProfile,
+    expression: String,
+    contextType: TypeTag[C],
+    rootObjectClass: Class[_],
+    resultType: Class[R]): Expression[C, R] = {
+
+    getCompiledExpressionByTypes(profile, expression, contextType, rootObjectClass, resultType)
+  }
+
+  @throws[CompilationFailedException]
+  def getCompiledExpression[C <: ExpressionContext, R](
+    profile: ExpressionProfile,
+    expression: String,
+    contextType: TypeTag[C],
+    rootObjectClass: Class[_],
+    resultType: TypeTag[R]): Expression[C, R] = {
+
+    getCompiledExpressionByTypes(profile, expression, contextType, rootObjectClass, resultType)
+  }
+
+  @throws[CompilationFailedException]
+  def getCompiledExpressionByTypes[C <: ExpressionContext, R](
+    profile: ExpressionProfile,
+    expression: String,
+    contextType: Type,
+    rootObjectClass: Class[_],
     resultType: Type): Expression[C, R] = {
 
     val scalaContextType = typesCache.get(contextType)
-    val contextClass = erasureOf(contextType)
     val scalaResultType = typesCache.get(resultType)
 
-    getCompiledExpression[C, R](profile, expression, scalaContextType, contextClass, scalaResultType)
+    getCompiledExpression[C, R](profile, expression, scalaContextType, rootObjectClass, scalaResultType)
   }
 
   class JavaInteractiveContext(wrapped: InteractiveContext) {
@@ -127,6 +133,7 @@ trait JavaScexCompiler extends ScexPresentationCompiler {
   def getJavaInteractiveContext(
     profile: ExpressionProfile,
     contextType: Type,
+    rootObjectClass: Class[_],
     resultType: Type): JavaInteractiveContext = {
 
     new JavaInteractiveContext(getInteractiveContext(

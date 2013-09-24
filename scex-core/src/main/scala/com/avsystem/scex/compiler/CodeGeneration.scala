@@ -95,14 +95,13 @@ object CodeGeneration {
 
     val header = Option(profile.expressionHeader).getOrElse("")
 
-    val contextGetterAdapterCode = fullAdapterClassNameOpt match {
+    val rootGetterAdapterCode = fullAdapterClassNameOpt match {
       case Some(fullAdapterClassName) =>
         s"""
-        |@com.avsystem.scex.compiler.annotation.ContextAdapter
-        |val _ctxa = new $fullAdapterClassName(_ctx)
-        |import _ctxa._
-        |
-        """.stripMargin
+        |@RootAdapter
+        |val _adapted_root = new $fullAdapterClassName(root)
+        |import _adapted_root._
+        |""".stripMargin
       case None =>
         ""
     }
@@ -110,12 +109,16 @@ object CodeGeneration {
     //_result is needed because: https://groups.google.com/forum/#!topic/scala-user/BAK-mU7o6nM
     val prefix =
       s"""
+        |import com.avsystem.scex.compiler.annotation._
+        |
         |final class $ExpressionClassName extends (($contextType) => $resultType) {
         |  def apply(_ctx: $contextType): $resultType = {
+        |    val root = _ctx.root
+        |    val vars = new com.avsystem.scex.util.DynamicVariableAccessor(_ctx)
         |    import $profileObjectPkg.$ProfileObjectName._
         |    import Utils._
-        |    import _ctx._
-        |    $contextGetterAdapterCode
+        |    import root._
+        |    $rootGetterAdapterCode
         |    $header
         |    val _result = com.avsystem.scex.validation.ExpressionMacroProcessor.processExpression[$contextType, $resultType]({
         |""".stripMargin
@@ -196,4 +199,7 @@ object CodeGeneration {
 
     (prefix + code, prefix.length + offset)
   }
+
+  def variableAccess(name: String) =
+    s"vars.$name"
 }

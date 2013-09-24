@@ -1,6 +1,6 @@
-import com.avsystem.scex.PredefinedAccessSpecs
 import com.avsystem.scex.compiler.{DefaultJavaScexCompiler, ExpressionProfile, ScexCompilerConfig}
 import com.avsystem.scex.validation.{SyntaxValidator, SymbolValidator}
+import com.avsystem.scex.{ExpressionContext, PredefinedAccessSpecs}
 import java.{util => ju, lang => jl}
 
 
@@ -29,7 +29,7 @@ object MemoryTest {
     var i = 0
     while (true) {
       i += 1
-      compiler.getCompiledExpression[Dummy, String](profile, s"new MemoryTest.Dummy($i).toString", classOf[Dummy], classOf[String])
+      compiler.getCompiledExpression[ExpressionContext, String](profile, s"new MemoryTest.Dummy($i).toString", classOf[ExpressionContext], classOf[Object], classOf[String])
       if (i % 10 == 0) {
         println(i)
       }

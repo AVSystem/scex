@@ -30,7 +30,7 @@ object XmlFriendlyTranslator extends RegexParsers {
     }
 
   def interpolatedParam: Parser[String] =
-    concat("$" ~ (ident ^^ (i => s"{_ctx.$i}") | block))
+    concat("$" ~ (ident | block))
 
   def standardExpression: Parser[String] =
     rep(ident | btident | variable | stringlit | number | block | delim | operator | bracket | whitespace) ^^ (_.mkString)
@@ -62,7 +62,7 @@ object XmlFriendlyTranslator extends RegexParsers {
 
   def delim = "[,;.]".r
 
-  def variable = "$" ~> ident ^^ ("_ctx." + _)
+  def variable = "#" ~> ident ^^ CodeGeneration.variableAccess
 
   def bracket: Parser[String] =
     "[()\\[\\]}]".r
