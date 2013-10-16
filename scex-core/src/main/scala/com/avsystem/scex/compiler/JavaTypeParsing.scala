@@ -1,6 +1,5 @@
 package com.avsystem.scex.compiler
 
-import com.avsystem.scex.TypeTag
 import java.lang.reflect._
 import java.lang.{reflect => jlr}
 import java.{util => ju, lang => jl}
@@ -56,22 +55,22 @@ object JavaTypeParsing {
   case class WrappedParameterizedType(rawType: Type, ownerType: Type, typeArgs: Array[Type]) extends Type
 
   // extractors for java.lang.reflect.Type subinterfaces
-  private object WildcardType {
+  object WildcardType {
     def unapply(tpe: WildcardType) =
       Some((tpe.getUpperBounds, tpe.getLowerBounds))
   }
 
-  private object TypeVariable {
+  object TypeVariable {
     def unapply(tv: TypeVariable[_]) =
       Some((tv.getName, tv.getBounds))
   }
 
-  private object ParameterizedType {
+  object ParameterizedType {
     def unapply(ptpe: ParameterizedType) =
       Some((ptpe.getRawType, ptpe.getOwnerType, ptpe.getActualTypeArguments))
   }
 
-  private object GenericArrayType {
+  object GenericArrayType {
     def unapply(gat: GenericArrayType) =
       Some(gat.getGenericComponentType)
   }
@@ -99,9 +98,6 @@ object JavaTypeParsing {
       case clazz: Class[_] =>
         javaTypeAsScalaTypeIn(classToExistential(clazz))
 
-      case TypeTag(underlyingType) =>
-        javaTypeAsScalaTypeIn(underlyingType)
-
       case wildcardType: WildcardType =>
         javaTypeAsScalaTypeIn(WildcardBoundedType(wildcardType))
 
@@ -117,8 +113,8 @@ object JavaTypeParsing {
         val upperBoundsRepr = upperBounds.filter(_ != classOf[Object]).map(javaTypeAsScalaTypeIn).mkString(" with ")
         val lowerBoundsRepr = lowerBounds.map(javaTypeAsScalaTypeIn).mkString(" with ")
 
-        name + (if (upperBoundsRepr.nonEmpty) (" <: " + upperBoundsRepr) else "") +
-          (if (lowerBoundsRepr.nonEmpty) (" >: " + lowerBoundsRepr) else "")
+        name + (if (upperBoundsRepr.nonEmpty) " <: " + upperBoundsRepr else "") +
+          (if (lowerBoundsRepr.nonEmpty) " >: " + lowerBoundsRepr else "")
 
       case WrappedParameterizedType(rawType, ownerType, typeArguments) =>
         val clazz = rawType.asInstanceOf[Class[_]]
@@ -164,8 +160,6 @@ object JavaTypeParsing {
       clazz
     case RawClass(clazz) =>
       clazz
-    case TypeTag(underlyingType) =>
-      erasureOf(underlyingType)
     case GenericArrayType(componentType) =>
       jlr.Array.newInstance(erasureOf(componentType), 0).getClass
     case ParameterizedType(rawType, _, _) =>
@@ -191,7 +185,7 @@ object JavaTypeParsing {
     def transformTypeArgs(typeArgs: Array[Type]): (Array[Type], List[BoundedType]) = {
       val typeVariablesBuffer = new ListBuffer[BoundedType]
 
-      // little ugly: relying on side effects inside map
+      // a little ugly: relying on side effects inside map
       val transformedArgs = typeArgs.map {
         case wc: WildcardType =>
           val name = newTypeVarName()

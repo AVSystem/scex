@@ -238,7 +238,7 @@ trait ScexCompiler extends PackageGenerator {
    * interpolation. Example: <tt>Your name is $name and you are ${max(0, age)} years old</tt>.</p>
    */
   @throws[CompilationFailedException]
-  def getCompiledStringExpression[C <: ExpressionContext](
+  protected def getCompiledStringExpression[C <: ExpressionContext](
     profile: ExpressionProfile,
     expression: String,
     contextType: String,

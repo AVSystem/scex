@@ -2,26 +2,26 @@ package com.avsystem.scex.compiler;
 
 import java.lang.reflect.Type;
 
-import com.avsystem.scex.TypeTag;
+import com.google.common.reflect.TypeToken;
 
 public class JavaTypes {
     public static Type comparableOfString() {
-        return new TypeTag<Comparable<String>>() {
-        }.underlyingType();
+        return new TypeToken<Comparable<String>>() {
+        }.getType();
     }
 
     public static Type comparableOfWildcard() {
-        return new TypeTag<Comparable<?>>() {
-        }.underlyingType();
+        return new TypeToken<Comparable<?>>() {
+        }.getType();
     }
 
     public static Type complexParameterizedType() {
-        return new TypeTag<ParameterizedClass.StaticInnerGeneric<?>.DeeplyInnerGeneric<?>>() {
-        }.underlyingType();
+        return new TypeToken<ParameterizedClass.StaticInnerGeneric<?>.DeeplyInnerGeneric<?>>() {
+        }.getType();
     }
 
     public static Type partiallyWildcardedParameterizedType() {
-        return new TypeTag<ParameterizedClass.StaticInnerGeneric<Cloneable>.DeeplyInnerGeneric<?>>() {
-        }.underlyingType();
+        return new TypeToken<ParameterizedClass.StaticInnerGeneric<Cloneable>.DeeplyInnerGeneric<?>>() {
+        }.getType();
     }
 }

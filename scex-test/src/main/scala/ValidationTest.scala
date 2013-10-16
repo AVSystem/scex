@@ -1,3 +1,4 @@
+import com.avsystem.scex.AbstractExpressionContext
 import com.avsystem.scex.compiler.{DefaultJavaScexCompiler, ExpressionProfile, ScexCompilerConfig}
 import com.avsystem.scex.validation._
 import java.util.Collections
@@ -160,11 +161,11 @@ object ValidationTest {
     val typedLol = new TL
     val dafuq = new typedLol.Dafuq[ju.ArrayList[CharSequence]]
 
-    type Typ = TypedLol[T]#Dafuq[F] forSome {type T; type F}
+    type Typ = TypedLol[T]#Dafuq[F] forSome {type T <: TypedLol[T]; type F}
 
     //compiler.getCompiledExpression(profile, "ValidationTest.Dyn.costam", classOf[Object], classOf[String])
 
-    val ic = compiler.getInteractiveContext(profile, "Object", classOf[Unit], "Object")
+    val ic = compiler.getInteractiveContext[AbstractExpressionContext[_, _], Object](profile)
     ic.getScopeCompletion("", 0).members foreach println
 
   }

@@ -3,12 +3,13 @@ package com.avsystem.scex.compiler
 import com.avsystem.scex.compiler.ParameterizedClass.StaticInnerGeneric
 import com.avsystem.scex.compiler.ScexCompiler.CompilationFailedException
 import com.avsystem.scex.validation.{SymbolValidator, SyntaxValidator}
-import com.avsystem.scex.{TypeTag, PredefinedAccessSpecs}
+import com.avsystem.scex.PredefinedAccessSpecs
 import java.{util => ju, lang => jl}
 import org.junit.runner.RunWith
 import org.scalatest.FunSuite
 import org.scalatest.junit.JUnitRunner
 import scala.collection.immutable.StringOps
+import com.google.common.reflect.TypeToken
 
 @RunWith(classOf[JUnitRunner])
 class ScexCompilerTest extends FunSuite {
@@ -95,7 +96,7 @@ class ScexCompilerTest extends FunSuite {
     type RootType = ParameterizedClass.StaticInnerGeneric[Cloneable]#DeeplyInnerGeneric[_]
     val expr = """ "EXPR:" + awesomeness + sampleMap + handleStuff("interesting stuff") + awesome + fjeld """
     val cexpr = compiler.getCompiledExpression(createProfile(acl), expr,
-      new TypeTag[SimpleContext[RootType]] {}, classOf[RootType], classOf[String])
+      new TypeToken[SimpleContext[RootType]] {}, classOf[String])
     val sig = new StaticInnerGeneric[Cloneable]
     assert("EXPR:true{}[interesting stuff handled]true[fjeld]" === cexpr(SimpleContext(new sig.DeeplyInnerGeneric[String])))
   }
