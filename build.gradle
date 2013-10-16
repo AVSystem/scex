@@ -33,6 +33,10 @@ allprojects {
     }
 }
 
+idea.project.ipr.withXml {
+    it.asNode().component.find { it.@name == "VcsDirectoryMappings" }.mapping.@vcs = "hg4idea"
+}
+
 dependencies {
     deployerJars("org.apache.maven.wagon:wagon-http:2.2")
 
