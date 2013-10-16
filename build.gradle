@@ -23,7 +23,7 @@ allprojects {
     sourceCompatibility = 1.7
     targetCompatibility = 1.7
 
-    ext.scalaVersion = '2.10.1'
+    ext.scalaVersion = '2.10.3'
 
     idea {
         module {
