@@ -17,11 +17,3 @@ trait ExpressionContext {
 
   def getVariable(name: String): Variable
 }
-
-/**
- * To allow easier Java implementations
- */
-abstract class AbstractExpressionContext[R, V] extends ExpressionContext {
-  type Root = R
-  type Variable = V
-}

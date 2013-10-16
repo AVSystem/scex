@@ -10,6 +10,7 @@ import org.scalatest.FunSuite
 import org.scalatest.junit.JUnitRunner
 import scala.collection.immutable.StringOps
 import com.google.common.reflect.TypeToken
+import com.avsystem.scex.japi.DefaultJavaScexCompiler
 
 @RunWith(classOf[JUnitRunner])
 class ScexCompilerTest extends FunSuite {

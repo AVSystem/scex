@@ -1,5 +1,6 @@
-import com.avsystem.scex.AbstractExpressionContext
-import com.avsystem.scex.compiler.{DefaultJavaScexCompiler, ExpressionProfile, ScexCompilerConfig}
+import com.avsystem.scex.compiler.{ExpressionProfile, ScexCompilerConfig}
+import com.avsystem.scex.japi
+import com.avsystem.scex.japi.DefaultJavaScexCompiler
 import com.avsystem.scex.validation._
 import java.util.Collections
 import java.{util => ju, lang => jl}
@@ -165,7 +166,7 @@ object ValidationTest {
 
     //compiler.getCompiledExpression(profile, "ValidationTest.Dyn.costam", classOf[Object], classOf[String])
 
-    val ic = compiler.getInteractiveContext[AbstractExpressionContext[_, _], Object](profile)
+    val ic = compiler.getInteractiveContext[japi.ExpressionContext[_, _], Object](profile)
     ic.getScopeCompletion("", 0).members foreach println
 
   }

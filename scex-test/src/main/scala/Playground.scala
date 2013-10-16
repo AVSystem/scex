@@ -1,5 +1,5 @@
 
-import com.avsystem.scex.compiler.XmlFriendlyJavaScexCompiler
+import com.avsystem.scex.japi.XmlFriendlyJavaScexCompiler
 import java.{util => ju, lang => jl}
 
 object Playground {

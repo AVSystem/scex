@@ -1,5 +1,6 @@
-package com.avsystem.scex.compiler
+package com.avsystem.scex.japi
 
+import com.avsystem.scex.compiler.{CachingScexCompiler, ScexCompilerConfig}
 import java.{util => ju, lang => jl}
 
 /**

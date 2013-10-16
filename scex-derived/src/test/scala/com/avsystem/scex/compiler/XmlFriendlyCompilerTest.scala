@@ -7,6 +7,7 @@ import java.{util => ju, lang => jl}
 import org.junit.runner.RunWith
 import org.scalatest.FunSuite
 import org.scalatest.junit.JUnitRunner
+import com.avsystem.scex.japi.XmlFriendlyJavaScexCompiler
 
 /**
  * Created: 17-09-2013
