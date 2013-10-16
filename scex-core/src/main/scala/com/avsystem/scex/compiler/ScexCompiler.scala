@@ -52,13 +52,13 @@ trait ScexCompiler extends PackageGenerator {
   /**
    * Wrapper that avoids holding strong reference to actual compiled expression.
    */
-  private class ExpressionWrapper[C <: ExpressionContext, R](exprDef: ExpressionDef) extends Expression[C, R] {
+  private class ExpressionWrapper[C <: ExpressionContext[_, _], T](exprDef: ExpressionDef) extends Expression[C, T] {
     var expressionRef = new WeakReference(loadRawExpression)
 
     private def loadRawExpression =
-      compileExpression(exprDef).get.asInstanceOf[C => R]
+      compileExpression(exprDef).get.asInstanceOf[C => T]
 
-    private def rawExpression: C => R =
+    private def rawExpression: C => T =
       expressionRef.get match {
         case Some(expr) => expr
         case None =>
@@ -220,7 +220,7 @@ trait ScexCompiler extends PackageGenerator {
    * <a href="https://issues.scala-lang.org/browse/SI-6412">SI-6412</a>.</p>
    */
   @throws[CompilationFailedException]
-  def getCompiledStringExpression[C <: ExpressionContext : TypeTag](
+  def getCompiledStringExpression[C <: ExpressionContext[_, _] : TypeTag](
     profile: ExpressionProfile,
     expression: String): Expression[C, String] = {
 
@@ -228,7 +228,8 @@ trait ScexCompiler extends PackageGenerator {
 
     val mirror = typeTag[C].mirror
     val contextType = typeOf[C]
-    val rootObjectClass = mirror.runtimeClass(TypeRef(contextType, contextType.member(newTypeName("Root")), Nil))
+    val TypeRef(_, _, List(rootObjectType, _)) = contextType.baseType(typeOf[ExpressionContext[_, _]].typeSymbol)
+    val rootObjectClass = mirror.runtimeClass(rootObjectType)
 
     getCompiledStringExpression(profile, expression, contextType.toString, rootObjectClass)
   }
@@ -238,7 +239,7 @@ trait ScexCompiler extends PackageGenerator {
    * interpolation. Example: <tt>Your name is $name and you are ${max(0, age)} years old</tt>.</p>
    */
   @throws[CompilationFailedException]
-  protected def getCompiledStringExpression[C <: ExpressionContext](
+  protected def getCompiledStringExpression[C <: ExpressionContext[_, _]](
     profile: ExpressionProfile,
     expression: String,
     contextType: String,
@@ -260,27 +261,28 @@ trait ScexCompiler extends PackageGenerator {
    * <a href="https://issues.scala-lang.org/browse/SI-6412">SI-6412</a>.</p>
    */
   @throws[CompilationFailedException]
-  def getCompiledExpression[C <: ExpressionContext : TypeTag, R: TypeTag](
+  def getCompiledExpression[C <: ExpressionContext[_, _] : TypeTag, T: TypeTag](
     profile: ExpressionProfile,
-    expression: String): Expression[C, R] = {
+    expression: String): Expression[C, T] = {
 
     import scala.reflect.runtime.universe._
 
     val mirror = typeTag[C].mirror
     val contextType = typeOf[C]
-    val resultType = typeOf[R]
-    val rootObjectClass = mirror.runtimeClass(TypeRef(contextType, contextType.member(newTypeName("Root")), Nil))
+    val resultType = typeOf[T]
+    val TypeRef(_, _, List(rootObjectType, _)) = contextType.baseType(typeOf[ExpressionContext[_, _]].typeSymbol)
+    val rootObjectClass = mirror.runtimeClass(rootObjectType)
 
     getCompiledExpression(profile, expression, contextType.toString, rootObjectClass, resultType.toString)
   }
 
   @throws[CompilationFailedException]
-  protected def getCompiledExpression[C <: ExpressionContext, R](
+  protected def getCompiledExpression[C <: ExpressionContext[_, _], T](
     profile: ExpressionProfile,
     expression: String,
     contextType: String,
     rootObjectClass: Class[_],
-    resultType: String): Expression[C, R] = {
+    resultType: String): Expression[C, T] = {
 
     require(profile != null, "Profile cannot be null")
     require(expression != null, "Expression cannot be null")

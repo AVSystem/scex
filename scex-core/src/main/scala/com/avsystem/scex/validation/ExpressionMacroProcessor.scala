@@ -15,9 +15,9 @@ object ExpressionMacroProcessor {
 
   val profileVar: DynamicVariable[ExpressionProfile] = new DynamicVariable(null)
 
-  def processExpression[C, R](expr: R): R = macro processExpression_impl[C, R]
+  def processExpression[C, T](expr: T): T = macro processExpression_impl[C, T]
 
-  def processExpression_impl[C: c.WeakTypeTag, R](c: Context)(expr: c.Expr[R]): c.Expr[R] = {
+  def processExpression_impl[C: c.WeakTypeTag, T](c: Context)(expr: c.Expr[T]): c.Expr[T] = {
     import c.universe._
     val validationContext = ValidationContext(c.universe)(weakTypeOf[C])
     import validationContext._

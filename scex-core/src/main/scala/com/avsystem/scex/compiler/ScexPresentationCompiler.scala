@@ -240,13 +240,14 @@ trait ScexPresentationCompiler extends ScexCompiler {
     }
   }
 
-  def getInteractiveContext[C <: ExpressionContext : TypeTag, R: TypeTag](profile: ExpressionProfile): InteractiveContext = {
+  def getInteractiveContext[C <: ExpressionContext[_, _] : TypeTag, T: TypeTag](profile: ExpressionProfile): InteractiveContext = {
     import scala.reflect.runtime.universe._
 
     val mirror = typeTag[C].mirror
     val contextType = typeOf[C]
-    val resultType = typeOf[R]
-    val rootObjectClass = mirror.runtimeClass(TypeRef(contextType, contextType.member(newTypeName("Root")), Nil))
+    val resultType = typeOf[T]
+    val TypeRef(_, _, List(rootObjectType, _)) = contextType.baseType(typeOf[ExpressionContext[_, _]].typeSymbol)
+    val rootObjectClass = mirror.runtimeClass(rootObjectType)
 
     getInteractiveContext(profile, contextType.toString, rootObjectClass, resultType.toString)
   }

@@ -7,13 +7,10 @@ import java.{util => ju, lang => jl}
  * Created: 23-09-2013
  * Author: ghik
  */
-trait ExpressionContext {
-  type Root
-  type Variable
+trait ExpressionContext[R, V] {
+  @NotValidated def root: R
 
-  @NotValidated def root: Root
+  def setVariable(name: String, value: V)
 
-  def setVariable(name: String, value: Variable)
-
-  def getVariable(name: String): Variable
+  def getVariable(name: String): V
 }

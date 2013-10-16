@@ -9,9 +9,7 @@ import scala.language.dynamics
  * Created: 23-09-2013
  * Author: ghik
  */
-class DynamicVariableAccessor[V](val context: ExpressionContext {type Variable = V}) extends Dynamic {
-  type Variable = context.Variable
-
+class DynamicVariableAccessor[V](val context: ExpressionContext[_, V]) extends Dynamic {
   @NotValidated def selectDynamic(name: String): V =
     context.getVariable(name)
 

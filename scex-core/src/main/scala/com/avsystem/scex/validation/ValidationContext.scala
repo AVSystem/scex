@@ -1,5 +1,6 @@
 package com.avsystem.scex.validation
 
+import com.avsystem.scex.ExpressionContext
 import com.avsystem.scex.compiler.annotation._
 import com.avsystem.scex.util.MacroUtils
 import scala.reflect.macros.Universe
@@ -11,7 +12,10 @@ abstract class ValidationContext protected extends MacroUtils {
 
   val contextTpe: Type
 
-  private lazy val rootTpe = TypeRef(contextTpe, contextTpe.member(newTypeName("Root")), Nil)
+  private lazy val rootTpe = {
+    val TypeRef(_, _, List(result, _)) = contextTpe.baseType(typeOf[ExpressionContext[_, _]].typeSymbol)
+    result
+  }
 
   sealed abstract class MemberAccess {
     def repr: String = repr("")

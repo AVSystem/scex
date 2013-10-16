@@ -4,12 +4,12 @@ import com.avsystem.scex.compiler.JavaTypeParsing._
 import com.avsystem.scex.compiler.ScexCompiler.{CompileError, CompilationFailedException}
 import com.avsystem.scex.compiler.ScexPresentationCompiler.Param
 import com.avsystem.scex.compiler.{ScexCompilerConfig, ExpressionProfile, ScexPresentationCompiler}
-import com.avsystem.scex.{Expression, japi}
 import com.avsystem.scex.util.CacheImplicits
 import com.google.common.cache.CacheBuilder
 import com.google.common.reflect.TypeToken
 import java.lang.reflect.Type
 import java.{util => ju, lang => jl}
+import com.avsystem.scex.{Expression, ExpressionContext}
 
 trait JavaScexCompiler extends ScexPresentationCompiler {
 
@@ -19,16 +19,16 @@ trait JavaScexCompiler extends ScexPresentationCompiler {
     .build[Type, String](javaTypeAsScalaType _)
 
   private val rootObjectClassCache = CacheBuilder.newBuilder.weakKeys
-    .build[TypeToken[_ <: japi.ExpressionContext[_, _]], Class[_]](getRootObjectClass _)
+    .build[TypeToken[_ <: ExpressionContext[_, _]], Class[_]](getRootObjectClass _)
 
-  private def getRootObjectClass(token: TypeToken[_ <: japi.ExpressionContext[_, _]]): Class[_] =
-    token.getSupertype(classOf[japi.ExpressionContext[_, _]]).getType match {
+  private def getRootObjectClass(token: TypeToken[_ <: ExpressionContext[_, _]]): Class[_] =
+    token.getSupertype(classOf[ExpressionContext[_, _]]).getType match {
       case ParameterizedType(_, _, Array(rootObjectType, _)) => TypeToken.of(rootObjectType).getRawType
-      case clazz if clazz == classOf[japi.ExpressionContext[_, _]] => classOf[Object]
+      case clazz if clazz == classOf[ExpressionContext[_, _]] => classOf[Object]
     }
 
   @throws[CompilationFailedException]
-  def getCompiledStringExpression[C <: japi.ExpressionContext[_, _]](
+  def getCompiledStringExpression[C <: ExpressionContext[_, _]](
     profile: ExpressionProfile,
     expression: String,
     contextClass: Class[C]): Expression[C, String] = {
@@ -38,7 +38,7 @@ trait JavaScexCompiler extends ScexPresentationCompiler {
   }
 
   @throws[CompilationFailedException]
-  def getCompiledStringExpression[C <: japi.ExpressionContext[_, _]](
+  def getCompiledStringExpression[C <: ExpressionContext[_, _]](
     profile: ExpressionProfile,
     expression: String,
     contextTypeToken: TypeToken[C]): Expression[C, String] = {
@@ -48,7 +48,7 @@ trait JavaScexCompiler extends ScexPresentationCompiler {
   }
 
   @throws[CompilationFailedException]
-  protected def getCompiledStringExpressionByType[C <: japi.ExpressionContext[_, _]](
+  protected def getCompiledStringExpressionByType[C <: ExpressionContext[_, _]](
     profile: ExpressionProfile,
     expression: String,
     contextType: Type,
@@ -60,61 +60,61 @@ trait JavaScexCompiler extends ScexPresentationCompiler {
   }
 
   @throws[CompilationFailedException]
-  def getCompiledExpression[C <: japi.ExpressionContext[_, _], R](
+  def getCompiledExpression[C <: ExpressionContext[_, _], T](
     profile: ExpressionProfile,
     expression: String,
     contextClass: Class[C],
-    resultClass: Class[R]): Expression[C, R] = {
+    resultClass: Class[T]): Expression[C, T] = {
 
     val rootObjectClass = rootObjectClassCache.get(TypeToken.of(contextClass))
     getCompiledExpressionByTypes(profile, expression, contextClass, rootObjectClass, resultClass)
   }
 
   @throws[CompilationFailedException]
-  def getCompiledExpression[C <: japi.ExpressionContext[_, _], R](
+  def getCompiledExpression[C <: ExpressionContext[_, _], T](
     profile: ExpressionProfile,
     expression: String,
     contextClass: Class[C],
-    resultTypeToken: TypeToken[R]): Expression[C, R] = {
+    resultTypeToken: TypeToken[T]): Expression[C, T] = {
 
     val rootObjectClass = rootObjectClassCache.get(TypeToken.of(contextClass))
     getCompiledExpressionByTypes(profile, expression, contextClass, rootObjectClass, resultTypeToken.getType)
   }
 
   @throws[CompilationFailedException]
-  def getCompiledExpression[C <: japi.ExpressionContext[_, _], R](
+  def getCompiledExpression[C <: ExpressionContext[_, _], T](
     profile: ExpressionProfile,
     expression: String,
     contextTypeToken: TypeToken[C],
-    resultClass: Class[R]): Expression[C, R] = {
+    resultClass: Class[T]): Expression[C, T] = {
 
     val rootObjectClass = rootObjectClassCache.get(contextTypeToken)
     getCompiledExpressionByTypes(profile, expression, contextTypeToken.getType, rootObjectClass, resultClass)
   }
 
   @throws[CompilationFailedException]
-  def getCompiledExpression[C <: japi.ExpressionContext[_, _], R](
+  def getCompiledExpression[C <: ExpressionContext[_, _], T](
     profile: ExpressionProfile,
     expression: String,
     contextTypeToken: TypeToken[C],
-    resultTypeToken: TypeToken[R]): Expression[C, R] = {
+    resultTypeToken: TypeToken[T]): Expression[C, T] = {
 
     val rootObjectClass = rootObjectClassCache.get(contextTypeToken)
     getCompiledExpressionByTypes(profile, expression, contextTypeToken.getType, rootObjectClass, resultTypeToken.getType)
   }
 
   @throws[CompilationFailedException]
-  protected def getCompiledExpressionByTypes[C <: japi.ExpressionContext[_, _], R](
+  protected def getCompiledExpressionByTypes[C <: ExpressionContext[_, _], T](
     profile: ExpressionProfile,
     expression: String,
     contextType: Type,
     rootObjectClass: Class[_],
-    resultType: Type): Expression[C, R] = {
+    resultType: Type): Expression[C, T] = {
 
     val scalaContextType = typesCache.get(contextType)
     val scalaResultType = typesCache.get(resultType)
 
-    getCompiledExpression[C, R](profile, expression, scalaContextType, rootObjectClass, scalaResultType)
+    getCompiledExpression[C, T](profile, expression, scalaContextType, rootObjectClass, scalaResultType)
   }
 
   class JavaInteractiveContext(wrapped: InteractiveContext) {
@@ -143,7 +143,7 @@ trait JavaScexCompiler extends ScexPresentationCompiler {
 
   def getJavaInteractiveContext(
     profile: ExpressionProfile,
-    contextClass: Class[_ <: japi.ExpressionContext[_, _]],
+    contextClass: Class[_ <: ExpressionContext[_, _]],
     resultClass: Class[_]) = {
 
     val rootObjectClass = rootObjectClassCache.get(TypeToken.of(contextClass))
@@ -152,7 +152,7 @@ trait JavaScexCompiler extends ScexPresentationCompiler {
 
   def getJavaInteractiveContext(
     profile: ExpressionProfile,
-    contextTypeToken: TypeToken[_ <: japi.ExpressionContext[_, _]],
+    contextTypeToken: TypeToken[_ <: ExpressionContext[_, _]],
     resultClass: Class[_]) = {
 
     val rootObjectClass = rootObjectClassCache.get(contextTypeToken)
@@ -161,7 +161,7 @@ trait JavaScexCompiler extends ScexPresentationCompiler {
 
   def getJavaInteractiveContext(
     profile: ExpressionProfile,
-    contextClass: Class[_ <: japi.ExpressionContext[_, _]],
+    contextClass: Class[_ <: ExpressionContext[_, _]],
     resultTypeToken: TypeToken[_]) = {
 
     val rootObjectClass = rootObjectClassCache.get(TypeToken.of(contextClass))
@@ -170,7 +170,7 @@ trait JavaScexCompiler extends ScexPresentationCompiler {
 
   def getJavaInteractiveContext(
     profile: ExpressionProfile,
-    contextTypeToken: TypeToken[_ <: japi.ExpressionContext[_, _]],
+    contextTypeToken: TypeToken[_ <: ExpressionContext[_, _]],
     resultTypeToken: TypeToken[_]) = {
 
     val rootObjectClass = rootObjectClassCache.get(contextTypeToken)

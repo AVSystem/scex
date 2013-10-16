@@ -30,7 +30,7 @@ object MemoryTest {
     var i = 0
     while (true) {
       i += 1
-      compiler.getCompiledExpression[ExpressionContext, String](profile, s"new MemoryTest.Dummy($i).toString")
+      compiler.getCompiledExpression[ExpressionContext[_, _], String](profile, s"new MemoryTest.Dummy($i).toString")
       if (i % 10 == 0) {
         println(i)
       }
