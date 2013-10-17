@@ -108,27 +108,73 @@ object PredefinedAccessSpecs {
     // Boxed Java primitive types
     on { b: jl.Boolean =>
       b.toString
+      b.booleanValue
+      b.compareTo _
     }
     on { c: jl.Character =>
       c.toString
+      c.charValue
+      c.compareTo _
     }
     on { b: jl.Byte =>
       b.toString
+      b.compareTo _
+      b.byteValue
+      b.shortValue
+      b.intValue
+      b.longValue
+      b.floatValue
+      b.doubleValue
     }
     on { s: jl.Short =>
       s.toString
+      s.compareTo _
+      s.byteValue
+      s.shortValue
+      s.intValue
+      s.longValue
+      s.floatValue
+      s.doubleValue
     }
     on { i: jl.Integer =>
       i.toString
+      i.compareTo _
+      i.byteValue
+      i.shortValue
+      i.intValue
+      i.longValue
+      i.floatValue
+      i.doubleValue
     }
     on { l: jl.Long =>
       l.toString
+      l.compareTo _
+      l.byteValue
+      l.shortValue
+      l.intValue
+      l.longValue
+      l.floatValue
+      l.doubleValue
     }
     on { f: jl.Float =>
       f.toString
+      f.compareTo _
+      f.byteValue
+      f.shortValue
+      f.intValue
+      f.longValue
+      f.floatValue
+      f.doubleValue
     }
     on { d: jl.Double =>
       d.toString
+      d.compareTo _
+      d.byteValue
+      d.shortValue
+      d.intValue
+      d.longValue
+      d.floatValue
+      d.doubleValue
     }
 
     // Implicit conversions between primitive and boxed types
