@@ -147,6 +147,12 @@ object PredefinedAccessSpecs {
     Predef.Double2double _
     Predef.double2Double _
 
+    // Array operations
+    on { a: Array[_] =>
+      a.apply _
+      a.length
+    }
+
     // String related stuff
     StringContext.apply _
     on { sc: StringContext =>
