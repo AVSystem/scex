@@ -14,7 +14,9 @@ import java.{util => ju, lang => jl}
  * Created: 16-08-2013
  * Author: ghik
  */
-trait XmlFriendlyScexCompiler extends ScexPresentationCompiler {
+trait XmlFriendlyScexCompiler extends ScexCompiler {
+  this: ScexPresentationCompiler =>
+
   override protected def compileExpression(exprDef: ExpressionDef) =
     super.compileExpression(exprDef.copy(expression = XmlFriendlyTranslator.translate(exprDef.expression)))
 

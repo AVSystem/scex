@@ -41,9 +41,9 @@ trait ScexCompiler extends PackageGenerator {
       }
     }
 
-    def displayPrompt() {}
+    def displayPrompt(): Unit = {}
 
-    override def reset() {
+    override def reset(): Unit = {
       super.reset()
       errorsBuilder.clear()
     }
@@ -91,7 +91,7 @@ trait ScexCompiler extends PackageGenerator {
 
   private var compilationCount: Int = _
 
-  private def init() {
+  private def init(): Unit = {
     compilationCount = 0
     global = new Global(settings, reporter)
     persistentClassLoader = new ScexClassLoader(new VirtualDirectory("(scex_persistent)", None), getClass.getClassLoader)
@@ -321,10 +321,24 @@ trait ScexCompiler extends PackageGenerator {
     }
   }
 
-  def reset() {
-    synchronized {
-      init()
+  /**
+   * Compiles arbitrary Scala source file into a dedicated class loader and loads class with given fully qualified name
+   * from that class loader.
+   */
+  def compileClass(code: String, name: String): Class[_] = synchronized {
+    val sourceFile = new BatchSourceFile("(unknown)", code)
+    val classLoader = new ScexClassLoader(new VirtualDirectory("(unknown)", None), getClass.getClassLoader)
+
+    compile(sourceFile, classLoader, shared = false) match {
+      case Nil =>
+        Class.forName(name, true, classLoader)
+      case errors =>
+        throw new CompilationFailedException(code, errors)
     }
+  }
+
+  def reset(): Unit = synchronized {
+    init()
   }
 }
 

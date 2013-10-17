@@ -3,15 +3,16 @@ package com.avsystem.scex.japi
 import com.avsystem.scex.compiler.JavaTypeParsing._
 import com.avsystem.scex.compiler.ScexCompiler.{CompileError, CompilationFailedException}
 import com.avsystem.scex.compiler.ScexPresentationCompiler.Param
-import com.avsystem.scex.compiler.{ScexCompilerConfig, ExpressionProfile, ScexPresentationCompiler}
+import com.avsystem.scex.compiler.{ScexCompiler, ScexCompilerConfig, ExpressionProfile, ScexPresentationCompiler}
 import com.avsystem.scex.util.CacheImplicits
+import com.avsystem.scex.{Expression, ExpressionContext}
 import com.google.common.cache.CacheBuilder
 import com.google.common.reflect.TypeToken
 import java.lang.reflect.Type
 import java.{util => ju, lang => jl}
-import com.avsystem.scex.{Expression, ExpressionContext}
 
-trait JavaScexCompiler extends ScexPresentationCompiler {
+trait JavaScexCompiler extends ScexCompiler {
+  this: ScexPresentationCompiler =>
 
   import CacheImplicits._
 

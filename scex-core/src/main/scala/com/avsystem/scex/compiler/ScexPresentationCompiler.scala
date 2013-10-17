@@ -23,7 +23,7 @@ trait ScexPresentationCompiler extends ScexCompiler {
   private val typeCompletionCache =
     CacheBuilder.newBuilder.weakKeys.build[TypeWrapper, Completion]
 
-  private def init() {
+  private def init(): Unit = {
     reporter = new Reporter(settings)
     global = new IGlobal(settings, reporter)
   }

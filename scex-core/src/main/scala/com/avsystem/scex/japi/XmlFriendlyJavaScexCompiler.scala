@@ -1,6 +1,6 @@
 package com.avsystem.scex.japi
 
-import com.avsystem.scex.compiler.{CachingScexCompiler, XmlFriendlyScexCompiler, ScexCompilerConfig}
+import com.avsystem.scex.compiler.{ScexPresentationCompiler, CachingScexCompiler, XmlFriendlyScexCompiler, ScexCompilerConfig}
 import java.{util => ju, lang => jl}
 
 /**
@@ -8,4 +8,4 @@ import java.{util => ju, lang => jl}
  * Author: ghik
  */
 class XmlFriendlyJavaScexCompiler(val config: ScexCompilerConfig)
-  extends XmlFriendlyScexCompiler with CachingScexCompiler with JavaScexCompiler
+  extends ScexPresentationCompiler with XmlFriendlyScexCompiler with CachingScexCompiler with JavaScexCompiler
