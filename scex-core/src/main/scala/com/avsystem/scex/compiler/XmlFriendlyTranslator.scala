@@ -22,7 +22,7 @@ object XmlFriendlyTranslator extends PositionTrackingParsers {
   def xmlFriendly(pstr: PString) =
     pstr.withResult(xmlFriendlyOperators(pstr.result))
 
-  def translate(expr: String) = parse(expression, expr).map(_.result).getOrElse(expr)
+  def translate(expr: String) = parse(expression, expr).getOrElse(PString(expr, 0, expr.length, Vector.empty))
 
   val expression = (stringExpression | standardExpression) ~ arbitraryEnding ^^ concat
 

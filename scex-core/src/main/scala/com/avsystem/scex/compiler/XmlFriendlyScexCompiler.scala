@@ -1,6 +1,7 @@
 package com.avsystem.scex.compiler
 
 import java.{util => ju, lang => jl}
+import com.avsystem.scex.compiler.ScexPresentationCompiler.InteractiveContext
 
 /**
  *
@@ -17,13 +18,16 @@ import java.{util => ju, lang => jl}
 trait XmlFriendlyScexCompiler extends ScexCompiler {
   this: ScexPresentationCompiler =>
 
+  private def translate(expr: String) =
+    XmlFriendlyTranslator.translate(expr).result
+
   override protected def compileExpression(exprDef: ExpressionDef) =
-    super.compileExpression(exprDef.copy(expression = XmlFriendlyTranslator.translate(exprDef.expression)))
+    super.compileExpression(exprDef.copy(expression = translate(exprDef.expression)))
 
   override def getInteractiveContext(
     profile: ExpressionProfile,
     contextType: String,
     rootObjectClass: Class[_],
-    resultType: String) = new InteractiveContext(profile, XmlFriendlyTranslator.translate, contextType, rootObjectClass, resultType)
+    resultType: String) = new InteractiveContext(profile, translate, contextType, rootObjectClass, resultType)
 
 }
