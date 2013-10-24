@@ -35,6 +35,7 @@ object CodeGeneration {
   val ProfileObjectName = "Profile"
   val SyntaxValidatorClassName = "SyntaxValidator"
   val SymbolValidatorClassName = "SymbolValidator"
+  val VariablesSymbol = "vars"
 
   def adapterName(clazz: Class[_]) =
     "Adapter_" + clazz.getName.replaceAll("\\.", "_")
@@ -200,6 +201,4 @@ object CodeGeneration {
     (prefix + code, prefix.length + offset)
   }
 
-  def variableAccess(name: String) =
-    s"vars.$name"
 }

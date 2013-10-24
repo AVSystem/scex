@@ -1,7 +1,6 @@
 package com.avsystem.scex.compiler
 
 import java.{util => ju, lang => jl}
-import scala.util.parsing.combinator.RegexParsers
 
 /**
  * Parser that translates XML-friendly expressions into correct scala code.
@@ -10,7 +9,7 @@ import scala.util.parsing.combinator.RegexParsers
  * Created: 17-09-2013
  * Author: ghik
  */
-object XmlFriendlyTranslator extends RegexParsers {
+object XmlFriendlyTranslator extends PositionTrackingParsers {
   val xmlFriendlyOperators = Map(
     "lt" -> "< ",
     "gt" -> "> ",
@@ -20,61 +19,68 @@ object XmlFriendlyTranslator extends RegexParsers {
     "or" -> "||"
   ).withDefault(identity)
 
-  def translate(expr: String) = parse(expression, expr).getOrElse(expr)
+  def xmlFriendly(pstr: PString) =
+    pstr.withResult(xmlFriendlyOperators(pstr.result))
 
-  val expression = concat((stringExpression | standardExpression) ~ arbitraryEnding)
+  def translate(expr: String) = parse(expression, expr).map(_.result).getOrElse(expr)
 
-  def stringExpression: Parser[String] =
-    "raw\"\"\"" ~ rep("([^$]|\\$\\$)+".r | interpolatedParam) ~ opt("\"\"\"") ^^ {
-      case beg ~ contents ~ endOpt => beg + contents.mkString + endOpt.getOrElse("")
+  val expression = (stringExpression | standardExpression) ~ arbitraryEnding ^^ concat
+
+  def stringExpression: Parser[PString] =
+    "raw\"\"\"".p ~ rep("([^$]|\\$\\$)+".rp | interpolatedParam) ~ opt("\"\"\"".p) ^^ {
+      case beg ~ contents ~ endOpt => beg + join(contents) + endOpt
     }
 
-  def interpolatedParam: Parser[String] =
-    concat("$" ~ (ident | block))
+  def interpolatedParam: Parser[PString] =
+    "$".p ~ (ident | block) ^^ concat
 
-  def standardExpression: Parser[String] =
-    rep(ident | btident | variable | stringlit | number | block | delim | operator | bracket | whitespace) ^^ (_.mkString)
+  def standardExpression: Parser[PString] =
+    rep(ident | btident | variable | stringlit | number | block | delim | operator | bracket | whitespace) ^^ join
 
-  def ident: Parser[String] =
-    "[A-Za-z_][A-Za-z_0-9]*".r ^^ xmlFriendlyOperators
+  def ident: Parser[PString] =
+    "[A-Za-z_][A-Za-z_0-9]*".rp ^^ xmlFriendly
 
-  def btident: Parser[String] =
-    "`[^`]*`?".r
+  def btident: Parser[PString] =
+    "`[^`]*`?".rp
 
-  def stringlit: Parser[String] =
-    (("\'" ~ stringlitContents ~ opt("\'")) | ("\"" ~ stringlitContents ~ opt("\""))) ^^ {
-      case _ ~ contents ~ endOpt =>
-        '\"' + contents + endOpt.map(_ => "\"").getOrElse("")
+  def stringlit: Parser[PString] =
+    (("\'".p ~ stringlitContents ~ opt("\'".p)) | ("\"".p ~ stringlitContents ~ opt("\"".p))) ^^ {
+      case beg ~ contents ~ endOpt =>
+        beg.withResult("\"") + contents + endOpt.map(_.withResult("\""))
     }
 
-  def stringlitContents: Parser[String] =
-    """([^"'\p{Cntrl}\\]|\\[\\'"bfnrt]|\\u[a-fA-F0-9]{4})*""".r
+  def stringlitContents: Parser[PString] =
+    """([^"'\p{Cntrl}\\]|\\[\\'"bfnrt]|\\u[a-fA-F0-9]{4})*""".rp
 
-  def number: Parser[String] =
-    "[0-9]+".r
+  def number: Parser[PString] =
+    "[0-9]+".rp
 
-  def block = "{" ~ standardExpression ~ opt("}") ^^ {
-    case lb ~ contents ~ rb => lb + contents + rb.getOrElse("")
+  def block = "{".p ~ standardExpression ~ opt("}".p) ^^ {
+    case lb ~ contents ~ rbOpt => lb + contents + rbOpt
   }
 
-  def operator: Parser[String] =
-    "[~!@#$%^&*-=+<>/?\\\\|:]+".r ^^ xmlFriendlyOperators
+  def operator: Parser[PString] =
+    "[~!@#$%^&*-=+<>/?\\\\|:]+".rp ^^ xmlFriendly
 
-  def delim = "[,;.]".r
+  def delim = "[,;.]".rp
 
-  def variable = "#" ~> ident ^^ CodeGeneration.variableAccess
+  def variable = "#".p ~> ident ^^ { id =>
+    (CodeGeneration.VariablesSymbol + ".") ~+ id
+  }
 
-  def bracket: Parser[String] =
-    "[()\\[\\]}]".r
+  def bracket: Parser[PString] =
+    "[()\\[\\]}]".rp
 
-  def whitespace: Parser[String] =
-    "\\s+".r
+  def whitespace: Parser[PString] =
+    "\\s+".rp
 
-  def concat(parser: Parser[String ~ String]) = parser ^^ {
+  def arbitraryEnding: Parser[PString] =
+    ".*$".rp
+
+  override def skipWhitespace = false
+
+  def concat(result: PString ~ PString) = result match {
     case first ~ second => first + second
   }
 
-  def arbitraryEnding: Parser[String] = ".*$".r
-
-  override def skipWhitespace = false
 }
