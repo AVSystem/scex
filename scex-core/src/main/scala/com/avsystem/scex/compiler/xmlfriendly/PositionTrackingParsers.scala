@@ -4,6 +4,10 @@ import java.{util => ju, lang => jl}
 import scala.util.parsing.combinator.RegexParsers
 
 /**
+ * Extensions for Scala parser combinators that allow to turn Parser[String] instances into Parser[PString] instances
+ * that hold information about differences between original and transformed string that later allow to map cursor
+ * positions between the two.
+ *
  * Created: 21-10-2013
  * Author: ghik
  */
