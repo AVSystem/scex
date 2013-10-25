@@ -1,13 +1,14 @@
-package com.avsystem.scex.compiler
+package com.avsystem.scex.compiler.xmlfriendly
 
-import com.avsystem.scex.{ExpressionProfile, PredefinedAccessSpecs}
+import com.avsystem.scex.compiler.{SimpleContext, ScexCompilerConfig}
+import com.avsystem.scex.japi.XmlFriendlyJavaScexCompiler
 import com.avsystem.scex.validation.SymbolValidator._
 import com.avsystem.scex.validation.{SymbolValidator, SyntaxValidator}
+import com.avsystem.scex.{ExpressionProfile, PredefinedAccessSpecs}
 import java.{util => ju, lang => jl}
 import org.junit.runner.RunWith
 import org.scalatest.FunSuite
 import org.scalatest.junit.JUnitRunner
-import com.avsystem.scex.japi.XmlFriendlyJavaScexCompiler
 
 /**
  * Created: 17-09-2013
