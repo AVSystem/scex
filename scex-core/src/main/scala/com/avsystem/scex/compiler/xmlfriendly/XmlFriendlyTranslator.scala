@@ -1,5 +1,6 @@
-package com.avsystem.scex.compiler
+package com.avsystem.scex.compiler.xmlfriendly
 
+import com.avsystem.scex.compiler.CodeGeneration
 import java.{util => ju, lang => jl}
 
 /**

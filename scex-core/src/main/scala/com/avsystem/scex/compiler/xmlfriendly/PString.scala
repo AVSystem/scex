@@ -1,4 +1,4 @@
-package com.avsystem.scex.compiler
+package com.avsystem.scex.compiler.xmlfriendly
 
 import java.{util => ju, lang => jl}
 import scala.collection.immutable.SortedMap

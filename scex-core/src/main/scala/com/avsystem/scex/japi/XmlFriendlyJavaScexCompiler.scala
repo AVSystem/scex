@@ -1,7 +1,8 @@
 package com.avsystem.scex.japi
 
-import com.avsystem.scex.compiler.{ScexPresentationCompiler, CachingScexCompiler, XmlFriendlyScexCompiler, ScexCompilerConfig}
+import com.avsystem.scex.compiler.{ScexPresentationCompiler, CachingScexCompiler, ScexCompilerConfig}
 import java.{util => ju, lang => jl}
+import com.avsystem.scex.compiler.xmlfriendly.XmlFriendlyScexCompiler
 
 /**
  * Created: 17-09-2013

@@ -5,6 +5,7 @@ import org.junit.runner.RunWith
 import org.scalatest.FunSuite
 import org.scalatest.junit.JUnitRunner
 import scala.collection.immutable.SortedMap
+import com.avsystem.scex.compiler.xmlfriendly.{ShiftInfo, PositionMapping}
 
 /**
  * Created: 24-10-2013

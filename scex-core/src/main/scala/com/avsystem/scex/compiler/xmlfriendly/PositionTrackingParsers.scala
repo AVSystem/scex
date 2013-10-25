@@ -1,5 +1,6 @@
-package com.avsystem.scex.compiler
+package com.avsystem.scex.compiler.xmlfriendly
 
+import com.avsystem.scex.compiler.xmlfriendly.PString
 import java.{util => ju, lang => jl}
 import scala.util.parsing.combinator.RegexParsers
 
