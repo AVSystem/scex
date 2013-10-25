@@ -38,14 +38,19 @@ trait ScexPresentationCompiler extends ScexCompiler {
     case Right(t) => throw t
   }
 
-  final class InteractiveContext(
+  trait InteractiveContext {
+    def getErrors(expression: String): List[CompileError]
+
+    def getScopeCompletion(expression: String, position: Int): Completion
+
+    def getTypeCompletion(expression: String, position: Int): Completion
+  }
+
+  private class InteractiveContextImpl(
     profile: ExpressionProfile,
-    // translator is a bit hacky way to allow some custom transformations
-    // on expressions in classes/traits that extend ScexPresentationCompiler (like XmlFriendlyScexCompiler)
-    expressionTranslator: String => String,
     contextType: String,
     rootObjectClass: Class[_],
-    resultType: String) {
+    resultType: String) extends InteractiveContext {
 
     require(profile != null, "Profile cannot be null")
     require(contextType != null, "Context type cannot be null")
@@ -99,7 +104,7 @@ trait ScexPresentationCompiler extends ScexCompiler {
       import global.{sourceFile => _, position => _, _}
       val symbolValidator = profile.symbolValidator
 
-      val exprDef = ExpressionDef(profile, expressionTranslator(expression), rootObjectClass, contextType, resultType)
+      val exprDef = ExpressionDef(profile, expression, rootObjectClass, contextType, resultType)
       val (code, offset) = expressionCode(exprDef, pkgName)
       val sourceFile = new BatchSourceFile(pkgName, code)
 
@@ -143,7 +148,7 @@ trait ScexPresentationCompiler extends ScexCompiler {
       import global.{sourceFile => _, position => _, _}
       val symbolValidator = profile.symbolValidator
 
-      val exprDef = ExpressionDef(profile, expressionTranslator(expression), rootObjectClass, contextType, resultType)
+      val exprDef = ExpressionDef(profile, expression, rootObjectClass, contextType, resultType)
       val (code, offset) = expressionCode(exprDef, pkgName)
       val sourceFile = new BatchSourceFile(pkgName, code)
       val pos = sourceFile.position(offset + position)
@@ -257,7 +262,7 @@ trait ScexPresentationCompiler extends ScexCompiler {
     rootObjectClass: Class[_],
     resultType: String): InteractiveContext = {
 
-    new InteractiveContext(profile, identity, contextType, rootObjectClass, resultType)
+    new InteractiveContextImpl(profile, contextType, rootObjectClass, resultType)
   }
 
   override protected def compile(sourceFile: SourceFile, classLoader: ScexClassLoader, usedInExpressions: Boolean) = {

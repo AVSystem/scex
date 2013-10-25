@@ -1,7 +1,6 @@
 package com.avsystem.scex.compiler
 
 import java.{util => ju, lang => jl}
-import com.avsystem.scex.compiler.ScexPresentationCompiler.InteractiveContext
 
 /**
  *
@@ -15,19 +14,33 @@ import com.avsystem.scex.compiler.ScexPresentationCompiler.InteractiveContext
  * Created: 16-08-2013
  * Author: ghik
  */
-trait XmlFriendlyScexCompiler extends ScexCompiler {
-  this: ScexPresentationCompiler =>
-
-  private def translate(expr: String) =
-    XmlFriendlyTranslator.translate(expr).result
-
+trait XmlFriendlyScexCompiler extends ScexPresentationCompiler {
   override protected def compileExpression(exprDef: ExpressionDef) =
-    super.compileExpression(exprDef.copy(expression = translate(exprDef.expression)))
+    super.compileExpression(exprDef.copy(expression = XmlFriendlyTranslator.translate(exprDef.expression).result))
 
-  override def getInteractiveContext(
+  override protected def getInteractiveContext(
     profile: ExpressionProfile,
     contextType: String,
     rootObjectClass: Class[_],
-    resultType: String) = new InteractiveContext(profile, translate, contextType, rootObjectClass, resultType)
+    resultType: String) = {
+
+    val wrapped: InteractiveContext =
+      super.getInteractiveContext(profile, contextType, rootObjectClass, resultType)
+
+    new InteractiveContext {
+      def getErrors(expression: String) =
+        wrapped.getErrors(XmlFriendlyTranslator.translate(expression).result)
+
+      def getTypeCompletion(expression: String, position: Int) = {
+        val ps = XmlFriendlyTranslator.translate(expression)
+        wrapped.getTypeCompletion(ps.result, ps.positionMapping(position))
+      }
+
+      def getScopeCompletion(expression: String, position: Int) = {
+        val ps = XmlFriendlyTranslator.translate(expression)
+        wrapped.getScopeCompletion(ps.result, ps.positionMapping(position))
+      }
+    }
+  }
 
 }
