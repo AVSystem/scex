@@ -1,10 +1,10 @@
 package com.avsystem.scex.validation
 
-import com.avsystem.scex.compiler.ExpressionProfile
 import java.{util => ju, lang => jl}
 import scala.language.experimental.macros
 import scala.reflect.macros.Context
 import scala.util.DynamicVariable
+import com.avsystem.scex.ExpressionProfile
 
 /**
  * Object used during expression compilation to validate the expression (syntax, invocations, etc.)

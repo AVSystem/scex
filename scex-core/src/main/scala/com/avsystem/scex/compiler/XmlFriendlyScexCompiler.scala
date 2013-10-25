@@ -1,6 +1,7 @@
 package com.avsystem.scex.compiler
 
 import java.{util => ju, lang => jl}
+import com.avsystem.scex.ExpressionProfile
 
 /**
  *

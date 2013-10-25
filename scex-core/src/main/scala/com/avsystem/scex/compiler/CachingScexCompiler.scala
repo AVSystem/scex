@@ -5,6 +5,7 @@ import com.google.common.cache.CacheBuilder
 import java.util.concurrent.TimeUnit
 import java.{util => ju, lang => jl}
 import scala.util.Try
+import com.avsystem.scex.ExpressionProfile
 
 trait CachingScexCompiler extends ScexCompiler {
 

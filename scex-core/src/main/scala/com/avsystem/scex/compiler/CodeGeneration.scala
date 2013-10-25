@@ -6,6 +6,7 @@ import java.lang.reflect.{Modifier, Method}
 import java.{util => ju, lang => jl}
 import scala.Some
 import scala.language.existentials
+import com.avsystem.scex.ExpressionProfile
 
 
 object CodeGeneration {

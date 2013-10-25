@@ -1,7 +1,7 @@
-import com.avsystem.scex.compiler.{ExpressionProfile, ScexCompilerConfig}
+import com.avsystem.scex.compiler.{ScexCompilerConfig}
 import com.avsystem.scex.japi.DefaultJavaScexCompiler
 import com.avsystem.scex.validation.{SyntaxValidator, SymbolValidator}
-import com.avsystem.scex.{ExpressionContext, PredefinedAccessSpecs}
+import com.avsystem.scex.{ExpressionProfile, ExpressionContext, PredefinedAccessSpecs}
 import java.{util => ju, lang => jl}
 
 

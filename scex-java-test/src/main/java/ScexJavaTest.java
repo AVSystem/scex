@@ -3,7 +3,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 
 import com.avsystem.scex.ExpressionContext;
-import com.avsystem.scex.compiler.ExpressionProfile;
+import com.avsystem.scex.ExpressionProfile;
 import com.avsystem.scex.compiler.ScexCompilerConfig;
 import com.avsystem.scex.japi.DefaultJavaScexCompiler;
 import com.avsystem.scex.japi.JavaScexCompiler;

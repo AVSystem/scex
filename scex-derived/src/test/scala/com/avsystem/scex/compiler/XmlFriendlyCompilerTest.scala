@@ -1,6 +1,6 @@
 package com.avsystem.scex.compiler
 
-import com.avsystem.scex.PredefinedAccessSpecs
+import com.avsystem.scex.{ExpressionProfile, PredefinedAccessSpecs}
 import com.avsystem.scex.validation.SymbolValidator._
 import com.avsystem.scex.validation.{SymbolValidator, SyntaxValidator}
 import java.{util => ju, lang => jl}

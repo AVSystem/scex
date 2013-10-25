@@ -1,5 +1,5 @@
-import com.avsystem.scex.ExpressionContext
-import com.avsystem.scex.compiler.{ExpressionProfile, ScexCompilerConfig}
+import com.avsystem.scex.{ExpressionProfile, ExpressionContext}
+import com.avsystem.scex.compiler.{ScexCompilerConfig}
 import com.avsystem.scex.japi.DefaultJavaScexCompiler
 import com.avsystem.scex.validation._
 import java.util.Collections
