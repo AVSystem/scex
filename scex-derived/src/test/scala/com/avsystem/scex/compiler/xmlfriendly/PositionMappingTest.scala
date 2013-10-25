@@ -1,6 +1,5 @@
 package com.avsystem.scex.compiler.xmlfriendly
 
-import com.avsystem.scex.compiler.xmlfriendly.{ShiftInfo, PositionMapping}
 import java.{util => ju, lang => jl}
 import org.junit.runner.RunWith
 import org.scalatest.FunSuite
