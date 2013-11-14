@@ -1,11 +1,11 @@
 package com.avsystem.scex.japi
 
 import com.avsystem.scex.compiler.JavaTypeParsing._
-import com.avsystem.scex.compiler.ScexCompiler.{CompileError, CompilationFailedException}
+import com.avsystem.scex.compiler.ScexCompiler.CompileError
 import com.avsystem.scex.compiler.ScexPresentationCompiler.Param
-import com.avsystem.scex.compiler.{ScexCompiler, ScexCompilerConfig, ScexPresentationCompiler}
-import com.avsystem.scex.util.CacheImplicits
-import com.avsystem.scex.{ExpressionProfile, Expression, ExpressionContext}
+import com.avsystem.scex.compiler.{ExpressionDef, ScexCompiler, ScexCompilerConfig, ScexPresentationCompiler}
+import com.avsystem.scex.util.{Fluent, CacheImplicits}
+import com.avsystem.scex.{ExpressionProfile, ExpressionContext}
 import com.google.common.cache.CacheBuilder
 import com.google.common.reflect.TypeToken
 import java.lang.reflect.Type
@@ -28,94 +28,55 @@ trait JavaScexCompiler extends ScexCompiler {
       case clazz if clazz == classOf[ExpressionContext[_, _]] => classOf[Object]
     }
 
-  @throws[CompilationFailedException]
-  def getCompiledStringExpression[C <: ExpressionContext[_, _]](
-    profile: ExpressionProfile,
-    expression: String,
-    contextClass: Class[C]): Expression[C, String] = {
+  def buildExpression[C <: ExpressionContext[_, _], R](contextTypeToken: TypeToken[C], resultTypeToken: TypeToken[R]) =
+    new ExpressionBuilder[C, R](contextTypeToken, resultTypeToken)
 
-    val rootObjectClass = rootObjectClassCache.get(TypeToken.of(contextClass))
-    getCompiledStringExpressionByType(profile, expression, contextClass, rootObjectClass)
-  }
+  def buildExpression[C <: ExpressionContext[_, _], R](contextTypeToken: TypeToken[C], resultClass: Class[R]) =
+    new ExpressionBuilder[C, R](contextTypeToken, TypeToken.of(resultClass))
 
-  @throws[CompilationFailedException]
-  def getCompiledStringExpression[C <: ExpressionContext[_, _]](
-    profile: ExpressionProfile,
-    expression: String,
-    contextTypeToken: TypeToken[C]): Expression[C, String] = {
+  def buildExpression[C <: ExpressionContext[_, _], R](contextClass: Class[C], resultTypeToken: TypeToken[R]) =
+    new ExpressionBuilder[C, R](TypeToken.of(contextClass), resultTypeToken)
 
-    val rootObjectClass = rootObjectClassCache.get(contextTypeToken)
-    getCompiledStringExpressionByType(profile, expression, contextTypeToken.getType, rootObjectClass)
-  }
+  def buildExpression[C <: ExpressionContext[_, _], R](contextClass: Class[C], resultClass: Class[R]) =
+    new ExpressionBuilder[C, R](TypeToken.of(contextClass), TypeToken.of(resultClass))
 
-  @throws[CompilationFailedException]
-  protected def getCompiledStringExpressionByType[C <: ExpressionContext[_, _]](
-    profile: ExpressionProfile,
-    expression: String,
-    contextType: Type,
-    rootObjectClass: Class[_]): Expression[C, String] = {
+  class ExpressionBuilder[C <: ExpressionContext[_, _], R](contextTypeToken: TypeToken[C], resultTypeToken: TypeToken[R]) extends Fluent {
+    require(contextTypeToken != null, "Context type cannot be null")
+    require(resultTypeToken != null, "Result type cannot be null")
 
-    val scalaContextType = typesCache.get(contextType)
+    private var _profile: ExpressionProfile = _
+    private var _expression: String = _
+    private var _template: Boolean = false
+    private var _header: String = ""
 
-    getCompiledStringExpression[C](profile, expression, scalaContextType, rootObjectClass)
-  }
+    def get = {
+      require(_profile != null, "Profile cannot be null")
+      require(_expression != null, "Expression cannot be null")
+      require(_header != null, "Header cannot be null")
 
-  @throws[CompilationFailedException]
-  def getCompiledExpression[C <: ExpressionContext[_, _], T](
-    profile: ExpressionProfile,
-    expression: String,
-    contextClass: Class[C],
-    resultClass: Class[T]): Expression[C, T] = {
+      val scalaContextType = typesCache.get(contextTypeToken.getType)
+      val scalaResultType = typesCache.get(resultTypeToken.getType)
+      val rootObjectClass = rootObjectClassCache.get(contextTypeToken)
 
-    val rootObjectClass = rootObjectClassCache.get(TypeToken.of(contextClass))
-    getCompiledExpressionByTypes(profile, expression, contextClass, rootObjectClass, resultClass)
-  }
+      getCompiledExpression[C, R](ExpressionDef(_profile, _template, _expression, _header,
+        rootObjectClass, scalaContextType, scalaResultType))
+    }
 
-  @throws[CompilationFailedException]
-  def getCompiledExpression[C <: ExpressionContext[_, _], T](
-    profile: ExpressionProfile,
-    expression: String,
-    contextClass: Class[C],
-    resultTypeToken: TypeToken[T]): Expression[C, T] = {
+    def profile(profile: ExpressionProfile) = fluent {
+      _profile = profile
+    }
 
-    val rootObjectClass = rootObjectClassCache.get(TypeToken.of(contextClass))
-    getCompiledExpressionByTypes(profile, expression, contextClass, rootObjectClass, resultTypeToken.getType)
-  }
+    def expression(expression: String) = fluent {
+      _expression = expression
+    }
 
-  @throws[CompilationFailedException]
-  def getCompiledExpression[C <: ExpressionContext[_, _], T](
-    profile: ExpressionProfile,
-    expression: String,
-    contextTypeToken: TypeToken[C],
-    resultClass: Class[T]): Expression[C, T] = {
+    def template(template: Boolean) = fluent {
+      _template = template
+    }
 
-    val rootObjectClass = rootObjectClassCache.get(contextTypeToken)
-    getCompiledExpressionByTypes(profile, expression, contextTypeToken.getType, rootObjectClass, resultClass)
-  }
-
-  @throws[CompilationFailedException]
-  def getCompiledExpression[C <: ExpressionContext[_, _], T](
-    profile: ExpressionProfile,
-    expression: String,
-    contextTypeToken: TypeToken[C],
-    resultTypeToken: TypeToken[T]): Expression[C, T] = {
-
-    val rootObjectClass = rootObjectClassCache.get(contextTypeToken)
-    getCompiledExpressionByTypes(profile, expression, contextTypeToken.getType, rootObjectClass, resultTypeToken.getType)
-  }
-
-  @throws[CompilationFailedException]
-  protected def getCompiledExpressionByTypes[C <: ExpressionContext[_, _], T](
-    profile: ExpressionProfile,
-    expression: String,
-    contextType: Type,
-    rootObjectClass: Class[_],
-    resultType: Type): Expression[C, T] = {
-
-    val scalaContextType = typesCache.get(contextType)
-    val scalaResultType = typesCache.get(resultType)
-
-    getCompiledExpression[C, T](profile, expression, scalaContextType, rootObjectClass, scalaResultType)
+    def additionalHeader(header: String) = fluent {
+      _header = header
+    }
   }
 
   class JavaInteractiveContext(wrapped: InteractiveContext) {
@@ -142,51 +103,53 @@ trait JavaScexCompiler extends ScexCompiler {
       completionToJava(wrapped.getTypeCompletion(expression, position))
   }
 
-  def getJavaInteractiveContext(
-    profile: ExpressionProfile,
-    contextClass: Class[_ <: ExpressionContext[_, _]],
-    resultClass: Class[_]) = {
+  def buildInteractiveContext(contextTypeToken: TypeToken[_ <: ExpressionContext[_, _]], resultTypeToken: TypeToken[_]) =
+    new InteractiveContextBuilder(contextTypeToken, resultTypeToken)
 
-    val rootObjectClass = rootObjectClassCache.get(TypeToken.of(contextClass))
-    getJavaInteractiveContextByTypes(profile, contextClass, rootObjectClass, resultClass)
+  def buildInteractiveContext(contextClass: Class[_ <: ExpressionContext[_, _]], resultTypeToken: TypeToken[_]) =
+    new InteractiveContextBuilder(TypeToken.of(contextClass), resultTypeToken)
+
+  def buildInteractiveContext(contextTypeToken: TypeToken[_ <: ExpressionContext[_, _]], resultClass: Class[_]) =
+    new InteractiveContextBuilder(contextTypeToken, TypeToken.of(resultClass))
+
+  def buildInteractiveContext(contextClass: Class[_ <: ExpressionContext[_, _]], resultClass: Class[_]) =
+    new InteractiveContextBuilder(TypeToken.of(contextClass), TypeToken.of(resultClass))
+
+  class InteractiveContextBuilder(
+    contextTypeToken: TypeToken[_ <: ExpressionContext[_, _]], resultTypeToken: TypeToken[_]) extends Fluent {
+
+    require(contextTypeToken != null, "Context type cannot be null")
+    require(resultTypeToken != null, "Result type cannot be null")
+
+    private var _profile: ExpressionProfile = _
+    private var _template: Boolean = false
+    private var _header: String = ""
+
+    def get = {
+      require(_profile != null, "Profile cannot be null")
+      require(_header != null, "Header cannot be null")
+
+      val scalaContextType = typesCache.get(contextTypeToken.getType)
+      val scalaResultType = typesCache.get(resultTypeToken.getType)
+      val rootObjectClass = rootObjectClassCache.get(contextTypeToken)
+
+      new JavaInteractiveContext(getInteractiveContext(
+        _profile, _template, _header, scalaContextType, rootObjectClass, scalaResultType))
+    }
+
+    def profile(profile: ExpressionProfile) = fluent {
+      _profile = profile
+    }
+
+    def template(template: Boolean) = fluent {
+      _template = template
+    }
+
+    def additionalHeader(header: String) = fluent {
+      _header = header
+    }
   }
 
-  def getJavaInteractiveContext(
-    profile: ExpressionProfile,
-    contextTypeToken: TypeToken[_ <: ExpressionContext[_, _]],
-    resultClass: Class[_]) = {
-
-    val rootObjectClass = rootObjectClassCache.get(contextTypeToken)
-    getJavaInteractiveContextByTypes(profile, contextTypeToken.getType, rootObjectClass, resultClass)
-  }
-
-  def getJavaInteractiveContext(
-    profile: ExpressionProfile,
-    contextClass: Class[_ <: ExpressionContext[_, _]],
-    resultTypeToken: TypeToken[_]) = {
-
-    val rootObjectClass = rootObjectClassCache.get(TypeToken.of(contextClass))
-    getJavaInteractiveContextByTypes(profile, contextClass, rootObjectClass, resultTypeToken.getType)
-  }
-
-  def getJavaInteractiveContext(
-    profile: ExpressionProfile,
-    contextTypeToken: TypeToken[_ <: ExpressionContext[_, _]],
-    resultTypeToken: TypeToken[_]) = {
-
-    val rootObjectClass = rootObjectClassCache.get(contextTypeToken)
-    getJavaInteractiveContextByTypes(profile, contextTypeToken.getType, rootObjectClass, resultTypeToken.getType)
-  }
-
-  protected def getJavaInteractiveContextByTypes(
-    profile: ExpressionProfile,
-    contextType: Type,
-    rootObjectClass: Class[_],
-    resultType: Type): JavaInteractiveContext = {
-
-    new JavaInteractiveContext(getInteractiveContext(
-      profile, typesCache.get(contextType), rootObjectClass, typesCache.get(resultType)))
-  }
 }
 
 object JavaScexCompiler {

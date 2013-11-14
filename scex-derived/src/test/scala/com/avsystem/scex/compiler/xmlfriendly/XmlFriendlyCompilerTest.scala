@@ -40,7 +40,7 @@ class XmlFriendlyCompilerTest extends FunSuite {
     val profile = createProfile(PredefinedAccessSpecs.basicOperations)
     val stringExpr = "letters`'\"lol`'{{\"} $$srsly and or ${'sqs'} ${true or {true; false}}"
 
-    val expr = compiler.getCompiledStringExpression[SimpleContext[Unit]](profile, stringExpr)
+    val expr = compiler.getCompiledExpression[SimpleContext[Unit], String](profile, stringExpr, template = true)
     assert("letters`'\"lol`'{{\"} $srsly and or sqs true" === expr.apply(SimpleContext(())))
   }
 
@@ -58,7 +58,7 @@ class XmlFriendlyCompilerTest extends FunSuite {
     val expr = "lol ${#dafuq} wtf"
     val context = SimpleContext(())
     context.setVariable("dafuq", "srsly")
-    val cexpr = compiler.getCompiledStringExpression[SimpleContext[Unit]](createProfile(acl), expr)
+    val cexpr = compiler.getCompiledExpression[SimpleContext[Unit], String](createProfile(acl), expr, template = true)
     assert("lol srsly wtf" === cexpr(context))
   }
 }

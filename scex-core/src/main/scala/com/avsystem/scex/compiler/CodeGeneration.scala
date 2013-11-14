@@ -1,12 +1,12 @@
 package com.avsystem.scex.compiler
 
 import JavaTypeParsing._
+import com.avsystem.scex.ExpressionProfile
 import com.avsystem.scex.util.CommonUtils._
 import java.lang.reflect.{Modifier, Method}
 import java.{util => ju, lang => jl}
 import scala.Some
 import scala.language.existentials
-import com.avsystem.scex.ExpressionProfile
 
 
 object CodeGeneration {
@@ -36,7 +36,12 @@ object CodeGeneration {
   val ProfileObjectName = "Profile"
   val SyntaxValidatorClassName = "SyntaxValidator"
   val SymbolValidatorClassName = "SymbolValidator"
-  val VariablesSymbol = "vars"
+  val ContextSymbol = "_ctx"
+  val VariablesSymbol = "_vars"
+  val RootSymbol = "_root"
+  val AnnotationPkg = "com.avsystem.scex.compiler.annotation"
+  val InterpolationOpen = "raw\"\"\""
+  val InterpolationClose = "\"\"\""
 
   def adapterName(clazz: Class[_]) =
     "Adapter_" + clazz.getName.replaceAll("\\.", "_")
@@ -52,7 +57,7 @@ object CodeGeneration {
 
     val scalaGetters = javaGetters.collect {
       case method@JavaGetter(propName, booleanIsGetter) if Modifier.isPublic(method.getModifiers) =>
-        val annot = if (booleanIsGetter) "@com.avsystem.scex.compiler.annotation.BooleanIsGetter\n" else ""
+        val annot = if (booleanIsGetter) s"@$AnnotationPkg.BooleanIsGetter\n" else ""
         s"${annot}def `$propName` = wrapped.${method.getName}\n"
     }
 
@@ -66,9 +71,9 @@ object CodeGeneration {
 
       val result =
         s"""
-        |@com.avsystem.scex.compiler.annotation.JavaGetterAdapter
+        |@$AnnotationPkg.JavaGetterAdapter
         |class $adapterWithGenerics
-        |  (@com.avsystem.scex.compiler.annotation.WrappedInAdapter val wrapped: $wrappedTpe) extends AnyVal {
+        |  (@$AnnotationPkg.WrappedInAdapter val wrapped: $wrappedTpe) extends AnyVal {
         |
         |$classBody
         |}
@@ -88,44 +93,47 @@ object CodeGeneration {
   }
 
   def generateExpressionClass(
-    profile: ExpressionProfile,
-    expression: String,
+    exprDef: ExpressionDef,
     fullAdapterClassNameOpt: Option[String],
-    profileObjectPkg: String,
-    contextType: String,
-    resultType: String) = {
+    profileObjectPkg: String) = {
 
-    val header = Option(profile.expressionHeader).getOrElse("")
+    val ExpressionDef(profile, template, expression, header, _, contextType, resultType) = exprDef
+
+    val profileHeader = Option(profile.expressionHeader).getOrElse("")
+    val additionalHeader = Option(header).getOrElse("")
 
     val rootGetterAdapterCode = fullAdapterClassNameOpt match {
       case Some(fullAdapterClassName) =>
         s"""
-        |@RootAdapter
-        |val _adapted_root = new $fullAdapterClassName(root)
+        |@$AnnotationPkg.RootAdapter
+        |val _adapted_root = new $fullAdapterClassName($RootSymbol)
         |import _adapted_root._
         |""".stripMargin
       case None =>
         ""
     }
 
+    val interpolationPrefix = if (template) InterpolationOpen else ""
+    val interpolationPostfix = if (template) InterpolationClose else ""
+
     //_result is needed because: https://groups.google.com/forum/#!topic/scala-user/BAK-mU7o6nM
     val prefix =
       s"""
-        |import com.avsystem.scex.compiler.annotation._
         |
         |final class $ExpressionClassName extends (($contextType) => $resultType) {
-        |  def apply(_ctx: $contextType): $resultType = {
-        |    val root = _ctx.root
-        |    val vars = new com.avsystem.scex.util.DynamicVariableAccessor(_ctx)
+        |  def apply($ContextSymbol: $contextType): $resultType = {
+        |    val $RootSymbol = $ContextSymbol.root
+        |    val $VariablesSymbol = new com.avsystem.scex.util.DynamicVariableAccessor($ContextSymbol)
         |    import $profileObjectPkg.$ProfileObjectName._
         |    import Utils._
-        |    import root._
+        |    import $RootSymbol._
         |    $rootGetterAdapterCode
-        |    $header
+        |    $profileHeader
+        |    $additionalHeader
         |    val _result = com.avsystem.scex.validation.ExpressionMacroProcessor.processExpression[$contextType, $resultType]({
-        |""".stripMargin
+        |""".stripMargin + interpolationPrefix
 
-    val postfix =
+    val postfix = interpolationPostfix +
       s"""
         |    })
         |    _result
@@ -142,14 +150,14 @@ object CodeGeneration {
 
   def generateProfileObject(profile: ExpressionProfile) = {
     val adapters = profile.symbolValidator.referencedJavaClasses.flatMap { clazz =>
-      generateJavaGetterAdapter(clazz, full = false).map { adapterCode =>
+      generateJavaGetterAdapter(clazz, full = false).toList.map { adapterCode =>
         val ExistentialType(polyTpe, typeVariables) = classToExistential(clazz)
         val wrappedTpe = javaTypeAsScalaType(polyTpe)
         val adapter = adapterName(clazz)
         val adapterWithGenerics = adapter + appliedBoundedTypes(typeVariables)
 
         s"""
-          |@com.avsystem.scex.compiler.annotation.JavaGetterAdapterConversion
+          |@$AnnotationPkg.JavaGetterAdapterConversion
           |implicit def $adapterWithGenerics(wrapped: $wrappedTpe) = new $adapter(wrapped)
           |$adapterCode
         """.stripMargin
@@ -157,10 +165,10 @@ object CodeGeneration {
     }
 
     s"""
-      |@com.avsystem.scex.compiler.annotation.ProfileObject
+      |@$AnnotationPkg.ProfileObject
       |object $ProfileObjectName {
       |${adapters.mkString}
-      |  @com.avsystem.scex.compiler.annotation.ExpressionUtil object Utils {
+      |  @$AnnotationPkg.ExpressionUtil object Utils {
       |${profile.expressionUtils}
       |  }
       |}

@@ -20,7 +20,8 @@ public class ScexJavaTest {
         ExpressionProfile profile = new ExpressionProfile(syntaxValidator, symbolValidator, "", "");
 
         Class<ExpressionContext<?, ?>> aecClass = (Class) ExpressionContext.class;
-        JavaScexCompiler.JavaInteractiveContext ctx = compiler.getJavaInteractiveContext(profile, aecClass, String.class);
+        JavaScexCompiler.JavaInteractiveContext ctx = compiler.buildInteractiveContext(aecClass, String.class).profile(profile).get();
+
         System.out.println("FUUUUUUU");
 
         long start = System.currentTimeMillis();

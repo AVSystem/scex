@@ -20,14 +20,6 @@ trait ScexCompiler extends PackageGenerator {
 
   val config: ScexCompilerConfig
 
-  protected case class ExpressionDef(
-    profile: ExpressionProfile,
-    expression: String,
-    rootObjectClass: Class[_],
-    contextType: String,
-    resultType: String) {
-  }
-
   class Reporter(val settings: Settings) extends AbstractReporter {
     private val errorsBuilder = new ListBuffer[CompileError]
 
@@ -148,41 +140,21 @@ trait ScexCompiler extends PackageGenerator {
   }
 
   protected def expressionCode(exprDef: ExpressionDef, pkgName: String): (String, Int) = {
-    val ExpressionDef(profile, expression, rootObjectClass, contextType, resultType) = exprDef
+    val profile = exprDef.profile
+    val rootObjectClass = exprDef.rootObjectClass
 
     val fullAdapterClassNameOpt =
       if (profile.symbolValidator.referencedJavaClasses.contains(rootObjectClass)) {
-        val adapterPkg = compileFullJavaGetterAdapter(exprDef.rootObjectClass).get
+        val adapterPkg = compileFullJavaGetterAdapter(rootObjectClass).get
         val adapterClassName = adapterName(rootObjectClass)
         Some(s"$adapterPkg.$adapterClassName")
       } else None
 
-    val profileObjectPkg = compileProfileObject(exprDef.profile).get
+    val profileObjectPkg = compileProfileObject(profile).get
     val (expressionCode, offset) =
-      generateExpressionClass(profile, expression, fullAdapterClassNameOpt, profileObjectPkg, contextType, resultType)
+      generateExpressionClass(exprDef, fullAdapterClassNameOpt, profileObjectPkg)
 
     wrapInSource(expressionCode, offset, pkgName)
-  }
-
-  protected def compileExpression(exprDef: ExpressionDef): Try[RawExpression] = synchronized {
-    val pkgName = newExpressionPackage()
-    val (codeToCompile, _) = expressionCode(exprDef, pkgName)
-    // every single expression has its own classloader and virtual directory
-    val classLoader = new ScexClassLoader(new VirtualDirectory("(scex)", None), persistentClassLoader)
-    val sourceFile = new BatchSourceFile("(scex expression)", codeToCompile)
-
-    def result =
-      ExpressionMacroProcessor.profileVar.withValue(exprDef.profile) {
-        compile(sourceFile, classLoader, shared = false) match {
-          case Nil =>
-            Class.forName(s"$pkgName.$ExpressionClassName", true, classLoader).newInstance.asInstanceOf[RawExpression]
-
-          case errors =>
-            throw new CompilationFailedException(codeToCompile, errors)
-        }
-      }
-
-    Try(result)
   }
 
   protected def compile(sourceFile: SourceFile, classLoader: ScexClassLoader, shared: Boolean): Seq[CompileError] = {
@@ -208,90 +180,51 @@ trait ScexCompiler extends PackageGenerator {
     reporter.compileErrors()
   }
 
-  /**
-   * <p>Returns compiled string expression, ready to be evaluated. String expression is compiled as Scala string
-   * interpolation. Example: <tt>Your name is $name and you are ${max(0, age)} years old</tt>.</p>
-   *
-   * <p>This method uses runtime scala reflection, you
-   * may want to avoid using it until scala reflection becomes stable.
-   * See <a href="https://issues.scala-lang.org/browse/SI/component/10400">open scala reflection issues</a>,
-   * especially <a href="https://issues.scala-lang.org/browse/SI-6240">SI-6240</a>,
-   * <a href="https://issues.scala-lang.org/browse/SI-6826">SI-6826</a> and
-   * <a href="https://issues.scala-lang.org/browse/SI-6412">SI-6412</a>.</p>
-   */
-  @throws[CompilationFailedException]
-  def getCompiledStringExpression[C <: ExpressionContext[_, _] : TypeTag](
-    profile: ExpressionProfile,
-    expression: String): Expression[C, String] = {
+  protected def compileExpression(exprDef: ExpressionDef): Try[RawExpression] = synchronized {
+    val pkgName = newExpressionPackage()
+    val (codeToCompile, _) = expressionCode(exprDef, pkgName)
+    // every single expression has its own classloader and virtual directory
+    val classLoader = new ScexClassLoader(new VirtualDirectory("(scex)", None), persistentClassLoader)
+    val sourceFile = new BatchSourceFile("(scex expression)", codeToCompile)
 
-    import scala.reflect.runtime.universe._
+    def result =
+      ExpressionMacroProcessor.profileVar.withValue(exprDef.profile) {
+        compile(sourceFile, classLoader, shared = false) match {
+          case Nil =>
+            Class.forName(s"$pkgName.$ExpressionClassName", true, classLoader).newInstance.asInstanceOf[RawExpression]
 
-    val mirror = typeTag[C].mirror
-    val contextType = typeOf[C]
-    val TypeRef(_, _, List(rootObjectType, _)) = contextType.baseType(typeOf[ExpressionContext[_, _]].typeSymbol)
-    val rootObjectClass = mirror.runtimeClass(rootObjectType)
+          case errors =>
+            throw new CompilationFailedException(codeToCompile, errors)
+        }
+      }
 
-    getCompiledStringExpression(profile, expression, contextType.toString, rootObjectClass)
+    Try(result)
   }
 
-  /**
-   * <p>Returns compiled string expression, ready to be evaluated. String expression is compiled as Scala string
-   * interpolation. Example: <tt>Your name is $name and you are ${max(0, age)} years old</tt>.</p>
-   */
-  @throws[CompilationFailedException]
-  protected def getCompiledStringExpression[C <: ExpressionContext[_, _]](
+  protected final def getCompiledExpression[C <: ExpressionContext[_, _], R](exprDef: ExpressionDef): Expression[C, R] =
+    new ExpressionWrapper(exprDef)
+
+  def getCompiledExpression[C <: ExpressionContext[_, _] : TypeTag, R: TypeTag](
     profile: ExpressionProfile,
     expression: String,
-    contextType: String,
-    contextClass: Class[_]): Expression[C, String] = {
-
-    val stringExpr = "raw\"\"\"" + expression + "\"\"\""
-    getCompiledExpression(profile, stringExpr, contextType, contextClass, "String")
-  }
-
-  /**
-   * <p>Returns compiled expression ready to be evaluated.</p>
-   *
-   * <p>This method uses runtime scala reflection, you
-   * may want to avoid using it until scala reflection becomes stable.
-   *
-   * See <a href="https://issues.scala-lang.org/browse/SI/component/10400">open scala reflection issues</a>,
-   * especially <a href="https://issues.scala-lang.org/browse/SI-6240">SI-6240</a>,
-   * <a href="https://issues.scala-lang.org/browse/SI-6826">SI-6826</a> and
-   * <a href="https://issues.scala-lang.org/browse/SI-6412">SI-6412</a>.</p>
-   */
-  @throws[CompilationFailedException]
-  def getCompiledExpression[C <: ExpressionContext[_, _] : TypeTag, T: TypeTag](
-    profile: ExpressionProfile,
-    expression: String): Expression[C, T] = {
-
-    import scala.reflect.runtime.universe._
-
-    val mirror = typeTag[C].mirror
-    val contextType = typeOf[C]
-    val resultType = typeOf[T]
-    val TypeRef(_, _, List(rootObjectType, _)) = contextType.baseType(typeOf[ExpressionContext[_, _]].typeSymbol)
-    val rootObjectClass = mirror.runtimeClass(rootObjectType)
-
-    getCompiledExpression(profile, expression, contextType.toString, rootObjectClass, resultType.toString)
-  }
-
-  @throws[CompilationFailedException]
-  protected def getCompiledExpression[C <: ExpressionContext[_, _], T](
-    profile: ExpressionProfile,
-    expression: String,
-    contextType: String,
-    rootObjectClass: Class[_],
-    resultType: String): Expression[C, T] = {
+    template: Boolean = false,
+    header: String = ""): Expression[C, R] = {
 
     require(profile != null, "Profile cannot be null")
     require(expression != null, "Expression cannot be null")
-    require(contextType != null, "Context type cannot be null")
-    require(rootObjectClass != null, "Root object class cannot be null")
-    require(resultType != null, "Result type cannot be null")
+    require(header != null, "Header cannot be null")
 
-    new ExpressionWrapper(ExpressionDef(profile, expression, rootObjectClass, contextType, resultType))
+    import scala.reflect.runtime.universe._
+
+    val mirror = typeTag[C].mirror
+    val contextType = typeOf[C]
+    val TypeRef(_, _, List(rootObjectType, _)) = contextType.baseType(typeOf[ExpressionContext[_, _]].typeSymbol)
+    val rootObjectClass = mirror.runtimeClass(rootObjectType)
+
+    getCompiledExpression(ExpressionDef(profile, template, expression, header,
+      rootObjectClass, contextType.toString, typeOf[R].toString))
   }
+
 
   @throws[CompilationFailedException]
   def compileSyntaxValidator(code: String): SyntaxValidator = synchronized {

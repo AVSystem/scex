@@ -1,7 +1,7 @@
 package com.avsystem.scex.compiler.xmlfriendly
 
 import com.avsystem.scex.ExpressionProfile
-import com.avsystem.scex.compiler.ScexPresentationCompiler
+import com.avsystem.scex.compiler.{ExpressionDef, ScexPresentationCompiler}
 import java.{util => ju, lang => jl}
 
 /**
@@ -17,29 +17,33 @@ import java.{util => ju, lang => jl}
  * Author: ghik
  */
 trait XmlFriendlyScexCompiler extends ScexPresentationCompiler {
-  override protected def compileExpression(exprDef: ExpressionDef) =
-    super.compileExpression(exprDef.copy(expression = XmlFriendlyTranslator.translate(exprDef.expression).result))
+  override protected def compileExpression(exprDef: ExpressionDef) = {
+    val xmlFriendlyExpression = XmlFriendlyTranslator.translate(exprDef.expression, exprDef.template).result
+    super.compileExpression(exprDef.copy(expression = xmlFriendlyExpression))
+  }
 
   override protected def getInteractiveContext(
     profile: ExpressionProfile,
+    template: Boolean,
+    header: String,
     contextType: String,
     rootObjectClass: Class[_],
     resultType: String) = {
 
     val wrapped: InteractiveContext =
-      super.getInteractiveContext(profile, contextType, rootObjectClass, resultType)
+      super.getInteractiveContext(profile, template, header, contextType, rootObjectClass, resultType)
 
     new InteractiveContext {
       def getErrors(expression: String) =
         wrapped.getErrors(XmlFriendlyTranslator.translate(expression).result)
 
       def getTypeCompletion(expression: String, position: Int) = {
-        val ps = XmlFriendlyTranslator.translate(expression)
+        val ps = XmlFriendlyTranslator.translate(expression, template)
         wrapped.getTypeCompletion(ps.result, ps.positionMapping(position))
       }
 
       def getScopeCompletion(expression: String, position: Int) = {
-        val ps = XmlFriendlyTranslator.translate(expression)
+        val ps = XmlFriendlyTranslator.translate(expression, template)
         wrapped.getScopeCompletion(ps.result, ps.positionMapping(position))
       }
     }

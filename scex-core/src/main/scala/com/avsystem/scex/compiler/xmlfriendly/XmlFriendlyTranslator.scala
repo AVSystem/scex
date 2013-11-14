@@ -23,14 +23,14 @@ object XmlFriendlyTranslator extends PositionTrackingParsers {
   def xmlFriendly(pstr: PString) =
     pstr.withResult(xmlFriendlyOperators(pstr.result))
 
-  def translate(expr: String) = parse(expression, expr).getOrElse(PString(expr, 0, expr.length, Vector.empty))
+  def translate(expr: String, template: Boolean = false) =
+    parse(if (template) templateParser else expressionParser, expr).getOrElse(PString(expr, 0, expr.length, Vector.empty))
 
-  val expression = (stringExpression | standardExpression) ~ arbitraryEnding ^^ concat
+  val expressionParser = standardExpression ~ arbitraryEnding ^^ concat
+  val templateParser = stringExpression ~ arbitraryEnding ^^ concat
 
   def stringExpression: Parser[PString] =
-    "raw\"\"\"".p ~ rep("([^$]|\\$\\$)+".rp | interpolatedParam) ~ opt("\"\"\"".p) ^^ {
-      case beg ~ contents ~ endOpt => beg + join(contents) + endOpt
-    }
+    rep("([^$]|\\$\\$)+".rp | interpolatedParam) ^^ join
 
   def interpolatedParam: Parser[PString] =
     "$".p ~ (ident | block) ^^ concat
