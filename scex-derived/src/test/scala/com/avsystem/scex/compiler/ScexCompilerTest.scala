@@ -96,7 +96,9 @@ class ScexCompilerTest extends FunSuite {
     }
     type RootType = ParameterizedClass.StaticInnerGeneric[Cloneable]#DeeplyInnerGeneric[_]
     val expr = """ "EXPR:" + awesomeness + sampleMap + handleStuff("interesting stuff") + awesome + fjeld """
-    val cexpr = compiler.buildExpression(new TypeToken[SimpleContext[RootType]] {}, classOf[String]).profile(createProfile(acl)).expression(expr).get
+    val cexpr = compiler.buildExpression.contextType(new TypeToken[SimpleContext[RootType]] {})
+      .resultType(classOf[String]).profile(createProfile(acl)).expression(expr).get
+
     val sig = new StaticInnerGeneric[Cloneable]
     assert("EXPR:true{}[interesting stuff handled]true[fjeld]" === cexpr(SimpleContext(new sig.DeeplyInnerGeneric[String])))
   }

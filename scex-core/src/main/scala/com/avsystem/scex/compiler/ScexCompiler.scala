@@ -201,14 +201,14 @@ trait ScexCompiler extends PackageGenerator {
     Try(result)
   }
 
-  protected final def getCompiledExpression[C <: ExpressionContext[_, _], R](exprDef: ExpressionDef): Expression[C, R] =
+  protected final def getCompiledExpression[C <: ExpressionContext[_, _], T](exprDef: ExpressionDef): Expression[C, T] =
     new ExpressionWrapper(exprDef)
 
-  def getCompiledExpression[C <: ExpressionContext[_, _] : TypeTag, R: TypeTag](
+  def getCompiledExpression[C <: ExpressionContext[_, _] : TypeTag, T: TypeTag](
     profile: ExpressionProfile,
     expression: String,
     template: Boolean = false,
-    header: String = ""): Expression[C, R] = {
+    header: String = ""): Expression[C, T] = {
 
     require(profile != null, "Profile cannot be null")
     require(expression != null, "Expression cannot be null")
@@ -222,7 +222,7 @@ trait ScexCompiler extends PackageGenerator {
     val rootObjectClass = mirror.runtimeClass(rootObjectType)
 
     getCompiledExpression(ExpressionDef(profile, template, expression, header,
-      rootObjectClass, contextType.toString, typeOf[R].toString))
+      rootObjectClass, contextType.toString, typeOf[T].toString))
   }
 
 

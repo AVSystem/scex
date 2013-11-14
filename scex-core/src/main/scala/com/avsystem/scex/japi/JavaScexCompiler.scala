@@ -28,39 +28,47 @@ trait JavaScexCompiler extends ScexCompiler {
       case clazz if clazz == classOf[ExpressionContext[_, _]] => classOf[Object]
     }
 
-  def buildExpression[C <: ExpressionContext[_, _], R](contextTypeToken: TypeToken[C], resultTypeToken: TypeToken[R]) =
-    new ExpressionBuilder[C, R](contextTypeToken, resultTypeToken)
+  def buildExpression: ExpressionBuilder[_, _] =
+    new ExpressionBuilder[ExpressionContext[_, _], Any]
 
-  def buildExpression[C <: ExpressionContext[_, _], R](contextTypeToken: TypeToken[C], resultClass: Class[R]) =
-    new ExpressionBuilder[C, R](contextTypeToken, TypeToken.of(resultClass))
-
-  def buildExpression[C <: ExpressionContext[_, _], R](contextClass: Class[C], resultTypeToken: TypeToken[R]) =
-    new ExpressionBuilder[C, R](TypeToken.of(contextClass), resultTypeToken)
-
-  def buildExpression[C <: ExpressionContext[_, _], R](contextClass: Class[C], resultClass: Class[R]) =
-    new ExpressionBuilder[C, R](TypeToken.of(contextClass), TypeToken.of(resultClass))
-
-  class ExpressionBuilder[C <: ExpressionContext[_, _], R](contextTypeToken: TypeToken[C], resultTypeToken: TypeToken[R]) extends Fluent {
-    require(contextTypeToken != null, "Context type cannot be null")
-    require(resultTypeToken != null, "Result type cannot be null")
-
+  class ExpressionBuilder[C <: ExpressionContext[_, _], T] extends Fluent {
+    private var _contextTypeToken: TypeToken[_ <: ExpressionContext[_, _]] = _
+    private var _resultTypeToken: TypeToken[_] = _
     private var _profile: ExpressionProfile = _
     private var _expression: String = _
     private var _template: Boolean = false
     private var _header: String = ""
 
     def get = {
+      require(_contextTypeToken != null, "Context type cannot be null")
+      require(_resultTypeToken != null, "Result type cannot be null")
       require(_profile != null, "Profile cannot be null")
       require(_expression != null, "Expression cannot be null")
       require(_header != null, "Header cannot be null")
 
-      val scalaContextType = typesCache.get(contextTypeToken.getType)
-      val scalaResultType = typesCache.get(resultTypeToken.getType)
-      val rootObjectClass = rootObjectClassCache.get(contextTypeToken)
+      val scalaContextType = typesCache.get(_contextTypeToken.getType)
+      val scalaResultType = typesCache.get(_resultTypeToken.getType)
+      val rootObjectClass = rootObjectClassCache.get(_contextTypeToken)
 
-      getCompiledExpression[C, R](ExpressionDef(_profile, _template, _expression, _header,
+      getCompiledExpression[C, T](ExpressionDef(_profile, _template, _expression, _header,
         rootObjectClass, scalaContextType, scalaResultType))
     }
+
+    def contextType[NC <: ExpressionContext[_, _]](contextTypeToken: TypeToken[NC]) = fluent {
+      _contextTypeToken = contextTypeToken
+    }.asInstanceOf[ExpressionBuilder[NC, T]]
+
+    def contextType[NC <: ExpressionContext[_, _]](contextClass: Class[NC]) = fluent {
+      _contextTypeToken = TypeToken.of(contextClass)
+    }.asInstanceOf[ExpressionBuilder[NC, T]]
+
+    def resultType[NT](resultTypeToken: TypeToken[NT]) = fluent {
+      _resultTypeToken = resultTypeToken
+    }.asInstanceOf[ExpressionBuilder[C, NT]]
+
+    def resultType[NT](resultClass: Class[NT]) = fluent {
+      _resultTypeToken = TypeToken.of(resultClass)
+    }.asInstanceOf[ExpressionBuilder[C, NT]]
 
     def profile(profile: ExpressionProfile) = fluent {
       _profile = profile
@@ -103,38 +111,44 @@ trait JavaScexCompiler extends ScexCompiler {
       completionToJava(wrapped.getTypeCompletion(expression, position))
   }
 
-  def buildInteractiveContext(contextTypeToken: TypeToken[_ <: ExpressionContext[_, _]], resultTypeToken: TypeToken[_]) =
-    new InteractiveContextBuilder(contextTypeToken, resultTypeToken)
+  def buildInteractiveContext =
+    new InteractiveContextBuilder
 
-  def buildInteractiveContext(contextClass: Class[_ <: ExpressionContext[_, _]], resultTypeToken: TypeToken[_]) =
-    new InteractiveContextBuilder(TypeToken.of(contextClass), resultTypeToken)
-
-  def buildInteractiveContext(contextTypeToken: TypeToken[_ <: ExpressionContext[_, _]], resultClass: Class[_]) =
-    new InteractiveContextBuilder(contextTypeToken, TypeToken.of(resultClass))
-
-  def buildInteractiveContext(contextClass: Class[_ <: ExpressionContext[_, _]], resultClass: Class[_]) =
-    new InteractiveContextBuilder(TypeToken.of(contextClass), TypeToken.of(resultClass))
-
-  class InteractiveContextBuilder(
-    contextTypeToken: TypeToken[_ <: ExpressionContext[_, _]], resultTypeToken: TypeToken[_]) extends Fluent {
-
-    require(contextTypeToken != null, "Context type cannot be null")
-    require(resultTypeToken != null, "Result type cannot be null")
-
+  class InteractiveContextBuilder extends Fluent {
+    private var _contextTypeToken: TypeToken[_ <: ExpressionContext[_, _]] = _
+    private var _resultTypeToken: TypeToken[_] = _
     private var _profile: ExpressionProfile = _
     private var _template: Boolean = false
     private var _header: String = ""
 
     def get = {
+      require(_contextTypeToken != null, "Context type cannot be null")
+      require(_resultTypeToken != null, "Result type cannot be null")
       require(_profile != null, "Profile cannot be null")
       require(_header != null, "Header cannot be null")
 
-      val scalaContextType = typesCache.get(contextTypeToken.getType)
-      val scalaResultType = typesCache.get(resultTypeToken.getType)
-      val rootObjectClass = rootObjectClassCache.get(contextTypeToken)
+      val scalaContextType = typesCache.get(_contextTypeToken.getType)
+      val scalaResultType = typesCache.get(_resultTypeToken.getType)
+      val rootObjectClass = rootObjectClassCache.get(_contextTypeToken)
 
       new JavaInteractiveContext(getInteractiveContext(
         _profile, _template, _header, scalaContextType, rootObjectClass, scalaResultType))
+    }
+
+    def contextType(contextTypeToken: TypeToken[_ <: ExpressionContext[_, _]]) = fluent {
+      _contextTypeToken = contextTypeToken
+    }
+
+    def contextType(contextClass: Class[_ <: ExpressionContext[_, _]]) = fluent {
+      _contextTypeToken = TypeToken.of(contextClass)
+    }
+
+    def resultType(resultTypeToken: TypeToken[_]) = fluent {
+      _resultTypeToken = resultTypeToken
+    }
+
+    def resultType(resultClass: Class[_]) = fluent {
+      _resultTypeToken = TypeToken.of(resultClass)
     }
 
     def profile(profile: ExpressionProfile) = fluent {
