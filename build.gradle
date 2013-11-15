@@ -9,7 +9,7 @@ allprojects {
     apply plugin: 'idea'
 
     group = "com.avsystem"
-    version = '1.1'
+    version = '1.2-SNAPSHOT'
 
     repositories {
         mavenCentral()
@@ -126,7 +126,7 @@ uploadArchives {
     repositories {
         mavenDeployer {
             configuration = configurations.deployerJars
-            repository(url: 'http://repo.avsystem.com/libs-releases-local/') {
+            repository(url: 'http://repo.avsystem.com/libs-snapshots-local/') {
                 authentication(userName: artifactoryUser, password: artifactoryPassword)
             }
         }
