@@ -1,6 +1,6 @@
 package com.avsystem.scex
 
-import com.avsystem.scex.util.DynamicValue
+import com.avsystem.scex.util.Literal
 import com.avsystem.scex.validation.SymbolValidator
 import java.{util => ju, lang => jl}
 import scala.runtime._
@@ -261,7 +261,10 @@ object PredefinedAccessSpecs {
     // Math functions
     math.`package`.all.members
 
-    // DynamicValue implicits
-    DynamicValue.all.introduced.members
+    // Literal
+    on { l: Literal =>
+      l.all.introduced.members
+    }
+    Literal.all.introduced.members
   }
 }

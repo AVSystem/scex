@@ -8,7 +8,6 @@ import java.{util => ju, lang => jl}
 import scala.Some
 import scala.language.existentials
 
-
 object CodeGeneration {
 
   // extractor object for java getters
@@ -39,8 +38,9 @@ object CodeGeneration {
   val ContextSymbol = "_ctx"
   val VariablesSymbol = "_vars"
   val RootSymbol = "_root"
-  val AnnotationPkg = "com.avsystem.scex.compiler.annotation"
-  val InterpolationOpen = "raw\"\"\""
+  val CompilerPkg = "com.avsystem.scex.compiler"
+  val AnnotationPkg = s"$CompilerPkg.annotation"
+  val InterpolationOpen = "t\"\"\""
   val InterpolationClose = "\"\"\""
 
   def adapterName(clazz: Class[_]) =
@@ -85,13 +85,6 @@ object CodeGeneration {
     } else None
   }
 
-  private val DollarBracketsPattern = "\\s*^\\$\\{(.*)\\}$\\s*".r
-
-  def stripDollarBrackets(expression: String) = expression match {
-    case DollarBracketsPattern(actualExpression) => actualExpression
-    case _ => expression
-  }
-
   def generateExpressionClass(
     exprDef: ExpressionDef,
     fullAdapterClassNameOpt: Option[String],
@@ -120,8 +113,10 @@ object CodeGeneration {
     val prefix =
       s"""
         |
-        |final class $ExpressionClassName extends (($contextType) => $resultType) {
-        |  def apply($ContextSymbol: $contextType): $resultType = {
+        |final class $ExpressionClassName
+        |  extends (($contextType) => $resultType) with $CompilerPkg.TemplateInterpolations[$resultType] {
+        |
+        |    def apply($ContextSymbol: $contextType): $resultType = {
         |    val $RootSymbol = $ContextSymbol.root
         |    val $VariablesSymbol = new com.avsystem.scex.util.DynamicVariableAccessor($ContextSymbol)
         |    import $profileObjectPkg.$ProfileObjectName._
@@ -142,7 +137,7 @@ object CodeGeneration {
         |
       """.stripMargin
 
-    val exprCode = prefix + stripDollarBrackets(expression) + postfix
+    val exprCode = prefix + expression + postfix
     val exprOffset = prefix.length
 
     (exprCode, exprOffset)

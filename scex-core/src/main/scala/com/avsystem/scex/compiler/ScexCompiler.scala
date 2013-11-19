@@ -207,7 +207,7 @@ trait ScexCompiler extends PackageGenerator {
   def getCompiledExpression[C <: ExpressionContext[_, _] : TypeTag, T: TypeTag](
     profile: ExpressionProfile,
     expression: String,
-    template: Boolean = false,
+    template: Boolean = true,
     header: String = ""): Expression[C, T] = {
 
     require(profile != null, "Profile cannot be null")

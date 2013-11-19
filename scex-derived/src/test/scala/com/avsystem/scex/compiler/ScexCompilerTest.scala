@@ -1,39 +1,20 @@
 package com.avsystem.scex.compiler
 
+import com.avsystem.scex.PredefinedAccessSpecs
 import com.avsystem.scex.compiler.ParameterizedClass.StaticInnerGeneric
 import com.avsystem.scex.compiler.ScexCompiler.CompilationFailedException
-import com.avsystem.scex.validation.{SymbolValidator, SyntaxValidator}
-import com.avsystem.scex.{ExpressionProfile, PredefinedAccessSpecs}
+import com.avsystem.scex.validation.SymbolValidator
+import com.google.common.reflect.TypeToken
 import java.{util => ju, lang => jl}
 import org.junit.runner.RunWith
 import org.scalatest.FunSuite
 import org.scalatest.junit.JUnitRunner
 import scala.collection.immutable.StringOps
-import com.google.common.reflect.TypeToken
-import com.avsystem.scex.japi.DefaultJavaScexCompiler
 
 @RunWith(classOf[JUnitRunner])
-class ScexCompilerTest extends FunSuite {
+class ScexCompilerTest extends FunSuite with CompilationTest {
 
   import SymbolValidator._
-
-  val compiler = new DefaultJavaScexCompiler(new ScexCompilerConfig)
-
-  def catchAndPrint(code: => Any) {
-    try code catch {
-      case t: Throwable => t.printStackTrace(System.out)
-    }
-  }
-
-  def createProfile(acl: List[MemberAccessSpec], header: String = "import com.avsystem.scex.compiler._", utils: String = "") =
-    new ExpressionProfile(SyntaxValidator.SimpleExpressions, SymbolValidator(acl), header, utils)
-
-  def assertMemberAccessForbidden(expr: => Any) {
-    try expr catch {
-      case e: CompilationFailedException =>
-        assert(e.errors.forall(_.msg.startsWith("Member access forbidden")))
-    }
-  }
 
   test("trivial compilation test") {
     val cexpr = compiler.getCompiledExpression[SimpleContext[Unit], Unit](createProfile(Nil), "()")
@@ -43,17 +24,6 @@ class ScexCompilerTest extends FunSuite {
   test("simple arithmetic expression") {
     val cexpr = compiler.getCompiledExpression[SimpleContext[Unit], Int](createProfile(Nil), "1+5+250+42")
     assert(298 === cexpr(SimpleContext(())))
-  }
-
-  test("strip dollar and brackets test") {
-    val cexpr = compiler.getCompiledExpression[SimpleContext[Unit], Int](createProfile(Nil), "${1+5+250+42}")
-    assert(298 === cexpr(SimpleContext(())))
-  }
-
-  test("string expression test") {
-    val expr = "bippy \"${42/7}\" rest"
-    val cexpr = compiler.getCompiledExpression[SimpleContext[Unit], String](createProfile(PredefinedAccessSpecs.basicOperations), expr, template = true)
-    assert("bippy \"6\" rest" === cexpr(SimpleContext(())))
   }
 
   test("simple syntax validation test") {

@@ -36,7 +36,7 @@ trait JavaScexCompiler extends ScexCompiler {
     private var _resultTypeToken: TypeToken[_] = _
     private var _profile: ExpressionProfile = _
     private var _expression: String = _
-    private var _template: Boolean = false
+    private var _template: Boolean = true
     private var _header: String = ""
 
     def get = {

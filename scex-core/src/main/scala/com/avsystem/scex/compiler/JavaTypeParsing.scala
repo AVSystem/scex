@@ -54,6 +54,16 @@ object JavaTypeParsing {
 
   case class WrappedParameterizedType(rawType: Type, ownerType: Type, typeArgs: Array[Type]) extends Type
 
+  case object TypeAny extends Type
+
+  case object TypeAnyVal extends Type
+
+  case object TypeAnyRef extends Type
+
+  case object TypeNull extends Type
+
+  case object TypeNothing extends Type
+
   // extractors for java.lang.reflect.Type subinterfaces
   object WildcardType {
     def unapply(tpe: WildcardType) =
@@ -147,6 +157,21 @@ object JavaTypeParsing {
 
       case TypeVariableRef(name) =>
         name
+
+      case TypeAny =>
+        "Any"
+
+      case TypeAnyVal =>
+        "AnyVal"
+
+      case TypeAnyRef =>
+        "AnyRef"
+
+      case TypeNull =>
+        "Null"
+
+      case TypeNothing =>
+        "Nothing"
 
       case _ =>
         throw new IllegalArgumentException(s"Cannot convert $tpe into Scala type")
