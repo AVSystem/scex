@@ -25,14 +25,14 @@ class XmlFriendlyCompilerTest extends FunSuite {
   test("single quotes test") {
     val profile = createProfile(Nil)
 
-    val expr = compiler.getCompiledExpression[SimpleContext[Unit], String](profile, "'single quoted string'")
+    val expr = compiler.getCompiledExpression[SimpleContext[Unit], String](profile, "'single quoted string'", template = false)
     assert("single quoted string" === expr.apply(SimpleContext(())))
   }
 
   test("boolean expressions test") {
     val profile = createProfile(Nil)
 
-    val expr = compiler.getCompiledExpression[SimpleContext[Unit], Boolean](profile, "true or true and false")
+    val expr = compiler.getCompiledExpression[SimpleContext[Unit], Boolean](profile, "true or true and false", template = false)
     assert(true === expr.apply(SimpleContext(())))
   }
 
@@ -49,7 +49,7 @@ class XmlFriendlyCompilerTest extends FunSuite {
     val expr = "#dafuq + 2345"
     val context = SimpleContext(())
     context.setVariable("dafuq", "srsly")
-    val cexpr = compiler.getCompiledExpression[SimpleContext[Unit], String](createProfile(acl), expr)
+    val cexpr = compiler.getCompiledExpression[SimpleContext[Unit], String](createProfile(acl), expr, template = false)
     assert("srsly2345" === cexpr(context))
   }
 

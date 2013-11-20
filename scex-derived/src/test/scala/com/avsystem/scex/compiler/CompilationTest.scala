@@ -1,13 +1,12 @@
 package com.avsystem.scex.compiler
 
-import java.{util => ju, lang => jl}
-import scala.collection.JavaConverters._
-import scala.reflect.{ClassTag, classTag}
+import com.avsystem.scex.compiler.ScexCompiler.CompilationFailedException
 import com.avsystem.scex.japi.DefaultJavaScexCompiler
 import com.avsystem.scex.validation.SymbolValidator.MemberAccessSpec
-import com.avsystem.scex.ExpressionProfile
 import com.avsystem.scex.validation.{SymbolValidator, SyntaxValidator}
-import com.avsystem.scex.compiler.ScexCompiler.CompilationFailedException
+import com.avsystem.scex.{PredefinedAccessSpecs, ExpressionProfile}
+import java.{util => ju, lang => jl}
+import scala.reflect.runtime.universe.TypeTag
 
 /**
  * Created: 18-11-2013
@@ -31,4 +30,14 @@ trait CompilationTest {
         assert(e.errors.forall(_.msg.startsWith("Member access forbidden")))
     }
   }
+
+  def evaluateTemplate[T: TypeTag](expr: String, acl: List[MemberAccessSpec] = defaultAcl) =
+    compiler.getCompiledExpression[SimpleContext[Unit], T](
+      createProfile(acl), expr, template = true).apply(SimpleContext(()))
+
+  def evaluate[T: TypeTag](expr: String, acl: List[MemberAccessSpec] = defaultAcl) = {
+    compiler.getCompiledExpression[SimpleContext[Unit], T](createProfile(acl), expr, template = false).apply(SimpleContext(()))
+  }
+
+  def defaultAcl = PredefinedAccessSpecs.basicOperations
 }

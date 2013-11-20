@@ -19,10 +19,6 @@ class TemplateExpressionsTest extends FunSuite with CompilationTest {
 
   import SymbolValidator._
 
-  def evaluateTemplate[T: TypeTag](expr: String, acl: List[MemberAccessSpec] = PredefinedAccessSpecs.basicOperations) =
-    compiler.getCompiledExpression[SimpleContext[Unit], T](
-      createProfile(acl), expr, template = true).apply(SimpleContext(()))
-
   test("string literal test") {
     assert("trololo dafuq" === evaluateTemplate[String]("trololo dafuq"))
   }

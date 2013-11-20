@@ -1,10 +1,11 @@
 package com.avsystem.scex.validation
 
+import com.avsystem.scex.ExpressionProfile
+import com.avsystem.scex.util.TypesafeEquals
 import java.{util => ju, lang => jl}
 import scala.language.experimental.macros
 import scala.reflect.macros.Context
 import scala.util.DynamicVariable
-import com.avsystem.scex.ExpressionProfile
 
 /**
  * Object used during expression compilation to validate the expression (syntax, invocations, etc.)
@@ -45,6 +46,33 @@ object ExpressionMacroProcessor {
       c.error(access.pos, s"Member access forbidden: $access")
     }
 
-    expr
+    if (c.inferImplicitValue(typeOf[TypesafeEquals.TypesafeEqualsEnabled.type]) != EmptyTree) {
+      applyTypesafeEquals(c)(expr)
+    } else expr
+  }
+
+  def applyTypesafeEquals[T](c: Context)(expr: c.Expr[T]): c.Expr[T] = {
+    import c.universe._
+
+    var transformed = false
+
+    def tripleEquals(left: Tree, right: Tree) = {
+      transformed = true
+      Apply(Select(left, newTermName("===").encodedName), List(right))
+    }
+
+    object transformer extends Transformer {
+      override def transform(tree: Tree) = tree match {
+        case Apply(Select(left, operator), List(right)) => operator.decoded match {
+          case "==" => tripleEquals(transform(left), transform(right))
+          case "!=" => Select(tripleEquals(transform(left), transform(right)), newTermName("unary_!"))
+          case _ => super.transform(tree)
+        }
+        case _ => super.transform(tree)
+      }
+    }
+
+    val result = transformer.transform(expr.tree)
+    c.Expr[T](if (transformed) c.resetAllAttrs(result) else result)
   }
 }

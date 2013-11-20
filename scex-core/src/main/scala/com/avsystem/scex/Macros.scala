@@ -92,6 +92,32 @@ object Macros {
     }
   }
 
+  def tripleEquals_impl[A, B](c: Context)(right: c.Expr[B]): c.Expr[Boolean] = {
+    import c.universe._
+
+    val Apply(_, List(leftTree)) = c.prefix.tree
+    val rightTree = right.tree
+
+    val leftTpe = leftTree.tpe.widen
+    val rightTpe = rightTree.tpe.widen
+
+    lazy val leftToRightConv = c.inferImplicitView(leftTree, leftTree.tpe, rightTree.tpe.widen)
+    lazy val rightToLeftConv = c.inferImplicitView(rightTree, rightTree.tpe, leftTree.tpe.widen)
+
+    if (leftTpe <:< rightTpe) {
+      reify(c.Expr[Any](leftTree).splice == c.Expr[Any](rightTree).splice)
+    } else if (rightTpe <:< leftTpe) {
+      reify(c.Expr[Any](rightTree).splice == c.Expr[Any](leftTree).splice)
+    } else if (rightToLeftConv != EmptyTree) {
+      reify(c.Expr[Any](leftTree).splice == c.Expr[Any](Apply(rightToLeftConv, List(rightTree))).splice)
+    } else if (leftToRightConv != EmptyTree) {
+      reify(c.Expr[Any](Apply(leftToRightConv, List(leftTree))).splice == c.Expr[Any](rightTree).splice)
+    } else {
+      c.error(c.enclosingPosition, s"Values of types $leftTpe and $rightTpe cannot be compared")
+      null
+    }
+  }
+
   def literalTo[T: c.WeakTypeTag](c: Context)(lit: c.Expr[ScexLiteral], compileConversion: ScexLiteral => T, runtimeConversion: c.Expr[ScexLiteral => T]): c.Expr[T] = {
     import c.universe._
 

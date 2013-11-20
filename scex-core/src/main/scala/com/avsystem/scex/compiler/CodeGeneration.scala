@@ -115,7 +115,6 @@ object CodeGeneration {
         |
         |final class $ExpressionClassName
         |  extends (($contextType) => $resultType) with $CompilerPkg.TemplateInterpolations[$resultType] {
-        |
         |    def apply($ContextSymbol: $contextType): $resultType = {
         |    val $RootSymbol = $ContextSymbol.root
         |    val $VariablesSymbol = new com.avsystem.scex.util.DynamicVariableAccessor($ContextSymbol)

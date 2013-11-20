@@ -16,31 +16,31 @@ class ScexCompilerTest extends FunSuite with CompilationTest {
 
   import SymbolValidator._
 
+  override def defaultAcl = Nil
+
   test("trivial compilation test") {
-    val cexpr = compiler.getCompiledExpression[SimpleContext[Unit], Unit](createProfile(Nil), "()")
-    assert(() === cexpr(SimpleContext(())))
+    assert(() === evaluate[Unit]("()"))
   }
 
   test("simple arithmetic expression") {
-    val cexpr = compiler.getCompiledExpression[SimpleContext[Unit], Int](createProfile(Nil), "1+5+250+42")
-    assert(298 === cexpr(SimpleContext(())))
+    assert(298 === evaluate[Int]("1+5+250+42"))
   }
 
   test("simple syntax validation test") {
     intercept[CompilationFailedException] {
-      compiler.getCompiledExpression[SimpleContext[Unit], Unit](createProfile(Nil), "while(true) {}")
+      evaluate[Unit]("while(true) {}")
     }
   }
 
   test("simple member validation test") {
     assertMemberAccessForbidden {
-      compiler.getCompiledExpression[SimpleContext[Unit], Unit](createProfile(Nil), "System.exit(0)")
+      evaluate[Unit]("System.exit(0)")
     }
   }
 
   test("syntax error test") {
     intercept[CompilationFailedException] {
-      compiler.getCompiledExpression[SimpleContext[Unit], Unit](createProfile(Nil), "this doesn't make sense")
+      evaluate[Unit]("this doesn't make sense")
     }
   }
 
@@ -51,7 +51,7 @@ class ScexCompilerTest extends FunSuite with CompilationTest {
       }
     }
     val expr = "property + extraordinary + extraordinarilyBoxed + field + twice(42)"
-    val cexpr = compiler.getCompiledExpression[SimpleContext[JavaRoot], String](createProfile(acl), expr)
+    val cexpr = compiler.getCompiledExpression[SimpleContext[JavaRoot], String](createProfile(acl), expr, template = false)
     assert("propertytruefalse42.4284" === cexpr(SimpleContext(new JavaRoot)))
   }
 
@@ -66,7 +66,7 @@ class ScexCompilerTest extends FunSuite with CompilationTest {
     }
     type RootType = ParameterizedClass.StaticInnerGeneric[Cloneable]#DeeplyInnerGeneric[_]
     val expr = """ "EXPR:" + awesomeness + sampleMap + handleStuff("interesting stuff") + awesome + fjeld """
-    val cexpr = compiler.buildExpression.contextType(new TypeToken[SimpleContext[RootType]] {})
+    val cexpr = compiler.buildExpression.contextType(new TypeToken[SimpleContext[RootType]] {}).template(false)
       .resultType(classOf[String]).profile(createProfile(acl)).expression(expr).get
 
     val sig = new StaticInnerGeneric[Cloneable]
@@ -81,7 +81,7 @@ class ScexCompilerTest extends FunSuite with CompilationTest {
       }
     }
     val expr = "new JavaRoot().property + new JavaRoot().extraordinary + new JavaRoot().extraordinarilyBoxed"
-    val cexpr = compiler.getCompiledExpression[SimpleContext[Unit], String](createProfile(acl), expr)
+    val cexpr = compiler.getCompiledExpression[SimpleContext[Unit], String](createProfile(acl), expr, template = false)
     assert("propertytruefalse" === cexpr(SimpleContext(())))
   }
 
@@ -90,7 +90,7 @@ class ScexCompilerTest extends FunSuite with CompilationTest {
       new JavaRoot
     }
     val expr = "new JavaRoot"
-    val cexpr = compiler.getCompiledExpression[SimpleContext[Unit], Unit](createProfile(acl), expr)
+    val cexpr = compiler.getCompiledExpression[SimpleContext[Unit], Unit](createProfile(acl), expr, template = false)
     assert(() === cexpr(SimpleContext(())))
   }
 
@@ -100,14 +100,14 @@ class ScexCompilerTest extends FunSuite with CompilationTest {
     }
     val expr = "new JavaRoot"
     assertMemberAccessForbidden {
-      compiler.getCompiledExpression[SimpleContext[Unit], Unit](createProfile(acl), expr)
+      compiler.getCompiledExpression[SimpleContext[Unit], Unit](createProfile(acl), expr, template = false)
     }
   }
 
   test("constructor not allow test") {
     val expr = "new JavaRoot"
     assertMemberAccessForbidden {
-      compiler.getCompiledExpression[SimpleContext[Unit], Unit](createProfile(Nil), expr)
+      compiler.getCompiledExpression[SimpleContext[Unit], Unit](createProfile(Nil), expr, template = false)
     }
   }
 
@@ -118,7 +118,7 @@ class ScexCompilerTest extends FunSuite with CompilationTest {
       }
     }
     val expr = "property"
-    val cexpr = compiler.getCompiledExpression[SimpleContext[JavaRoot], String](createProfile(acl), expr)
+    val cexpr = compiler.getCompiledExpression[SimpleContext[JavaRoot], String](createProfile(acl), expr, template = false)
     assert("property" === cexpr(SimpleContext(new JavaRoot)))
   }
 
@@ -134,7 +134,7 @@ class ScexCompilerTest extends FunSuite with CompilationTest {
     }
     val expr = "property"
     assertMemberAccessForbidden {
-      compiler.getCompiledExpression[SimpleContext[DerivedJavaRoot], String](createProfile(acl), expr)
+      compiler.getCompiledExpression[SimpleContext[DerivedJavaRoot], String](createProfile(acl), expr, template = false)
     }
   }
 
@@ -145,7 +145,7 @@ class ScexCompilerTest extends FunSuite with CompilationTest {
       }
     }
     val expr = "overriddenMethod()"
-    val cexpr = compiler.getCompiledExpression[SimpleContext[DerivedJavaRoot], Unit](createProfile(acl), expr)
+    val cexpr = compiler.getCompiledExpression[SimpleContext[DerivedJavaRoot], Unit](createProfile(acl), expr, template = false)
     assert(() === cexpr(SimpleContext(new DerivedJavaRoot)))
   }
 
@@ -154,13 +154,15 @@ class ScexCompilerTest extends FunSuite with CompilationTest {
       new ju.ArrayList[String]
     }
     val expr = "new ArrayList[String]"
-    val cexpr = compiler.getCompiledExpression[SimpleContext[Unit], ju.List[_]](createProfile(acl, "import java.util.ArrayList"), expr)
+    val cexpr = compiler.getCompiledExpression[SimpleContext[Unit], ju.List[_]](
+      createProfile(acl, "import java.util.ArrayList"), expr, template = false)
     assert(new ju.ArrayList[String] === cexpr(SimpleContext(())))
   }
 
   test("utils test") {
     val expr = "utilValue"
-    val cexpr = compiler.getCompiledExpression[SimpleContext[Unit], Int](createProfile(Nil, "", "val utilValue = 42"), expr)
+    val cexpr = compiler.getCompiledExpression[SimpleContext[Unit], Int](
+      createProfile(Nil, "", "val utilValue = 42"), expr, template = false)
     assert(42 === cexpr(SimpleContext(())))
   }
 
@@ -175,7 +177,7 @@ class ScexCompilerTest extends FunSuite with CompilationTest {
       }
     }
     val expr = "42.toString"
-    val cexpr = compiler.getCompiledExpression[SimpleContext[Unit], String](createProfile(acl), expr)
+    val cexpr = compiler.getCompiledExpression[SimpleContext[Unit], String](createProfile(acl), expr, template = false)
     assert("42" === cexpr(SimpleContext(())))
   }
 
@@ -191,7 +193,7 @@ class ScexCompilerTest extends FunSuite with CompilationTest {
     }
     val expr = "42.toString"
     assertMemberAccessForbidden {
-      compiler.getCompiledExpression[SimpleContext[Unit], String](createProfile(acl), expr)
+      compiler.getCompiledExpression[SimpleContext[Unit], String](createProfile(acl), expr, template = false)
     }
   }
 
@@ -200,7 +202,7 @@ class ScexCompilerTest extends FunSuite with CompilationTest {
       Some.apply _
     }
     val expr = "Some(42)"
-    val cexpr = compiler.getCompiledExpression[SimpleContext[Unit], Option[Int]](createProfile(acl), expr)
+    val cexpr = compiler.getCompiledExpression[SimpleContext[Unit], Option[Int]](createProfile(acl), expr, template = false)
     assert(Some(42) === cexpr(SimpleContext(())))
   }
 
@@ -210,7 +212,7 @@ class ScexCompilerTest extends FunSuite with CompilationTest {
     }
     val expr = "Some"
     assertMemberAccessForbidden {
-      compiler.getCompiledExpression[SimpleContext[Unit], Unit](createProfile(acl), expr)
+      compiler.getCompiledExpression[SimpleContext[Unit], Unit](createProfile(acl), expr, template = false)
     }
   }
 
@@ -220,7 +222,7 @@ class ScexCompilerTest extends FunSuite with CompilationTest {
     }
     val expr = "Some.hashCode"
     assertMemberAccessForbidden {
-      compiler.getCompiledExpression[SimpleContext[Unit], Unit](createProfile(acl), expr)
+      compiler.getCompiledExpression[SimpleContext[Unit], Unit](createProfile(acl), expr, template = false)
     }
   }
 
@@ -231,7 +233,7 @@ class ScexCompilerTest extends FunSuite with CompilationTest {
       }
     }
     val expr = "\"bippy\".reverse"
-    val cexpr = compiler.getCompiledExpression[SimpleContext[Unit], String](createProfile(acl), expr)
+    val cexpr = compiler.getCompiledExpression[SimpleContext[Unit], String](createProfile(acl), expr, template = false)
     assert("yppib" === cexpr(SimpleContext(())))
   }
 
@@ -242,9 +244,8 @@ class ScexCompilerTest extends FunSuite with CompilationTest {
         s.reverse
       }
     }
-    acl foreach println
     val expr = "\"bippy\".reverse"
-    val cexpr = compiler.getCompiledExpression[SimpleContext[Unit], String](createProfile(acl), expr)
+    val cexpr = compiler.getCompiledExpression[SimpleContext[Unit], String](createProfile(acl), expr, template = false)
     assert("yppib" === cexpr(SimpleContext(())))
   }
 
@@ -258,7 +259,7 @@ class ScexCompilerTest extends FunSuite with CompilationTest {
     }
     val expr = "\"bippy\".reverse"
     assertMemberAccessForbidden {
-      compiler.getCompiledExpression[SimpleContext[Unit], String](createProfile(acl), expr)
+      compiler.getCompiledExpression[SimpleContext[Unit], String](createProfile(acl), expr, template = false)
     }
   }
 
@@ -274,7 +275,7 @@ class ScexCompilerTest extends FunSuite with CompilationTest {
     }
     val expr = "\"bippy\".reverse"
     assertMemberAccessForbidden {
-      compiler.getCompiledExpression[SimpleContext[Unit], String](createProfile(acl), expr)
+      compiler.getCompiledExpression[SimpleContext[Unit], String](createProfile(acl), expr, template = false)
     }
   }
 
@@ -283,7 +284,8 @@ class ScexCompilerTest extends FunSuite with CompilationTest {
       SomeDynamic.selectDynamic _
     }
     val expr = "com.avsystem.scex.compiler.SomeDynamic.dynamicProperty"
-    val cexpr = compiler.getCompiledExpression[SimpleContext[Unit], String](createProfile(acl), expr)
+    val cexpr = compiler.getCompiledExpression[SimpleContext[Unit], String](createProfile(acl), expr, template = false)
     assert("dynamicProperty" === cexpr(SimpleContext(())))
   }
+
 }
