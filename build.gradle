@@ -1,3 +1,5 @@
+import scala.tools.nsc.io.Jar
+
 task wrapper(type: Wrapper) {
     gradleVersion = "1.8"
 }
@@ -9,7 +11,7 @@ allprojects {
     apply plugin: 'idea'
 
     group = "com.avsystem"
-    version = '1.2-SNAPSHOT'
+    version = '1.2'
 
     repositories {
         mavenCentral()
@@ -126,7 +128,7 @@ uploadArchives {
     repositories {
         mavenDeployer {
             configuration = configurations.deployerJars
-            repository(url: 'http://repo.avsystem.com/libs-snapshots-local/') {
+            repository(url: 'http://repo.avsystem.com/libs-releases-local/') {
                 authentication(userName: artifactoryUser, password: artifactoryPassword)
             }
         }
