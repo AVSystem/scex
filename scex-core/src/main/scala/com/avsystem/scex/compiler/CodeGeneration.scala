@@ -40,6 +40,7 @@ object CodeGeneration {
   val RootSymbol = "_root"
   val CompilerPkg = "com.avsystem.scex.compiler"
   val AnnotationPkg = s"$CompilerPkg.annotation"
+  val MacroProcessor = s"$CompilerPkg.ExpressionMacroProcessor"
   val InterpolationOpen = "t\"\"\""
   val InterpolationClose = "\"\"\""
 
@@ -124,12 +125,12 @@ object CodeGeneration {
         |    $rootGetterAdapterCode
         |    $profileHeader
         |    $additionalHeader
-        |    val _result = com.avsystem.scex.validation.ExpressionMacroProcessor.processExpression[$contextType, $resultType]({
+        |    val _result = $MacroProcessor.processExpression[$contextType, $resultType]($MacroProcessor.applyTypesafeEquals({
         |""".stripMargin + interpolationPrefix
 
     val postfix = interpolationPostfix +
       s"""
-        |    })
+        |    }))
         |    _result
         |  }
         |}

@@ -4,10 +4,10 @@ import com.avsystem.scex.compiler.ScexCompiler.CompilationFailedException
 import com.avsystem.scex.validation.{SymbolValidator, SyntaxValidator}
 import com.avsystem.scex.{ExpressionProfile, PredefinedAccessSpecs}
 import java.{util => ju, lang => jl}
-import org.scalatest.FunSuite
-import scala.reflect.runtime.universe.TypeTag
 import org.junit.runner.RunWith
+import org.scalatest.FunSuite
 import org.scalatest.junit.JUnitRunner
+import scala.reflect.runtime.universe.TypeTag
 
 /**
  * Created: 20-11-2013
@@ -28,6 +28,11 @@ class TypesafeEqualsTest extends FunSuite with CompilationTest {
   test("same type equality test") {
     assert(true === evaluate[Boolean]("\"lol\" == \"lol\""))
     assert(false === evaluate[Boolean]("\"lol\" == \"lol2\""))
+  }
+
+  test("same type inequality test") {
+    assert(false === evaluate[Boolean]("\"lol\" != \"lol\""))
+    assert(true === evaluate[Boolean]("\"lol\" != \"lol2\""))
   }
 
   test("same hierarchy equality test") {
@@ -54,6 +59,10 @@ class TypesafeEqualsTest extends FunSuite with CompilationTest {
   test("literals test") {
     assert(true === evaluate[Boolean]("com.avsystem.scex.util.Literal(\"42\") == 42"))
     assert(true === evaluate[Boolean]("42 == com.avsystem.scex.util.Literal(\"42\")"))
+  }
+
+  test("complex expression test") {
+    assert(true === evaluate[Boolean]( """("fuu" == "lol") || ("dafuq" != "srsly") """))
   }
 
 }

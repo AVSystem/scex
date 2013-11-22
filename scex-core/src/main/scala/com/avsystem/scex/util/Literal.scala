@@ -33,6 +33,8 @@ case class Literal(literalString: String) {
 
   def toDouble = jl.Double.valueOf(literalString.trim)
 
+  def +(other: Any) = literalString + other.toString
+
 }
 
 object Literal {

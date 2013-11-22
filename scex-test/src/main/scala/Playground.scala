@@ -1,12 +1,20 @@
 
-import com.avsystem.scex.japi.XmlFriendlyJavaScexCompiler
+import com.avsystem.scex.util.Literal
 import java.{util => ju, lang => jl}
 
 object Playground {
-  def main(args: Array[String]) {
-    import scala.reflect.runtime.universe._
 
-    val t = typeOf[XmlFriendlyJavaScexCompiler]
-    t.baseClasses foreach println
+  implicit class int2plusLiteral(val int: Int) extends AnyVal {
+    def +(lit: Literal) = int + lit.toString
+  }
+
+  def main(args: Array[String]) {
+
+    implicit class intToPlusLiteral(int: Int) {
+      def +(lit: Literal) = int + lit.toInt
+    }
+
+    println(Literal("58") + Literal("42").toInt)
+
   }
 }

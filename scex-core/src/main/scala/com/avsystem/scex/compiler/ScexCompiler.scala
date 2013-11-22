@@ -3,7 +3,7 @@ package com.avsystem.scex.compiler
 import com.avsystem.scex.compiler.CodeGeneration._
 import com.avsystem.scex.compiler.ScexCompiler._
 import com.avsystem.scex.util.CommonUtils._
-import com.avsystem.scex.validation.{SymbolValidator, SyntaxValidator, ExpressionMacroProcessor}
+import com.avsystem.scex.validation.{SymbolValidator, SyntaxValidator}
 import com.avsystem.scex.{ExpressionProfile, ExpressionContext, Expression}
 import java.{util => ju, lang => jl}
 import scala.collection.mutable.ListBuffer
