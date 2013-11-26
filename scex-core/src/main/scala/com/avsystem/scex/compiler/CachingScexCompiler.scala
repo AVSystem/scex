@@ -1,4 +1,5 @@
-package com.avsystem.scex.compiler
+package com.avsystem.scex
+package compiler
 
 import com.avsystem.scex.util.CommonUtils
 import com.google.common.cache.CacheBuilder

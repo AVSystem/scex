@@ -1,9 +1,10 @@
-package com.avsystem.scex.compiler
+package com.avsystem.scex
+package compiler.presentation
 
-import com.avsystem.scex.{ExpressionProfile, ExpressionContext}
-import com.avsystem.scex.compiler.ScexCompiler.CompileError
-import com.avsystem.scex.util.CommonUtils._
-import com.avsystem.scex.validation.{ValidationContext}
+import compiler.ScexCompiler.CompileError
+import compiler.{ExpressionDef, ExpressionMacroProcessor, ScexCompiler}
+import util.CommonUtils._
+import validation.ValidationContext
 import com.google.common.cache.CacheBuilder
 import java.{util => ju, lang => jl}
 import scala.reflect.internal.util.{SourceFile, BatchSourceFile}

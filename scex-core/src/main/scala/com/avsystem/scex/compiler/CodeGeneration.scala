@@ -1,12 +1,12 @@
-package com.avsystem.scex.compiler
+package com.avsystem.scex
+package compiler
 
 import JavaTypeParsing._
-import com.avsystem.scex.ExpressionProfile
-import com.avsystem.scex.util.CommonUtils._
 import java.lang.reflect.{Modifier, Method}
 import java.{util => ju, lang => jl}
 import scala.Some
 import scala.language.existentials
+import util.CommonUtils._
 
 object CodeGeneration {
 

@@ -1,9 +1,11 @@
-package com.avsystem.scex.japi
+package com.avsystem.scex
+package japi
 
 import com.avsystem.scex.compiler.JavaTypeParsing._
 import com.avsystem.scex.compiler.ScexCompiler.CompileError
-import com.avsystem.scex.compiler.ScexPresentationCompiler.Param
-import com.avsystem.scex.compiler.{ExpressionDef, ScexCompiler, ScexCompilerConfig, ScexPresentationCompiler}
+import com.avsystem.scex.compiler.presentation.ScexPresentationCompiler
+import com.avsystem.scex.compiler.presentation.ScexPresentationCompiler.Param
+import com.avsystem.scex.compiler.{ExpressionDef, ScexCompiler, ScexCompilerConfig}
 import com.avsystem.scex.util.{Fluent, CacheImplicits}
 import com.avsystem.scex.{ExpressionProfile, ExpressionContext}
 import com.google.common.cache.CacheBuilder

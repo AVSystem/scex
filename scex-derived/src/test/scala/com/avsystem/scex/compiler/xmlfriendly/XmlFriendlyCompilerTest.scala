@@ -1,4 +1,5 @@
-package com.avsystem.scex.compiler.xmlfriendly
+package com.avsystem.scex
+package compiler.xmlfriendly
 
 import com.avsystem.scex.compiler.{SimpleContext, ScexCompilerConfig}
 import com.avsystem.scex.japi.XmlFriendlyJavaScexCompiler

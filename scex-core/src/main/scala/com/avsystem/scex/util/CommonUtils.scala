@@ -1,4 +1,5 @@
-package com.avsystem.scex.util
+package com.avsystem.scex
+package util
 
 import java.util.concurrent.Callable
 

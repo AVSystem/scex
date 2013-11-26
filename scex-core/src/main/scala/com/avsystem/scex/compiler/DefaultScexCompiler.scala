@@ -1,6 +1,8 @@
-package com.avsystem.scex.compiler
+package com.avsystem.scex
+package compiler
 
 import java.{util => ju, lang => jl}
+import com.avsystem.scex.compiler.presentation.ScexPresentationCompiler
 
 /**
  * Created: 17-10-2013

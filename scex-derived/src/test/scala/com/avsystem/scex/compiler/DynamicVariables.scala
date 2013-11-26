@@ -1,4 +1,5 @@
-package com.avsystem.scex.compiler
+package com.avsystem.scex
+package compiler
 
 import com.avsystem.scex.util.DynamicAdapters.DynamicVariableSupport
 import java.{util => ju, lang => jl}

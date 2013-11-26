@@ -1,4 +1,5 @@
-package com.avsystem.scex.util
+package com.avsystem.scex
+package util
 
 import com.avsystem.scex.ExpressionContext
 import com.avsystem.scex.compiler.annotation.NotValidated

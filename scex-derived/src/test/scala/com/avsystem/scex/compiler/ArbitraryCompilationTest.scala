@@ -1,4 +1,5 @@
-package com.avsystem.scex.compiler
+package com.avsystem.scex
+package compiler
 
 import java.util.concurrent.Callable
 import java.{util => ju, lang => jl}
@@ -17,7 +18,8 @@ class ArbitraryCompilationTest extends FunSuite {
   test("arbitrary source code compilation test") {
     val code =
       """
-        |package com.avsystem.scex.test
+        |package com.avsystem.scex
+package test
         |
         |class Stuff extends java.util.concurrent.Callable[String] {
         |  def call = "stuff"

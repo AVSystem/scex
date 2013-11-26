@@ -1,4 +1,5 @@
-package com.avsystem.scex.compiler.annotation
+package com.avsystem.scex
+package compiler.annotation
 
 import java.{util => ju, lang => jl}
 import scala.annotation.StaticAnnotation

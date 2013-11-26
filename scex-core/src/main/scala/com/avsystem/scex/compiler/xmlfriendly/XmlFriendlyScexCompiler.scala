@@ -1,8 +1,10 @@
-package com.avsystem.scex.compiler.xmlfriendly
+package com.avsystem.scex
+package compiler.xmlfriendly
 
 import com.avsystem.scex.ExpressionProfile
-import com.avsystem.scex.compiler.{ExpressionDef, ScexPresentationCompiler}
+import com.avsystem.scex.compiler.ExpressionDef
 import java.{util => ju, lang => jl}
+import com.avsystem.scex.compiler.presentation.ScexPresentationCompiler
 
 /**
  *

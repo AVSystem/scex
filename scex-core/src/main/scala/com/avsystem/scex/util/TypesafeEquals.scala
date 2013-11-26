@@ -1,4 +1,5 @@
-package com.avsystem.scex.util
+package com.avsystem.scex
+package util
 
 import com.avsystem.scex.Macros
 import java.{util => ju, lang => jl}

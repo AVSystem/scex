@@ -1,9 +1,10 @@
-package com.avsystem.scex.compiler
+package com.avsystem.scex
+package compiler.presentation
 
-import java.{util => ju, lang => jl}
-import scala.reflect.api.Universe
-import scala.collection.mutable.ListBuffer
 import java.util.Objects
+import java.{util => ju, lang => jl}
+import scala.collection.mutable.ListBuffer
+import scala.reflect.api.Universe
 
 class TypeWrapper private(universeWithTpe: (u.type, u.Type) forSome {val u: Universe}) {
   private val u = universeWithTpe._1

@@ -1,4 +1,5 @@
-package com.avsystem.scex.japi
+package com.avsystem.scex
+package japi
 
 import com.avsystem.scex.compiler.JavaTypeParsing
 import com.google.common.reflect.TypeToken

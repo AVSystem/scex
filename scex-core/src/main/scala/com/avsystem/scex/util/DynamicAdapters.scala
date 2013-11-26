@@ -1,4 +1,5 @@
-package com.avsystem.scex.util
+package com.avsystem.scex
+package util
 
 import collection.JavaConversions
 import collection.mutable

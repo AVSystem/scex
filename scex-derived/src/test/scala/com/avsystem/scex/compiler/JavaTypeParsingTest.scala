@@ -1,4 +1,5 @@
-package com.avsystem.scex.compiler
+package com.avsystem.scex
+package compiler
 
 import java.{util => ju, lang => jl}
 import org.scalatest._
