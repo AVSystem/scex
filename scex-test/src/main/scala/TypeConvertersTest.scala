@@ -13,6 +13,6 @@ object TypeConvertersTest {
 
     println(javaTypeAsScalaType(clazz))
     println(javaTypeAsScalaType(classOf[JavaLol#InnerLol]))
-    println(appliedBoundedTypes(classToExistential(clazz).typeVars))
+    println(typeVariableDeclarations(classToExistential(clazz).typeVars))
   }
 }

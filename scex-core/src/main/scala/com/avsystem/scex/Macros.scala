@@ -1,6 +1,7 @@
 package com.avsystem.scex
 
-import com.avsystem.scex.util.{Literal => ScexLiteral}
+import com.avsystem.scex.compiler.annotation.BooleanIsGetter
+import com.avsystem.scex.util.{Literal => ScexLiteral, CommonUtils, MacroUtils}
 import java.{util => ju, lang => jl}
 import scala.annotation.tailrec
 import scala.reflect.macros.Context
@@ -11,6 +12,28 @@ import scala.util.control.NonFatal
  * Author: ghik
  */
 object Macros {
+  def javaGetter_impl[T: c.WeakTypeTag](c: Context): c.Expr[T] = {
+    val macroUtils = MacroUtils(c.universe)
+
+    import c.universe._
+    import macroUtils._
+
+    val booleanIsGetter = c.macroApplication.symbol.annotations.exists(_.tpe <:< typeOf[BooleanIsGetter])
+    def javaGetter(propertyName: String) =
+      (if (booleanIsGetter) "is" else "get") + propertyName.capitalize
+
+    c.macroApplication match {
+      case Select(ImplicitlyConverted(prefix, _), TermName(propertyName)) =>
+        c.Expr[T](Select(prefix, newTermName(javaGetter(propertyName))))
+
+      case Select(prefix@Ident(_), TermName(propertyName))
+        if prefix.symbol.annotations.exists(_.tpe <:< rootAdapterAnnotType) =>
+
+        c.Expr[T](Select(Select(prefix, newTermName("wrapped")), newTermName(javaGetter(propertyName))))
+    }
+
+  }
+
   def templateInterpolation_impl[T: c.WeakTypeTag](c: Context)(args: c.Expr[Any]*): c.Expr[T] = {
     import c.universe._
 
@@ -116,6 +139,59 @@ object Macros {
       c.error(c.enclosingPosition, s"Values of types $leftTpe and $rightTpe cannot be compared")
       null
     }
+  }
+
+  def asSetter_impl[T: c.WeakTypeTag](c: Context)(expr: c.Expr[T]): c.Expr[T => Unit] = {
+    val macroUtils = MacroUtils(c.universe)
+
+    import c.universe._
+    import macroUtils._
+
+    lazy val ttpe = weakTypeOf[T]
+
+    def translate(tree: Tree): Tree = tree match {
+      case Select(ImplicitlyConverted(prefix, fun), TermName(propertyName))
+        if fun.symbol.annotations.exists(_.tpe <:< adapterConversionAnnotType) =>
+
+        Select(prefix, newTermName("set" + propertyName.capitalize))
+
+      case Select(prefix, TermName(getterName)) if tree.symbol.isMethod =>
+        import CommonUtils._
+
+        val returnType = tree.symbol.asMethod.returnType
+        val setterName = getterName match {
+          case BooleanBeanGetterNamePattern(capitalizedProperty, _) if returnType <:< booleanTpe || returnType <:< jBooleanTpe =>
+            "set" + capitalizedProperty
+          case BeanGetterNamePattern(capitalizedProperty, _) =>
+            "set" + capitalizedProperty
+          case _ =>
+            getterName + "_="
+        }
+
+        Select(prefix, newTermName(setterName).encodedName)
+
+      case Select(prefix, TermName(name)) if isJavaField(tree.symbol) =>
+        Function(List(ValDef(Modifiers(Flag.PARAM), newTermName("value"), TypeTree(ttpe), EmptyTree)),
+          Assign(tree, Ident(newTermName("value"))))
+
+      case Apply(fun, Nil) =>
+        translate(fun)
+
+      case Apply(Select(prefix, TermName("apply")), List(soleArgument)) =>
+        Function(List(ValDef(Modifiers(Flag.PARAM), newTermName("value"), TypeTree(ttpe), EmptyTree)),
+          Apply(Select(prefix, newTermName("update")), List(soleArgument, Ident(newTermName("value")))))
+
+      case Apply(Select(prefix, TermName("selectDynamic")), List(dynamicNameArg))
+        if prefix.tpe <:< typeOf[Dynamic] =>
+
+        Apply(Select(prefix, newTermName("updateDynamic")), List(dynamicNameArg))
+
+      case _ =>
+        c.error(tree.pos, "Cannot translate this expression into setter")
+        null
+    }
+
+    c.Expr[T => Unit](translate(expr.tree))
   }
 
   def literalTo[T: c.WeakTypeTag](c: Context)(lit: c.Expr[ScexLiteral], compileConversion: ScexLiteral => T, runtimeConversion: c.Expr[ScexLiteral => T]): c.Expr[T] = {

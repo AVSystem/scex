@@ -16,6 +16,16 @@ object CommonUtils {
   val BooleanBeanGetterNamePattern = "is(([A-Z][a-z0-9_]*)+)".r
   val BeanSetterNamePattern = "set(([A-Z][a-z0-9_]*)+)".r
 
+  object JavaGetterName {
+    def unapply(getterName: String) = getterName match {
+      case BeanGetterNamePattern(capitalizedProperty, _) =>
+        Some((capitalizedProperty.head.toLower + capitalizedProperty.tail, false))
+      case BooleanBeanGetterNamePattern(capitalizedProperty, _) =>
+        Some((capitalizedProperty.head.toLower + capitalizedProperty.tail, true))
+      case _ => None
+    }
+  }
+
   implicit class EnhancedInt(val i: Int) extends AnyVal {
     def times(expr: => Any) {
       var c = 0

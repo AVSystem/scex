@@ -29,6 +29,7 @@ object CodeGeneration {
         }
 
       } else None
+
   }
 
   val ExpressionClassName = "Expression"
@@ -67,8 +68,9 @@ object CodeGeneration {
       val classBody = scalaGetters.mkString
 
       val ExistentialType(polyTpe, typeVariables) = classToExistential(clazz)
+      val generics = if (typeVariables.nonEmpty) typeVariableDeclarations(typeVariables).mkString("[", ", ", "]") else ""
       val wrappedTpe = javaTypeAsScalaType(polyTpe)
-      val adapterWithGenerics = adapterName(clazz) + appliedBoundedTypes(typeVariables)
+      val adapterWithGenerics = adapterName(clazz) + generics
 
       val result =
         s"""
@@ -149,7 +151,8 @@ object CodeGeneration {
         val ExistentialType(polyTpe, typeVariables) = classToExistential(clazz)
         val wrappedTpe = javaTypeAsScalaType(polyTpe)
         val adapter = adapterName(clazz)
-        val adapterWithGenerics = adapter + appliedBoundedTypes(typeVariables)
+        val generics = if (typeVariables.nonEmpty) typeVariableDeclarations(typeVariables).mkString("[", ", ", "]") else ""
+        val adapterWithGenerics = adapter + generics
 
         s"""
           |@$AnnotationPkg.JavaGetterAdapterConversion

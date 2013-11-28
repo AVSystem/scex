@@ -9,7 +9,7 @@ import java.{util => ju, lang => jl}
  */
 trait Fluent {
   @inline
-  protected def fluent(code: => Unit): this.type = {
+  protected final def fluent(code: => Unit): this.type = {
     code
     this
   }

@@ -64,60 +64,6 @@ abstract class ValidationContext protected extends MacroUtils {
 
   case class ValidationResult(priority: Int, deniedAccesses: List[SimpleMemberAccess])
 
-  lazy val adapterAnnotType = typeOf[JavaGetterAdapter]
-  lazy val booleanGetterAnnotType = typeOf[BooleanIsGetter]
-  lazy val contextAdapterAnnotType = typeOf[RootAdapter]
-  lazy val expressionUtilAnnotType = typeOf[ExpressionUtil]
-  lazy val profileObjectAnnotType = typeOf[ProfileObject]
-  lazy val wrappedInAdapterAnnotType = typeOf[WrappedInAdapter]
-  lazy val notValidatedAnnotType = typeOf[NotValidated]
-
-  lazy val any2stringadd = typeOf[Predef.type].member(newTermName("any2stringadd"))
-  lazy val stringAddPlus = typeOf[StringAdd].member(newTermName("+").encodedName)
-  lazy val stringConcat = typeOf[String].member(newTermName("+").encodedName)
-  lazy val stringTpe = typeOf[String]
-
-  def isExpressionUtil(symbol: Symbol): Boolean =
-    symbol != null && symbol != NoSymbol &&
-      (isExpressionUtilObject(symbol) || isExpressionUtil(symbol.owner))
-
-  def isExpressionUtilObject(symbol: Symbol): Boolean =
-    symbol != null && symbol != NoSymbol && symbol.annotations.exists(_.tpe =:= expressionUtilAnnotType)
-
-  def isProfileObject(symbol: Symbol) =
-    symbol != null && symbol.annotations.exists(_.tpe =:= profileObjectAnnotType)
-
-  def isScexSynthetic(symbol: Symbol): Boolean =
-    symbol != null && symbol != NoSymbol &&
-      (isProfileObject(symbol) || isScexSynthetic(symbol.owner))
-
-  def isAdapter(symbol: Symbol): Boolean =
-    symbol != NoSymbol && symbol.annotations.exists(_.tpe =:= adapterAnnotType)
-
-  def isAdapter(tpe: Type): Boolean =
-    tpe != NoType && isAdapter(tpe.typeSymbol)
-
-  /**
-   * Is this symbol the 'wrapped' field of Java getter adapter?
-   */
-  def isAdapterWrappedMember(symbol: Symbol): Boolean =
-    symbol != NoSymbol && symbol.annotations.exists(_.tpe =:= wrappedInAdapterAnnotType)
-
-  def isRootAdapter(symbol: Symbol) =
-    symbol.annotations.exists(_.tpe =:= contextAdapterAnnotType)
-
-  def isBooleanGetterAdapter(symbol: Symbol) =
-    symbol.annotations.exists(_.tpe =:= booleanGetterAnnotType)
-
-  // gets Java getter called by implicit wrapper
-  def getJavaGetter(symbol: Symbol, javaTpe: Type): Symbol = {
-    val prefix = if (isBooleanGetterAdapter(symbol)) "is" else "get"
-    val name = prefix + symbol.name.toString.capitalize
-
-    def fail = throw new Error(s"Could not find Java getter $name on $javaTpe")
-    alternatives(javaTpe.member(newTermName(name))).find(isBeanGetter).getOrElse(fail)
-  }
-
   def toStringAccess(tree: Tree) =
     SimpleMemberAccess(tree.tpe, toStringSymbol(tree.tpe), None, allowedByDefault = false, tree.pos)
 

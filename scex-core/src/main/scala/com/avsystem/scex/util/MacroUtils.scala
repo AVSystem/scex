@@ -1,15 +1,33 @@
 package com.avsystem.scex
 package util
 
+import com.avsystem.scex.compiler.annotation._
 import com.avsystem.scex.util.CommonUtils._
 import java.{util => ju, lang => jl}
 import scala.Some
 import scala.reflect.macros.Universe
+import scala.runtime.StringAdd
 
 trait MacroUtils {
   val universe: Universe
 
   import universe._
+
+  lazy val adapterAnnotType = typeOf[JavaGetterAdapter]
+  lazy val adapterConversionAnnotType = typeOf[JavaGetterAdapterConversion]
+  lazy val booleanGetterAnnotType = typeOf[BooleanIsGetter]
+  lazy val rootAdapterAnnotType = typeOf[RootAdapter]
+  lazy val expressionUtilAnnotType = typeOf[ExpressionUtil]
+  lazy val profileObjectAnnotType = typeOf[ProfileObject]
+  lazy val wrappedInAdapterAnnotType = typeOf[WrappedInAdapter]
+  lazy val notValidatedAnnotType = typeOf[NotValidated]
+
+  lazy val any2stringadd = typeOf[Predef.type].member(newTermName("any2stringadd"))
+  lazy val stringAddPlus = typeOf[StringAdd].member(newTermName("+").encodedName)
+  lazy val stringConcat = typeOf[String].member(newTermName("+").encodedName)
+  lazy val stringTpe = typeOf[String]
+  lazy val booleanTpe = typeOf[Boolean]
+  lazy val jBooleanTpe = typeOf[jl.Boolean]
 
   object LiteralString {
     def unapply(tree: Tree) = tree match {
@@ -209,6 +227,47 @@ trait MacroUtils {
     case termSymbol: TermSymbol => termSymbol.alternatives
     case NoSymbol => Nil
     case _ => List(sym)
+  }
+
+  def isExpressionUtil(symbol: Symbol): Boolean =
+    symbol != null && symbol != NoSymbol &&
+      (isExpressionUtilObject(symbol) || isExpressionUtil(symbol.owner))
+
+  def isExpressionUtilObject(symbol: Symbol): Boolean =
+    symbol != null && symbol != NoSymbol && symbol.annotations.exists(_.tpe =:= expressionUtilAnnotType)
+
+  def isProfileObject(symbol: Symbol) =
+    symbol != null && symbol.annotations.exists(_.tpe =:= profileObjectAnnotType)
+
+  def isScexSynthetic(symbol: Symbol): Boolean =
+    symbol != null && symbol != NoSymbol &&
+      (isProfileObject(symbol) || isScexSynthetic(symbol.owner))
+
+  def isAdapter(symbol: Symbol): Boolean =
+    symbol != NoSymbol && symbol.annotations.exists(_.tpe =:= adapterAnnotType)
+
+  def isAdapter(tpe: Type): Boolean =
+    tpe != NoType && isAdapter(tpe.typeSymbol)
+
+  /**
+   * Is this symbol the 'wrapped' field of Java getter adapter?
+   */
+  def isAdapterWrappedMember(symbol: Symbol): Boolean =
+    symbol != NoSymbol && symbol.annotations.exists(_.tpe =:= wrappedInAdapterAnnotType)
+
+  def isRootAdapter(symbol: Symbol) =
+    symbol.annotations.exists(_.tpe =:= rootAdapterAnnotType)
+
+  def isBooleanGetterAdapter(symbol: Symbol) =
+    symbol.annotations.exists(_.tpe =:= booleanGetterAnnotType)
+
+  // gets Java getter called by implicit wrapper
+  def getJavaGetter(symbol: Symbol, javaTpe: Type): Symbol = {
+    val prefix = if (isBooleanGetterAdapter(symbol)) "is" else "get"
+    val name = prefix + symbol.name.toString.capitalize
+
+    def fail = throw new Error(s"Could not find Java getter $name on $javaTpe")
+    alternatives(javaTpe.member(newTermName(name))).find(isBeanGetter).getOrElse(fail)
   }
 }
 
