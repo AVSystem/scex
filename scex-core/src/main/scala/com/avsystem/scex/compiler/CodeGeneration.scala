@@ -93,7 +93,9 @@ object CodeGeneration {
     fullAdapterClassNameOpt: Option[String],
     profileObjectPkg: String) = {
 
-    val ExpressionDef(profile, template, expression, header, _, contextType, resultType) = exprDef
+    val ExpressionDef(profile, template, setter, expression, header, _, contextType, resultType) = exprDef
+
+    val resultOrSetterType = if(setter) s"com.avsystem.scex.Setter[$resultType]" else resultType
 
     val profileHeader = Option(profile.expressionHeader).getOrElse("")
     val additionalHeader = Option(header).getOrElse("")
@@ -111,14 +113,15 @@ object CodeGeneration {
 
     val interpolationPrefix = if (template) InterpolationOpen else ""
     val interpolationPostfix = if (template) InterpolationClose else ""
+    val setterConversion = if(setter) s"$MacroProcessor.asSetter" else ""
 
     //_result is needed because: https://groups.google.com/forum/#!topic/scala-user/BAK-mU7o6nM
     val prefix =
       s"""
         |
         |final class $ExpressionClassName
-        |  extends (($contextType) => $resultType) with $CompilerPkg.TemplateInterpolations[$resultType] {
-        |    def apply($ContextSymbol: $contextType): $resultType = {
+        |  extends (($contextType) => $resultOrSetterType) with $CompilerPkg.TemplateInterpolations[$resultType] {
+        |    def apply($ContextSymbol: $contextType): $resultOrSetterType = {
         |    val $RootSymbol = $ContextSymbol.root
         |    val $VariablesSymbol = new com.avsystem.scex.util.DynamicVariableAccessor($ContextSymbol)
         |    import $profileObjectPkg.$ProfileObjectName._
@@ -127,12 +130,15 @@ object CodeGeneration {
         |    $rootGetterAdapterCode
         |    $profileHeader
         |    $additionalHeader
-        |    val _result = $MacroProcessor.processExpression[$contextType, $resultType]($MacroProcessor.applyTypesafeEquals({
+        |    val _result =
+        |      $setterConversion(
+        |      $MacroProcessor.processExpression[$contextType, $resultType](
+        |      $MacroProcessor.applyTypesafeEquals({
         |""".stripMargin + interpolationPrefix
 
     val postfix = interpolationPostfix +
       s"""
-        |    }))
+        |    })))
         |    _result
         |  }
         |}

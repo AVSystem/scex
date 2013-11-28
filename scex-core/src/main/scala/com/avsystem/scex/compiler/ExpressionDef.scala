@@ -11,6 +11,7 @@ import java.{util => ju, lang => jl}
 case class ExpressionDef(
   profile: ExpressionProfile,
   template: Boolean,
+  setter: Boolean,
   expression: String,
   header: String,
   rootObjectClass: Class[_],

@@ -50,6 +50,7 @@ trait ScexPresentationCompiler extends ScexCompiler {
   private class InteractiveContextImpl(
     profile: ExpressionProfile,
     template: Boolean,
+    setter: Boolean,
     header: String,
     contextType: String,
     rootObjectClass: Class[_],
@@ -95,7 +96,7 @@ trait ScexPresentationCompiler extends ScexCompiler {
     }
 
     def getErrors(expression: String) = withGlobal { global =>
-      val exprDef = ExpressionDef(profile, template, expression, header, rootObjectClass, contextType, resultType)
+      val exprDef = ExpressionDef(profile, template, setter, expression, header, rootObjectClass, contextType, resultType)
       val (code, _) = expressionCode(exprDef, pkgName)
       val response = new global.Response[global.Tree]
       global.askLoadedTyped(new BatchSourceFile(pkgName, code), response)
@@ -107,7 +108,7 @@ trait ScexPresentationCompiler extends ScexCompiler {
       import global.{sourceFile => _, position => _, _}
       val symbolValidator = profile.symbolValidator
 
-      val exprDef = ExpressionDef(profile, template, expression, header, rootObjectClass, contextType, resultType)
+      val exprDef = ExpressionDef(profile, template, setter, expression, header, rootObjectClass, contextType, resultType)
       val (code, offset) = expressionCode(exprDef, pkgName)
       val sourceFile = new BatchSourceFile(pkgName, code)
 
@@ -151,7 +152,7 @@ trait ScexPresentationCompiler extends ScexCompiler {
       import global.{sourceFile => _, position => _, _}
       val symbolValidator = profile.symbolValidator
 
-      val exprDef = ExpressionDef(profile, template, expression, header, rootObjectClass, contextType, resultType)
+      val exprDef = ExpressionDef(profile, template, setter, expression, header, rootObjectClass, contextType, resultType)
       val (code, offset) = expressionCode(exprDef, pkgName)
       val sourceFile = new BatchSourceFile(pkgName, code)
       val pos = sourceFile.position(offset + position)
@@ -250,7 +251,8 @@ trait ScexPresentationCompiler extends ScexCompiler {
 
   def getInteractiveContext[C <: ExpressionContext[_, _] : TypeTag, T: TypeTag](
     profile: ExpressionProfile,
-    template: Boolean = false,
+    template: Boolean = true,
+    setter: Boolean = false,
     header: String = ""): InteractiveContext = {
 
     import scala.reflect.runtime.universe._
@@ -261,18 +263,19 @@ trait ScexPresentationCompiler extends ScexCompiler {
     val TypeRef(_, _, List(rootObjectType, _)) = contextType.baseType(typeOf[ExpressionContext[_, _]].typeSymbol)
     val rootObjectClass = mirror.runtimeClass(rootObjectType)
 
-    getInteractiveContext(profile, template, header, contextType.toString, rootObjectClass, resultType.toString)
+    getInteractiveContext(profile, template, setter, header, contextType.toString, rootObjectClass, resultType.toString)
   }
 
   protected def getInteractiveContext(
     profile: ExpressionProfile,
     template: Boolean,
+    setter: Boolean,
     header: String,
     contextType: String,
     rootObjectClass: Class[_],
     resultType: String): InteractiveContext = {
 
-    new InteractiveContextImpl(profile, template, header, contextType, rootObjectClass, resultType)
+    new InteractiveContextImpl(profile, template, setter, header, contextType, rootObjectClass, resultType)
   }
 
   override protected def compile(sourceFile: SourceFile, classLoader: ScexClassLoader, usedInExpressions: Boolean) = {

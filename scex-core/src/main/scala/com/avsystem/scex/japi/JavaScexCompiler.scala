@@ -39,6 +39,7 @@ trait JavaScexCompiler extends ScexCompiler {
     private var _profile: ExpressionProfile = _
     private var _expression: String = _
     private var _template: Boolean = true
+    private var _setter: Boolean = false
     private var _header: String = ""
 
     def get = {
@@ -52,7 +53,7 @@ trait JavaScexCompiler extends ScexCompiler {
       val scalaResultType = typesCache.get(_resultTypeToken.getType)
       val rootObjectClass = rootObjectClassCache.get(_contextTypeToken)
 
-      getCompiledExpression[C, T](ExpressionDef(_profile, _template, _expression, _header,
+      getCompiledExpression[C, T](ExpressionDef(_profile, _template, _setter, _expression, _header,
         rootObjectClass, scalaContextType, scalaResultType))
     }
 
@@ -66,11 +67,23 @@ trait JavaScexCompiler extends ScexCompiler {
 
     def resultType[NT](resultTypeToken: TypeToken[NT]) = fluent {
       _resultTypeToken = resultTypeToken
+      _setter = false
     }.asInstanceOf[ExpressionBuilder[C, NT]]
 
     def resultType[NT](resultClass: Class[NT]) = fluent {
       _resultTypeToken = TypeToken.of(resultClass)
+      _setter = false
     }.asInstanceOf[ExpressionBuilder[C, NT]]
+
+    def setterFor[NT](resultTypeToken: TypeToken[NT]) = fluent {
+      _resultTypeToken = resultTypeToken
+      _setter = true
+    }.asInstanceOf[ExpressionBuilder[C, Setter[NT]]]
+
+    def setterFor[NT](resultClass: Class[NT]) = fluent {
+      _resultTypeToken = TypeToken.of(resultClass)
+      _setter = true
+    }.asInstanceOf[ExpressionBuilder[C, Setter[NT]]]
 
     def profile(profile: ExpressionProfile) = fluent {
       _profile = profile
@@ -120,7 +133,8 @@ trait JavaScexCompiler extends ScexCompiler {
     private var _contextTypeToken: TypeToken[_ <: ExpressionContext[_, _]] = _
     private var _resultTypeToken: TypeToken[_] = _
     private var _profile: ExpressionProfile = _
-    private var _template: Boolean = false
+    private var _template: Boolean = true
+    private var _setter: Boolean = false
     private var _header: String = ""
 
     def get = {
@@ -134,7 +148,7 @@ trait JavaScexCompiler extends ScexCompiler {
       val rootObjectClass = rootObjectClassCache.get(_contextTypeToken)
 
       new JavaInteractiveContext(getInteractiveContext(
-        _profile, _template, _header, scalaContextType, rootObjectClass, scalaResultType))
+        _profile, _template, _setter, _header, scalaContextType, rootObjectClass, scalaResultType))
     }
 
     def contextType(contextTypeToken: TypeToken[_ <: ExpressionContext[_, _]]) = fluent {
@@ -147,10 +161,22 @@ trait JavaScexCompiler extends ScexCompiler {
 
     def resultType(resultTypeToken: TypeToken[_]) = fluent {
       _resultTypeToken = resultTypeToken
+      _setter = false
     }
 
     def resultType(resultClass: Class[_]) = fluent {
       _resultTypeToken = TypeToken.of(resultClass)
+      _setter = false
+    }
+
+    def setterForType(resultTypeToken: TypeToken[_]) = fluent {
+      _resultTypeToken = _resultTypeToken
+      _setter = true
+    }
+
+    def setterForType(resultClass: Class[_]) = fluent {
+      _resultTypeToken = TypeToken.of(resultClass)
+      _setter = true
     }
 
     def profile(profile: ExpressionProfile) = fluent {

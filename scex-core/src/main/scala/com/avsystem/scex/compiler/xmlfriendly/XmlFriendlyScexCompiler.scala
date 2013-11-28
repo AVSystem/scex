@@ -27,13 +27,14 @@ trait XmlFriendlyScexCompiler extends ScexPresentationCompiler {
   override protected def getInteractiveContext(
     profile: ExpressionProfile,
     template: Boolean,
+    setter: Boolean,
     header: String,
     contextType: String,
     rootObjectClass: Class[_],
     resultType: String) = {
 
     val wrapped: InteractiveContext =
-      super.getInteractiveContext(profile, template, header, contextType, rootObjectClass, resultType)
+      super.getInteractiveContext(profile, template, setter, header, contextType, rootObjectClass, resultType)
 
     new InteractiveContext {
       def getErrors(expression: String) =

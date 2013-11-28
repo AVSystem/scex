@@ -222,7 +222,28 @@ trait ScexCompiler extends PackageGenerator {
     val TypeRef(_, _, List(rootObjectType, _)) = contextType.baseType(typeOf[ExpressionContext[_, _]].typeSymbol)
     val rootObjectClass = mirror.runtimeClass(rootObjectType)
 
-    getCompiledExpression(ExpressionDef(profile, template, expression, header,
+    getCompiledExpression(ExpressionDef(profile, template, setter = false, expression, header,
+      rootObjectClass, contextType.toString, typeOf[T].toString))
+  }
+
+  def getCompiledSetterExpression[C <: ExpressionContext[_, _] : TypeTag, T: TypeTag](
+    profile: ExpressionProfile,
+    expression: String,
+    template: Boolean = true,
+    header: String = ""): Expression[C, Setter[T]] = {
+
+    require(profile != null, "Profile cannot be null")
+    require(expression != null, "Expression cannot be null")
+    require(header != null, "Header cannot be null")
+
+    import scala.reflect.runtime.universe._
+
+    val mirror = typeTag[C].mirror
+    val contextType = typeOf[C]
+    val TypeRef(_, _, List(rootObjectType, _)) = contextType.baseType(typeOf[ExpressionContext[_, _]].typeSymbol)
+    val rootObjectClass = mirror.runtimeClass(rootObjectType)
+
+    getCompiledExpression(ExpressionDef(profile, template, setter = true, expression, header,
       rootObjectClass, contextType.toString, typeOf[T].toString))
   }
 

@@ -2,10 +2,8 @@ package com.avsystem.scex
 package validation
 
 import com.avsystem.scex.ExpressionContext
-import com.avsystem.scex.compiler.annotation._
 import com.avsystem.scex.util.MacroUtils
 import scala.reflect.macros.Universe
-import scala.runtime.StringAdd
 
 abstract class ValidationContext protected extends MacroUtils {
 

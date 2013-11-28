@@ -1,13 +1,14 @@
 
-import com.avsystem.scex.Macros
+import com.avsystem.scex.compiler.ExpressionMacroProcessor
 import com.avsystem.scex.util.Literal
+import com.avsystem.scex.{Setter, Macros}
 import java.{util => ju, lang => jl}
 import scala.beans.BeanProperty
 import scala.language.experimental.macros
 
 object Playground {
 
-  def asSetter[T](expr: T): T => Unit = macro Macros.asSetter_impl[T]
+  def asSetter[T](expr: T): Setter[T] = macro ExpressionMacroProcessor.asSetter_impl[T]
 
   implicit class int2plusLiteral(val int: Int) extends AnyVal {
     def +(lit: Literal) = int + lit.toString
