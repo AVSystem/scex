@@ -160,7 +160,7 @@ object ValidationTest {
     val typedLol = new TL
     val dafuq = new typedLol.Dafuq[ju.ArrayList[CharSequence]]
 
-    type Typ = TypedLol[T]#Dafuq[F] forSome {type T; type F}
+    type Typ = TypedLol[T]#Dafuq[F] forSome {type T <: TypedLol[T]; type F}
 
     //compiler.getCompiledExpression(profile, "ValidationTest.Dyn.costam", classOf[Object], classOf[String])
 
