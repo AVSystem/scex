@@ -1,8 +1,8 @@
 package com.avsystem.scex
 package util
 
-import com.avsystem.scex.Macros
 import java.{util => ju, lang => jl}
+import scala.collection.immutable.{WrappedString, StringOps}
 
 /**
  * Created: 18-11-2013
@@ -35,45 +35,48 @@ case class Literal(literalString: String) {
   def toDouble = jl.Double.valueOf(literalString.trim)
 
   def +(other: Any) = literalString + other.toString
-
 }
 
-object Literal {
+trait LowPriorityImplicits {
+  implicit def literalToBoolean(lit: Literal): Boolean = lit.toBoolean
 
-  import scala.language.experimental.macros
+  implicit def literalToJBoolean(lit: Literal): jl.Boolean = lit.toBoolean
+
+  implicit def literalToChar(lit: Literal): Char = lit.toChar
+
+  implicit def literalToJCharacter(lit: Literal): jl.Character = lit.toChar
+
+  implicit def literalToByte(lit: Literal): Byte = lit.toByte
+
+  implicit def literalToJByte(lit: Literal): jl.Byte = lit.toByte
+
+  implicit def literalToShort(lit: Literal): Short = lit.toShort
+
+  implicit def literalToJShort(lit: Literal): jl.Short = lit.toShort
+
+  implicit def literalToInt(lit: Literal): Int = lit.toInt
+
+  implicit def literalToJInteger(lit: Literal): jl.Integer = lit.toInt
+
+  implicit def literalToLong(lit: Literal): Long = lit.toLong
+
+  implicit def literalToJLong(lit: Literal): jl.Long = lit.toLong
+
+  implicit def literalToFloat(lit: Literal): Float = lit.toFloat
+
+  implicit def literalToJFloat(lit: Literal): jl.Float = lit.toFloat
+
+  implicit def literalToDouble(lit: Literal): Double = lit.toDouble
+
+  implicit def literalToJDouble(lit: Literal): jl.Double = lit.toDouble
+}
+
+object Literal extends LowPriorityImplicits {
 
   implicit def literalToString(lit: Literal): String = lit.literalString
 
-  implicit def literalToBoolean(lit: Literal): Boolean = macro Macros.literalToBoolean_impl
+  implicit def literalToStringOps(lit: Literal): StringOps = lit.literalString
 
-  implicit def literalToJBoolean(lit: Literal): jl.Boolean = macro Macros.literalToJBoolean_impl
-
-  implicit def literalToChar(lit: Literal): Char = macro Macros.literalToChar_impl
-
-  implicit def literalToJCharacter(lit: Literal): jl.Character = macro Macros.literalToJCharacter_impl
-
-  implicit def literalToByte(lit: Literal): Byte = macro Macros.literalToByte_impl
-
-  implicit def literalToJByte(lit: Literal): jl.Byte = macro Macros.literalToJByte_impl
-
-  implicit def literalToShort(lit: Literal): Short = macro Macros.literalToShort_impl
-
-  implicit def literalToJShort(lit: Literal): jl.Short = macro Macros.literalToJShort_impl
-
-  implicit def literalToInt(lit: Literal): Int = macro Macros.literalToInt_impl
-
-  implicit def literalToJInteger(lit: Literal): jl.Integer = macro Macros.literalToJInteger_impl
-
-  implicit def literalToLong(lit: Literal): Long = macro Macros.literalToLong_impl
-
-  implicit def literalToJLong(lit: Literal): jl.Long = macro Macros.literalToJLong_impl
-
-  implicit def literalToFloat(lit: Literal): Float = macro Macros.literalToFloat_impl
-
-  implicit def literalToJFloat(lit: Literal): jl.Float = macro Macros.literalToJFloat_impl
-
-  implicit def literalToDouble(lit: Literal): Double = macro Macros.literalToDouble_impl
-
-  implicit def literalToJDouble(lit: Literal): jl.Double = macro Macros.literalToJDouble_impl
+  implicit def literalToWrappedString(lit: Literal): WrappedString = lit.literalString
 
 }

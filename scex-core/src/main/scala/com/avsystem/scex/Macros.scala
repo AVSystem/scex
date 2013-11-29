@@ -1,7 +1,7 @@
 package com.avsystem.scex
 
 import com.avsystem.scex.compiler.annotation.BooleanIsGetter
-import com.avsystem.scex.util.{Literal => ScexLiteral, CommonUtils, MacroUtils}
+import com.avsystem.scex.util.{Literal => ScexLiteral, MacroUtils}
 import java.{util => ju, lang => jl}
 import scala.annotation.tailrec
 import scala.reflect.macros.Context
@@ -81,7 +81,7 @@ object Macros {
     if (typeOf[String] <:< resultType) {
       c.Expr[T](reifyConcatenation(parts, argTrees))
     }
-    // special cases for Java enums as there is no way to create general implicit conversion between String and enums
+    // special cases for Java enums as there is no way to create general implicit conversion to arbitrary java enum
     // due to https://issues.scala-lang.org/browse/SI-7609
     else if (resultType <:< typeOf[jl.Enum[_]] && args.size == 0) {
       val enumModuleSymbol = resultType.typeSymbol.companionSymbol
@@ -141,6 +141,23 @@ object Macros {
     }
   }
 
+  def qmark_impl(c: Context)(rhs: c.Expr[Any]): c.Expr[Any] = {
+    import c.universe._
+
+    val Apply(_, List(lhsTree)) = c.prefix.tree
+    val lhs = c.Expr[Any](lhsTree)
+
+    reify {
+      def fallback = rhs.splice
+      try {
+        val result = lhs.splice
+        if (result != null) result else fallback
+      } catch {
+        case _: NullPointerException => fallback
+      }
+    }
+  }
+
   def literalTo[T: c.WeakTypeTag](c: Context)(lit: c.Expr[ScexLiteral], compileConversion: ScexLiteral => T, runtimeConversion: c.Expr[ScexLiteral => T]): c.Expr[T] = {
     import c.universe._
 
@@ -163,51 +180,4 @@ object Macros {
     }
   }
 
-  def literalToBoolean_impl(c: Context)(lit: c.Expr[ScexLiteral]): c.Expr[Boolean] =
-    literalTo(c)(lit, _.toBoolean, c.universe.reify(_.toBoolean))
-
-  def literalToJBoolean_impl(c: Context)(lit: c.Expr[ScexLiteral]): c.Expr[jl.Boolean] =
-    literalTo(c)(lit, _.toBoolean, c.universe.reify(_.toBoolean))
-
-  def literalToChar_impl(c: Context)(lit: c.Expr[ScexLiteral]): c.Expr[Char] =
-    literalTo(c)(lit, _.toChar, c.universe.reify(_.toChar))
-
-  def literalToJCharacter_impl(c: Context)(lit: c.Expr[ScexLiteral]): c.Expr[jl.Character] =
-    literalTo(c)(lit, _.toChar, c.universe.reify(_.toChar))
-
-  def literalToByte_impl(c: Context)(lit: c.Expr[ScexLiteral]): c.Expr[Byte] =
-    literalTo(c)(lit, _.toByte, c.universe.reify(_.toByte))
-
-  def literalToJByte_impl(c: Context)(lit: c.Expr[ScexLiteral]): c.Expr[jl.Byte] =
-    literalTo(c)(lit, _.toByte, c.universe.reify(_.toByte))
-
-  def literalToShort_impl(c: Context)(lit: c.Expr[ScexLiteral]): c.Expr[Short] =
-    literalTo(c)(lit, _.toShort, c.universe.reify(_.toShort))
-
-  def literalToJShort_impl(c: Context)(lit: c.Expr[ScexLiteral]): c.Expr[jl.Short] =
-    literalTo(c)(lit, _.toShort, c.universe.reify(_.toShort))
-
-  def literalToInt_impl(c: Context)(lit: c.Expr[ScexLiteral]): c.Expr[Int] =
-    literalTo(c)(lit, _.toInt, c.universe.reify(_.toInt))
-
-  def literalToJInteger_impl(c: Context)(lit: c.Expr[ScexLiteral]): c.Expr[jl.Integer] =
-    literalTo(c)(lit, _.toInt, c.universe.reify(_.toInt))
-
-  def literalToLong_impl(c: Context)(lit: c.Expr[ScexLiteral]): c.Expr[Long] =
-    literalTo(c)(lit, _.toLong, c.universe.reify(_.toLong))
-
-  def literalToJLong_impl(c: Context)(lit: c.Expr[ScexLiteral]): c.Expr[jl.Long] =
-    literalTo(c)(lit, _.toLong, c.universe.reify(_.toLong))
-
-  def literalToFloat_impl(c: Context)(lit: c.Expr[ScexLiteral]): c.Expr[Float] =
-    literalTo(c)(lit, _.toFloat, c.universe.reify(_.toFloat))
-
-  def literalToJFloat_impl(c: Context)(lit: c.Expr[ScexLiteral]): c.Expr[jl.Float] =
-    literalTo(c)(lit, _.toFloat, c.universe.reify(_.toFloat))
-
-  def literalToDouble_impl(c: Context)(lit: c.Expr[ScexLiteral]): c.Expr[Double] =
-    literalTo(c)(lit, _.toDouble, c.universe.reify(_.toDouble))
-
-  def literalToJDouble_impl(c: Context)(lit: c.Expr[ScexLiteral]): c.Expr[jl.Double] =
-    literalTo(c)(lit, _.toDouble, c.universe.reify(_.toDouble))
 }

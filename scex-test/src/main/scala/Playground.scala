@@ -1,28 +1,37 @@
 
-import com.avsystem.scex.compiler.ExpressionMacroProcessor
 import com.avsystem.scex.util.Literal
-import com.avsystem.scex.{Setter, Macros}
 import java.{util => ju, lang => jl}
-import scala.beans.BeanProperty
 import scala.language.experimental.macros
 
 object Playground {
 
-  def asSetter[T](expr: T): Setter[T] = macro ExpressionMacroProcessor.asSetter_impl[T]
-
-  implicit class int2plusLiteral(val int: Int) extends AnyVal {
-    def +(lit: Literal) = int + lit.toString
+  implicit class any2qmark[A](value: => A) {
+    def ?[B](default: => B)(implicit atob: A => B): B =
+      try {
+        val result = value
+        if (result != null) result else default
+      } catch {
+        case _: NullPointerException => default
+      }
   }
 
-  class WithSetter {
-    @BeanProperty var properitas: String = "fuu"
+  implicit class literal2qmark(value: Literal) {
+    def ?[B](default: B)(implicit conv: Literal => B): B = {
+      try {
+        val result = value
+        if (result != null && result.literalString != null) result else default
+      } catch {
+        case _: NullPointerException => default
+      }
+    }
   }
+
+  class A
+
+  implicit def aToBoolean(a: A) = true
 
   def main(args: Array[String]) {
-    val ws = new Array[Int](5)
-    println(ws.toList)
-    val setter = asSetter(ws(2))
-    setter(1529)
-    println(ws.toList)
+    val costam: Boolean = math.random > 0.5
+    val str = costam.toString
   }
 }

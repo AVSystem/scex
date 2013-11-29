@@ -65,13 +65,13 @@ class TemplateExpressionsTest extends FunSuite with CompilationTest {
   }
 
   test("invalid boolean literal test") {
-    intercept[CompilationFailedException] {
+    intercept[IllegalArgumentException] {
       evaluateTemplate[Boolean]("hueheuahueh")
     }
   }
 
   test("invalid boolean literal test - expression as literal") {
-    intercept[CompilationFailedException] {
+    intercept[IllegalArgumentException] {
       evaluateTemplate[Boolean]("true && false")
     }
   }
