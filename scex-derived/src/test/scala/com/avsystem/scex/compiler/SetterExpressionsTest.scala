@@ -51,16 +51,31 @@ class SetterExpressionsTest extends FunSuite with CompilationTest {
     assert(42 === target.getBeanprop)
   }
 
-  test("adapted bean setter test") {
+  test("adapted root bean setter test") {
     val target = new JavaSetterTarget
     applySetter("beanprop", target, 42, allow(on { st: JavaSetterTarget => st.all.introduced.members}))
     assert(42 === target.getBeanprop)
+  }
+
+  test("adapted non-root bean setter test") {
+    val target = new JavaSetterTarget
+    applySetter("self.beanprop", target, 42, allow(on { st: JavaSetterTarget => st.all.introduced.members}))
+    assert(42 === target.self.getBeanprop)
   }
 
   test("java field test") {
     val target = new JavaSetterTarget
     applySetter("field", target, 42, allow(on { st: JavaSetterTarget => st.all.introduced.members}))
     assert(42 === target.field)
+  }
+
+  test("dynamic setter test") {
+    val setterExpression = compiler.getCompiledSetterExpression[SimpleContext[Unit], String](
+      createProfile(Nil), "_vars.lol", template = false)
+
+    val context = SimpleContext(())
+    setterExpression.apply(context).apply("42")
+    assert("42" === context.getVariable("lol"))
   }
 
 }

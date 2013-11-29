@@ -16,4 +16,8 @@ public class JavaSetterTarget {
     public void setBeanprop(int beanprop) {
         this.beanprop = beanprop;
     }
+
+    public JavaSetterTarget self() {
+        return this;
+    }
 }

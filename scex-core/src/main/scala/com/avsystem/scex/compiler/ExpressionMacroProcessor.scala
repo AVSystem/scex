@@ -92,18 +92,21 @@ object ExpressionMacroProcessor {
 
     lazy val ttpe = weakTypeOf[T]
 
-    def setterAsFunction(setter: Tree) =
+    def reifySetterFunction(setter: Tree) =
+      reifyFunction(arg => Apply(setter, List(arg)))
+
+    def reifyFunction(bodyGen: Tree => Tree): Tree =
       Function(List(ValDef(Modifiers(Flag.PARAM), newTermName("value"), TypeTree(ttpe), EmptyTree)),
-        Apply(setter, List(Ident(newTermName("value")))))
+        bodyGen(Ident(newTermName("value"))))
 
     def translate(tree: Tree): Tree = tree match {
       case Select(prefix@Ident(_), TermName(propertyName)) if prefix.symbol.annotations.exists(_.tpe <:< rootAdapterAnnotType) =>
-        setterAsFunction(Select(Ident(newTermName(CodeGeneration.RootSymbol)), newTermName("set" + propertyName.capitalize)))
+        reifySetterFunction(Select(Ident(newTermName(CodeGeneration.RootSymbol)), newTermName("set" + propertyName.capitalize)))
 
       case Select(ImplicitlyConverted(prefix, fun), TermName(propertyName))
         if fun.symbol.annotations.exists(_.tpe <:< adapterConversionAnnotType) =>
 
-        Select(prefix, newTermName("set" + propertyName.capitalize))
+        reifySetterFunction(Select(prefix, newTermName("set" + propertyName.capitalize)))
 
       case Select(prefix, TermName(getterName)) if tree.symbol.isMethod =>
         import CommonUtils._
@@ -118,23 +121,21 @@ object ExpressionMacroProcessor {
             getterName + "_="
         }
 
-        setterAsFunction(Select(prefix, newTermName(setterName).encodedName))
+        reifySetterFunction(Select(prefix, newTermName(setterName).encodedName))
 
       case Select(prefix, TermName(name)) if isJavaField(tree.symbol) =>
-        Function(List(ValDef(Modifiers(Flag.PARAM), newTermName("value"), TypeTree(ttpe), EmptyTree)),
-          Assign(tree, Ident(newTermName("value"))))
+        reifyFunction(arg => Assign(tree, arg))
 
       case Apply(fun, Nil) =>
         translate(fun)
 
       case Apply(Select(prefix, TermName("apply")), List(soleArgument)) =>
-        Function(List(ValDef(Modifiers(Flag.PARAM), newTermName("value"), TypeTree(ttpe), EmptyTree)),
-          Apply(Select(prefix, newTermName("update")), List(soleArgument, Ident(newTermName("value")))))
+        reifyFunction(arg => Apply(Select(prefix, newTermName("update")), List(soleArgument, arg)))
 
       case Apply(Select(prefix, TermName("selectDynamic")), List(dynamicNameArg))
         if prefix.tpe <:< typeOf[Dynamic] =>
 
-        setterAsFunction(Apply(Select(prefix, newTermName("updateDynamic")), List(dynamicNameArg)))
+        reifySetterFunction(Apply(Select(prefix, newTermName("updateDynamic")), List(dynamicNameArg)))
 
       case _ =>
         c.error(tree.pos, "Cannot translate this expression into setter")
