@@ -265,6 +265,6 @@ object PredefinedAccessSpecs {
     on { l: Literal =>
       l.all.introduced.members
     }
-    Literal.all.members
+    Literal.all.introduced.members
   }
 }
