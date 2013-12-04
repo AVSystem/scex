@@ -25,8 +25,9 @@ trait PositionTrackingParsers extends RegexParsers {
   }
 
   class ParserWithPos(parser: Parser[String]) extends Parser[PString] {
-    def apply(in: Input) = parser(in).map { str =>
-      PString(str, in.offset, in.offset + str.length, Vector.empty)
+    def apply(in: Input) = parser(in).map {
+      str =>
+        PString(str, in.offset, in.offset + str.length, Vector.empty)
     }
   }
 
@@ -39,6 +40,6 @@ trait PositionTrackingParsers extends RegexParsers {
   }
 
   def join(pstrs: Traversable[PString]) =
-    pstrs.reduce(_ + _)
+    if (pstrs.nonEmpty) pstrs.reduce(_ + _) else PString("", 0, 0, Vector.empty)
 
 }
