@@ -20,7 +20,7 @@ public class ScexJavaTest {
         ExpressionProfile profile = new ExpressionProfile(syntaxValidator, symbolValidator, "", "");
 
         Class<ExpressionContext<?, ?>> aecClass = (Class) ExpressionContext.class;
-        JavaScexCompiler.JavaInteractiveContext ctx = compiler.buildInteractiveContext().contextType(aecClass)
+        JavaScexCompiler.JavaCompleter ctx = compiler.buildCompleter().contextType(aecClass)
                 .resultType(String.class).profile(profile).get();
 
         System.out.println("FUUUUUUU");

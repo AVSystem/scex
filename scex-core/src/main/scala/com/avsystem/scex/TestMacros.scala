@@ -23,6 +23,7 @@ object TestMacros {
     val result = expr.tree.collect {
       case tree if tree.symbol != null && tree.symbol != c.universe.NoSymbol => tree.symbol
     }.map(s => s"$s - ${s.fullName} ${s.asTerm.isStable}").mkString("\n")
+
     c.literal(result)
   }
 }

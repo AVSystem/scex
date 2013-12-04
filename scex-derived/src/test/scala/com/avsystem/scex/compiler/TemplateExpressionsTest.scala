@@ -1,7 +1,6 @@
 package com.avsystem.scex
 package compiler
 
-import com.avsystem.scex.PredefinedAccessSpecs
 import com.avsystem.scex.compiler.ScexCompiler.CompilationFailedException
 import com.avsystem.scex.validation.SymbolValidator
 import java.lang.annotation.RetentionPolicy
@@ -9,7 +8,6 @@ import java.{util => ju, lang => jl}
 import org.junit.runner.RunWith
 import org.scalatest.FunSuite
 import org.scalatest.junit.JUnitRunner
-import scala.reflect.runtime.universe.TypeTag
 
 /**
  * Created: 18-11-2013

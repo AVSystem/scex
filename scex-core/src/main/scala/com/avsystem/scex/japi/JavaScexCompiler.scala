@@ -102,7 +102,7 @@ trait JavaScexCompiler extends ScexCompiler {
     }
   }
 
-  class JavaInteractiveContext(wrapped: InteractiveContext) {
+  class JavaCompleter(wrapped: Completer) {
 
     import scala.collection.JavaConverters._
 
@@ -126,10 +126,10 @@ trait JavaScexCompiler extends ScexCompiler {
       completionToJava(wrapped.getTypeCompletion(expression, position))
   }
 
-  def buildInteractiveContext =
-    new InteractiveContextBuilder
+  def buildCompleter =
+    new CompleterBuilder
 
-  class InteractiveContextBuilder extends Fluent {
+  class CompleterBuilder extends Fluent {
     private var _contextTypeToken: TypeToken[_ <: ExpressionContext[_, _]] = _
     private var _resultTypeToken: TypeToken[_] = _
     private var _profile: ExpressionProfile = _
@@ -147,7 +147,7 @@ trait JavaScexCompiler extends ScexCompiler {
       val scalaResultType = typesCache.get(_resultTypeToken.getType)
       val rootObjectClass = rootObjectClassCache.get(_contextTypeToken)
 
-      new JavaInteractiveContext(getInteractiveContext(
+      new JavaCompleter(getCompleter(
         _profile, _template, _setter, _header, scalaContextType, rootObjectClass, scalaResultType))
     }
 

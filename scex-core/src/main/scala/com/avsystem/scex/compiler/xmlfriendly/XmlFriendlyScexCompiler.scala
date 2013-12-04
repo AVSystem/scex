@@ -24,7 +24,7 @@ trait XmlFriendlyScexCompiler extends ScexPresentationCompiler {
     super.compileExpression(exprDef.copy(expression = xmlFriendlyExpression))
   }
 
-  override protected def getInteractiveContext(
+  override protected def getCompleter(
     profile: ExpressionProfile,
     template: Boolean,
     setter: Boolean,
@@ -33,10 +33,10 @@ trait XmlFriendlyScexCompiler extends ScexPresentationCompiler {
     rootObjectClass: Class[_],
     resultType: String) = {
 
-    val wrapped: InteractiveContext =
-      super.getInteractiveContext(profile, template, setter, header, contextType, rootObjectClass, resultType)
+    val wrapped: Completer =
+      super.getCompleter(profile, template, setter, header, contextType, rootObjectClass, resultType)
 
-    new InteractiveContext {
+    new Completer {
       def getErrors(expression: String) =
         wrapped.getErrors(XmlFriendlyTranslator.translate(expression).result)
 

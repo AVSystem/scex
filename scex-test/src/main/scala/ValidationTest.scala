@@ -1,7 +1,7 @@
-import com.avsystem.scex.{ExpressionProfile, ExpressionContext}
-import com.avsystem.scex.compiler.{ScexCompilerConfig}
+import com.avsystem.scex.compiler.ScexCompilerConfig
 import com.avsystem.scex.japi.DefaultJavaScexCompiler
 import com.avsystem.scex.validation._
+import com.avsystem.scex.{PredefinedAccessSpecs, ExpressionProfile, ExpressionContext}
 import java.util.Collections
 import java.{util => ju, lang => jl}
 import reflect.macros.Universe
@@ -57,79 +57,91 @@ object ValidationTest {
       None
       Tuple2.apply _
 
-      on { anyRef: AnyRef =>
-        anyRef == (_: AnyRef)
-        anyRef != (_: AnyRef)
+      on {
+        anyRef: AnyRef =>
+          anyRef == (_: AnyRef)
+          anyRef != (_: AnyRef)
       }
 
-      on { tl: TypedLol[_] =>
-        tl.toString
+      on {
+        tl: TypedLol[_] =>
+          tl.toString
       }
 
-      on { d: (TypedLol[T]#Dafuq[_] forSome {type T}) =>
-        d.getStuff
+      on {
+        d: (TypedLol[T]#Dafuq[_] forSome {type T}) =>
+          d.getStuff
       }
 
-      on { s: String =>
-        s.length
-        s.concat _
-        s.matches _
-        s.reverse
-        s.compare(_: String)
+      on {
+        s: String =>
+          s.length
+          s.concat _
+          s.matches _
+          s.reverse
+          s.compare(_: String)
       }
 
-      on { sc: StringContext =>
-        sc.s _
+      on {
+        sc: StringContext =>
+          sc.s _
       }
 
-      on { al: ju.ArrayList[_] =>
-        new ju.ArrayList(_: ju.Collection[_])
-        al.all.members
+      on {
+        al: ju.ArrayList[_] =>
+          new ju.ArrayList(_: ju.Collection[_])
+          al.all.members
       }
 
-      on { any: Any =>
-        any + (_: String)
-        any -> (_: Any)
-        any == (_: Any)
-        any != (_: Any)
+      on {
+        any: Any =>
+          any + (_: String)
+          any -> (_: Any)
+          any == (_: Any)
+          any != (_: Any)
       }
 
-      on { a: A[_] =>
-        a.costam _
-        a.hoho _
-        a.b()
-        a.multiParens(_: Int)(_: String, _: Float)(_: Nothing)
-        a.getClass
-        a.a_= _
+      on {
+        a: A[_] =>
+          a.costam _
+          a.hoho _
+          a.b()
+          a.multiParens(_: Int)(_: String, _: Float)(_: Nothing)
+          a.getClass
+          a.a_= _
       }
 
-      on { i: Int =>
-        i.implicitlyAs[RichInt].all.membersNamed.to
-        i.all.constructors
-        i.all.membersNamed("+")
+      on {
+        i: Int =>
+          i.implicitlyAs[RichInt].all.membersNamed.to
+          i.all.constructors
+          i.all.membersNamed("+")
       }
 
-      on { jl: JavaLol =>
-        jl.fuu
-        jl.isFoo
+      on {
+        jl: JavaLol =>
+          jl.fuu
+          jl.isFoo
       }
 
       Dyn.selectDynamic _
 
     } ++ deny {
 
-      on { any: Any =>
-        any.equals _
-        any.hashCode
-        any.##
-        any.getClass
-        any.asInstanceOf
-        any.isInstanceOf
+      on {
+        any: Any =>
+          any.equals _
+          any.hashCode
+          any.##
+          any.getClass
+          any.asInstanceOf
+          any.isInstanceOf
       }
 
-      on { anyRef: AnyRef =>
-        anyRef.eq _
-        anyRef.synchronized _
+      on {
+        anyRef: AnyRef =>
+          anyRef.eq _
+          anyRef.synchronized _
       }
 
     }
@@ -148,7 +160,7 @@ object ValidationTest {
       }
     }
 
-    val symbolValidator = SymbolValidator(memberAccessSpecs)
+    val symbolValidator = SymbolValidator(PredefinedAccessSpecs.basicOperations)
 
     val profile = new ExpressionProfile(syntaxValidator, symbolValidator, "", "val lol = \"dafuq\"; def immaUtil = \"util, lol\"")
     val compiler = new DefaultJavaScexCompiler(new ScexCompilerConfig)
@@ -166,8 +178,10 @@ object ValidationTest {
 
     //compiler.getCompiledExpression(profile, "ValidationTest.Dyn.costam", classOf[Object], classOf[String])
 
-    val ic = compiler.getInteractiveContext[ExpressionContext[_, _], Object](profile)
-    ic.getScopeCompletion("", 0).members foreach println
+    val ic = compiler.getCompleter[ExpressionContext[Unit, Unit], Object](profile, template = false)
+    val completion = ic.getTypeCompletion("32L.", 1)
+    completion.errors foreach println
+    completion.members foreach println
 
   }
 
