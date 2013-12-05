@@ -5,6 +5,7 @@ import com.avsystem.scex.compiler.annotation._
 import com.avsystem.scex.util.CommonUtils._
 import java.{util => ju, lang => jl}
 import scala.Some
+import scala.reflect.internal.Flags
 import scala.reflect.macros.Universe
 import scala.runtime.StringAdd
 
@@ -256,10 +257,10 @@ trait MacroUtils {
     symbol != NoSymbol && symbol.annotations.exists(_.tpe =:= wrappedInAdapterAnnotType)
 
   def isRootAdapter(symbol: Symbol) =
-    symbol.annotations.exists(_.tpe =:= rootAdapterAnnotType)
+    symbol != null && symbol.annotations.exists(_.tpe =:= rootAdapterAnnotType)
 
   def isBooleanGetterAdapter(symbol: Symbol) =
-    symbol.annotations.exists(_.tpe =:= booleanGetterAnnotType)
+    symbol != null && symbol.annotations.exists(_.tpe =:= booleanGetterAnnotType)
 
   // gets Java getter called by implicit wrapper
   def getJavaGetter(symbol: Symbol, javaTpe: Type): Symbol = {
@@ -269,6 +270,7 @@ trait MacroUtils {
     def fail = throw new Error(s"Could not find Java getter $name on $javaTpe")
     alternatives(javaTpe.member(newTermName(name))).find(isBeanGetter).getOrElse(fail)
   }
+
 }
 
 object MacroUtils {

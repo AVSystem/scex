@@ -5,6 +5,7 @@ import com.avsystem.scex.util.MacroUtils
 import java.{util => ju, lang => jl}
 import scala.collection.mutable.ListBuffer
 import scala.reflect.api.TypeCreator
+import scala.reflect.internal.Flags
 import scala.reflect.macros.Context
 
 object SymbolValidatorMacros {
@@ -32,13 +33,14 @@ object SymbolValidatorMacros {
     val macroUtils = MacroUtils(c.universe)
     import macroUtils._
 
-    // transforms list of expressions of type List[MemberAccessSpec] to single expression
+    // tranforms list of expressions of type List[MemberAccessSpec] to single expression
     // of type List[MemberAccessSpec] that represents flattened original list of lists
     def reifyFlattenLists(listExprs: List[c.Expr[List[MemberAccessSpec]]]) = {
       import c.universe._
 
-      val addToBuilderStatements = listExprs.map { listExpr =>
-        Apply(Select(Ident(newTermName("b")), newTermName("++=").encodedName), List(listExpr.tree))
+      val addToBuilderStatements = listExprs.map {
+        listExpr =>
+          Apply(Select(Ident(newTermName("b")), newTermName("++=").encodedName), List(listExpr.tree))
       }
       reify {
         val b = new ListBuffer[MemberAccessSpec]
@@ -54,17 +56,59 @@ object SymbolValidatorMacros {
         reify(Some(c.Expr[Class[_]](c.reifyRuntimeClass(tpe)).splice))
       }
 
+    /**
+    * Translates this type so that all existential types in this type do not refer to the defining class,
+    * as they do by default. Heavy wizardry.
+    *
+    * The problem is that when you reify an existential type (with `c.reifyType`), for example `Set[_]`, the
+    * wildcard is reified as a Symbol whose owner is the class that used that existential type.
+    * This effectively means that the definition of existential type refers the class that used it.
+    * This means that when the type is finally evaluated in some universe, things will blow up if that class is
+    * not visible to that universe.
+    *
+    * For example, this is exactly what happens if you use some existential type in the SymbolValidator DSL and
+    * the symbol validator is compiled at runtime using `compileSymbolValidator` method of ScexCompiler. That dynamically
+    * compiled class is not visible to the Scala compiler through classpath and when it tries to evaluate the reified
+    * type, we have a nice scala.reflect.internal.MissingRequirementError in our face.
+    */
+    def detachExistentials(tpe: Type) = tpe.map {
+      case ExistentialType(quantified, underlying) =>
+        val rootSymbol = rootMirror.RootClass
+
+        val symbolMapping = quantified.collect {
+          case oldSymbol if oldSymbol.owner != rootSymbol =>
+            val newName = newTypeName(oldSymbol.fullName.replaceAllLiterally(".", "_"))
+            val flags = build.flagsFromBits(Flags.DEFERRED | Flags.EXISTENTIAL)
+            val newSymbol = build.newNestedSymbol(rootSymbol, newName, NoPosition, flags, isClass = false)
+            newSymbol.setTypeSignature(oldSymbol.typeSignature)
+            (oldSymbol, newSymbol)
+        }.toMap.withDefault {
+          s: Symbol => s
+        }
+
+        val newQuantified = quantified.map(symbolMapping)
+
+        val newUnderlying = underlying.map {
+          case TypeRef(pre, sym, args) => TypeRef(pre, symbolMapping(sym), args)
+          case t => t
+        }
+
+        ExistentialType(newQuantified, newUnderlying)
+
+      case subTpe => subTpe
+    }
+
     def reifyTypeInfo(tpe: Type) = {
-      val widenedTpe = tpe.map(_.widen)
+      val typeToReify = detachExistentials(tpe.map(_.widen))
 
       val Block(List(_, _), Apply(_, List(_, typeCreatorTree))) =
-        c.reifyType(treeBuild.mkRuntimeUniverseRef, EmptyTree, widenedTpe)
+        c.reifyType(treeBuild.mkRuntimeUniverseRef, EmptyTree, typeToReify)
 
       reify(new TypeInfo(
         c.Expr[TypeCreator](typeCreatorTree).splice,
         reifyRuntimeClassOpt(tpe).splice,
         c.literal(tpe.typeSymbol.isJava).splice,
-        c.literal(widenedTpe.toString).splice))
+        c.literal(typeToReify.toString).splice))
     }
 
     val reifyImplicitConvSpec: ((Tree, Type)) => c.Expr[(String, TypeInfo)] = {

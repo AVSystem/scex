@@ -1,15 +1,15 @@
 package com.avsystem.scex
 package compiler.presentation
 
+import com.google.common.cache.CacheBuilder
 import compiler.ScexCompiler.CompileError
 import compiler.{ExpressionDef, ExpressionMacroProcessor, ScexCompiler}
-import util.CommonUtils._
-import validation.ValidationContext
-import com.google.common.cache.CacheBuilder
 import java.{util => ju, lang => jl}
 import scala.reflect.internal.util.{SourceFile, BatchSourceFile}
 import scala.reflect.runtime.universe.TypeTag
 import scala.tools.nsc.interactive.{Global => IGlobal}
+import util.CommonUtils._
+import validation.ValidationContext
 
 trait ScexPresentationCompiler extends ScexCompiler {
   compiler =>
@@ -106,156 +106,185 @@ trait ScexPresentationCompiler extends ScexCompiler {
         reporter.compileErrors()
     }
 
-    def getScopeCompletion(expression: String, position: Int): Completion = withGlobal {
-      global =>
-        import global.{sourceFile => _, position => _, _}
-        val symbolValidator = profile.symbolValidator
+    def getScopeCompletion(expression: String, position: Int): Completion = withGlobal { global =>
+      import global.{sourceFile => _, position => _, _}
+      val symbolValidator = profile.symbolValidator
 
-        val exprDef = ExpressionDef(profile, template, setter, expression, header, rootObjectClass, contextType, resultType)
-        val (code, offset) = expressionCode(exprDef, pkgName)
-        val sourceFile = new BatchSourceFile(pkgName, code)
+      val exprDef = ExpressionDef(profile, template, setter, expression, header, rootObjectClass, contextType, resultType)
+      val (code, offset) = expressionCode(exprDef, pkgName)
+      val sourceFile = new BatchSourceFile(pkgName, code)
 
-        val treeResponse = new Response[Tree]
-        askLoadedTyped(sourceFile, treeResponse)
-        val sourceTree = getOrThrow(treeResponse)
-        val errors = compiler.reporter.compileErrors()
+      val treeResponse = new Response[Tree]
+      askLoadedTyped(sourceFile, treeResponse)
+      val sourceTree = getOrThrow(treeResponse)
+      val errors = compiler.reporter.compileErrors()
 
-        val vc = ValidationContext(global)(getContextTpe(global)(sourceTree))
-        import vc._
+      val vc = ValidationContext(global)(getContextTpe(global)(sourceTree))
+      import vc._
 
-        def accessFromScopeMember(m: ScopeMember) = {
-          // static module will be allowed by default only when at least one of its members is allowed
-          val staticAccessAllowedByDefault = isStaticModule(m.sym) && symbolValidator.referencesModuleMember(m.sym.fullName)
-          extractAccess(Select(m.viaImport, m.sym), staticAccessAllowedByDefault)
-        }
+      def accessFromScopeMember(m: ScopeMember) = {
+        // static module will be allowed by default only when at least one of its members is allowed
+        val staticAccessAllowedByDefault = isStaticModule(m.sym) && symbolValidator.referencesModuleMember(m.sym.fullName)
+        extractAccess(Select(m.viaImport, m.sym), staticAccessAllowedByDefault)
+      }
 
-        val response = new Response[List[Member]]
-        askScopeCompletion(sourceFile.position(offset + position), response)
-        val scope = getOrThrow(response)
+      val response = new Response[List[Member]]
+      askScopeCompletion(sourceFile.position(offset + position), response)
+      val scope = getOrThrow(response)
 
-        val members = getOrThrow(askForResponse {
-          () =>
-            scope.collect {
-              case member@ScopeMember(sym, _, _, viaImport)
-                if viaImport != EmptyTree && sym.isTerm && !sym.isPackage &&
-                  (!isScexSynthetic(sym) || (isExpressionUtil(sym) && !isExpressionUtilObject(sym))) =>
-                member
-            } filter {
-              m =>
-                symbolValidator.validateMemberAccess(vc)(accessFromScopeMember(m)).deniedAccesses.isEmpty
-            } map translateMember(vc)
-        })
+      val members = getOrThrow(askForResponse {
+        () =>
+          scope.collect {
+            case member@ScopeMember(sym, _, _, viaImport)
+              if viaImport != EmptyTree && sym.isTerm && !sym.isPackage &&
+                (!isScexSynthetic(sym) || (isExpressionUtil(sym) && !isExpressionUtilObject(sym))) =>
+              member
+          } filter {
+            m =>
+              symbolValidator.validateMemberAccess(vc)(accessFromScopeMember(m)).deniedAccesses.isEmpty
+          } map translateMember(vc)
+      })
 
-        val deleteResponse = new Response[Unit]
-        askFilesDeleted(List(sourceFile), deleteResponse)
-        getOrThrow(deleteResponse)
+      val deleteResponse = new Response[Unit]
+      askFilesDeleted(List(sourceFile), deleteResponse)
+      getOrThrow(deleteResponse)
 
-        Completion(members, errors)
+      Completion(members, errors)
     }
 
-    def getTypeCompletion(expression: String, position: Int): Completion = withGlobal {
-      global =>
-        import global.{sourceFile => _, position => _, _}
-        val symbolValidator = profile.symbolValidator
+    def getTypeCompletion(expression: String, position: Int): Completion = withGlobal { global =>
+      import global.{sourceFile => _, position => _, _}
+      val symbolValidator = profile.symbolValidator
 
-        val exprDef = ExpressionDef(profile, template, setter, expression, header, rootObjectClass, contextType, resultType)
-        val (code, offset) = expressionCode(exprDef, pkgName)
-        val sourceFile = new BatchSourceFile(pkgName, code)
-        val pos = sourceFile.position(offset + position)
+      val exprDef = ExpressionDef(profile, template, setter, expression, header, rootObjectClass, contextType, resultType)
+      val (code, offset) = expressionCode(exprDef, pkgName)
+      val sourceFile = new BatchSourceFile(pkgName, code)
+      val pos = sourceFile.position(offset + position)
 
-        val treeResponse = new Response[Tree]
-        askLoadedTyped(sourceFile, treeResponse)
-        val sourceTree = getOrThrow(treeResponse)
-        val errors = compiler.reporter.compileErrors()
+      val treeResponse = new Response[Tree]
+      askLoadedTyped(sourceFile, treeResponse)
+      val sourceTree = getOrThrow(treeResponse)
+      val errors = compiler.reporter.compileErrors()
 
-        val vc = ValidationContext(global)(getContextTpe(global)(sourceTree))
-        import vc._
+      val vc = ValidationContext(global)(getContextTpe(global)(sourceTree))
+      import vc._
 
-        val typedTreeResponse = new Response[Tree]
-        askTypeAt(pos, typedTreeResponse)
-        val typedTree = getOrThrow(typedTreeResponse)
+      val typedTreeResponse = new Response[Tree]
+      askTypeAt(pos, typedTreeResponse)
+      val typedTree = getOrThrow(typedTreeResponse)
 
-        // Hack: implicit conversions (conversion tree and implicit type) must be obtained manually from the
-        // compiler because TypeMember contains only the implicit conversion symbol.
-        // Code fragments from [[scala.tools.nsc.interactive.Global#typeMembers]] are used here.
+      // Hack: implicit conversions (conversion tree and implicit type) must be obtained manually from the
+      // compiler because TypeMember contains only the implicit conversion symbol.
+      // Code fragments from [[scala.tools.nsc.interactive.Global#typeMembers]] are used here.
 
-        val context = doLocateContext(pos)
+      val context = doLocateContext(pos)
 
-        // this code is taken from [[scala.tools.nsc.interactive.Global#typeMembers]]
-        val (tree, ownerTpe) = getOrThrow(askForResponse {
-          () =>
-            var tree = typedTree
+      // this code is taken from [[scala.tools.nsc.interactive.Global#typeMembers]]
+      val (tree, ownerTpe) = getOrThrow(askForResponse {
+        () =>
+          var tree = typedTree
 
-            tree match {
-              case Select(qual, name) if tree.tpe == ErrorType => tree = qual
-              case _ =>
-            }
+          tree match {
+            case Select(qual, name) if tree.tpe == ErrorType => tree = qual
+            case _ =>
+          }
 
-            if (tree.tpe == null)
-              tree = analyzer.newTyper(context).typedQualifier(tree)
+          if (tree.tpe == null)
+            tree = analyzer.newTyper(context).typedQualifier(tree)
 
-            val pre = stabilizedType(tree)
+          val pre = stabilizedType(tree)
 
-            val ownerTpe = tree.tpe match {
-              case analyzer.ImportType(expr) => expr.tpe
-              case null => pre
-              case MethodType(List(), rtpe) => rtpe
-              case _ => tree.tpe
-            }
+          val ownerTpe = tree.tpe match {
+            case analyzer.ImportType(expr) => expr.tpe
+            case null => pre
+            case MethodType(List(), rtpe) => rtpe
+            case _ => tree.tpe
+          }
 
-            (tree, ownerTpe)
-        })
+          (tree, ownerTpe)
+      })
 
-        val result = typeCompletionCache.get(TypeWrapper(global)(ownerTpe), callable {
+      def isValueType(tpe: Type): Boolean = tpe match {
+        case TypeRef(_, _, _) |
+             ConstantType(_) |
+             SingleType(_, _) |
+             RefinedType(_, _) |
+             ExistentialType(_, _) |
+             ThisType(_) |
+             SuperType(_, _) |
+             WildcardType |
+             BoundedWildcardType(_) =>
+          true
+        case MethodType(_, resultTpe) =>
+          isValueType(resultTpe)
+        case NullaryMethodType(resultTpe) =>
+          isValueType(resultTpe)
+        case AnnotatedType(_, underlying, _) =>
+          isValueType(underlying)
+        case _ =>
+          false
+      }
+
+      val result = typeCompletionCache.get(TypeWrapper(global)(ownerTpe), callable {
+        if (isValueType(ownerTpe)) {
+
           val response = new Response[List[Member]]
           askTypeCompletion(pos, response)
           val scope = getOrThrow(response)
 
-          getOrThrow(askForResponse {
-            () =>
-            // code based on [[scala.tools.nsc.interactive.Global#typeMembers]]
-              val applicableViews: List[analyzer.SearchResult] =
-                if (ownerTpe == null || ownerTpe.isErroneous) Nil
-                else new analyzer.ImplicitSearch(
-                  tree, definitions.functionType(List(ownerTpe), definitions.AnyClass.tpe), isView = true,
-                  context.makeImplicit(reportAmbiguousErrors = false), NoPosition).allImplicits
+          getOrThrow(askForResponse { () =>
 
-              val viewsMap: Map[Symbol, (Tree, Type)] = applicableViews.map {
-                searchResult =>
-                  val implicitTpe = analyzer.newTyper(context.makeImplicit(reportAmbiguousErrors = false))
-                    .typed(Apply(searchResult.tree, List(tree)) setPos tree.pos)
-                    .onTypeError(EmptyTree).tpe
+          // code based on [[scala.tools.nsc.interactive.Global#typeMembers]]
+            val applicableViews: List[analyzer.SearchResult] =
+              if (ownerTpe == null || ownerTpe.isErroneous) Nil
+              else new analyzer.ImplicitSearch(
+                tree, definitions.functionType(List(ownerTpe), definitions.AnyClass.tpe), isView = true,
+                context.makeImplicit(reportAmbiguousErrors = false), NoPosition).allImplicits
 
-                  (searchResult.tree.symbol, (searchResult.tree, implicitTpe))
-              }.toMap
+            val viewsMap: Map[Symbol, (Tree, Type)] = applicableViews.map {
+              searchResult =>
+                val implicitTpe = analyzer.newTyper(context.makeImplicit(reportAmbiguousErrors = false))
+                  .typed(Apply(searchResult.tree, List(tree)) setPos tree.pos)
+                  .onTypeError(EmptyTree).tpe
 
-              // validation of members from type completion
-              def accessFromTypeMember(member: TypeMember) =
-                if (!member.implicitlyAdded)
-                  extractAccess(Select(tree, member.sym))
-                else {
-                  val (implicitTree, implicitTpe) = viewsMap(member.viaView)
-                  extractAccess(Select(Apply(implicitTree, List(tree)).setSymbol(member.viaView).setType(implicitTpe), member.sym))
-                }
+                (searchResult.tree.symbol, (searchResult.tree, implicitTpe))
+            }.toMap
 
-              val members = scope.collect {
-                case member: TypeMember
-                  if member.sym.isTerm && !member.sym.isConstructor && !isAdapterWrappedMember(member.sym) =>
-                  member
-              } filter {
-                member =>
-                  symbolValidator.validateMemberAccess(vc)(accessFromTypeMember(member)).deniedAccesses.isEmpty
-              } map translateMember(vc)
+            def fakeIdentWithAttrsOf(tree: Tree) = {
+              val symbol = if(tree.symbol != null) tree.symbol else NoSymbol
+              val tpe = if(tree.tpe != null) tree.tpe else NoType
+              Ident(nme.EMPTY).setPos(tree.pos).setSymbol(symbol).setType(tpe)
+            }
 
-              Completion(members, errors)
+            // validation of members from type completion
+            def accessFromTypeMember(member: TypeMember) =
+              if (!member.implicitlyAdded)
+                extractAccess(Select(fakeIdentWithAttrsOf(tree), member.sym))
+              else {
+                val (implicitTree, implicitTpe) = viewsMap(member.viaView)
+                extractAccess(Select(Apply(implicitTree, List(fakeIdentWithAttrsOf(tree))).setSymbol(member.viaView).setType(implicitTpe), member.sym))
+              }
+
+            val members = scope.collect {
+              case member: TypeMember
+                if member.sym.isTerm && !member.sym.isConstructor && !isAdapterWrappedMember(member.sym) =>
+                member
+            } filter { member =>
+              symbolValidator.validateMemberAccess(vc)(accessFromTypeMember(member)).deniedAccesses.isEmpty
+            } map translateMember(vc)
+
+            Completion(members, errors)
           })
-        })
 
-        val deleteResponse = new Response[Unit]
-        askFilesDeleted(List(sourceFile), deleteResponse)
-        getOrThrow(deleteResponse)
+        } else Completion(Nil, errors)
 
-        result
+      })
+
+      val deleteResponse = new Response[Unit]
+      askFilesDeleted(List(sourceFile), deleteResponse)
+      getOrThrow(deleteResponse)
+
+      result
     }
   }
 
