@@ -1,7 +1,7 @@
-import com.avsystem.scex.ExpressionProfile
-import com.avsystem.scex.compiler.{DefaultScexCompiler, ScexCompilerConfig}
-import com.avsystem.scex.validation.SymbolValidator.MemberAccessSpec
-import com.avsystem.scex.validation.SyntaxValidator
+import com.avsystem.scex.compiler.ScexCompilerConfig
+import com.avsystem.scex.japi.XmlFriendlyJavaScexCompiler
+import com.avsystem.scex.validation.{SymbolValidator, SyntaxValidator}
+import com.avsystem.scex.{PredefinedAccessSpecs, ExpressionProfile}
 import java.{util => ju, lang => jl}
 
 /**
@@ -10,36 +10,19 @@ import java.{util => ju, lang => jl}
  */
 object ExistentialCase {
   def main(args: Array[String]) {
-    val compiler = new DefaultScexCompiler(new ScexCompilerConfig)
 
-    val symbolValidator = compiler.compileSymbolValidator(
-      """
-        |import com.avsystem.scex.validation.SymbolValidator._
-        |
-        |allow {
-        |  on { s: Set[_] =>
-        |    s.all.membersNamed.contains
-        |  }
-        |
-        |  on { b: Boolean => b.all.members }
-        |
-        |  scala.collection.immutable.Set.apply _
-        |}
-      """.stripMargin)
 
-    symbolValidator.accessSpecs foreach println
+    val compiler = new XmlFriendlyJavaScexCompiler(new ScexCompilerConfig)
 
-    val u = scala.reflect.runtime.universe
-    symbolValidator.accessSpecs.map {
-      case MemberAccessSpec(ti, _, _, _) => println(ti.typeIn(u))
-    }
-
+    val symbolValidator = SymbolValidator(PredefinedAccessSpecs.basicOperations)
     val syntaxValidator = SyntaxValidator.SimpleExpressions
 
     val profile = new ExpressionProfile(syntaxValidator, symbolValidator, "", "")
 
     val completion = compiler.getCompleter[SimpleContext[Unit], Unit](profile, template = false)
-      .getTypeCompletion("Set(50).contains(20)", 7)
+      .getTypeCompletion("#srsly.", 0)
+
+    completion.errors foreach println
 
     completion.members foreach println
   }

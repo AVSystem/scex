@@ -58,6 +58,9 @@ project("scex-core") {
 
         compile("com.google.guava:guava:14.0.1")
         compile("com.google.code.findbugs:jsr305:2.0.1")
+        compile("org.slf4j:slf4j-api:1.6.4")
+        compile("ch.qos.logback:logback-core:1.0.6")
+        compile("ch.qos.logback:logback-classic:1.0.6")
 
         testCompile("org.scalatest:scalatest_2.10:1.9.1")
     }

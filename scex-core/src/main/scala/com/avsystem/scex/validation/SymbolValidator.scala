@@ -3,13 +3,16 @@ package validation
 
 import SymbolValidator._
 import com.avsystem.scex.util.CommonUtils._
+import com.avsystem.scex.util.LoggingUtils
 import java.{util => ju, lang => jl}
 import scala.collection.immutable.{SortedSet, TreeSet}
 import scala.language.dynamics
 import scala.language.experimental.macros
 import scala.language.implicitConversions
 
-trait SymbolValidator {
+trait SymbolValidator extends LoggingUtils {
+  private val logger = createLogger[SymbolValidator]
+
   val accessSpecs: List[MemberAccessSpec]
 
   def combine(otherValidator: SymbolValidator) =
@@ -53,6 +56,8 @@ trait SymbolValidator {
 
     access match {
       case access@SimpleMemberAccess(tpe, symbol, implicitConv, allowedByDefault, position) =>
+        logger.trace(s"Validating access: $access")
+
         val signatures: List[String] =
           (symbol :: symbol.allOverriddenSymbols).map(memberSignature)
 
@@ -64,6 +69,9 @@ trait SymbolValidator {
               implicitConversionsMatch(implicitConv, accessSpec.implicitConv)
           }
         }
+
+        def specsRepr = matchingSpecs.map({ case (spec, idx) => s"$idx: $spec"}).mkString("\n")
+        logger.trace(s"Matching signatures:\n$specsRepr")
 
         // get 'allow' field from matching spec that appeared first in ACL or false if there was no matching spec
         val (allow, index) = if (matchingSpecs.nonEmpty) {
@@ -89,6 +97,9 @@ trait SymbolValidator {
           accesses.map(a => validateMemberAccess(vc)(a)).minBy(_.priority)
         else
           ValidationResult(lowestPriority(allowedByDefault = true), Nil)
+
+      case NoMemberAccess =>
+        ValidationResult(lowestPriority(allowedByDefault = true), Nil)
     }
   }
 }

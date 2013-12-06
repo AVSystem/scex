@@ -16,6 +16,8 @@ trait ScexPresentationCompiler extends ScexCompiler {
 
   import ScexPresentationCompiler.{Member => SMember, Param, Completion}
 
+  private val logger = createLogger[ScexPresentationCompiler]
+
   object lock
 
   private var reporter: Reporter = _
@@ -107,12 +109,16 @@ trait ScexPresentationCompiler extends ScexCompiler {
     }
 
     def getScopeCompletion(expression: String, position: Int): Completion = withGlobal { global =>
+
       import global.{sourceFile => _, position => _, _}
       val symbolValidator = profile.symbolValidator
 
       val exprDef = ExpressionDef(profile, template, setter, expression, header, rootObjectClass, contextType, resultType)
+
       val (code, offset) = expressionCode(exprDef, pkgName)
       val sourceFile = new BatchSourceFile(pkgName, code)
+      val pos = sourceFile.position(offset + position)
+      logger.debug(s"Computing scope completion for $exprDef at position $position\n${pos.lineContent}\n${" " * (pos.column - 1)}^")
 
       val treeResponse = new Response[Tree]
       askLoadedTyped(sourceFile, treeResponse)
@@ -129,7 +135,7 @@ trait ScexPresentationCompiler extends ScexCompiler {
       }
 
       val response = new Response[List[Member]]
-      askScopeCompletion(sourceFile.position(offset + position), response)
+      askScopeCompletion(pos, response)
       val scope = getOrThrow(response)
 
       val members = getOrThrow(askForResponse {
@@ -160,6 +166,8 @@ trait ScexPresentationCompiler extends ScexCompiler {
       val (code, offset) = expressionCode(exprDef, pkgName)
       val sourceFile = new BatchSourceFile(pkgName, code)
       val pos = sourceFile.position(offset + position)
+
+      logger.debug(s"Computing type completion for $exprDef at position $position\n${pos.lineContent}\n${" " * (pos.column - 1)}^")
 
       val treeResponse = new Response[Tree]
       askLoadedTyped(sourceFile, treeResponse)
@@ -200,6 +208,8 @@ trait ScexPresentationCompiler extends ScexCompiler {
             case MethodType(List(), rtpe) => rtpe
             case _ => tree.tpe
           }
+
+          logger.debug(s"Tree at this position is ${showRaw(tree)} with type ${ownerTpe.widen}")
 
           (tree, ownerTpe)
       })
@@ -251,8 +261,8 @@ trait ScexPresentationCompiler extends ScexCompiler {
             }.toMap
 
             def fakeIdentWithAttrsOf(tree: Tree) = {
-              val symbol = if(tree.symbol != null) tree.symbol else NoSymbol
-              val tpe = if(tree.tpe != null) tree.tpe else NoType
+              val symbol = if (tree.symbol != null) tree.symbol else NoSymbol
+              val tpe = if (tree.tpe != null) tree.tpe else NoType
               Ident(nme.EMPTY).setPos(tree.pos).setSymbol(symbol).setType(tpe)
             }
 

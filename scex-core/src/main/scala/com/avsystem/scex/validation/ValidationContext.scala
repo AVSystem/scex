@@ -20,6 +20,9 @@ abstract class ValidationContext protected extends MacroUtils {
     def repr: String = repr("")
 
     private def repr(prefix: String): String = this match {
+      case NoMemberAccess =>
+        ""
+
       case SimpleMemberAccess(tpe, symbol, implicitConv, allowedByDefault, _) =>
         val implicitConvRepr = implicitConv match {
           case Some(ImplicitConversion(tree, implicitTpe)) =>
@@ -27,7 +30,7 @@ abstract class ValidationContext protected extends MacroUtils {
           case None => ""
         }
 
-        s"$prefix|${memberSignature(symbol)}| on type |$tpe|$implicitConvRepr " +
+        s"$prefix|${memberSignature(symbol)}| on type |${tpe.widen}|$implicitConvRepr " +
           (if (allowedByDefault) "allowed" else "denied") + " by default"
 
       case MultipleMemberAccesses(accesses) =>
@@ -46,11 +49,13 @@ abstract class ValidationContext protected extends MacroUtils {
       s"implicit conversion ${path(tree)} to $tpe"
   }
 
+  case object NoMemberAccess extends MemberAccess
+
   case class SimpleMemberAccess(tpe: Type, symbol: Symbol, implicitConv: Option[ImplicitConversion],
     allowedByDefault: Boolean, pos: Position) extends MemberAccess {
 
     override def toString =
-      s"${memberSignature(symbol)} on type $tpe" + implicitConv.map(ic => s" by $ic").getOrElse("")
+      s"${memberSignature(symbol)} on type ${tpe.widen}" + implicitConv.map(ic => s" by $ic").getOrElse("")
   }
 
   // Multiple accesses, all must be allowed
@@ -71,7 +76,7 @@ abstract class ValidationContext protected extends MacroUtils {
   def extractAccess(tree: Tree, allowedSelectionPrefix: Boolean = false): MemberAccess = {
     tree match {
       case (_: Select | _: Ident) if tree.symbol.annotations.exists(_.tpe <:< notValidatedAnnotType) =>
-        MultipleMemberAccesses(Nil)
+        NoMemberAccess
 
       case Select(rootAdapter: Ident, _) if isRootAdapter(rootAdapter.symbol) && !isAdapterWrappedMember(tree.symbol) =>
         val symbol = getJavaGetter(tree.symbol, rootTpe)

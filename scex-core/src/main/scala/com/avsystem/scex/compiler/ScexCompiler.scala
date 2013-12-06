@@ -4,6 +4,7 @@ package compiler
 import com.avsystem.scex.compiler.CodeGeneration._
 import com.avsystem.scex.compiler.ScexCompiler._
 import com.avsystem.scex.util.CommonUtils._
+import com.avsystem.scex.util.LoggingUtils
 import com.avsystem.scex.validation.{SymbolValidator, SyntaxValidator}
 import com.avsystem.scex.{ExpressionProfile, ExpressionContext, Expression}
 import java.{util => ju, lang => jl}
@@ -17,9 +18,11 @@ import scala.tools.nsc.reporters.AbstractReporter
 import scala.tools.nsc.{Global, Settings}
 import scala.util.Try
 
-trait ScexCompiler extends PackageGenerator {
+trait ScexCompiler extends PackageGenerator with LoggingUtils {
 
   val config: ScexCompilerConfig
+
+  private val logger = createLogger[ScexCompiler]
 
   class Reporter(val settings: Settings) extends AbstractReporter {
     private val errorsBuilder = new ListBuffer[CompileError]
@@ -85,6 +88,7 @@ trait ScexCompiler extends PackageGenerator {
   private var compilationCount: Int = _
 
   private def init(): Unit = {
+    logger.info("Initializing Scala compiler")
     compilationCount = 0
     global = new Global(settings, reporter)
     persistentClassLoader = new ScexClassLoader(new VirtualDirectory("(scex_persistent)", None), getClass.getClassLoader)
@@ -166,6 +170,8 @@ trait ScexCompiler extends PackageGenerator {
 
     settings.outputDirs.setSingleOutput(classLoader.classfileDirectory)
     reporter.reset()
+
+    logger.debug(s"Compiling source file ${sourceFile.path}:\n${new String(sourceFile.content)}")
 
     // Every ClassLoader not registered as parallel-capable loads its classes while being locked on itself
     // (see sources of ClassLoader). ScexClassLoader loads classes from its virtual directory, which is not thread safe.

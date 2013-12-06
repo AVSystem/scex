@@ -2,7 +2,7 @@ package com.avsystem.scex
 package compiler
 
 import com.avsystem.scex.ExpressionProfile
-import com.avsystem.scex.util.{CommonUtils, MacroUtils, TypesafeEquals}
+import com.avsystem.scex.util.{LoggingUtils, CommonUtils, MacroUtils, TypesafeEquals}
 import com.avsystem.scex.validation.ValidationContext
 import java.{util => ju, lang => jl}
 import scala.language.experimental.macros
@@ -14,7 +14,9 @@ import scala.util.DynamicVariable
  * This must be a Scala object and not a class because it contains macros. Validation is performed against
  * given ExpressionProfile which is injected into this object by ScexCompiler by means of a dynamic variable.
  */
-object ExpressionMacroProcessor {
+object ExpressionMacroProcessor extends LoggingUtils {
+
+  private val logger = createLogger[ExpressionMacroProcessor.type]
 
   val profileVar: DynamicVariable[ExpressionProfile] = new DynamicVariable(null)
 
@@ -42,6 +44,8 @@ object ExpressionMacroProcessor {
     }
 
     val access = extractAccess(expr.tree)
+    logger.trace(s"Validating expression member access:\n${access.repr}")
+
     val validationResult = profile.symbolValidator.validateMemberAccess(validationContext)(access)
 
     validationResult.deniedAccesses.foreach { access =>
