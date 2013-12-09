@@ -173,6 +173,8 @@ trait ScexCompiler extends PackageGenerator with LoggingUtils {
 
     logger.debug(s"Compiling source file ${sourceFile.path}:\n${new String(sourceFile.content)}")
 
+    val startTime = System.nanoTime
+
     // Every ClassLoader not registered as parallel-capable loads its classes while being locked on itself
     // (see sources of ClassLoader). ScexClassLoader loads classes from its virtual directory, which is not thread safe.
     // Compiler writes classes to this virtual directory, so synchronization over classLoader is needed during compilation.
@@ -183,6 +185,9 @@ trait ScexCompiler extends PackageGenerator with LoggingUtils {
       val run = new global.Run
       run.compileSources(List(sourceFile))
     }
+
+    val duration = System.nanoTime - startTime
+    logger.debug(s"Compilation took ${duration / 1000000}ms")
 
     reporter.compileErrors()
   }
