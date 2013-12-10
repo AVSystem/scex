@@ -4,6 +4,7 @@ import com.avsystem.scex.PredefinedAccessSpecs
 import java.{util => ju, lang => jl}
 import org.scalatest.FunSuite
 import scala.reflect.runtime.universe.TypeTag
+import com.avsystem.scex.util.SimpleContext
 
 class SetterTarget {
   var costam = 0

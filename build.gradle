@@ -9,7 +9,7 @@ allprojects {
     apply plugin: 'idea'
 
     group = "com.avsystem"
-    version = '1.3.4'
+    version = '1.4'
 
     repositories {
         mavenCentral()
@@ -87,6 +87,9 @@ project("scex-test") {
 
         compile(project(":scex-core"))
         compile(project(":scex-derived"))
+        compile("com.vaadin:vaadin:6.8.13")
+        compile("org.eclipse.jetty:jetty-server:9.1.0.v20131115")
+        compile("org.eclipse.jetty:jetty-servlet:9.1.0.v20131115")
 
         testCompile("junit:junit:4.11")
         testCompile("org.scalatest:scalatest_2.10:1.9.1")

@@ -9,6 +9,7 @@ import org.junit.runner.RunWith
 import org.scalatest.FunSuite
 import org.scalatest.junit.JUnitRunner
 import scala.reflect.runtime.universe.TypeTag
+import com.avsystem.scex.util.SimpleContext
 
 /**
  * Created: 20-11-2013

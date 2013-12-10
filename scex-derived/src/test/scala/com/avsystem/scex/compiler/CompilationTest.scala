@@ -8,6 +8,7 @@ import com.avsystem.scex.validation.{SymbolValidator, SyntaxValidator}
 import com.avsystem.scex.{PredefinedAccessSpecs, ExpressionProfile}
 import java.{util => ju, lang => jl}
 import scala.reflect.runtime.universe.TypeTag
+import com.avsystem.scex.util.SimpleContext
 
 /**
  * Created: 18-11-2013

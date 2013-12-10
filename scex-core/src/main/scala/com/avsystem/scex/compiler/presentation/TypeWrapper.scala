@@ -16,6 +16,9 @@ class TypeWrapper private(universeWithTpe: (u.type, u.Type) forSome {val u: Univ
     val b = new ListBuffer[Symbol]
 
     def symbolsIn(tpe: Type): Unit = tpe match {
+      case SingleType(pre, sym) =>
+        b += sym
+        symbolsIn(pre)
       case TypeRef(pre, sym, args) =>
         b += sym
         symbolsIn(pre)

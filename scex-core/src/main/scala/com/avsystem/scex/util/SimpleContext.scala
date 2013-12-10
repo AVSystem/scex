@@ -1,5 +1,4 @@
-package com.avsystem.scex
-package compiler
+package com.avsystem.scex.util
 
 import com.avsystem.scex.ExpressionContext
 import java.{util => ju, lang => jl}

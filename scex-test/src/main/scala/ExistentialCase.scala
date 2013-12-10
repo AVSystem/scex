@@ -19,8 +19,8 @@ object ExistentialCase {
 
     val profile = new ExpressionProfile(syntaxValidator, symbolValidator, "", "")
 
-    val completion = compiler.getCompleter[SimpleContext[Unit], Unit](profile, template = false)
-      .getTypeCompletion("#srsly.", 0)
+    val completion = compiler.getCompleter[SimpleContext[Unit], Int](profile, template = true)
+      .getTypeCompletion("${'dafuq'.toInt}", 14)
 
     completion.errors foreach println
 

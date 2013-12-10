@@ -1,7 +1,7 @@
 package com.avsystem.scex
 package compiler.xmlfriendly
 
-import com.avsystem.scex.compiler.{SimpleContext, ScexCompilerConfig}
+import com.avsystem.scex.compiler.{ScexCompilerConfig}
 import com.avsystem.scex.japi.XmlFriendlyJavaScexCompiler
 import com.avsystem.scex.validation.SymbolValidator._
 import com.avsystem.scex.validation.{SymbolValidator, SyntaxValidator}
@@ -10,6 +10,7 @@ import java.{util => ju, lang => jl}
 import org.junit.runner.RunWith
 import org.scalatest.FunSuite
 import org.scalatest.junit.JUnitRunner
+import com.avsystem.scex.util.SimpleContext
 
 /**
  * Created: 17-09-2013

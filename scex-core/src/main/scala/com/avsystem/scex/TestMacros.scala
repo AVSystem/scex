@@ -1,9 +1,9 @@
 package com.avsystem.scex
 
 import java.{util => ju, lang => jl}
-import reflect.api.TypeCreator
 import reflect.macros.Context
 import scala.language.experimental.macros
+import scala.reflect.api.{TreeCreator, TypeCreator}
 
 object TestMacros {
   def lol[T]: TypeCreator = macro impl[T]
@@ -17,13 +17,16 @@ object TestMacros {
     c.Expr[TypeCreator](typeCreatorTree)
   }
 
-  def gimme[T](expr: T) = macro gimme_impl[T]
+  def gimme[T](expr: T): (TreeCreator, TypeCreator) = macro gimme_impl[T]
 
-  def gimme_impl[T](c: Context)(expr: c.Expr[T]) = {
-    val result = expr.tree.collect {
-      case tree if tree.symbol != null && tree.symbol != c.universe.NoSymbol => tree.symbol
-    }.map(s => s"$s - ${s.fullName} ${s.asTerm.isStable}").mkString("\n")
+  def gimme_impl[T](c: Context)(expr: c.Expr[T]): c.Expr[(TreeCreator, TypeCreator)] = {
+    import c.universe._
 
-    c.literal(result)
+    val reifiedTree = c.reifyTree(treeBuild.mkRuntimeUniverseRef, EmptyTree, expr.tree)
+    val Block(List(_, _), Apply(Apply(_, List(_, treeCreatorTree)), List(Apply(_, List(_, typeCreatorTree))))) = reifiedTree
+
+    reify {
+      (c.Expr[TreeCreator](treeCreatorTree).splice, c.Expr[TypeCreator](typeCreatorTree).splice)
+    }
   }
 }

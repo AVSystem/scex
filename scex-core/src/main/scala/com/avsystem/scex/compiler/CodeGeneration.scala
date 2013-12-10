@@ -60,7 +60,7 @@ object CodeGeneration {
     val scalaGetters = javaGetters.collect {
       case method@JavaGetter(propName, booleanIsGetter) if Modifier.isPublic(method.getModifiers) =>
         val annot = if (booleanIsGetter) s"@$AnnotationPkg.BooleanIsGetter\n" else ""
-        s"${annot}def `$propName` = wrapped.${method.getName}\n"
+        s"${annot}def `$propName` = _wrapped.${method.getName}\n"
     }
 
     if (full || scalaGetters.nonEmpty) {
@@ -76,7 +76,7 @@ object CodeGeneration {
         s"""
         |@$AnnotationPkg.JavaGetterAdapter
         |class $adapterWithGenerics
-        |  (@$AnnotationPkg.WrappedInAdapter val wrapped: $wrappedTpe) extends AnyVal {
+        |  (@$AnnotationPkg.WrappedInAdapter val _wrapped: $wrappedTpe) extends AnyVal {
         |
         |$classBody
         |}
@@ -138,7 +138,7 @@ object CodeGeneration {
 
     val postfix = interpolationPostfix +
       s"""
-        |    })))
+        |     })))
         |    _result
         |  }
         |}

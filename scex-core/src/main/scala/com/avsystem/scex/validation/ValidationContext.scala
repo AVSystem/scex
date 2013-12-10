@@ -101,7 +101,7 @@ abstract class ValidationContext protected extends MacroUtils {
 
         MultipleMemberAccesses(List(AlternativeMemberAccess(alternatives), extractAccess(qualifier)))
 
-      case Select(apply@ImplicitlyConverted(qualifier, fun), _) if isAdapter(apply.tpe) =>
+      case Select(apply@ImplicitlyConverted(qualifier, fun), _) if isAdapter(apply.tpe) && !isAdapterWrappedMember(tree.symbol) =>
         val symbol = getJavaGetter(tree.symbol, qualifier.tpe)
         val access = SimpleMemberAccess(qualifier.tpe, symbol, None, allowedByDefault = false, tree.pos)
 

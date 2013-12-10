@@ -3,9 +3,9 @@ package util
 
 import com.avsystem.scex.compiler.annotation._
 import com.avsystem.scex.util.CommonUtils._
+import com.avsystem.scex.validation.FakeImplicitConversion
 import java.{util => ju, lang => jl}
 import scala.Some
-import scala.reflect.internal.Flags
 import scala.reflect.macros.Universe
 import scala.runtime.StringAdd
 
@@ -95,7 +95,15 @@ trait MacroUtils {
     case _ => tpe
   }
 
+  private object FakeImplicitConversionTree {
+    def unapply(tree: Tree) = tree.attachments.get[FakeImplicitConversion] match {
+      case Some(FakeImplicitConversion(fakePath)) => Some(fakePath)
+      case None => None
+    }
+  }
+
   def path(tree: Tree): String = tree match {
+    case FakeImplicitConversionTree(fakePath) => fakePath
     case Select(prefix, name) => s"${path(prefix)}.${name.decoded}"
     case Ident(name) => name.decoded
     case This(name) => name.decoded
@@ -116,6 +124,7 @@ trait MacroUtils {
   }
 
   def isGlobalImplicitConversion(tree: Tree): Boolean = tree match {
+    case FakeImplicitConversionTree(_) => true
     case TypeApply(prefix, _) => isGlobalImplicitConversion(prefix)
     //TODO handle apply method on implicit function values
     case Select(prefix, name) =>
@@ -267,8 +276,15 @@ trait MacroUtils {
     val prefix = if (isBooleanGetterAdapter(symbol)) "is" else "get"
     val name = prefix + symbol.name.toString.capitalize
 
-    def fail = throw new Error(s"Could not find Java getter $name on $javaTpe")
+    def fail = throw new Exception(s"Could not find Java getter $name on $javaTpe")
     alternatives(javaTpe.member(newTermName(name))).find(isBeanGetter).getOrElse(fail)
+  }
+
+  def memberBySignature(tpe: Type, signature: String): Symbol = {
+    val name = newTermName(signature.split(':')(0).split('.').last)
+    alternatives(tpe.member(name)).find { m =>
+      (memberSignature(m) :: m.allOverriddenSymbols.map(memberSignature)).contains(signature)
+    }.getOrElse(NoSymbol)
   }
 
 }

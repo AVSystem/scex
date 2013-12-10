@@ -9,7 +9,8 @@ import scala.reflect.internal.util.{SourceFile, BatchSourceFile}
 import scala.reflect.runtime.universe.TypeTag
 import scala.tools.nsc.interactive.{Global => IGlobal}
 import util.CommonUtils._
-import validation.ValidationContext
+import com.avsystem.scex.validation.{FakeImplicitConversion, ValidationContext}
+import com.avsystem.scex.validation.SymbolValidator.MemberAccessSpec
 
 trait ScexPresentationCompiler extends ScexCompiler {
   compiler =>
@@ -18,15 +19,22 @@ trait ScexPresentationCompiler extends ScexCompiler {
 
   private val logger = createLogger[ScexPresentationCompiler]
 
-  object lock
+  private object lock
+
+  private def underLock[T](code: => T) = {
+    lock.synchronized {
+      code
+    }
+  }
 
   private var reporter: Reporter = _
   private var global: IGlobal = _
 
   private val typeCompletionCache =
-    CacheBuilder.newBuilder.weakKeys.build[TypeWrapper, Completion]
+    CacheBuilder.newBuilder.maximumSize(100).build[(Completer, TypeWrapper), List[SMember]]
 
   private def init(): Unit = {
+    logger.info("Initializing Scala presentation compiler")
     reporter = new Reporter(settings)
     global = new IGlobal(settings, reporter)
   }
@@ -49,6 +57,10 @@ trait ScexPresentationCompiler extends ScexCompiler {
     def getTypeCompletion(expression: String, position: Int): Completion
   }
 
+  private def inCompilerThread[T](code: => T) = {
+    getOrThrow(global.askForResponse(() => code))
+  }
+
   private class CompleterImpl(
     profile: ExpressionProfile,
     template: Boolean,
@@ -65,11 +77,15 @@ trait ScexPresentationCompiler extends ScexCompiler {
 
     val pkgName = newInteractiveExpressionPackage()
 
-    private def withGlobal[T](code: IGlobal => T) = lock.synchronized {
+    private def withGlobal[T](code: IGlobal => T) = underLock {
       val global = compiler.global
-      getOrThrow(global.askForResponse(() => ExpressionMacroProcessor.profileVar.value = profile))
+      inCompilerThread {
+        ExpressionMacroProcessor.profileVar.value = profile
+      }
       val result = code(global)
-      getOrThrow(global.askForResponse(() => ExpressionMacroProcessor.profileVar.value = null))
+      inCompilerThread {
+        ExpressionMacroProcessor.profileVar.value = null
+      }
       reporter.reset()
       result
     }
@@ -77,12 +93,11 @@ trait ScexPresentationCompiler extends ScexCompiler {
     private def getContextTpe(global: IGlobal)(tree: global.Tree): global.Type = {
       import global._
 
-      getOrThrow(askForResponse {
-        () =>
-          val PackageDef(_, List(ClassDef(_, _, _, Template(List(_, expressionParent, _), _, _)))) = tree
-          val TypeRef(_, _, List(contextTpe, _)) = expressionParent.tpe
-          contextTpe
-      })
+      inCompilerThread {
+        val PackageDef(_, List(ClassDef(_, _, _, Template(List(_, expressionParent, _), _, _)))) = tree
+        val TypeRef(_, _, List(contextTpe, _)) = expressionParent.tpe
+        contextTpe
+      }
     }
 
     private def translateMember(vc: ValidationContext {val universe: IGlobal})(member: vc.universe.Member) = {
@@ -98,14 +113,13 @@ trait ScexPresentationCompiler extends ScexCompiler {
         member.sym.isImplicit)
     }
 
-    def getErrors(expression: String) = withGlobal {
-      global =>
-        val exprDef = ExpressionDef(profile, template, setter, expression, header, rootObjectClass, contextType, resultType)
-        val (code, _) = expressionCode(exprDef, pkgName)
-        val response = new global.Response[global.Tree]
-        global.askLoadedTyped(new BatchSourceFile(pkgName, code), response)
-        getOrThrow(response)
-        reporter.compileErrors()
+    def getErrors(expression: String) = withGlobal { global =>
+      val exprDef = ExpressionDef(profile, template, setter, expression, header, rootObjectClass, contextType, resultType)
+      val (code, _) = expressionCode(exprDef, pkgName)
+      val response = new global.Response[global.Tree]
+      global.askLoadedTyped(new BatchSourceFile(pkgName, code), response)
+      getOrThrow(response)
+      reporter.compileErrors()
     }
 
     def getScopeCompletion(expression: String, position: Int): Completion = withGlobal { global =>
@@ -138,18 +152,17 @@ trait ScexPresentationCompiler extends ScexCompiler {
       askScopeCompletion(pos, response)
       val scope = getOrThrow(response)
 
-      val members = getOrThrow(askForResponse {
-        () =>
-          scope.collect {
-            case member@ScopeMember(sym, _, _, viaImport)
-              if viaImport != EmptyTree && sym.isTerm && !sym.isPackage &&
-                (!isScexSynthetic(sym) || (isExpressionUtil(sym) && !isExpressionUtilObject(sym))) =>
-              member
-          } filter {
-            m =>
-              symbolValidator.validateMemberAccess(vc)(accessFromScopeMember(m)).deniedAccesses.isEmpty
-          } map translateMember(vc)
-      })
+      val members = inCompilerThread {
+        scope.collect {
+          case member@ScopeMember(sym, _, _, viaImport)
+            if viaImport != EmptyTree && sym.isTerm && !sym.isPackage &&
+              (!isScexSynthetic(sym) || (isExpressionUtil(sym) && !isExpressionUtilObject(sym))) =>
+            member
+        } filter {
+          m =>
+            symbolValidator.validateMemberAccess(vc)(accessFromScopeMember(m)).deniedAccesses.isEmpty
+        } map translateMember(vc)
+      }
 
       val deleteResponse = new Response[Unit]
       askFilesDeleted(List(sourceFile), deleteResponse)
@@ -165,7 +178,9 @@ trait ScexPresentationCompiler extends ScexCompiler {
       val exprDef = ExpressionDef(profile, template, setter, expression, header, rootObjectClass, contextType, resultType)
       val (code, offset) = expressionCode(exprDef, pkgName)
       val sourceFile = new BatchSourceFile(pkgName, code)
-      val pos = sourceFile.position(offset + position)
+
+      val actualPosition = offset + position
+      val pos = global.rangePos(sourceFile, actualPosition, actualPosition, actualPosition)
 
       logger.debug(s"Computing type completion for $exprDef at position $position\n${pos.lineContent}\n${" " * (pos.column - 1)}^")
 
@@ -181,40 +196,23 @@ trait ScexPresentationCompiler extends ScexCompiler {
       askTypeAt(pos, typedTreeResponse)
       val typedTree = getOrThrow(typedTreeResponse)
 
-      // Hack: implicit conversions (conversion tree and implicit type) must be obtained manually from the
-      // compiler because TypeMember contains only the implicit conversion symbol.
-      // Code fragments from [[scala.tools.nsc.interactive.Global#typeMembers]] are used here.
+      //various finetunings of how the presentation compiler works
 
-      val context = doLocateContext(pos)
-
-      // this code is taken from [[scala.tools.nsc.interactive.Global#typeMembers]]
-      val (tree, ownerTpe) = getOrThrow(askForResponse {
-        () =>
-          var tree = typedTree
-
-          tree match {
-            case Select(qual, name) if tree.tpe == ErrorType => tree = qual
-            case _ =>
-          }
-
-          if (tree.tpe == null)
-            tree = analyzer.newTyper(context).typedQualifier(tree)
-
-          val pre = stabilizedType(tree)
-
-          val ownerTpe = tree.tpe match {
-            case analyzer.ImportType(expr) => expr.tpe
-            case null => pre
-            case MethodType(List(), rtpe) => rtpe
+      def normalizedTreeType(tree: Tree): Type = tree match {
+        case _ if tree.symbol != null && tree.symbol.isPackage =>
+          tree.tpe.member(nme.PACKAGE) match {
+            case sym: TermSymbol => normalizeType(tree.tpe.memberType(sym))
             case _ => tree.tpe
           }
+        case ValDef(_, _, _, rhs) => normalizedTreeType(rhs)
+        case Select(prefix, nme.ERROR) => normalizedTreeType(prefix)
+        case Select(prefix, name: TermName) if (tree.tpe == NoType || tree.tpe == ErrorType) && prefix.tpe <:< typeOf[Dynamic] =>
+          normalizeType(prefix.tpe.memberType(prefix.tpe.member(newTermName("selectDynamic"))))
+        case _ => normalizeType(tree.tpe)
+      }
 
-          logger.debug(s"Tree at this position is ${showRaw(tree)} with type ${ownerTpe.widen}")
-
-          (tree, ownerTpe)
-      })
-
-      def isValueType(tpe: Type): Boolean = tpe match {
+      def normalizeType(tpe: Type): Type = tpe match {
+        case null => NoType
         case TypeRef(_, _, _) |
              ConstantType(_) |
              SingleType(_, _) |
@@ -224,77 +222,67 @@ trait ScexPresentationCompiler extends ScexCompiler {
              SuperType(_, _) |
              WildcardType |
              BoundedWildcardType(_) =>
-          true
+          tpe
         case MethodType(_, resultTpe) =>
-          isValueType(resultTpe)
+          normalizeType(resultTpe)
         case NullaryMethodType(resultTpe) =>
-          isValueType(resultTpe)
+          normalizeType(resultTpe)
         case AnnotatedType(_, underlying, _) =>
-          isValueType(underlying)
+          normalizeType(underlying)
         case _ =>
-          false
+          NoType
       }
 
-      val result = typeCompletionCache.get(TypeWrapper(global)(ownerTpe), callable {
-        if (isValueType(ownerTpe)) {
+      val members = inCompilerThread {
+        val tpe = normalizedTreeType(typedTree)
+        val cacheKey = (this, TypeWrapper(global)(tpe))
 
-          val response = new Response[List[Member]]
-          askTypeCompletion(pos, response)
-          val scope = getOrThrow(response)
+        logger.debug(s"Type is $tpe on tree ${showRaw(typedTree)}")
 
-          getOrThrow(askForResponse { () =>
+        typeCompletionCache.get(cacheKey, callable {
 
-          // code based on [[scala.tools.nsc.interactive.Global#typeMembers]]
-            val applicableViews: List[analyzer.SearchResult] =
-              if (ownerTpe == null || ownerTpe.isErroneous) Nil
-              else new analyzer.ImplicitSearch(
-                tree, definitions.functionType(List(ownerTpe), definitions.AnyClass.tpe), isView = true,
-                context.makeImplicit(reportAmbiguousErrors = false), NoPosition).allImplicits
+          // type completion is generated based on members allowed in SymbolValidator ACL
+          symbolValidator.accessSpecs.flatMap {
+            case MemberAccessSpec(typeInfo, signature, implicitConv, true) if tpe <:< typeInfo.typeIn(global) =>
+              val treeSymbol = if (typedTree.symbol != null) typedTree.symbol else NoSymbol
+              val barePrefix = Ident(nme.EMPTY).setType(tpe).setSymbol(treeSymbol).setPos(typedTree.pos)
 
-            val viewsMap: Map[Symbol, (Tree, Type)] = applicableViews.map {
-              searchResult =>
-                val implicitTpe = analyzer.newTyper(context.makeImplicit(reportAmbiguousErrors = false))
-                  .typed(Apply(searchResult.tree, List(tree)) setPos tree.pos)
-                  .onTypeError(EmptyTree).tpe
+              /* Implicit conversion handling here is a hack, we don't have full information to perform
+              full validation and compute exact return type for a member available by implicit view.
+              In fact, we don't even know if an appriopriate implicit conversion is in scope.
+              We don't want to use 'askTypeCompletion' because of previously observed ridiculously
+              nondeterministic behaviour of the presentation compiler when doing so */
 
-                (searchResult.tree.symbol, (searchResult.tree, implicitTpe))
-            }.toMap
-
-            def fakeIdentWithAttrsOf(tree: Tree) = {
-              val symbol = if (tree.symbol != null) tree.symbol else NoSymbol
-              val tpe = if (tree.tpe != null) tree.tpe else NoType
-              Ident(nme.EMPTY).setPos(tree.pos).setSymbol(symbol).setType(tpe)
-            }
-
-            // validation of members from type completion
-            def accessFromTypeMember(member: TypeMember) =
-              if (!member.implicitlyAdded)
-                extractAccess(Select(fakeIdentWithAttrsOf(tree), member.sym))
-              else {
-                val (implicitTree, implicitTpe) = viewsMap(member.viaView)
-                extractAccess(Select(Apply(implicitTree, List(fakeIdentWithAttrsOf(tree))).setSymbol(member.viaView).setType(implicitTpe), member.sym))
+              val prefix = implicitConv match {
+                case Some((implicitPath, implicitTypeInfo)) =>
+                  val fakeConversion = Ident(nme.EMPTY).updateAttachment(FakeImplicitConversion(implicitPath))
+                  Apply(fakeConversion, List(barePrefix)).setType(implicitTypeInfo.typeIn(global))
+                case None => barePrefix
               }
 
-            val members = scope.collect {
-              case member: TypeMember
-                if member.sym.isTerm && !member.sym.isConstructor && !isAdapterWrappedMember(member.sym) =>
-                member
-            } filter { member =>
-              symbolValidator.validateMemberAccess(vc)(accessFromTypeMember(member)).deniedAccesses.isEmpty
-            } map translateMember(vc)
+              val symbol = memberBySignature(prefix.tpe, signature)
+              if (symbol != NoSymbol && !symbol.isConstructor) {
+                val memberTpe = prefix.tpe.memberType(symbol)
+                val accessTree = Select(prefix, symbol.name).setSymbol(symbol).setType(memberTpe)
 
-            Completion(members, errors)
-          })
+                val allowed = symbolValidator.validateMemberAccess(vc)(extractAccess(accessTree)).deniedAccesses.isEmpty
+                if (allowed)
+                  Some(translateMember(vc)(TypeMember(symbol, memberTpe, accessible = true, inherited = false, NoSymbol)))
+                else None
 
-        } else Completion(Nil, errors)
+              } else None
 
-      })
+            case _ => None
+          }
+        })
+
+      }
 
       val deleteResponse = new Response[Unit]
       askFilesDeleted(List(sourceFile), deleteResponse)
       getOrThrow(deleteResponse)
 
-      result
+      Completion(members, errors)
     }
   }
 
@@ -331,7 +319,7 @@ trait ScexPresentationCompiler extends ScexCompiler {
     val result = super.compile(sourceFile, classLoader, usedInExpressions)
 
     if (result.isEmpty && usedInExpressions) {
-      lock.synchronized {
+      underLock {
         val global = this.global
         val response = new global.Response[global.Tree]
         global.askLoadedTyped(sourceFile, response)
@@ -343,7 +331,7 @@ trait ScexPresentationCompiler extends ScexCompiler {
   }
 
   override def reset() {
-    lock.synchronized {
+    underLock {
       synchronized {
         super.reset()
         typeCompletionCache.invalidateAll()
