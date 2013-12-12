@@ -33,12 +33,17 @@ object CompletionPlayground {
       import SymbolValidator._
       val acl = PredefinedAccessSpecs.basicOperations ++ allow {
         Dyn.selectDynamic _
+
+        on { r: Root =>
+          r.all.members
+          r.dyn
+        }
       }
 
       val profile = new ExpressionProfile(SyntaxValidator.SimpleExpressions, SymbolValidator(acl),
         "import com.avsystem.scex.util.TypesafeEquals._", "")
 
-      val completer = compiler.getCompleter[SimpleContext[Unit], Int](profile, template = true)
+      val completer = compiler.getCompleter[SimpleContext[Root], String](profile, template = false)
 
       val textField = new TextField
       textField.setWidth("100%")
@@ -51,7 +56,7 @@ object CompletionPlayground {
 
       textField.addListener(new TextChangeListener {
         def textChange(event: TextChangeEvent): Unit = {
-          val completion = completer.getTypeCompletion(event.getText, event.getCursorPosition - 1)
+          val completion = completer.getTypeCompletion(event.getText, event.getCursorPosition)
           val errors = completion.errors.mkString("<br/>")
           val members = completion.members.map(memberRepr).mkString("<br/>")
           label.setValue(s"ERRORS:<br/>$errors<br/>COMPLETION:<br/>$members")

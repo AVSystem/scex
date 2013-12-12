@@ -144,7 +144,7 @@ trait ScexCompiler extends PackageGenerator with LoggingUtils {
     Try(result)
   }
 
-  protected def expressionCode(exprDef: ExpressionDef, pkgName: String): (String, Int) = {
+  protected def expressionCode(exprDef: ExpressionDef, pkgName: String, noMacroProcessing: Boolean = false): (String, Int) = {
     val profile = exprDef.profile
     val rootObjectClass = exprDef.rootObjectClass
 
@@ -157,7 +157,7 @@ trait ScexCompiler extends PackageGenerator with LoggingUtils {
 
     val profileObjectPkg = compileProfileObject(profile).get
     val (expressionCode, offset) =
-      generateExpressionClass(exprDef, fullAdapterClassNameOpt, profileObjectPkg)
+      generateExpressionClass(exprDef, fullAdapterClassNameOpt, profileObjectPkg, noMacroProcessing)
 
     wrapInSource(expressionCode, offset, pkgName)
   }

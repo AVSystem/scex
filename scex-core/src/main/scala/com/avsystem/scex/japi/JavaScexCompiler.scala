@@ -119,8 +119,8 @@ trait JavaScexCompiler extends ScexCompiler {
     def getErrors(expression: String) =
       wrapped.getErrors(expression).asJavaCollection
 
-    def getScopeCompletion(expression: String, position: Int) =
-      completionToJava(wrapped.getScopeCompletion(expression, position))
+    def getScopeCompletion =
+      completionToJava(wrapped.getScopeCompletion)
 
     def getTypeCompletion(expression: String, position: Int) =
       completionToJava(wrapped.getTypeCompletion(expression, position))

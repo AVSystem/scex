@@ -1,6 +1,5 @@
 package com.avsystem.scex
 
-import com.avsystem.scex.compiler.annotation.BooleanIsGetter
 import com.avsystem.scex.util.{Literal => ScexLiteral, MacroUtils}
 import java.{util => ju, lang => jl}
 import scala.annotation.tailrec
@@ -12,28 +11,6 @@ import scala.util.control.NonFatal
  * Author: ghik
  */
 object Macros {
-  def javaGetter_impl[T: c.WeakTypeTag](c: Context): c.Expr[T] = {
-    val macroUtils = MacroUtils(c.universe)
-
-    import c.universe._
-    import macroUtils._
-
-    val booleanIsGetter = c.macroApplication.symbol.annotations.exists(_.tpe <:< typeOf[BooleanIsGetter])
-    def javaGetter(propertyName: String) =
-      (if (booleanIsGetter) "is" else "get") + propertyName.capitalize
-
-    c.macroApplication match {
-      case Select(ImplicitlyConverted(prefix, _), TermName(propertyName)) =>
-        c.Expr[T](Select(prefix, newTermName(javaGetter(propertyName))))
-
-      case Select(prefix@Ident(_), TermName(propertyName))
-        if prefix.symbol.annotations.exists(_.tpe <:< rootAdapterAnnotType) =>
-
-        c.Expr[T](Select(Select(prefix, newTermName("wrapped")), newTermName(javaGetter(propertyName))))
-    }
-
-  }
-
   def templateInterpolation_impl[T: c.WeakTypeTag](c: Context)(args: c.Expr[Any]*): c.Expr[T] = {
     import c.universe._
 
@@ -95,7 +72,18 @@ object Macros {
       c.Expr[T](Apply(Select(Ident(enumModuleSymbol), newTermName("valueOf")), List(args.head.tree)))
 
     } else if (args.size == 1 && parts.forall(isBlankStringLiteral)) {
-      c.Expr[T](args.head.tree)
+      val soleTree = args.head.tree
+      lazy val implicitConv = c.inferImplicitView(soleTree, soleTree.tpe, resultType)
+
+      // typecheck result manually
+      if (soleTree.tpe <:< resultType) {
+        c.Expr[T](soleTree)
+      } else if (implicitConv != EmptyTree) {
+        c.Expr[T](Apply(implicitConv, List(soleTree)))
+      } else {
+        c.error(soleTree.pos, s"This template (type ${soleTree.tpe.widen}) cannot represent value of type $resultType")
+        null
+      }
 
     } else if (args.size == 0) {
       val Literal(Constant(literalString: String)) = parts.head

@@ -107,9 +107,7 @@ object ExpressionMacroProcessor extends LoggingUtils {
       case Select(prefix@Ident(_), TermName(propertyName)) if prefix.symbol.annotations.exists(_.tpe <:< rootAdapterAnnotType) =>
         reifySetterFunction(Select(Ident(newTermName(CodeGeneration.RootSymbol)), newTermName("set" + propertyName.capitalize)))
 
-      case Select(ImplicitlyConverted(prefix, fun), TermName(propertyName))
-        if fun.symbol.annotations.exists(_.tpe <:< adapterConversionAnnotType) =>
-
+      case Select(ImplicitlyConverted(prefix, fun), TermName(propertyName)) if isAdapterConversion(fun.symbol) =>
         reifySetterFunction(Select(prefix, newTermName("set" + propertyName.capitalize)))
 
       case Select(prefix, TermName(getterName)) if tree.symbol.isMethod =>

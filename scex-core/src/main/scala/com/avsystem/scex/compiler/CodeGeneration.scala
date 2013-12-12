@@ -41,6 +41,7 @@ object CodeGeneration {
   val RootSymbol = "_root"
   val CompilerPkg = "com.avsystem.scex.compiler"
   val AnnotationPkg = s"$CompilerPkg.annotation"
+  val MarkersObj = s"$CompilerPkg.Markers"
   val MacroProcessor = s"$CompilerPkg.ExpressionMacroProcessor"
   val InterpolationOpen = "t\"\"\""
   val InterpolationClose = "\"\"\""
@@ -59,8 +60,7 @@ object CodeGeneration {
 
     val scalaGetters = javaGetters.collect {
       case method@JavaGetter(propName, booleanIsGetter) if Modifier.isPublic(method.getModifiers) =>
-        val annot = if (booleanIsGetter) s"@$AnnotationPkg.BooleanIsGetter\n" else ""
-        s"${annot}def `$propName` = _wrapped.${method.getName}\n"
+        s"def `$propName` = _wrapped.${method.getName}\n"
     }
 
     if (full || scalaGetters.nonEmpty) {
@@ -74,9 +74,8 @@ object CodeGeneration {
 
       val result =
         s"""
-        |@$AnnotationPkg.JavaGetterAdapter
-        |class $adapterWithGenerics
-        |  (@$AnnotationPkg.WrappedInAdapter val _wrapped: $wrappedTpe) extends AnyVal {
+        |class $adapterWithGenerics(val _wrapped: $wrappedTpe)
+        |  extends AnyVal with $MarkersObj.JavaGetterAdapter {
         |
         |$classBody
         |}
@@ -91,7 +90,8 @@ object CodeGeneration {
   def generateExpressionClass(
     exprDef: ExpressionDef,
     fullAdapterClassNameOpt: Option[String],
-    profileObjectPkg: String) = {
+    profileObjectPkg: String,
+    noMacroProcessing: Boolean) = {
 
     val ExpressionDef(profile, template, setter, expression, header, _, contextType, resultType) = exprDef
 
@@ -115,13 +115,22 @@ object CodeGeneration {
     val interpolationPostfix = if (template) InterpolationClose else ""
     val setterConversion = if(setter) s"$MacroProcessor.asSetter" else ""
 
+    val processingPrefix = if(noMacroProcessing) "" else
+      s"""
+        |      $setterConversion(
+        |      $MacroProcessor.processExpression[$contextType, $resultType](
+        |      $MacroProcessor.applyTypesafeEquals(
+      """.stripMargin
+
+    val processingPostfix = if(noMacroProcessing) "" else ")))"
+
     //_result is needed because: https://groups.google.com/forum/#!topic/scala-user/BAK-mU7o6nM
     val prefix =
       s"""
         |
-        |final class $ExpressionClassName
-        |  extends (($contextType) => $resultOrSetterType) with $CompilerPkg.TemplateInterpolations[$resultType] {
-        |    def apply($ContextSymbol: $contextType): $resultOrSetterType = {
+        |final class $ExpressionClassName extends (($contextType) => $resultOrSetterType)
+        |                                 with $CompilerPkg.TemplateInterpolations[$resultType] {
+        |  def apply($ContextSymbol: $contextType): $resultOrSetterType = {
         |    val $RootSymbol = $ContextSymbol.root
         |    val $VariablesSymbol = new com.avsystem.scex.util.DynamicVariableAccessor($ContextSymbol)
         |    import $profileObjectPkg.$ProfileObjectName._
@@ -131,14 +140,14 @@ object CodeGeneration {
         |    $profileHeader
         |    $additionalHeader
         |    val _result =
-        |      $setterConversion(
-        |      $MacroProcessor.processExpression[$contextType, $resultType](
-        |      $MacroProcessor.applyTypesafeEquals({
+        |      $processingPrefix
+        |      {
         |""".stripMargin + interpolationPrefix
 
     val postfix = interpolationPostfix +
       s"""
-        |     })))
+        |    }
+        |    $processingPostfix
         |    _result
         |  }
         |}
@@ -161,23 +170,27 @@ object CodeGeneration {
         val adapterWithGenerics = adapter + generics
 
         s"""
-          |@$AnnotationPkg.JavaGetterAdapterConversion
-          |implicit def $adapterWithGenerics(wrapped: $wrappedTpe) = new $adapter(wrapped)
+          |implicit def $adapterWithGenerics(_wrapped: $wrappedTpe) = new $adapter(_wrapped)
           |$adapterCode
         """.stripMargin
       }
     }
 
     s"""
-      |@$AnnotationPkg.ProfileObject
-      |object $ProfileObjectName {
+      |object $ProfileObjectName extends $MarkersObj.ProfileObject {
       |${adapters.mkString}
-      |  @$AnnotationPkg.ExpressionUtil object Utils {
+      |  object Utils extends $MarkersObj.ExpressionUtil {
       |${profile.expressionUtils}
       |  }
       |}
       |
     """.stripMargin
+  }
+
+  def wrapForParsing(code: String): (String, Int) = {
+    val prefix = "object o {"
+    val postfix = "}"
+    (s"$prefix$code$postfix", prefix.length)
   }
 
   def generateSyntaxValidator(code: String) = {

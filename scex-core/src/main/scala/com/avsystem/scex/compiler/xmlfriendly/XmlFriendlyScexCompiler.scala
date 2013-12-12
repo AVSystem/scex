@@ -45,10 +45,8 @@ trait XmlFriendlyScexCompiler extends ScexPresentationCompiler {
         wrapped.getTypeCompletion(ps.result, ps.positionMapping(position))
       }
 
-      def getScopeCompletion(expression: String, position: Int) = {
-        val ps = XmlFriendlyTranslator.translate(expression, template)
-        wrapped.getScopeCompletion(ps.result, ps.positionMapping(position))
-      }
+      def getScopeCompletion =
+        wrapped.getScopeCompletion
     }
   }
 

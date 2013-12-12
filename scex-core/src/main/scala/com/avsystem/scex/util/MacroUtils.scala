@@ -8,19 +8,18 @@ import java.{util => ju, lang => jl}
 import scala.Some
 import scala.reflect.macros.Universe
 import scala.runtime.StringAdd
+import com.avsystem.scex.compiler.Markers.{ProfileObject, ExpressionUtil, JavaGetterAdapter}
 
 trait MacroUtils {
   val universe: Universe
 
   import universe._
 
-  lazy val adapterAnnotType = typeOf[JavaGetterAdapter]
-  lazy val adapterConversionAnnotType = typeOf[JavaGetterAdapterConversion]
-  lazy val booleanGetterAnnotType = typeOf[BooleanIsGetter]
+  lazy val adapterType = typeOf[JavaGetterAdapter]
+  lazy val expressionUtilType = typeOf[ExpressionUtil]
+  lazy val profileObjectType = typeOf[ProfileObject]
+  
   lazy val rootAdapterAnnotType = typeOf[RootAdapter]
-  lazy val expressionUtilAnnotType = typeOf[ExpressionUtil]
-  lazy val profileObjectAnnotType = typeOf[ProfileObject]
-  lazy val wrappedInAdapterAnnotType = typeOf[WrappedInAdapter]
   lazy val notValidatedAnnotType = typeOf[NotValidated]
 
   lazy val any2stringadd = typeOf[Predef.type].member(newTermName("any2stringadd"))
@@ -43,7 +42,7 @@ trait MacroUtils {
   object ImplicitlyConverted {
     def unapply(tree: Tree): Option[(Tree, Tree)] = tree match {
       case Apply(fun, List(prefix))
-        if isGlobalImplicitConversion(fun) && (tree.pos == NoPosition || tree.pos == prefix.pos) =>
+        if isGlobalImplicitConversion(fun) && (tree.pos == NoPosition || prefix.pos == NoPosition || tree.pos == prefix.pos) =>
         Some((prefix, fun))
       case _ =>
         None
@@ -244,40 +243,42 @@ trait MacroUtils {
       (isExpressionUtilObject(symbol) || isExpressionUtil(symbol.owner))
 
   def isExpressionUtilObject(symbol: Symbol): Boolean =
-    symbol != null && symbol != NoSymbol && symbol.annotations.exists(_.tpe =:= expressionUtilAnnotType)
+    symbolType(symbol) <:< expressionUtilType
 
   def isProfileObject(symbol: Symbol) =
-    symbol != null && symbol.annotations.exists(_.tpe =:= profileObjectAnnotType)
+    symbolType(symbol) <:< profileObjectType
 
   def isScexSynthetic(symbol: Symbol): Boolean =
     symbol != null && symbol != NoSymbol &&
       (isProfileObject(symbol) || isScexSynthetic(symbol.owner))
 
-  def isAdapter(symbol: Symbol): Boolean =
-    symbol != NoSymbol && symbol.annotations.exists(_.tpe =:= adapterAnnotType)
-
   def isAdapter(tpe: Type): Boolean =
-    tpe != NoType && isAdapter(tpe.typeSymbol)
+    tpe != null && tpe <:< adapterType
 
   /**
    * Is this symbol the 'wrapped' field of Java getter adapter?
    */
   def isAdapterWrappedMember(symbol: Symbol): Boolean =
-    symbol != NoSymbol && symbol.annotations.exists(_.tpe =:= wrappedInAdapterAnnotType)
+    symbol != null && symbol.name == newTermName("_wrapped") &&
+      symbol.owner.isType && isAdapter(symbol.owner.asType.toType)
 
   def isRootAdapter(symbol: Symbol) =
     symbol != null && symbol.annotations.exists(_.tpe =:= rootAdapterAnnotType)
 
-  def isBooleanGetterAdapter(symbol: Symbol) =
-    symbol != null && symbol.annotations.exists(_.tpe =:= booleanGetterAnnotType)
-
   // gets Java getter called by implicit wrapper
   def getJavaGetter(symbol: Symbol, javaTpe: Type): Symbol = {
-    val prefix = if (isBooleanGetterAdapter(symbol)) "is" else "get"
-    val name = prefix + symbol.name.toString.capitalize
+    val getterName = "get" + symbol.name.toString.capitalize
+    val booleanGetterName = "is" + symbol.name.toString.capitalize
 
-    def fail = throw new Exception(s"Could not find Java getter $name on $javaTpe")
-    alternatives(javaTpe.member(newTermName(name))).find(isBeanGetter).getOrElse(fail)
+    def fail = throw new Exception(s"Could not find Java getter for property ${symbol.name} on $javaTpe")
+    def findGetter(getterName: String) =
+      alternatives(javaTpe.member(newTermName(getterName))).find(isBeanGetter)
+
+    if(isBooleanType(symbol.asMethod.returnType)) {
+      findGetter(booleanGetterName) orElse findGetter(getterName) getOrElse fail
+    } else {
+      findGetter(getterName) getOrElse fail
+    }
   }
 
   def memberBySignature(tpe: Type, signature: String): Symbol = {
@@ -287,6 +288,13 @@ trait MacroUtils {
     }.getOrElse(NoSymbol)
   }
 
+  def symbolType(symbol: Symbol) =
+    if(symbol == null) NoType
+    else if(symbol.isType) symbol.asType.toType
+    else symbol.typeSignature
+
+  def isAdapterConversion(symbol: Symbol) =
+    isProfileObject(symbol.owner) && symbol.isImplicit && symbol.isMethod && isAdapter(symbol.asMethod.returnType)
 }
 
 object MacroUtils {
