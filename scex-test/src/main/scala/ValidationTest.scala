@@ -180,7 +180,6 @@ object ValidationTest {
 
     val ic = compiler.getCompleter[ExpressionContext[Unit, Unit], Object](profile)
     val completion = ic.getTypeCompletion("${None}", 1)
-    completion.errors foreach println
     completion.members foreach println
 
   }

@@ -90,17 +90,18 @@ trait ScexPresentationCompiler extends ScexCompiler {
     require(rootObjectClass != null, "Root object class cannot be null")
     require(resultType != null, "Result type cannot be null")
 
-    private def exprDef(expression: String, resultType: String) =
-      ExpressionDef(profile, template, setter, expression, header, rootObjectClass, contextType, resultType)
+    private def exprDef(expression: String, bare: Boolean) =
+      ExpressionDef(profile, template && !bare, setter && !bare, expression, header,
+        rootObjectClass, contextType, if (bare) "Any" else resultType)
 
     def getErrors(expression: String): List[CompileError] =
-      compiler.getErrors(exprDef(expression, resultType))
+      compiler.getErrors(exprDef(expression, bare = false))
 
     def getScopeCompletion: Completion =
-      compiler.getScopeCompletion(exprDef("()", "Any"))
+      compiler.getScopeCompletion(exprDef("()", bare = true))
 
     def getTypeCompletion(expression: String, position: Int): Completion =
-      compiler.getTypeCompletion(exprDef(getSubExpression(expression, position), "Any"))
+      compiler.getTypeCompletion(exprDef(getSubExpression(expression, position), bare = true))
   }
 
   def getCompleter[C <: ExpressionContext[_, _] : TypeTag, T: TypeTag](
@@ -196,7 +197,6 @@ trait ScexPresentationCompiler extends ScexCompiler {
     val treeResponse = new Response[Tree]
     askLoadedTyped(sourceFile, treeResponse)
     val sourceTree = getOrThrow(treeResponse)
-    val errors = compiler.reporter.compileErrors()
 
     val vc = ValidationContext(global)(getContextTpe(global)(sourceTree))
     import vc._
@@ -217,15 +217,14 @@ trait ScexPresentationCompiler extends ScexCompiler {
           if viaImport != EmptyTree && sym.isTerm && !sym.isPackage &&
             (!isScexSynthetic(sym) || (isExpressionUtil(sym) && !isExpressionUtilObject(sym))) =>
           member
-      } filter {
-        m =>
-          symbolValidator.validateMemberAccess(vc)(accessFromScopeMember(m)).deniedAccesses.isEmpty
+      } filter { m =>
+        symbolValidator.validateMemberAccess(vc)(accessFromScopeMember(m)).deniedAccesses.isEmpty
       } map translateMember(vc)
     }
 
     removeUnitOf(sourceFile)
 
-    Completion(members, errors)
+    Completion(members)
   }
 
   protected def getTypeCompletion(exprDef: ExpressionDef) = withGlobal(exprDef.profile) { global =>
@@ -311,7 +310,7 @@ trait ScexPresentationCompiler extends ScexCompiler {
 
     removeUnitOf(sourceFile)
 
-    Completion(members, Nil)
+    Completion(members)
   }
 
   override protected def compile(sourceFile: SourceFile, classLoader: ScexClassLoader, usedInExpressions: Boolean) = {
@@ -346,6 +345,6 @@ object ScexPresentationCompiler {
 
   case class Member(name: String, params: List[List[Param]], tpe: String, iimplicit: Boolean)
 
-  case class Completion(members: List[Member], errors: List[CompileError])
+  case class Completion(members: List[Member])
 
 }

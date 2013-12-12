@@ -43,7 +43,7 @@ object CompletionPlayground {
       val profile = new ExpressionProfile(SyntaxValidator.SimpleExpressions, SymbolValidator(acl),
         "import com.avsystem.scex.util.TypesafeEquals._", "")
 
-      val completer = compiler.getCompleter[SimpleContext[Root], String](profile, template = false)
+      val completer = compiler.getCompleter[SimpleContext[Root], String](profile)
 
       val textField = new TextField
       textField.setWidth("100%")
@@ -57,9 +57,9 @@ object CompletionPlayground {
       textField.addListener(new TextChangeListener {
         def textChange(event: TextChangeEvent): Unit = {
           val completion = completer.getTypeCompletion(event.getText, event.getCursorPosition)
-          val errors = completion.errors.mkString("<br/>")
-          val members = completion.members.map(memberRepr).mkString("<br/>")
-          label.setValue(s"ERRORS:<br/>$errors<br/>COMPLETION:<br/>$members")
+          val errors = completer.getErrors(event.getText).mkString("\n")
+          val members = completion.members.map(memberRepr).mkString("\n")
+          label.setValue(s"ERRORS:\n$errors\nCOMPLETION:\n$members".replaceAllLiterally("\n", "<br/>"))
         }
       })
 

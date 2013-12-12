@@ -112,8 +112,8 @@ trait JavaScexCompiler extends ScexCompiler {
     }
 
     private def completionToJava(scalaCompletion: ScexPresentationCompiler.Completion) = scalaCompletion match {
-      case ScexPresentationCompiler.Completion(members, errors) =>
-        JavaScexCompiler.Completion(members.map(memberToJava).asJavaCollection, errors.asJavaCollection)
+      case ScexPresentationCompiler.Completion(members) =>
+        JavaScexCompiler.Completion(members.map(memberToJava).asJavaCollection)
     }
 
     def getErrors(expression: String) =
@@ -201,6 +201,6 @@ object JavaScexCompiler {
   case class Member(getName: String, getParams: ju.Collection[ju.Collection[Param]],
     getType: String, isImplicit: Boolean)
 
-  case class Completion(getMembers: ju.Collection[Member], getErrors: ju.Collection[CompileError])
+  case class Completion(getMembers: ju.Collection[Member])
 
 }

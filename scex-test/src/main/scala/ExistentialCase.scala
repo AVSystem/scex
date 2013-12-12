@@ -22,8 +22,6 @@ object ExistentialCase {
     val completion = compiler.getCompleter[SimpleContext[Unit], Int](profile, template = true)
       .getTypeCompletion("${'dafuq'.toInt}", 14)
 
-    completion.errors foreach println
-
     completion.members foreach println
   }
 }
