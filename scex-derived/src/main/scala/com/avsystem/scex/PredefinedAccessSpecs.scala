@@ -40,6 +40,9 @@ object PredefinedAccessSpecs {
       anyRef == (_: AnyRef)
       anyRef != (_: AnyRef)
     }
+    on { nul: Null =>
+      nul.toString
+    }
 
     // Operations on primitive types
     on { u: Unit =>

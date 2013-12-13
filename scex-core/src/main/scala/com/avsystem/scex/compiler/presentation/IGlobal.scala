@@ -20,6 +20,8 @@ import scala.reflect.internal.util.SourceFile
  */
 class IGlobal(settings: Settings, reporter: Reporter) extends Global(settings, reporter) {
 
+  import definitions._
+
   case class ScexTypeMember(
     sym: Symbol,
     tpe: Type,
@@ -55,7 +57,6 @@ class IGlobal(settings: Settings, reporter: Reporter) extends Global(settings, r
     }
 
     def add(sym: Symbol, pre: Type, implicitTree: Tree)(toMember: (Symbol, Type) => ScexTypeMember) {
-      val implicitlyAdded = implicitTree != EmptyTree
       if ((sym.isGetter || sym.isSetter) && sym.accessed != NoSymbol) {
         add(sym.accessed, pre, implicitTree)(toMember)
       } else if (!sym.name.decodedName.containsName(Dollar) && !sym.isSynthetic && sym.hasRawInfo) {
@@ -123,9 +124,9 @@ class IGlobal(settings: Settings, reporter: Reporter) extends Global(settings, r
       addTypeMember(sym, pre, sym.owner != ownerTpe.typeSymbol, EmptyTree, NoType)
 
     val applicableViews: List[analyzer.SearchResult] =
-      if (ownerTpe.isErroneous) List()
+      if (ownerTpe.isErroneous || ownerTpe <:< NullTpe || ownerTpe <:< NothingTpe) List()
       else new analyzer.ImplicitSearch(
-        tree, definitions.functionType(List(ownerTpe), definitions.AnyClass.tpe), isView = true,
+        tree, functionType(List(ownerTpe), AnyClass.tpe), isView = true,
         context0 = context.makeImplicit(reportAmbiguousErrors = false)).allImplicits
 
     for (view <- applicableViews) {
