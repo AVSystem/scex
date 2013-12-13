@@ -56,7 +56,7 @@ object CompletionPlayground {
 
       textField.addListener(new TextChangeListener {
         def textChange(event: TextChangeEvent): Unit = {
-          val completion = completer.getTypeCompletion(event.getText, event.getCursorPosition)
+          val completion = completer.getTypeCompletion(event.getText, event.getCursorPosition - 1)
           val errors = completer.getErrors(event.getText).mkString("\n")
           val members = completion.members.map(memberRepr).mkString("\n")
           label.setValue(s"ERRORS:\n$errors\nCOMPLETION:\n$members".replaceAllLiterally("\n", "<br/>"))

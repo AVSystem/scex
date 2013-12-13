@@ -16,15 +16,15 @@ trait CachingScexPresentationCompiler extends ScexPresentationCompiler {
   import CommonUtils._
 
   private val errorsCache = CacheBuilder.newBuilder
-    .expireAfterAccess(config.expressionExpirationTime, TimeUnit.MILLISECONDS)
+    .expireAfterAccess(config.completionExpirationTime, TimeUnit.MILLISECONDS)
     .build[ExpressionDef, List[CompileError]]
 
   private val scopeCompletionCache = CacheBuilder.newBuilder
-    .expireAfterAccess(config.expressionExpirationTime, TimeUnit.MILLISECONDS)
+    .expireAfterAccess(config.completionExpirationTime, TimeUnit.MILLISECONDS)
     .build[ExpressionDef, Completion]
 
   private val typeCompletionCache = CacheBuilder.newBuilder
-    .expireAfterAccess(config.expressionExpirationTime, TimeUnit.MILLISECONDS)
+    .expireAfterAccess(config.completionExpirationTime, TimeUnit.MILLISECONDS)
     .build[ExpressionDef, Completion]
 
   override protected def getErrors(exprDef: ExpressionDef) =

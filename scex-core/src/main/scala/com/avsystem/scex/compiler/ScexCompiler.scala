@@ -117,7 +117,7 @@ trait ScexCompiler extends PackageGenerator with LoggingUtils {
   protected def compileFullJavaGetterAdapter(clazz: Class[_]): Try[String] = {
     val pkgName = newAdapterPackage()
     val codeToCompile = wrapInSource(generateJavaGetterAdapter(clazz, full = true).get, pkgName)
-    val sourceFile = new BatchSourceFile("(scex adapter)", codeToCompile)
+    val sourceFile = new BatchSourceFile(pkgName, codeToCompile)
 
     def result = {
       compile(sourceFile, persistentClassLoader, shared = true) match {
@@ -132,7 +132,7 @@ trait ScexCompiler extends PackageGenerator with LoggingUtils {
   protected def compileProfileObject(profile: ExpressionProfile): Try[String] = {
     val pkgName = newProfilePackage()
     val codeToCompile = wrapInSource(generateProfileObject(profile), pkgName)
-    val sourceFile = new BatchSourceFile("(scex profile)", codeToCompile)
+    val sourceFile = new BatchSourceFile(pkgName, codeToCompile)
 
     def result = {
       compile(sourceFile, persistentClassLoader, shared = true) match {
@@ -197,17 +197,15 @@ trait ScexCompiler extends PackageGenerator with LoggingUtils {
     val (codeToCompile, _) = expressionCode(exprDef, pkgName)
     // every single expression has its own classloader and virtual directory
     val classLoader = new ScexClassLoader(new VirtualDirectory("(scex)", None), persistentClassLoader)
-    val sourceFile = new BatchSourceFile("(scex expression)", codeToCompile)
+    val sourceFile = new ExpressionSourceFile(exprDef.profile, pkgName, codeToCompile)
 
     def result =
-      ExpressionMacroProcessor.profileVar.withValue(exprDef.profile) {
-        compile(sourceFile, classLoader, shared = false) match {
-          case Nil =>
-            Class.forName(s"$pkgName.$ExpressionClassName", true, classLoader).newInstance.asInstanceOf[RawExpression]
+      compile(sourceFile, classLoader, shared = false) match {
+        case Nil =>
+          Class.forName(s"$pkgName.$ExpressionClassName", true, classLoader).newInstance.asInstanceOf[RawExpression]
 
-          case errors =>
-            throw new CompilationFailedException(codeToCompile, errors)
-        }
+        case errors =>
+          throw new CompilationFailedException(codeToCompile, errors)
       }
 
     Try(result)
@@ -263,7 +261,7 @@ trait ScexCompiler extends PackageGenerator with LoggingUtils {
   def compileSyntaxValidator(code: String): SyntaxValidator = synchronized {
     val pkgName = newSyntaxValidatorPackage()
     val codeToCompile = wrapInSource(generateSyntaxValidator(code), pkgName)
-    val sourceFile = new BatchSourceFile("(scex syntax validator)", codeToCompile)
+    val sourceFile = new BatchSourceFile(pkgName, codeToCompile)
 
     compile(sourceFile, persistentClassLoader, shared = true) match {
       case Nil =>
@@ -277,7 +275,7 @@ trait ScexCompiler extends PackageGenerator with LoggingUtils {
   def compileSymbolValidator(code: String): SymbolValidator = synchronized {
     val pkgName = newSymbolValidatorPackage()
     val codeToCompile = wrapInSource(generateSymbolValidator(code), pkgName)
-    val sourceFile = new BatchSourceFile("(scex symbol validator)", codeToCompile)
+    val sourceFile = new BatchSourceFile(pkgName, codeToCompile)
 
     compile(sourceFile, persistentClassLoader, shared = true) match {
       case Nil =>

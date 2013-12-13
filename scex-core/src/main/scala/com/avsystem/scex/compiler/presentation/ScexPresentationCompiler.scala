@@ -1,14 +1,13 @@
 package com.avsystem.scex
 package compiler.presentation
 
-import com.avsystem.scex.compiler.{CodeGeneration, ExpressionMacroProcessor, ScexCompiler}
+import com.avsystem.scex.compiler._
 import com.avsystem.scex.util.MacroUtils
 import com.avsystem.scex.validation.ValidationContext
 import com.google.common.cache.CacheBuilder
 import java.{util => ju, lang => jl}
 import scala.reflect.internal.util.{SourceFile, BatchSourceFile}
 import scala.reflect.runtime.universe.TypeTag
-import scala.tools.nsc.interactive.{Global => IGlobal}
 import com.avsystem.scex.compiler.ScexCompiler.CompileError
 import com.avsystem.scex.compiler.ExpressionDef
 
@@ -62,15 +61,10 @@ trait ScexPresentationCompiler extends ScexCompiler {
     getOrThrow(global.askForResponse(() => code))
   }
 
-  private def withGlobal[T](profile: ExpressionProfile)(code: IGlobal => T) = underLock {
+  private def withGlobal[T](code: IGlobal => T) = underLock {
+    reporter.reset()
     val global = compiler.global
-    inCompilerThread {
-      ExpressionMacroProcessor.profileVar.value = profile
-    }
     val result = try code(global) finally {
-      inCompilerThread {
-        ExpressionMacroProcessor.profileVar.value = null
-      }
       reporter.reset()
     }
     result
@@ -101,7 +95,7 @@ trait ScexPresentationCompiler extends ScexCompiler {
       compiler.getScopeCompletion(exprDef("()", bare = true))
 
     def getTypeCompletion(expression: String, position: Int): Completion =
-      compiler.getTypeCompletion(exprDef(getSubExpression(expression, position), bare = true))
+      compiler.getTypeCompletion(exprDef(getSubExpression(expression, template, position), bare = true))
   }
 
   def getCompleter[C <: ExpressionContext[_, _] : TypeTag, T: TypeTag](
@@ -133,11 +127,11 @@ trait ScexPresentationCompiler extends ScexCompiler {
     new CompleterImpl(profile, template, setter, header, contextType, rootObjectClass, resultType)
   }
 
-  protected def getSubExpression(expression: String, position: Int) = {
+  protected def getSubExpression(expression: String, template: Boolean, position: Int) = {
     val global = compiler.global
     import global.{sourceFile => _, position => _, _}
 
-    val (code, offset) = CodeGeneration.wrapForParsing(expression)
+    val (code, offset) = CodeGeneration.wrapForParsing(expression, template)
     val sourceFile = new BatchSourceFile("(for_parsing)", code)
     val sourcePosition = sourceFile.position(offset + position)
     val PackageDef(_, List(ModuleDef(_, _, Template(_, _, List(_, expressionTree))))) = parseTree(sourceFile)
@@ -174,143 +168,119 @@ trait ScexPresentationCompiler extends ScexCompiler {
       member.sym.isImplicit)
   }
 
-  protected def getErrors(exprDef: ExpressionDef) = withGlobal(exprDef.profile) { global =>
+  protected def getErrors(exprDef: ExpressionDef) = withGlobal { global =>
     val pkgName = newInteractiveExpressionPackage()
     val (code, _) = expressionCode(exprDef, pkgName)
     val response = new global.Response[global.Tree]
-    global.askLoadedTyped(new BatchSourceFile(pkgName, code), response)
-    getOrThrow(response)
-    reporter.compileErrors()
+    val sourceFile = new ExpressionSourceFile(exprDef.profile, pkgName, code)
+    try {
+      global.askLoadedTyped(sourceFile, response)
+      getOrThrow(response)
+      reporter.compileErrors()
+    } finally {
+      global.removeUnitOf(sourceFile)
+    }
   }
 
-  protected def getScopeCompletion(exprDef: ExpressionDef): Completion = withGlobal(exprDef.profile) { global =>
+  protected def getScopeCompletion(exprDef: ExpressionDef): Completion = withGlobal { global =>
     import global.{sourceFile => _, position => _, _}
     val pkgName = newInteractiveExpressionPackage()
 
     val symbolValidator = exprDef.profile.symbolValidator
 
     val (code, offset) = expressionCode(exprDef, pkgName, noMacroProcessing = true)
-    val sourceFile = new BatchSourceFile(pkgName, code)
-    val pos = sourceFile.position(offset)
-    logger.debug(s"Computing scope completion for $exprDef")
+    val sourceFile = new ExpressionSourceFile(exprDef.profile, pkgName, code)
 
-    val treeResponse = new Response[Tree]
-    askLoadedTyped(sourceFile, treeResponse)
-    val sourceTree = getOrThrow(treeResponse)
+    try {
+      val pos = sourceFile.position(offset)
+      logger.debug(s"Computing scope completion for $exprDef")
 
-    val vc = ValidationContext(global)(getContextTpe(global)(sourceTree))
-    import vc._
+      val treeResponse = new Response[Tree]
+      askLoadedTyped(sourceFile, treeResponse)
+      val sourceTree = getOrThrow(treeResponse)
 
-    def accessFromScopeMember(m: ScopeMember) = {
-      // static module will be allowed by default only when at least one of its members is allowed
-      val staticAccessAllowedByDefault = isStaticModule(m.sym) && symbolValidator.referencesModuleMember(m.sym.fullName)
-      extractAccess(Select(m.viaImport, m.sym), staticAccessAllowedByDefault)
+      val vc = ValidationContext(global)(getContextTpe(global)(sourceTree))
+      import vc._
+
+      def accessFromScopeMember(m: ScopeMember) = {
+        // static module will be allowed by default only when at least one of its members is allowed
+        val staticAccessAllowedByDefault = isStaticModule(m.sym) && symbolValidator.referencesModuleMember(m.sym.fullName)
+        extractAccess(Select(m.viaImport, m.sym), staticAccessAllowedByDefault)
+      }
+
+      val response = new Response[List[Member]]
+      askScopeCompletion(pos, response)
+      val scope = getOrThrow(response)
+
+      val members = inCompilerThread {
+        scope.collect {
+          case member@ScopeMember(sym, _, _, viaImport)
+            if viaImport != EmptyTree && sym.isTerm && !sym.isPackage &&
+              (!isScexSynthetic(sym) || (isExpressionUtil(sym) && !isExpressionUtilObject(sym))) =>
+            member
+        } filter { m =>
+          symbolValidator.validateMemberAccess(vc)(accessFromScopeMember(m)).deniedAccesses.isEmpty
+        } map translateMember(vc)
+      }
+
+      Completion(members)
+
+    } finally {
+      removeUnitOf(sourceFile)
     }
-
-    val response = new Response[List[Member]]
-    askScopeCompletion(pos, response)
-    val scope = getOrThrow(response)
-
-    val members = inCompilerThread {
-      scope.collect {
-        case member@ScopeMember(sym, _, _, viaImport)
-          if viaImport != EmptyTree && sym.isTerm && !sym.isPackage &&
-            (!isScexSynthetic(sym) || (isExpressionUtil(sym) && !isExpressionUtilObject(sym))) =>
-          member
-      } filter { m =>
-        symbolValidator.validateMemberAccess(vc)(accessFromScopeMember(m)).deniedAccesses.isEmpty
-      } map translateMember(vc)
-    }
-
-    removeUnitOf(sourceFile)
-
-    Completion(members)
   }
 
-  protected def getTypeCompletion(exprDef: ExpressionDef) = withGlobal(exprDef.profile) { global =>
+  protected def getTypeCompletion(exprDef: ExpressionDef) = withGlobal { global =>
     import global.{sourceFile => _, position => _, _}
     val symbolValidator = exprDef.profile.symbolValidator
 
     val pkgName = newInteractiveExpressionPackage()
 
     val (code, offset) = expressionCode(exprDef, pkgName, noMacroProcessing = true)
-    val sourceFile = new BatchSourceFile(pkgName, code)
-    val startPosition = sourceFile.position(offset)
+    val sourceFile = new ExpressionSourceFile(exprDef.profile, pkgName, code)
 
-    logger.debug(s"Computing type completion for $exprDef")
+    try {
+      val startPosition = sourceFile.position(offset)
 
-    val treeResponse = new Response[Tree]
-    askLoadedTyped(sourceFile, treeResponse)
-    val fullTree = getOrThrow(treeResponse)
+      logger.debug(s"Computing type completion for $exprDef")
 
-    val vc = ValidationContext(global)(getContextTpe(global)(fullTree))
-    import vc._
+      val treeResponse = new Response[Tree]
+      askLoadedTyped(sourceFile, treeResponse)
+      val fullTree = getOrThrow(treeResponse)
 
-    val members = inCompilerThread {
-      // The compiler probably screws up tree positions when rewriting dynamic calls and because of that there's
-      // literally no way to give the compiler a position under which it will find the appropriate tree.
-      // As a result, I have to compute type completion manually instead of using [[askTypeCompletion]].
-      // The code below is based on [[scala.tools.nsc.interactive.Global#typeMembers]].
+      val vc = ValidationContext(global)(getContextTpe(global)(fullTree))
+      import vc._
 
-      val tree = fullTree.collect {
-        case ValDef(_, name, _, rhs) if name == newTermName("_result") => rhs
-      }.lastOption.getOrElse(EmptyTree)
+      val members = inCompilerThread {
+        val tree = fullTree.collect {
+          case ValDef(_, name, _, rhs) if name == newTermName("_result") => rhs
+        }.lastOption.getOrElse(EmptyTree)
 
-      val pre = stabilizedType(tree)
+        val (ownerTpe, typeMembers) = global.typeMembers(tree, startPosition)
 
-      val ownerTpe = tree.tpe match {
-        case analyzer.ImportType(expr) => expr.tpe
-        case null => pre
-        case MethodType(List(), rtpe) => rtpe
-        case _ => tree.tpe
-      }
+        val fakeDirectPrefix = Ident(nme.EMPTY).setSymbol(Option(tree.symbol).getOrElse(NoSymbol)).setType(ownerTpe)
+        def fakeSelect(member: ScexTypeMember) = {
+          val fakePrefix =
+            if (!member.implicitlyAdded) fakeDirectPrefix
+            else Apply(member.implicitTree, List(fakeDirectPrefix))
+              .setSymbol(member.implicitTree.symbol).setType(member.implicitType)
+          Select(fakePrefix, member.sym)
+        }
 
-      val context = locateContext(startPosition).get
+        def isMemberAllowed(member: ScexTypeMember) =
+          symbolValidator.validateMemberAccess(vc)(extractAccess(fakeSelect(member))).deniedAccesses.isEmpty
 
-      val applicableViews: List[analyzer.SearchResult] =
-        if (ownerTpe.isErroneous) Nil
-        else new analyzer.ImplicitSearch(
-          tree, definitions.functionType(List(ownerTpe), definitions.AnyClass.tpe), isView = true,
-          context0 = context.makeImplicit(reportAmbiguousErrors = false)).allImplicits
-
-      def viewApply(tree: Tree, view: analyzer.SearchResult): Tree = {
-        assert(view.tree != EmptyTree)
-        analyzer.newTyper(context.makeImplicit(reportAmbiguousErrors = false))
-          .typed(Apply(view.tree, List(tree)).setPos(tree.pos))
-          .onTypeError(EmptyTree)
-      }
-
-      def isMemberAllowed(qualifier: Tree, member: TermSymbol) =
-        symbolValidator.validateMemberAccess(vc)(extractAccess(Select(qualifier, member))).deniedAccesses.isEmpty
-
-      val fakeDirectPrefix = Ident(nme.EMPTY).setSymbol(Option(tree.symbol).getOrElse(NoSymbol)).setType(ownerTpe)
-
-      val directMembers = ownerTpe.members.iterator.collect {
-        case member: TermSymbol if member.isPublic && !member.isConstructor && isMemberAllowed(fakeDirectPrefix, member) =>
-          val memberTpe = ownerTpe.memberType(member)
-          translateMember(vc)(TypeMember(member, memberTpe, accessible = true, inherited = false, NoSymbol))
-      }
-
-      val implicitMembers = applicableViews.iterator.flatMap { view =>
-        val convertedPrefix = viewApply(tree, view)
-        val implicitTpe = stabilizedType(convertedPrefix)
-        val fakeImplicitPrefix = Apply(view.tree, List(fakeDirectPrefix))
-          .setSymbol(Option(convertedPrefix.symbol).getOrElse(NoSymbol)).setType(implicitTpe)
-
-        implicitTpe.members.iterator.collect {
-          case member: TermSymbol if member.isPublic && !member.isConstructor && !isFromToplevelType(member)
-            && !isAdapterWrappedMember(member) && isMemberAllowed(fakeImplicitPrefix, member) =>
-            val memberTpe = implicitTpe.memberType(member)
-            translateMember(vc)(TypeMember(member, memberTpe, accessible = true, inherited = false, view.tree.symbol))
+        typeMembers.collect {
+          case m if m.sym.isTerm && m.sym.isPublic && !m.sym.isConstructor
+            && !isAdapterWrappedMember(m.sym) && isMemberAllowed(m) => translateMember(vc)(m)
         }
       }
 
-      (directMembers ++ implicitMembers).toList
+      Completion(members)
+
+    } finally {
+      removeUnitOf(sourceFile)
     }
-
-    removeUnitOf(sourceFile)
-
-    Completion(members)
   }
 
   override protected def compile(sourceFile: SourceFile, classLoader: ScexClassLoader, usedInExpressions: Boolean) = {

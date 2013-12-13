@@ -95,7 +95,7 @@ object CodeGeneration {
 
     val ExpressionDef(profile, template, setter, expression, header, _, contextType, resultType) = exprDef
 
-    val resultOrSetterType = if(setter) s"com.avsystem.scex.Setter[$resultType]" else resultType
+    val resultOrSetterType = if (setter) s"com.avsystem.scex.Setter[$resultType]" else resultType
 
     val profileHeader = Option(profile.expressionHeader).getOrElse("")
     val additionalHeader = Option(header).getOrElse("")
@@ -113,16 +113,17 @@ object CodeGeneration {
 
     val interpolationPrefix = if (template) InterpolationOpen else ""
     val interpolationPostfix = if (template) InterpolationClose else ""
-    val setterConversion = if(setter) s"$MacroProcessor.asSetter" else ""
+    val setterConversion = if (setter) s"$MacroProcessor.asSetter" else ""
 
-    val processingPrefix = if(noMacroProcessing) "" else
+    val processingPrefix = if (noMacroProcessing) ""
+    else
       s"""
         |      $setterConversion(
         |      $MacroProcessor.processExpression[$contextType, $resultType](
         |      $MacroProcessor.applyTypesafeEquals(
       """.stripMargin
 
-    val processingPostfix = if(noMacroProcessing) "" else ")))"
+    val processingPostfix = if (noMacroProcessing) "" else ")))"
 
     //_result is needed because: https://groups.google.com/forum/#!topic/scala-user/BAK-mU7o6nM
     val prefix =
@@ -187,9 +188,9 @@ object CodeGeneration {
     """.stripMargin
   }
 
-  def wrapForParsing(code: String): (String, Int) = {
-    val prefix = "object o {"
-    val postfix = "}"
+  def wrapForParsing(code: String, template: Boolean): (String, Int) = {
+    val prefix = "object o {" + (if (template) InterpolationOpen else "")
+    val postfix = (if (template) InterpolationClose else "") + "}"
     (s"$prefix$code$postfix", prefix.length)
   }
 

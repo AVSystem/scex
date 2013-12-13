@@ -1,13 +1,11 @@
 package com.avsystem.scex
 package compiler
 
-import com.avsystem.scex.ExpressionProfile
 import com.avsystem.scex.util.{LoggingUtils, CommonUtils, MacroUtils, TypesafeEquals}
 import com.avsystem.scex.validation.ValidationContext
 import java.{util => ju, lang => jl}
 import scala.language.experimental.macros
 import scala.reflect.macros.Context
-import scala.util.DynamicVariable
 
 /**
  * Object used during expression compilation to validate the expression (syntax, invocations, etc.)
@@ -18,8 +16,6 @@ object ExpressionMacroProcessor extends LoggingUtils {
 
   private val logger = createLogger[ExpressionMacroProcessor.type]
 
-  val profileVar: DynamicVariable[ExpressionProfile] = new DynamicVariable(null)
-
   def processExpression[C, T](expr: T): T = macro processExpression_impl[C, T]
 
   def processExpression_impl[C: c.WeakTypeTag, T](c: Context)(expr: c.Expr[T]): c.Expr[T] = {
@@ -27,7 +23,10 @@ object ExpressionMacroProcessor extends LoggingUtils {
     val validationContext = ValidationContext(c.universe)(weakTypeOf[C])
     import validationContext._
 
-    val profile = profileVar.value
+    val profile = c.enclosingUnit.source match {
+      case scexSource: ExpressionSourceFile => scexSource.profile
+      case _ => throw new Exception("This is not an expression source file")
+    }
 
     def isForbiddenThisReference(tree: Tree) = tree match {
       case tree: This if !tree.symbol.isPackage && !tree.symbol.isPackageClass => true

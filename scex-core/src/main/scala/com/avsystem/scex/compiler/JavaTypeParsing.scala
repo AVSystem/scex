@@ -9,7 +9,6 @@ import scala.Some
 import scala.collection.mutable.ListBuffer
 import scala.language.existentials
 
-
 /**
  * Utils for conversions of Java types into string representations of their Scala counterparts.
  */
