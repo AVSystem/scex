@@ -43,7 +43,11 @@ object CompletionPlayground {
       val profile = new ExpressionProfile(SyntaxValidator.SimpleExpressions, SymbolValidator(acl),
         "import com.avsystem.scex.util.TypesafeEquals._", "")
 
+      def memberRepr(member: Member) =
+        s"${member.name}${member.params.map(_.map(p => s"${p.name}: ${p.tpe}").mkString("(", ", ", ")")).mkString}: ${member.tpe}"
+
       val completer = compiler.getCompleter[SimpleContext[Root], String](profile)
+      val scopeMembers = completer.getScopeCompletion.members.filterNot(_.iimplicit).map(memberRepr).mkString("\n")
 
       val textField = new TextField
       textField.setWidth("100%")
@@ -51,15 +55,12 @@ object CompletionPlayground {
       val label = new Label
       label.setContentMode(Label.CONTENT_RAW)
 
-      def memberRepr(member: Member) =
-        s"${member.name}${member.params.map(_.map(p => s"${p.name}: ${p.tpe}").mkString("(", ", ", ")")).mkString}: ${member.tpe}"
-
       textField.addListener(new TextChangeListener {
         def textChange(event: TextChangeEvent): Unit = {
           val completion = completer.getTypeCompletion(event.getText, event.getCursorPosition - 1)
           val errors = completer.getErrors(event.getText).mkString("\n")
-          val members = completion.members.map(memberRepr).mkString("\n")
-          label.setValue(s"ERRORS:\n$errors\nCOMPLETION:\n$members".replaceAllLiterally("\n", "<br/>"))
+          val members = completion.members.filterNot(_.iimplicit).map(memberRepr).mkString("\n")
+          label.setValue(s"ERRORS:\n$errors\nCOMPLETION:\n$members\nSCOPE COMPLETION:\n$scopeMembers".replaceAllLiterally("\n", "<br/>"))
         }
       })
 

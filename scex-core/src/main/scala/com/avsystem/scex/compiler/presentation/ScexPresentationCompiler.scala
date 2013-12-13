@@ -215,7 +215,7 @@ trait ScexPresentationCompiler extends ScexCompiler {
       val members = inCompilerThread {
         scope.collect {
           case member@ScopeMember(sym, _, _, viaImport)
-            if viaImport != EmptyTree && sym.isTerm && !sym.isPackage &&
+            if viaImport != EmptyTree && sym.isTerm && !sym.isPackage && !isAdapterWrappedMember(sym) &&
               (!isScexSynthetic(sym) || (isExpressionUtil(sym) && !isExpressionUtilObject(sym))) =>
             member
         } filter { m =>

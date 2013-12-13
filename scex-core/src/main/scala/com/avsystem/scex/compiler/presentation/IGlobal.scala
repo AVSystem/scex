@@ -90,6 +90,15 @@ class IGlobal(settings: Settings, reporter: Reporter) extends Global(settings, r
     if (tree.tpe == null)
       tree = analyzer.newTyper(context).typedQualifier(tree)
 
+    val pre = stabilizedType(tree)
+
+    val ownerTpe = tree.tpe match {
+      case analyzer.ImportType(expr) => expr.tpe
+      case null => pre
+      case MethodType(List(), rtpe) => rtpe
+      case _ => tree.tpe
+    }
+
     val superAccess = tree.isInstanceOf[Super]
     val members = new Members
 
@@ -109,15 +118,6 @@ class IGlobal(settings: Settings, reporter: Reporter) extends Global(settings, r
       analyzer.newTyper(context.makeImplicit(reportAmbiguousErrors = false))
         .typed(Apply(view.tree, List(tree)) setPos tree.pos)
         .onTypeError(EmptyTree)
-    }
-
-    val pre = stabilizedType(tree)
-
-    val ownerTpe = tree.tpe match {
-      case analyzer.ImportType(expr) => expr.tpe
-      case null => pre
-      case MethodType(List(), rtpe) => rtpe
-      case _ => tree.tpe
     }
 
     for (sym <- ownerTpe.members)
