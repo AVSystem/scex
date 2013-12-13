@@ -34,9 +34,8 @@ object CompletionPlayground {
       val acl = PredefinedAccessSpecs.basicOperations ++ allow {
         Dyn.selectDynamic _
 
-        on { r: Root =>
-          r.all.members
-          r.dyn
+        on { jl: JavaLol =>
+          jl.all.members
         }
       }
 
@@ -46,7 +45,7 @@ object CompletionPlayground {
       def memberRepr(member: Member) =
         s"${member.name}${member.params.map(_.map(p => s"${p.name}: ${p.tpe}").mkString("(", ", ", ")")).mkString}: ${member.tpe}"
 
-      val completer = compiler.getCompleter[SimpleContext[Root], String](profile)
+      val completer = compiler.getCompleter[SimpleContext[JavaLol], String](profile)
       val scopeMembers = completer.getScopeCompletion.members.filterNot(_.iimplicit).map(memberRepr).mkString("\n")
 
       val textField = new TextField
