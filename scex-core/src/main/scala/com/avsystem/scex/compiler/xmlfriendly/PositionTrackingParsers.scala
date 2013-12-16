@@ -25,9 +25,8 @@ trait PositionTrackingParsers extends RegexParsers {
   }
 
   class ParserWithPos(parser: Parser[String]) extends Parser[PString] {
-    def apply(in: Input) = parser(in).map {
-      str =>
-        PString(str, in.offset, in.offset + str.length, Vector.empty)
+    def apply(in: Input) = parser(in).map { str =>
+      PString(str, in.offset, in.offset + str.length, Vector.empty)
     }
   }
 

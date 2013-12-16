@@ -18,6 +18,9 @@ case class PString(result: String, beg: Int, end: Int, mods: Vector[Modification
   }
 
   def +(other: PString): PString = other match {
+    case PString("", _, _, Vector()) =>
+      this
+
     case PString(otherResult, otherBeg, otherEnd, otherMods) =>
       require(end <= otherBeg)
 

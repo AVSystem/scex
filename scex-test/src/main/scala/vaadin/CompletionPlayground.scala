@@ -39,8 +39,14 @@ object CompletionPlayground {
         }
       }
 
-      val profile = new ExpressionProfile(SyntaxValidator.SimpleExpressions, SymbolValidator(acl),
-        "import com.avsystem.scex.util.TypesafeEquals._", "")
+      val header = "import com.avsystem.scex.util.TypesafeEquals._"
+
+      val utils =
+        """
+          |val utilStuff = "dafuq"
+        """.stripMargin
+
+      val profile = new ExpressionProfile(SyntaxValidator.SimpleExpressions, SymbolValidator(acl), header, utils)
 
       def memberRepr(member: Member) =
         s"${member.name}${member.params.map(_.map(p => s"${p.name}: ${p.tpe}").mkString("(", ", ", ")")).mkString}: ${member.tpe}"

@@ -95,7 +95,11 @@ trait ScexPresentationCompiler extends ScexCompiler {
       compiler.getScopeCompletion(exprDef("()", bare = true))
 
     def getTypeCompletion(expression: String, position: Int): Completion =
-      compiler.getTypeCompletion(exprDef(getSubExpression(expression, template, position), bare = true))
+      getPrefixForCompletion(expression, template, position) match {
+        case Some(subexpr) => compiler.getTypeCompletion(exprDef(subexpr, bare = true))
+        case None => Completion(Nil)
+      }
+
   }
 
   def getCompleter[C <: ExpressionContext[_, _] : TypeTag, T: TypeTag](
@@ -127,7 +131,7 @@ trait ScexPresentationCompiler extends ScexCompiler {
     new CompleterImpl(profile, template, setter, header, contextType, rootObjectClass, resultType)
   }
 
-  protected def getSubExpression(expression: String, template: Boolean, position: Int) = {
+  protected def getPrefixForCompletion(expression: String, template: Boolean, position: Int): Option[String] = {
     val global = compiler.global
     import global.{sourceFile => _, position => _, _}
 
@@ -136,13 +140,23 @@ trait ScexPresentationCompiler extends ScexCompiler {
     val sourcePosition = sourceFile.position(offset + position)
     val PackageDef(_, List(ModuleDef(_, _, Template(_, _, List(_, expressionTree))))) = parseTree(sourceFile)
 
-    val subtree = new Locator(sourcePosition).locateIn(expressionTree) match {
-      case EmptyTree => expressionTree
-      case Select(qualifier, nme.ERROR) => qualifier
-      case t => t
-    }
+    def includes(p1: Position, p2: Position) =
+      p1.startOrPoint <= p2.point && p1.endOrPoint > p2.point
 
-    subtree.toString()
+    if (position >= 0 && expression.length > position && expression.charAt(position) == '.')
+      new Locator(sourcePosition).locateIn(expressionTree) match {
+        case tree@Literal(Constant(str: String)) if includes(tree.pos, sourcePosition) =>
+          None
+        case tree@Ident(_) if includes(tree.pos, sourcePosition) =>
+          None
+        case tree@Select(qual, name) if includes(tree.pos, sourcePosition) && !includes(qual.pos, sourcePosition) =>
+          None
+        case tree@Literal(Constant(dbl: Double)) if dbl.isWhole && tree.pos.end - 1 == sourcePosition.point =>
+          Some(dbl.toLong.toString)
+        case tree =>
+          Some(tree.toString())
+      }
+    else None
   }
 
   private def getContextTpe(global: IGlobal)(tree: global.Tree): global.Type = {
@@ -215,7 +229,7 @@ trait ScexPresentationCompiler extends ScexCompiler {
       val members = inCompilerThread {
         scope.collect {
           case member@ScopeMember(sym, _, _, viaImport)
-            if viaImport != EmptyTree && (sym.isLocal || sym.isPublic) && sym.isTerm && !sym.isPackage &&
+            if viaImport != EmptyTree && sym.isTerm && !sym.isPackage &&
               !isAdapterWrappedMember(sym) && (!isScexSynthetic(sym) || (isExpressionUtil(sym) && !isExpressionUtilObject(sym))) =>
             member
         } filter { m =>

@@ -18,7 +18,7 @@ trait MacroUtils {
   lazy val adapterType = typeOf[JavaGetterAdapter]
   lazy val expressionUtilType = typeOf[ExpressionUtil]
   lazy val profileObjectType = typeOf[ProfileObject]
-  
+
   lazy val rootAdapterAnnotType = typeOf[RootAdapter]
   lazy val notValidatedAnnotType = typeOf[NotValidated]
 
@@ -243,24 +243,30 @@ trait MacroUtils {
       (isExpressionUtilObject(symbol) || isExpressionUtil(symbol.owner))
 
   def isExpressionUtilObject(symbol: Symbol): Boolean =
-    symbolType(symbol) <:< expressionUtilType
+    nonBottomSymbolType(symbol) <:< expressionUtilType
 
   def isProfileObject(symbol: Symbol) =
-    symbolType(symbol) <:< profileObjectType
+    nonBottomSymbolType(symbol) <:< profileObjectType
 
   def isScexSynthetic(symbol: Symbol): Boolean =
     symbol != null && symbol != NoSymbol &&
       (isProfileObject(symbol) || isScexSynthetic(symbol.owner))
 
   def isAdapter(tpe: Type): Boolean =
-    tpe != null && tpe <:< adapterType
+    tpe != null && !isBottom(tpe) && tpe <:< adapterType
+
+  def isBottom(tpe: Type) =
+    tpe <:< definitions.NullTpe || tpe <:< definitions.NothingTpe
 
   /**
    * Is this symbol the 'wrapped' field of Java getter adapter?
    */
   def isAdapterWrappedMember(symbol: Symbol): Boolean =
-    symbol != null && symbol.name == newTermName("_wrapped") &&
-      symbol.owner.isType && isAdapter(symbol.owner.asType.toType)
+    if (symbol != null && symbol.isTerm) {
+      val ts = symbol.asTerm
+      (ts.isGetter && ts.name == newTermName("_wrapped") && ts.owner.isType && isAdapter(ts.owner.asType.toType)
+        || ts.isVal && isAdapterWrappedMember(ts.getter))
+    } else false
 
   def isRootAdapter(symbol: Symbol) =
     symbol != null && symbol.annotations.exists(_.tpe =:= rootAdapterAnnotType)
@@ -274,7 +280,7 @@ trait MacroUtils {
     def findGetter(getterName: String) =
       alternatives(javaTpe.member(newTermName(getterName))).find(isBeanGetter)
 
-    if(isBooleanType(symbol.asMethod.returnType)) {
+    if (isBooleanType(symbol.asMethod.returnType)) {
       findGetter(booleanGetterName) orElse findGetter(getterName) getOrElse fail
     } else {
       findGetter(getterName) getOrElse fail
@@ -289,9 +295,14 @@ trait MacroUtils {
   }
 
   def symbolType(symbol: Symbol) =
-    if(symbol == null) NoType
-    else if(symbol.isType) symbol.asType.toType
+    if (symbol == null) NoType
+    else if (symbol.isType) symbol.asType.toType
     else symbol.typeSignature
+
+  def nonBottomSymbolType(symbol: Symbol) = {
+    val tpe = symbolType(symbol)
+    if (tpe <:< definitions.NullTpe || tpe <:< definitions.NothingTpe) NoType else tpe
+  }
 
   def isAdapterConversion(symbol: Symbol) =
     isProfileObject(symbol.owner) && symbol.isImplicit && symbol.isMethod && isAdapter(symbol.asMethod.returnType)
