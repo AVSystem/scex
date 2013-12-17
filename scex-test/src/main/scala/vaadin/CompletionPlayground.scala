@@ -37,6 +37,10 @@ object CompletionPlayground {
         on { jl: JavaLol =>
           jl.all.members
         }
+
+        on { a: Array[_] =>
+          a.as[Array[Any]].exists(_: Any => Boolean)
+        }
       }
 
       val header = "import com.avsystem.scex.util.TypesafeEquals._"

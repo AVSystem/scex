@@ -37,10 +37,19 @@ object ExpressionMacroProcessor extends LoggingUtils {
       if (isForbiddenThisReference(subtree)) {
         c.error(subtree.pos, s"Cannot refer to 'this' or outer instances")
       }
-      if (!profile.syntaxValidator.isSyntaxAllowed(c.universe)(subtree)) {
-        c.error(subtree.pos, s"Cannot use language construct: ${subtree.getClass.getSimpleName}")
-      }
     }
+
+    def validateSyntax(trees: List[Tree]): Unit = trees match {
+      case head :: tail =>
+        val (allowed, children) = profile.syntaxValidator.validateSyntax(c.universe)(head)
+        if (!allowed) {
+          c.error(head.pos, s"Forbidden language construct: ${head.productPrefix}")
+        }
+        validateSyntax(children ::: tail)
+      case Nil =>
+    }
+
+    validateSyntax(List(expr.tree))
 
     val access = extractAccess(expr.tree)
     logger.trace(s"Validating expression member access:\n${access.repr}")

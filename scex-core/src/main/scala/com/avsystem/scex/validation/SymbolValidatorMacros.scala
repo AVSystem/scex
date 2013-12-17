@@ -124,6 +124,12 @@ object SymbolValidatorMacros {
         c.literal(allow).splice))
     }
 
+    def unwrapConvertedPrefix(prefix: Tree) = prefix match {
+      case TypeApply(Select(convTree@ImplicitlyConverted(actualPrefix, fun), TermName("as")), List(_))
+        if hasType[DirectWildcardSelector](convTree) => actualPrefix
+      case _ => prefix
+    }
+
     def checkPrefix(required: Option[(Symbol, Type)], prefix: Tree) = (required, prefix) match {
       case (Some((requiredSymbol, requiredTpe)), Ident(_))
         if prefix.symbol == requiredSymbol && prefix.tpe <:< requiredTpe =>
@@ -177,7 +183,7 @@ object SymbolValidatorMacros {
     def parseWildcardSelector(requiredPrefix: Option[(Symbol, Type)], tree: Tree): ParsedWildcardSelector = tree match {
       // prefix implicitly converted to DirectWildcardSelector
       case ImplicitlyConverted(prefix, _) if hasType[DirectWildcardSelector](tree) =>
-        val tpe = checkPrefix(requiredPrefix, prefix)
+        val tpe = checkPrefix(requiredPrefix, unwrapConvertedPrefix(prefix))
         ParsedWildcardSelector(tpe, accessibleMembers(tpe), None)
 
       // SymbolValidator.allStatic[T]
@@ -302,10 +308,10 @@ object SymbolValidatorMacros {
         reifyAccessSpec(checkNewInstanceTpe(requiredPrefix, tpeTree), body.symbol, None)
 
       case Select(apply@ImplicitlyConverted(prefix, fun), _) =>
-        reifyAccessSpec(checkPrefix(requiredPrefix, prefix), body.symbol, Some((stripTypeApply(fun), apply.tpe)))
+        reifyAccessSpec(checkPrefix(requiredPrefix, unwrapConvertedPrefix(prefix)), body.symbol, Some((stripTypeApply(fun), apply.tpe)))
 
       case Select(prefix, _) =>
-        reifyAccessSpec(checkPrefix(requiredPrefix, prefix), body.symbol, None)
+        reifyAccessSpec(checkPrefix(requiredPrefix, unwrapConvertedPrefix(prefix)), body.symbol, None)
 
       case Apply(inner, _) =>
         extractSymbols(requiredPrefix, inner)

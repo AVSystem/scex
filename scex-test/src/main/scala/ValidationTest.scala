@@ -149,13 +149,13 @@ object ValidationTest {
     //memberAccessSpecs foreach println
 
     val syntaxValidator = new SyntaxValidator {
-      def isSyntaxAllowed(u: Universe)(tree: u.Tree): Boolean = {
+      def validateSyntax(u: Universe)(tree: u.Tree): (Boolean, List[u.Tree]) = {
         import u._
 
         tree match {
           case _: Block | _: Select | _: Apply | _: TypeApply | _: Ident |
-               _: If | _: Literal | _: New | _: This | _: Typed | _: TypTree => true
-          case _ => false
+               _: If | _: Literal | _: New | _: This | _: Typed | _: TypTree => (true, tree.children)
+          case _ => (false, tree.children)
         }
       }
     }

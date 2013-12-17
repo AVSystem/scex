@@ -152,6 +152,8 @@ object SymbolValidator {
   trait DirectWildcardSelector extends WildcardSelector {
     def all: ScopeSpecifiers with DirectMemberSubsets
 
+    def as[S]: S
+
     /**
      * Starts "wildcard" notation to allow or deny calling multiple methods available through implicit conversion
      * on some type, in single DSL statement. Example:
