@@ -20,12 +20,14 @@ trait ScexPresentationCompiler extends ScexCompiler {
 
   private object lock
 
-  @inline
-  private def underLock[T](code: => T) = {
-    lock.synchronized {
-      code
+  private def underLock[T](code: => T) = lock.synchronized {
+    if (!initialized) {
+      init()
     }
+    code
   }
+
+  private var initialized = false
 
   private var reporter: Reporter = _
   private var global: IGlobal = _
@@ -37,9 +39,8 @@ trait ScexPresentationCompiler extends ScexCompiler {
     logger.info("Initializing Scala presentation compiler")
     reporter = new Reporter(settings)
     global = new IGlobal(settings, reporter)
+    initialized = true
   }
-
-  init()
 
   private def newInteractiveExpressionPackage() =
     newPackageName("_scex_interactive_expr")

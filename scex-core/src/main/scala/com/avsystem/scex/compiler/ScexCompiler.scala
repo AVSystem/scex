@@ -71,9 +71,18 @@ trait ScexCompiler extends PackageGenerator with LoggingUtils {
 
   protected type RawExpression = Function[Any, Any]
 
+  private def underLock[T](code: => T) = synchronized {
+    if (!initialized) {
+      init()
+    }
+    code
+  }
+
   val settings = new Settings
   settings.usejavacp.value = true
   settings.exposeEmptyPackage.value = true
+
+  private var initialized = false
 
   private val reporter = new Reporter(settings)
 
@@ -92,9 +101,8 @@ trait ScexCompiler extends PackageGenerator with LoggingUtils {
     compilationCount = 0
     global = new Global(settings, reporter)
     persistentClassLoader = new ScexClassLoader(new VirtualDirectory("(scex_persistent)", None), getClass.getClassLoader)
+    initialized = true
   }
-
-  init()
 
   private def instantiatePersistent[T](className: String) =
     Class.forName(className, true, persistentClassLoader).newInstance.asInstanceOf[T]
@@ -192,7 +200,7 @@ trait ScexCompiler extends PackageGenerator with LoggingUtils {
     reporter.compileErrors()
   }
 
-  protected def compileExpression(exprDef: ExpressionDef): Try[RawExpression] = synchronized {
+  protected def compileExpression(exprDef: ExpressionDef): Try[RawExpression] = underLock {
     val pkgName = newExpressionPackage()
     val (codeToCompile, _) = expressionCode(exprDef, pkgName)
     // every single expression has its own classloader and virtual directory
@@ -258,7 +266,7 @@ trait ScexCompiler extends PackageGenerator with LoggingUtils {
 
 
   @throws[CompilationFailedException]
-  def compileSyntaxValidator(code: String): SyntaxValidator = synchronized {
+  def compileSyntaxValidator(code: String): SyntaxValidator = underLock {
     val pkgName = newSyntaxValidatorPackage()
     val codeToCompile = wrapInSource(generateSyntaxValidator(code), pkgName)
     val sourceFile = new BatchSourceFile(pkgName, codeToCompile)
@@ -272,7 +280,7 @@ trait ScexCompiler extends PackageGenerator with LoggingUtils {
   }
 
   @throws[CompilationFailedException]
-  def compileSymbolValidator(code: String): SymbolValidator = synchronized {
+  def compileSymbolValidator(code: String): SymbolValidator = underLock {
     val pkgName = newSymbolValidatorPackage()
     val codeToCompile = wrapInSource(generateSymbolValidator(code), pkgName)
     val sourceFile = new BatchSourceFile(pkgName, codeToCompile)
@@ -289,7 +297,7 @@ trait ScexCompiler extends PackageGenerator with LoggingUtils {
    * Compiles arbitrary Scala source file into a dedicated class loader and loads class with given fully qualified name
    * from that class loader.
    */
-  def compileClass(code: String, name: String): Class[_] = synchronized {
+  def compileClass(code: String, name: String): Class[_] = underLock {
     val sourceFile = new BatchSourceFile("(unknown)", code)
     val classLoader = new ScexClassLoader(new VirtualDirectory("(unknown)", None), getClass.getClassLoader)
 
@@ -301,7 +309,7 @@ trait ScexCompiler extends PackageGenerator with LoggingUtils {
     }
   }
 
-  def reset(): Unit = synchronized {
+  def reset(): Unit = underLock {
     init()
   }
 }
