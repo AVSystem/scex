@@ -15,6 +15,15 @@ trait ScexPresentationCompiler extends ScexCompiler {
 
   object lock
 
+  private def underLock[T](code: => T) = lock.synchronized {
+    if(!initialized) {
+      init()
+    }
+    code
+  }
+
+  private var initialized = false
+
   private var reporter: Reporter = _
   private var global: IGlobal = _
 
@@ -24,9 +33,8 @@ trait ScexPresentationCompiler extends ScexCompiler {
   private def init() {
     reporter = new Reporter(settings)
     global = new IGlobal(settings, reporter)
+    initialized = true
   }
-
-  init()
 
   private def newInteractiveExpressionPackage() =
     newPackageName("_scex_interactive_expr")
@@ -52,7 +60,7 @@ trait ScexPresentationCompiler extends ScexCompiler {
 
     val pkgName = newInteractiveExpressionPackage()
 
-    private def withGlobal[T](code: IGlobal => T) = lock.synchronized {
+    private def withGlobal[T](code: IGlobal => T) = underLock {
       val global = compiler.global
       getOrThrow(global.askForResponse(() => ExpressionMacroProcessor.profileVar.value = profile))
       val result = code(global)
@@ -250,7 +258,7 @@ trait ScexPresentationCompiler extends ScexCompiler {
     val result = super.compile(sourceFile, classLoader, usedInExpressions)
 
     if (result.isEmpty && usedInExpressions) {
-      lock.synchronized {
+      underLock {
         val global = this.global
         val response = new global.Response[global.Tree]
         global.askLoadedTyped(sourceFile, response)
@@ -262,7 +270,7 @@ trait ScexPresentationCompiler extends ScexCompiler {
   }
 
   override def reset() {
-    lock.synchronized {
+    underLock {
       synchronized {
         super.reset()
         typeCompletionCache.invalidateAll()
