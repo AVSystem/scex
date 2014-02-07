@@ -317,6 +317,7 @@ trait ScexPresentationCompiler extends ScexCompiler {
     underLock {
       synchronized {
         super.reset()
+        global.askShutdown()
         typeCompletionCache.invalidateAll()
         init()
       }
