@@ -1,5 +1,5 @@
 task wrapper(type: Wrapper) {
-    gradleVersion = "1.10"
+    gradleVersion = "1.11"
 }
 
 apply plugin: 'maven'
@@ -23,7 +23,7 @@ allprojects {
     sourceCompatibility = 1.7
     targetCompatibility = 1.7
 
-    ext.scalaVersion = '2.10.3'
+    ext.scalaVersion = '2.10.4-RC3'
 
     idea {
         module {
