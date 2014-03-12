@@ -44,6 +44,7 @@ object CodeGeneration {
   val MarkersObj = s"$CompilerPkg.Markers"
   val MacroProcessor = s"$CompilerPkg.ExpressionMacroProcessor"
   val InterpolationOpen = "t\"\"\""
+  val NoMacrosInterpolationOpen = "s\"\"\""
   val InterpolationClose = "\"\"\""
 
   def adapterName(clazz: Class[_]) =
@@ -111,7 +112,7 @@ object CodeGeneration {
         ""
     }
 
-    val interpolationPrefix = if (template) InterpolationOpen else ""
+    val interpolationPrefix = if (template) if (!noMacroProcessing) InterpolationOpen else NoMacrosInterpolationOpen else ""
     val interpolationPostfix = if (template) InterpolationClose else ""
     val setterConversion = if (setter) s"$MacroProcessor.asSetter" else ""
 

@@ -8,6 +8,8 @@ import java.{util => ju, lang => jl}
  */
 class Root {
   def stuff = 5
+
+  val tehList = List(1, 2, 3)
 }
 
 object Root {

@@ -122,7 +122,7 @@ trait ScexCompiler extends PackageGenerator with LoggingUtils {
   private def newSymbolValidatorPackage() =
     newPackageName("_scex_symbol_validator")
 
-  protected def compileFullJavaGetterAdapter(clazz: Class[_]): Try[String] = {
+  protected def compileFullJavaGetterAdapter(clazz: Class[_]): Try[String] = underLock {
     val pkgName = newAdapterPackage()
     val codeToCompile = wrapInSource(generateJavaGetterAdapter(clazz, full = true).get, pkgName)
     val sourceFile = new BatchSourceFile(pkgName, codeToCompile)
@@ -137,7 +137,7 @@ trait ScexCompiler extends PackageGenerator with LoggingUtils {
     Try(result)
   }
 
-  protected def compileProfileObject(profile: ExpressionProfile): Try[String] = {
+  protected def compileProfileObject(profile: ExpressionProfile): Try[String] = underLock {
     val pkgName = newProfilePackage()
     val codeToCompile = wrapInSource(generateProfileObject(profile), pkgName)
     val sourceFile = new BatchSourceFile(pkgName, codeToCompile)

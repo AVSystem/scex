@@ -1,8 +1,7 @@
 package vaadin
 
 import java.{util => ju, lang => jl}
-import scala.collection.JavaConverters._
-import scala.reflect.{ClassTag, classTag}
+import scala.reflect.classTag
 import scala.language.dynamics
 
 /**
@@ -10,6 +9,6 @@ import scala.language.dynamics
  * Author: ghik
  */
 object Dyn extends Dynamic {
-  def selectDynamic(name: String) = name
+  def selectDynamic(name: String) = this
 }
 

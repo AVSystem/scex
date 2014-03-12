@@ -124,7 +124,7 @@ object Macros {
     } else if (leftToRightConv != EmptyTree) {
       reify(c.Expr[Any](Apply(leftToRightConv, List(leftTree))).splice == c.Expr[Any](rightTree).splice)
     } else {
-      c.error(c.enclosingPosition, s"Values of types $leftTpe and $rightTpe cannot be compared")
+      c.error(c.enclosingPosition, s"Values of types $leftTpe and $rightTpe cannot be compared for equality")
       null
     }
   }

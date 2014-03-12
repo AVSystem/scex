@@ -10,6 +10,7 @@ import scala.reflect.internal.util.{SourceFile, BatchSourceFile}
 import scala.reflect.runtime.universe.TypeTag
 import com.avsystem.scex.compiler.ScexCompiler.CompileError
 import com.avsystem.scex.compiler.ExpressionDef
+import java.io.PrintWriter
 
 trait ScexPresentationCompiler extends ScexCompiler {
   compiler =>
@@ -31,9 +32,6 @@ trait ScexPresentationCompiler extends ScexCompiler {
 
   private var reporter: Reporter = _
   private var global: IGlobal = _
-
-  private val typeCompletionCache =
-    CacheBuilder.newBuilder.maximumSize(100).build[(Completer, TypeWrapper), List[SMember]]
 
   private def init(): Unit = {
     logger.info("Initializing Scala presentation compiler")
@@ -96,10 +94,7 @@ trait ScexPresentationCompiler extends ScexCompiler {
       compiler.getScopeCompletion(exprDef("()", bare = true))
 
     def getTypeCompletion(expression: String, position: Int): Completion =
-      getPrefixForCompletion(expression, template, position) match {
-        case Some(subexpr) => compiler.getTypeCompletion(exprDef(subexpr, bare = true))
-        case None => Completion(Nil)
-      }
+      compiler.getTypeCompletion(exprDef(expression, bare = false), position)
 
   }
 
@@ -130,34 +125,6 @@ trait ScexPresentationCompiler extends ScexCompiler {
     resultType: String): Completer = {
 
     new CompleterImpl(profile, template, setter, header, contextType, rootObjectClass, resultType)
-  }
-
-  protected def getPrefixForCompletion(expression: String, template: Boolean, position: Int): Option[String] = {
-    val global = compiler.global
-    import global.{sourceFile => _, position => _, _}
-
-    val (code, offset) = CodeGeneration.wrapForParsing(expression, template)
-    val sourceFile = new BatchSourceFile("(for_parsing)", code)
-    val sourcePosition = sourceFile.position(offset + position)
-    val PackageDef(_, List(ModuleDef(_, _, Template(_, _, List(_, expressionTree))))) = parseTree(sourceFile)
-
-    def includes(p1: Position, p2: Position) =
-      p1.startOrPoint <= p2.point && p1.endOrPoint > p2.point
-
-    if (position >= 0 && expression.length > position && expression.charAt(position) == '.')
-      new Locator(sourcePosition).locateIn(expressionTree) match {
-        case tree@Literal(Constant(str: String)) if includes(tree.pos, sourcePosition) =>
-          None
-        case tree@Ident(_) if includes(tree.pos, sourcePosition) =>
-          None
-        case tree@Select(qual, name) if includes(tree.pos, sourcePosition) && !includes(qual.pos, sourcePosition) =>
-          None
-        case tree@Literal(Constant(dbl: Double)) if dbl.isWhole && tree.pos.end - 1 == sourcePosition.point =>
-          Some(dbl.toLong.toString)
-        case tree =>
-          Some(tree.toString())
-      }
-    else None
   }
 
   private def getContextTpe(global: IGlobal)(tree: global.Tree): global.Type = {
@@ -232,7 +199,7 @@ trait ScexPresentationCompiler extends ScexCompiler {
           case member@ScopeMember(sym, _, _, viaImport)
             if viaImport != EmptyTree && sym.isTerm && !sym.isPackage &&
               !isAdapterWrappedMember(sym) && (!isScexSynthetic(sym) || (isExpressionUtil(sym) && !isExpressionUtilObject(sym))) =>
-            member
+            if(sym.hasGetter) member.copy(sym = sym.getter(sym.owner)) else member
         } filter { m =>
           symbolValidator.validateMemberAccess(vc)(accessFromScopeMember(m)).deniedAccesses.isEmpty
         } map translateMember(vc)
@@ -245,7 +212,7 @@ trait ScexPresentationCompiler extends ScexCompiler {
     }
   }
 
-  protected def getTypeCompletion(exprDef: ExpressionDef) = withGlobal { global =>
+  protected def getTypeCompletion(exprDef: ExpressionDef, position: Int) = withGlobal { global =>
     import global.{sourceFile => _, position => _, _}
     val symbolValidator = exprDef.profile.symbolValidator
 
@@ -255,23 +222,28 @@ trait ScexPresentationCompiler extends ScexCompiler {
     val sourceFile = new ExpressionSourceFile(exprDef.profile, pkgName, code)
 
     try {
-      val startPosition = sourceFile.position(offset)
+      val sourcePosition = sourceFile.position(offset + position)
 
-      logger.debug(s"Computing type completion for $exprDef")
+      logger.debug(s"Computing type completion for $exprDef at position $position")
 
       val treeResponse = new Response[Tree]
-      askLoadedTyped(sourceFile, treeResponse)
+      askLoadedTyped(sourceFile, keepLoaded = true, treeResponse)
       val fullTree = getOrThrow(treeResponse)
 
       val vc = ValidationContext(global)(getContextTpe(global)(fullTree))
       import vc._
 
       val members = inCompilerThread {
-        val tree = fullTree.collect {
-          case ValDef(_, name, _, rhs) if name == newTermName("_result") => rhs
-        }.lastOption.getOrElse(EmptyTree)
+        // fix selectDynamic positions, which scalac computes incorrectly...
+        fullTree.foreach {
+          case tree@Apply(Select(_, TermName("selectDynamic")), List(lit@Literal(Constant(_: String))))
+            if lit.pos.isTransparent => tree.setPos(tree.pos.withEnd(lit.pos.end))
+          case _ =>
+        }
 
-        val (ownerTpe, typeMembers) = global.typeMembers(tree, startPosition)
+        val tree = new Locator(sourcePosition).locateIn(fullTree)
+
+        val (ownerTpe, typeMembers) = global.typeMembers(tree, sourcePosition)
 
         val fakeDirectPrefix = Ident(nme.EMPTY).setSymbol(Option(tree.symbol).getOrElse(NoSymbol)).setType(ownerTpe)
         def fakeSelect(member: ScexTypeMember) = {
@@ -318,7 +290,6 @@ trait ScexPresentationCompiler extends ScexCompiler {
       synchronized {
         super.reset()
         global.askShutdown()
-        typeCompletionCache.invalidateAll()
         init()
       }
     }

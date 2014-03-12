@@ -6,17 +6,14 @@ import scala.tools.nsc.{symtab, Settings}
 import scala.tools.nsc.reporters.Reporter
 import scala.collection.mutable
 import symtab.Flags.{ACCESSOR, PARAMACCESSOR}
-import scala.Some
-import scala.reflect.internal.util.SourceFile
+import scala.reflect.internal.util.{SourceFile, BatchSourceFile, TransparentPosition, RangePosition, OffsetPosition}
+import com.avsystem.scex.compiler.CodeGeneration
 
 /**
  * Created: 13-12-2013
  * Author: ghik
  *
- * The compiler probably screws up tree positions when rewriting dynamic calls and because of that there's
- * literally no way to give the compiler a position under which it will find the appropriate tree.
- * As a result, I have to compute type completion manually instead of using [[askTypeCompletion]].
- * The code below is a modified implementation of the same functionality in [[scala.tools.nsc.interactive.Global]].
+ * I needed to hack a custom implementation of type completion, hence this class.
  */
 class IGlobal(settings: Settings, reporter: Reporter) extends Global(settings, reporter) {
 
@@ -44,7 +41,7 @@ class IGlobal(settings: Settings, reporter: Reporter) extends Global(settings, r
     private def keepSecond(m: ScexTypeMember, sym: Symbol, implicitTree: Tree): Boolean = {
       val implicitlyAdded = implicitTree != EmptyTree
       def superclasses(symbol: Symbol): Set[Symbol] =
-        if(symbol.isType) symbol.asType.toType.baseClasses match {
+        if (symbol.isType) symbol.asType.toType.baseClasses match {
           case _ :: tail => tail.toSet
           case Nil => Set.empty
         } else Set.empty
@@ -57,8 +54,8 @@ class IGlobal(settings: Settings, reporter: Reporter) extends Global(settings, r
     }
 
     def add(sym: Symbol, pre: Type, implicitTree: Tree)(toMember: (Symbol, Type) => ScexTypeMember) {
-      if ((sym.isGetter || sym.isSetter) && sym.accessed != NoSymbol) {
-        add(sym.accessed, pre, implicitTree)(toMember)
+      if (sym.hasGetter) {
+        add(sym.getter(sym.owner), pre, implicitTree)(toMember)
       } else if (!sym.name.decodedName.containsName(Dollar) && !sym.isSynthetic && sym.hasRawInfo) {
         val symtpe = pre.memberType(sym) onTypeError ErrorType
         matching(sym, symtpe, this(sym.name)) match {
@@ -83,11 +80,24 @@ class IGlobal(settings: Settings, reporter: Reporter) extends Global(settings, r
   def typeMembers(typedTree: Tree, pos: Position) = {
     var tree = typedTree
 
+    // if tree consists of just x. or x.fo where fo is not yet a full member name
+    // ignore the selection and look in just x.
+    tree match {
+      case Select(qual, name) if tree.tpe == ErrorType => tree = qual
+      case _ =>
+    }
+
     val sym = Option(tree.symbol).getOrElse(NoSymbol)
 
     val context = doLocateContext(pos)
 
-    if (tree.tpe == null)
+    val shouldTypeQualifier = tree.tpe match {
+      case null => true
+      case mt: MethodType => mt.isImplicit
+      case _ => false
+    }
+
+    if (shouldTypeQualifier)
       tree = analyzer.newTyper(context).typedQualifier(tree)
 
     val pre = stabilizedType(tree)
@@ -104,15 +114,16 @@ class IGlobal(settings: Settings, reporter: Reporter) extends Global(settings, r
 
     def addTypeMember(sym: Symbol, pre: Type, inherited: Boolean, implicitTree: Tree, implicitType: Type) = {
       val implicitlyAdded = implicitTree != EmptyTree
-      members.add(sym, pre, implicitTree) { (s, st) =>
-        new ScexTypeMember(s, st,
-          context.isAccessible(if (s.hasGetter) s.getter(s.owner) else s, pre, superAccess && !implicitlyAdded),
-          inherited, implicitTree, implicitType)
+      members.add(sym, pre, implicitTree) {
+        (s, st) =>
+          new ScexTypeMember(s, st,
+            context.isAccessible(if (s.hasGetter) s.getter(s.owner) else s, pre, superAccess && !implicitlyAdded),
+            inherited, implicitTree, implicitType)
       }
     }
 
     /** Create a function application of a given view function to `tree` and typecheck it.
-     */
+      */
     def viewApply(view: analyzer.SearchResult): Tree = {
       assert(view.tree != EmptyTree)
       analyzer.newTyper(context.makeImplicit(reportAmbiguousErrors = false))
@@ -160,4 +171,56 @@ class IGlobal(settings: Settings, reporter: Reporter) extends Global(settings, r
 
   override def parseTree(source: SourceFile) =
     new syntaxAnalyzer.UnitParser(new SilentCompilationUnit(source)).parse()
+
+  def parseExpression(code: String, template: Boolean) = {
+    val (wrappedCode, offset) = CodeGeneration.wrapForParsing(code, template)
+    val sourceFile = new BatchSourceFile("(for_parsing)", wrappedCode)
+    val PackageDef(_, List(ModuleDef(_, _, Template(_, _, List(_, expressionTree))))) = parseTree(sourceFile)
+    moveTree(expressionTree, -offset)
+  }
+
+  def movePosition(pos: Position, offset: Int) = pos match {
+    case tp: TransparentPosition => new TransparentPosition(tp.source, tp.start + offset, tp.point + offset, tp.end + offset)
+    case rp: RangePosition => new RangePosition(rp.source, rp.start + offset, rp.point + offset, rp.end + offset)
+    case op: OffsetPosition => new OffsetPosition(op.source, op.point + offset)
+    case _ => pos
+  }
+
+  def moveTree(tree: Tree, offset: Int) = {
+    tree.foreach {
+      t =>
+        t.setPos(movePosition(t.pos, offset))
+    }
+    tree
+  }
+
+  class Locator(pos: Position) extends Traverser {
+    var last: Tree = _
+
+    def locateIn(root: Tree): Tree = {
+      this.last = EmptyTree
+      traverse(root)
+      this.last
+    }
+
+    override def traverse(t: Tree) {
+      t match {
+        case tt: TypeTree if tt.original != null && (includes(tt.pos, tt.original.pos)) =>
+          traverse(tt.original)
+        case _ =>
+          if (includes(t.pos, pos)) {
+            if (!t.pos.isTransparent) last = t
+            super.traverse(t)
+          } else t match {
+            case mdef: MemberDef =>
+              traverseTrees(mdef.mods.annotations)
+            case _ =>
+          }
+      }
+    }
+
+    private def includes(pos1: Position, pos2: Position) =
+      (pos1 includes pos2) && pos1.endOrPoint > pos2.startOrPoint
+  }
+
 }

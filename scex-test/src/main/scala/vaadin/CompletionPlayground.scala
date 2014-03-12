@@ -38,10 +38,22 @@ object CompletionPlayground {
           jl.all.members
         }
 
+        on { l: List[Int] =>
+          l.filter _
+          l.all.membersNamed.map
+        }
+
         on { a: Array[_] =>
           a.as[Array[Any]].exists(_: Any => Boolean)
         }
+
+        on { r: Root =>
+          r.all.members
+          r.dyn
+        }
       }
+
+      acl foreach println
 
       val header = "import com.avsystem.scex.util.TypesafeEquals._"
 
@@ -55,7 +67,7 @@ object CompletionPlayground {
       def memberRepr(member: Member) =
         s"${member.name}${member.params.map(_.map(p => s"${p.name}: ${p.tpe}").mkString("(", ", ", ")")).mkString}: ${member.tpe}"
 
-      val completer = compiler.getCompleter[SimpleContext[JavaLol], String](profile)
+      val completer = compiler.getCompleter[SimpleContext[Root], String](profile)
       val scopeMembers = completer.getScopeCompletion.members.filterNot(_.iimplicit).map(memberRepr).mkString("\n")
 
       val textField = new TextField

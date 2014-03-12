@@ -216,20 +216,9 @@ object JavaTypeParsing {
       (if (lowerBoundsRepr.nonEmpty) " >: " + lowerBoundsRepr else "")
   }
 
-  /**
-   * Example: returns string <tt>[T <: java.lang.Cloneable, _ >: String]</tt> when passed list of two BoundedTypes
-   * representing type variable <tt>T extends java.lang.Cloneable</tt> and wildcard type <tt>? super String</tt>.
-   *
-   * @param typeVars
-   * @return
-   */
-  def typeVariableDeclarations(typeVars: List[Type]): List[String] = {
-    if (typeVars.nonEmpty)
-      typeVars.map {
-        case TypeVariable(name, upperBounds, lowerBounds) =>
-          name + bounds(upperBounds, lowerBounds)
-      }
-    else
-      Nil
-  }
+  def typeVariableDeclarations(typeVars: List[Type]): List[String] =
+    typeVars.map {
+      case TypeVariable(name, upperBounds, lowerBounds) =>
+        name + bounds(upperBounds, lowerBounds)
+    }
 }

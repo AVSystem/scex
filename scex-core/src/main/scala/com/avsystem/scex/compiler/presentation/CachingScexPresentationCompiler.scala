@@ -23,23 +23,15 @@ trait CachingScexPresentationCompiler extends ScexPresentationCompiler {
     .expireAfterAccess(config.completionExpirationTime, TimeUnit.MILLISECONDS)
     .build[ExpressionDef, Completion]
 
-  private val typeCompletionCache = CacheBuilder.newBuilder
-    .expireAfterAccess(config.completionExpirationTime, TimeUnit.MILLISECONDS)
-    .build[ExpressionDef, Completion]
-
   override protected def getErrors(exprDef: ExpressionDef) =
     errorsCache.get(exprDef, callable(super.getErrors(exprDef)))
 
   override protected def getScopeCompletion(exprDef: ExpressionDef) =
     scopeCompletionCache.get(exprDef, callable(super.getScopeCompletion(exprDef)))
 
-  override protected def getTypeCompletion(exprDef: ExpressionDef) =
-    typeCompletionCache.get(exprDef, callable(super.getTypeCompletion(exprDef)))
-
   override def reset() = synchronized {
     super.reset()
     errorsCache.invalidateAll()
     scopeCompletionCache.invalidateAll()
-    typeCompletionCache.invalidateAll()
   }
 }
