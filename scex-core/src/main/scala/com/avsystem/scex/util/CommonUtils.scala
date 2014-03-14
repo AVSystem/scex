@@ -73,4 +73,9 @@ object CommonUtils {
     new Callable[T] {
       def call() = expr
     }
+
+  implicit class any2toOpt[A](val a: A) {
+    def toOpt = Option(a)
+  }
+
 }

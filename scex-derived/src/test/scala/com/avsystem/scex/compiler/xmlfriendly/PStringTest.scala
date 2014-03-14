@@ -6,6 +6,7 @@ import org.junit.runner.RunWith
 import org.scalatest.FunSuite
 import org.scalatest.junit.JUnitRunner
 import scala.collection.immutable.SortedMap
+import com.avsystem.scex.compiler.ShiftInfo
 
 /**
  * Created: 25-10-2013

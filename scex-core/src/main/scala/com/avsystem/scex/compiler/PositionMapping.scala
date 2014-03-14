@@ -1,5 +1,5 @@
 package com.avsystem.scex
-package compiler.xmlfriendly
+package compiler
 
 import java.{util => ju, lang => jl}
 import scala.collection.immutable.SortedMap
@@ -8,7 +8,10 @@ import scala.collection.immutable.SortedMap
  * Created: 24-10-2013
  * Author: ghik
  */
-class PositionMapping(shiftMapping: SortedMap[Int, ShiftInfo], reverseShiftMapping: SortedMap[Int, ShiftInfo]) {
+class PositionMapping(
+  private val shiftMapping: SortedMap[Int, ShiftInfo],
+  private val reverseShiftMapping: SortedMap[Int, ShiftInfo]) {
+
   def apply(pos: Int) = shiftMapping.to(pos).lastOption match {
     case Some((offset, ShiftInfo(totalPrevShift, added, removed))) =>
       if (pos - offset < removed)
@@ -22,6 +25,17 @@ class PositionMapping(shiftMapping: SortedMap[Int, ShiftInfo], reverseShiftMappi
 
   def reverse =
     new PositionMapping(reverseShiftMapping, shiftMapping)
+
+  override def equals(other: Any) = other match {
+    case op: PositionMapping => shiftMapping == op.shiftMapping
+  }
+
+  override lazy val hashCode =
+    shiftMapping.hashCode()
+}
+
+object PositionMapping {
+  val empty = new PositionMapping(SortedMap.empty, SortedMap.empty)
 }
 
 case class ShiftInfo(totalPrevShift: Int, added: Int, removed: Int) {

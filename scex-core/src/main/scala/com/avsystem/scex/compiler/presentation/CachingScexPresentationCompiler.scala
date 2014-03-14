@@ -1,4 +1,5 @@
-package com.avsystem.scex.compiler.presentation
+package com.avsystem.scex
+package compiler.presentation
 
 import java.{util => ju, lang => jl}
 import com.avsystem.scex.compiler.ExpressionDef

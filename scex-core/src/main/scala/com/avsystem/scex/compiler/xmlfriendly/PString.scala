@@ -3,6 +3,7 @@ package compiler.xmlfriendly
 
 import java.{util => ju, lang => jl}
 import scala.collection.immutable.SortedMap
+import com.avsystem.scex.compiler.{ShiftInfo, PositionMapping}
 
 /**
  * Created: 24-10-2013

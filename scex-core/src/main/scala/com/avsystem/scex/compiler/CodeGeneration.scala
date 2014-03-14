@@ -94,7 +94,7 @@ object CodeGeneration {
     profileObjectPkg: String,
     noMacroProcessing: Boolean) = {
 
-    val ExpressionDef(profile, template, setter, expression, header, _, contextType, resultType) = exprDef
+    val ExpressionDef(profile, template, setter, expression, _, header, _, contextType, resultType) = exprDef
 
     val resultOrSetterType = if (setter) s"com.avsystem.scex.Setter[$resultType]" else resultType
 

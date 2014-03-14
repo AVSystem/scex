@@ -200,12 +200,16 @@ trait ScexCompiler extends PackageGenerator with LoggingUtils {
     reporter.compileErrors()
   }
 
+  protected def preprocess(exprDef: ExpressionDef): ExpressionDef =
+    exprDef
+
   protected def compileExpression(exprDef: ExpressionDef): Try[RawExpression] = underLock {
+    val preprocessedExprDef = preprocess(exprDef)
     val pkgName = newExpressionPackage()
-    val (codeToCompile, _) = expressionCode(exprDef, pkgName)
+    val (codeToCompile, _) = expressionCode(preprocessedExprDef, pkgName)
     // every single expression has its own classloader and virtual directory
     val classLoader = new ScexClassLoader(new VirtualDirectory("(scex)", None), persistentClassLoader)
-    val sourceFile = new ExpressionSourceFile(exprDef.profile, pkgName, codeToCompile)
+    val sourceFile = new ExpressionSourceFile(preprocessedExprDef.profile, pkgName, codeToCompile)
 
     def result =
       compile(sourceFile, classLoader, shared = false) match {
@@ -239,8 +243,8 @@ trait ScexCompiler extends PackageGenerator with LoggingUtils {
     val TypeRef(_, _, List(rootObjectType, _)) = contextType.baseType(typeOf[ExpressionContext[_, _]].typeSymbol)
     val rootObjectClass = mirror.runtimeClass(rootObjectType)
 
-    getCompiledExpression(ExpressionDef(profile, template, setter = false, expression, header,
-      rootObjectClass, contextType.toString, typeOf[T].toString))
+    getCompiledExpression(ExpressionDef(profile, template, setter = false, expression, PositionMapping.empty,
+      header, rootObjectClass, contextType.toString, typeOf[T].toString))
   }
 
   def getCompiledSetterExpression[C <: ExpressionContext[_, _] : TypeTag, T: TypeTag](
@@ -260,8 +264,8 @@ trait ScexCompiler extends PackageGenerator with LoggingUtils {
     val TypeRef(_, _, List(rootObjectType, _)) = contextType.baseType(typeOf[ExpressionContext[_, _]].typeSymbol)
     val rootObjectClass = mirror.runtimeClass(rootObjectType)
 
-    getCompiledExpression(ExpressionDef(profile, template, setter = true, expression, header,
-      rootObjectClass, contextType.toString, typeOf[T].toString))
+    getCompiledExpression(ExpressionDef(profile, template, setter = true, expression, PositionMapping.empty,
+      header, rootObjectClass, contextType.toString, typeOf[T].toString))
   }
 
 

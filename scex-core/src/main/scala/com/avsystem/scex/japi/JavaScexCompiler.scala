@@ -5,13 +5,14 @@ import com.avsystem.scex.compiler.JavaTypeParsing._
 import com.avsystem.scex.compiler.ScexCompiler.CompileError
 import com.avsystem.scex.compiler.presentation.ScexPresentationCompiler
 import com.avsystem.scex.compiler.presentation.ScexPresentationCompiler.Param
-import com.avsystem.scex.compiler.{ExpressionDef, ScexCompiler, ScexCompilerConfig}
+import com.avsystem.scex.compiler.{PositionMapping, ExpressionDef, ScexCompiler, ScexCompilerConfig}
 import com.avsystem.scex.util.{Fluent, CacheImplicits}
 import com.avsystem.scex.{ExpressionProfile, ExpressionContext}
 import com.google.common.cache.CacheBuilder
 import com.google.common.reflect.TypeToken
 import java.lang.reflect.Type
 import java.{util => ju, lang => jl}
+import com.avsystem.scex.compiler.presentation.ast.Tree
 
 trait JavaScexCompiler extends ScexCompiler {
   this: ScexPresentationCompiler =>
@@ -53,8 +54,8 @@ trait JavaScexCompiler extends ScexCompiler {
       val scalaResultType = typesCache.get(_resultTypeToken.getType)
       val rootObjectClass = rootObjectClassCache.get(_contextTypeToken)
 
-      getCompiledExpression[C, T](ExpressionDef(_profile, _template, _setter, _expression, _header,
-        rootObjectClass, scalaContextType, scalaResultType))
+      getCompiledExpression[C, T](ExpressionDef(_profile, _template, _setter, _expression, PositionMapping.empty,
+        _header, rootObjectClass, scalaContextType, scalaResultType))
     }
 
     def contextType[NC <: ExpressionContext[_, _]](contextTypeToken: TypeToken[NC]) = fluent {
@@ -112,8 +113,8 @@ trait JavaScexCompiler extends ScexCompiler {
     }
 
     private def completionToJava(scalaCompletion: ScexPresentationCompiler.Completion) = scalaCompletion match {
-      case ScexPresentationCompiler.Completion(members) =>
-        JavaScexCompiler.Completion(members.map(memberToJava).asJavaCollection)
+      case ScexPresentationCompiler.Completion(typedPrefixTree, members) =>
+        JavaScexCompiler.Completion(typedPrefixTree, members.map(memberToJava).asJavaCollection)
     }
 
     def getErrors(expression: String) =
@@ -124,6 +125,9 @@ trait JavaScexCompiler extends ScexCompiler {
 
     def getTypeCompletion(expression: String, position: Int) =
       completionToJava(wrapped.getTypeCompletion(expression, position))
+
+    def parse(expression: String) =
+      wrapped.parse(expression)
   }
 
   def buildCompleter =
@@ -201,6 +205,6 @@ object JavaScexCompiler {
   case class Member(getName: String, getParams: ju.Collection[ju.Collection[Param]],
     getType: String, isImplicit: Boolean)
 
-  case class Completion(getMembers: ju.Collection[Member])
+  case class Completion(getTypedPrefixTree: Tree, getMembers: ju.Collection[Member])
 
 }

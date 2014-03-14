@@ -53,8 +53,6 @@ object CompletionPlayground {
         }
       }
 
-      acl foreach println
-
       val header = "import com.avsystem.scex.util.TypesafeEquals._"
 
       val utils =
@@ -74,14 +72,19 @@ object CompletionPlayground {
       textField.setWidth("100%")
 
       val label = new Label
-      label.setContentMode(Label.CONTENT_RAW)
+      label.setContentMode(Label.CONTENT_PREFORMATTED)
 
       textField.addListener(new TextChangeListener {
         def textChange(event: TextChangeEvent): Unit = {
           val completion = completer.getTypeCompletion(event.getText, event.getCursorPosition - 1)
           val errors = completer.getErrors(event.getText).mkString("\n")
           val members = completion.members.filterNot(_.iimplicit).map(memberRepr).mkString("\n")
-          label.setValue(s"ERRORS:\n$errors\nCOMPLETION:\n$members\nSCOPE COMPLETION:\n$scopeMembers".replaceAllLiterally("\n", "<br/>"))
+          val parsedTree = completer.parse(event.getText)
+          val typedPrefix = completion.typedPrefixTree
+          val parsedPrefix = parsedTree.locate(typedPrefix.attachments.position)
+          println(parsedTree, parsedPrefix, typedPrefix)
+          label.setValue(s"PARSED:\n${parsedTree.pretty(true, true)}\nERRORS:\n$errors\nPPREFIX:\n${parsedPrefix.pretty(true, true)}\n" +
+            s"TPREFIX:\n${typedPrefix.pretty(true, true)}\nCOMPLETION:\n$members\nSCOPE COMPLETION:\n$scopeMembers")
         }
       })
 

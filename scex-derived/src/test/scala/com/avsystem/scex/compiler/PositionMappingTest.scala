@@ -1,5 +1,5 @@
 package com.avsystem.scex
-package compiler.xmlfriendly
+package compiler
 
 import java.{util => ju, lang => jl}
 import org.junit.runner.RunWith

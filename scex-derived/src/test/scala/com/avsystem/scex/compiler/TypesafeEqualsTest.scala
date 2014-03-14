@@ -55,7 +55,7 @@ class TypesafeEqualsTest extends FunSuite with CompilationTest {
     val exception = intercept[CompilationFailedException] {
       evaluate[Boolean]("1 == \"somestring\"")
     }
-    assert(exception.errors.head.msg === "Values of types Int and String cannot be compared")
+    assert(exception.errors.head.msg === "Values of types Int and String cannot be compared for equality")
   }
 
   test("literals test") {

@@ -13,6 +13,7 @@ case class ExpressionDef(
   template: Boolean,
   setter: Boolean,
   expression: String,
+  positionMapping: PositionMapping,
   header: String,
   rootObjectClass: Class[_],
   contextType: String,

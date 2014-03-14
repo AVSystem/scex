@@ -1,10 +1,8 @@
 package com.avsystem.scex
 package compiler.xmlfriendly
 
-import com.avsystem.scex.ExpressionProfile
-import com.avsystem.scex.compiler.ExpressionDef
+import com.avsystem.scex.compiler.{ScexCompiler, ExpressionDef}
 import java.{util => ju, lang => jl}
-import com.avsystem.scex.compiler.presentation.ScexPresentationCompiler
 
 /**
  *
@@ -18,36 +16,9 @@ import com.avsystem.scex.compiler.presentation.ScexPresentationCompiler
  * Created: 16-08-2013
  * Author: ghik
  */
-trait XmlFriendlyScexCompiler extends ScexPresentationCompiler {
-  override protected def compileExpression(exprDef: ExpressionDef) = {
-    val xmlFriendlyExpression = XmlFriendlyTranslator.translate(exprDef.expression, exprDef.template).result
-    super.compileExpression(exprDef.copy(expression = xmlFriendlyExpression))
+trait XmlFriendlyScexCompiler extends ScexCompiler {
+  override def preprocess(exprDef: ExpressionDef) = {
+    val ps = XmlFriendlyTranslator.translate(exprDef.expression, exprDef.template)
+    exprDef.copy(expression = ps.result, positionMapping = ps.positionMapping)
   }
-
-  override protected def getCompleter(
-    profile: ExpressionProfile,
-    template: Boolean,
-    setter: Boolean,
-    header: String,
-    contextType: String,
-    rootObjectClass: Class[_],
-    resultType: String) = {
-
-    val wrapped: Completer =
-      super.getCompleter(profile, template, setter, header, contextType, rootObjectClass, resultType)
-
-    new Completer {
-      def getErrors(expression: String) =
-        wrapped.getErrors(XmlFriendlyTranslator.translate(expression).result)
-
-      def getTypeCompletion(expression: String, position: Int) = {
-        val ps = XmlFriendlyTranslator.translate(expression, template)
-        wrapped.getTypeCompletion(ps.result, ps.positionMapping(position))
-      }
-
-      def getScopeCompletion =
-        wrapped.getScopeCompletion
-    }
-  }
-
 }

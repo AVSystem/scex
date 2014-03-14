@@ -1,4 +1,5 @@
-package com.avsystem.scex.compiler.presentation
+package com.avsystem.scex
+package compiler.presentation
 
 import java.{util => ju, lang => jl}
 import scala.tools.nsc.interactive.Global
@@ -74,7 +75,7 @@ class IGlobal(settings: Settings, reporter: Reporter) extends Global(settings, r
         if (ms.nonEmpty && this(name).isEmpty) this(name) = ms
     }
 
-    def allMembers: List[ScexTypeMember] = values.toList.flatten
+    def allMembers: Vector[ScexTypeMember] = values.toVector.flatten
   }
 
   def typeMembers(typedTree: Tree, pos: Position) = {
@@ -187,13 +188,17 @@ class IGlobal(settings: Settings, reporter: Reporter) extends Global(settings, r
   }
 
   def moveTree(tree: Tree, offset: Int) = {
-    tree.foreach {
-      t =>
-        t.setPos(movePosition(t.pos, offset))
+    tree.foreach { t =>
+      t.setPos(movePosition(t.pos, offset))
     }
     tree
   }
 
+  /**
+   * Locator with slightly modified inclusion check.
+   *
+   * @param pos
+   */
   class Locator(pos: Position) extends Traverser {
     var last: Tree = _
 
