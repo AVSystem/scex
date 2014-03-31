@@ -8,6 +8,7 @@ import java.{util => ju, lang => jl}
 import org.junit.runner.RunWith
 import org.scalatest.FunSuite
 import org.scalatest.junit.JUnitRunner
+import com.avsystem.scex.util.SimpleContext
 
 /**
  * Created: 18-11-2013
@@ -36,6 +37,18 @@ class TemplateExpressionsTest extends FunSuite with CompilationTest {
 
   test("single-argument int expression") {
     assert(5 === evaluateTemplate[Int]("${15/3}"))
+  }
+
+  test("custom splicer test") {
+    val acl = allow {
+      on { fsr: FancySplicedRoot =>
+        fsr.self
+      }
+      FancySplicedRoot.fancySplicer.toString(_: FancySplicedRoot)
+    }
+    val cexpr = compiler.getCompiledExpression[SimpleContext[FancySplicedRoot], String](
+      createProfile(acl), "${self}", template = true)
+    assert("FANCY" === cexpr.apply(SimpleContext(new FancySplicedRoot)))
   }
 
   test("single-argument int expression with blank surroundings") {

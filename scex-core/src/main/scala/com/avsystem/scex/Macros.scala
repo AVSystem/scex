@@ -1,10 +1,11 @@
 package com.avsystem.scex
 
-import com.avsystem.scex.util.{Literal => ScexLiteral, MacroUtils}
+import com.avsystem.scex.util.{Literal => ScexLiteral}
 import java.{util => ju, lang => jl}
-import scala.annotation.tailrec
 import scala.reflect.macros.Context
 import scala.util.control.NonFatal
+import com.avsystem.scex.compiler.TemplateInterpolations
+import com.avsystem.scex.compiler.TemplateInterpolations.Splicer
 
 /**
  * Created: 18-11-2013
@@ -26,28 +27,19 @@ object Macros {
     assert(parts.size == args.size + 1)
 
     val resultType = weakTypeOf[T]
-    val plusName = newTermName("+").encodedName
+    val templateInterpolationsObjectTpe = typeOf[TemplateInterpolations.type]
+    val templateInterpolationsObjectTree = reify(TemplateInterpolations).tree
+    val splicerSymbol = typeOf[Splicer[_]].typeSymbol
 
     def reifyConcatenation(parts: List[Tree], args: List[Tree]) = {
-
-      @tailrec
-      def reifyConcatenationIn(parts: List[Tree], args: List[Tree], result: Tree): Tree =
-        (parts, args) match {
-
-          case (part :: partsTail, arg :: argsTail) =>
-            val withArg = Apply(Select(result, plusName), List(arg))
-            val withPart = Apply(Select(withArg, plusName), List(part))
-            reifyConcatenationIn(partsTail, argsTail, withPart)
-
-          case (Nil, Nil) =>
-            result
-
-          case _ =>
-            throw new IllegalArgumentException
+      val convertedArgs = args.map { arg =>
+        c.inferImplicitValue(TypeRef(templateInterpolationsObjectTpe, splicerSymbol, List(arg.tpe))) match {
+          case EmptyTree => Select(arg, newTermName("toString")).setPos(arg.pos)
+          case tree => Apply(Select(tree, newTermName("toString")).setPos(arg.pos), List(arg)).setPos(arg.pos)
         }
+      }
 
-      val firstPart :: partsRest = parts
-      reifyConcatenationIn(partsRest, args, firstPart)
+      Apply(Apply(Select(templateInterpolationsObjectTree, newTermName("concat")), parts), convertedArgs)
     }
 
     def isBlankStringLiteral(tree: Tree) = tree match {
