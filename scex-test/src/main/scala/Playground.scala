@@ -1,14 +1,22 @@
 
-import com.avsystem.scex.compiler.TemplateInterpolations
+import com.avsystem.scex.compiler.ScexCompilerConfig
+import com.avsystem.scex.japi.XmlFriendlyJavaScexCompiler
+import com.avsystem.scex.{PredefinedAccessSpecs, ExpressionProfile}
+import com.avsystem.scex.validation.{SymbolValidator, SyntaxValidator}
 import java.{util => ju, lang => jl}
 import scala.language.experimental.macros
 
 object Playground {
 
   def main(args: Array[String]) {
-    import scala.reflect.runtime.universe._
+    val compiler = new XmlFriendlyJavaScexCompiler(new ScexCompilerConfig)
 
-    println(showRaw(typeOf[TemplateInterpolations.Splicer[String]]))
+    val symbolValidator = SymbolValidator(PredefinedAccessSpecs.basicOperations)
+    val syntaxValidator = SyntaxValidator.SimpleExpressions
+
+    val profile = new ExpressionProfile(syntaxValidator, symbolValidator, "", "")
+
+    compiler.getCompiledExpression[SimpleContext[Unit], jl.Boolean](profile, "true")
   }
 
 }

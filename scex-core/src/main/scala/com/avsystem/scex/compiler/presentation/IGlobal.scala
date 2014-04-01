@@ -8,7 +8,7 @@ import scala.tools.nsc.reporters.Reporter
 import scala.collection.mutable
 import symtab.Flags.{ACCESSOR, PARAMACCESSOR}
 import scala.reflect.internal.util.{SourceFile, BatchSourceFile, TransparentPosition, RangePosition, OffsetPosition}
-import com.avsystem.scex.compiler.CodeGeneration
+import com.avsystem.scex.compiler.{ScexGlobal, CodeGeneration}
 
 /**
  * Created: 13-12-2013
@@ -16,7 +16,7 @@ import com.avsystem.scex.compiler.CodeGeneration
  *
  * I needed to hack a custom implementation of type completion, hence this class.
  */
-class IGlobal(settings: Settings, reporter: Reporter) extends Global(settings, reporter) {
+class IGlobal(settings: Settings, reporter: Reporter) extends Global(settings, reporter) with ScexGlobal {
 
   import definitions._
 
@@ -149,82 +149,6 @@ class IGlobal(settings: Settings, reporter: Reporter) extends Global(settings, r
     }
 
     (ownerTpe, members.allMembers)
-  }
-
-  class SilentCompilationUnit(source: SourceFile) extends CompilationUnit(source) {
-    override def echo(pos: Position, msg: String) = ()
-
-    override def error(pos: Position, msg: String) = ()
-
-    override def warning(pos: Position, msg: String) = ()
-
-    override def deprecationWarning(pos: Position, msg: String) = ()
-
-    override def uncheckedWarning(pos: Position, msg: String) = ()
-
-    override def inlinerWarning(pos: Position, msg: String) = ()
-
-    override def incompleteInputError(pos: Position, msg: String) = ()
-
-    override def comment(pos: Position, msg: String) = ()
-  }
-
-  override def parseTree(source: SourceFile) =
-    new syntaxAnalyzer.UnitParser(new SilentCompilationUnit(source)).parse()
-
-  def parseExpression(code: String, template: Boolean) = {
-    val (wrappedCode, offset) = CodeGeneration.wrapForParsing(code, template)
-    val sourceFile = new BatchSourceFile("(for_parsing)", wrappedCode)
-    val PackageDef(_, List(ModuleDef(_, _, Template(_, _, List(_, expressionTree))))) = parseTree(sourceFile)
-    moveTree(expressionTree, -offset)
-  }
-
-  def movePosition(pos: Position, offset: Int) = pos match {
-    case tp: TransparentPosition => new TransparentPosition(tp.source, tp.start + offset, tp.point + offset, tp.end + offset)
-    case rp: RangePosition => new RangePosition(rp.source, rp.start + offset, rp.point + offset, rp.end + offset)
-    case op: OffsetPosition => new OffsetPosition(op.source, op.point + offset)
-    case _ => pos
-  }
-
-  def moveTree(tree: Tree, offset: Int) = {
-    tree.foreach { t =>
-      t.setPos(movePosition(t.pos, offset))
-    }
-    tree
-  }
-
-  /**
-   * Locator with slightly modified inclusion check.
-   *
-   * @param pos
-   */
-  class Locator(pos: Position) extends Traverser {
-    var last: Tree = _
-
-    def locateIn(root: Tree): Tree = {
-      this.last = EmptyTree
-      traverse(root)
-      this.last
-    }
-
-    override def traverse(t: Tree) {
-      t match {
-        case tt: TypeTree if tt.original != null && (includes(tt.pos, tt.original.pos)) =>
-          traverse(tt.original)
-        case _ =>
-          if (includes(t.pos, pos)) {
-            if (!t.pos.isTransparent) last = t
-            super.traverse(t)
-          } else t match {
-            case mdef: MemberDef =>
-              traverseTrees(mdef.mods.annotations)
-            case _ =>
-          }
-      }
-    }
-
-    private def includes(pos1: Position, pos2: Position) =
-      (pos1 includes pos2) && pos1.endOrPoint > pos2.startOrPoint
   }
 
 }

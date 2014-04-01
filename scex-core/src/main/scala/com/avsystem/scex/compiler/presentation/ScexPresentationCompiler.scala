@@ -2,15 +2,13 @@ package com.avsystem.scex
 package compiler.presentation
 
 import com.avsystem.scex.compiler._
-import com.avsystem.scex.util.{CommonUtils, MacroUtils}
+import com.avsystem.scex.util.CommonUtils
 import com.avsystem.scex.validation.ValidationContext
-import com.google.common.cache.CacheBuilder
 import java.{util => ju, lang => jl}
-import scala.reflect.internal.util.{SourceFile, BatchSourceFile}
+import scala.reflect.internal.util.SourceFile
 import scala.reflect.runtime.universe.TypeTag
 import com.avsystem.scex.compiler.ScexCompiler.CompileError
 import com.avsystem.scex.compiler.ExpressionDef
-import java.io.PrintWriter
 
 trait ScexPresentationCompiler extends ScexCompiler {
   compiler =>
@@ -79,7 +77,7 @@ trait ScexPresentationCompiler extends ScexCompiler {
     private def exprDef(expression: String, bare: Boolean) = {
       val result = ExpressionDef(profile, template && !bare, setter && !bare, expression, PositionMapping.empty,
         header, rootObjectClass, contextType, if (bare) "Any" else resultType)
-      if(bare) result else preprocess(result)
+      if (bare) result else preprocess(result)
     }
 
     def getErrors(expression: String): List[CompileError] =
@@ -135,9 +133,8 @@ trait ScexPresentationCompiler extends ScexCompiler {
     }
   }
 
-  private def translateMember(globalUtils: GlobalUtils {val universe: IGlobal})(member: globalUtils.universe.Member) = {
-    import globalUtils._
-    import globalUtils.universe._
+  private def translateMember(global: IGlobal)(member: global.Member) = {
+    import global._
 
     def translateType(tpe: Type) =
       tpe.toOpt.map { tpe =>
@@ -185,7 +182,6 @@ trait ScexPresentationCompiler extends ScexCompiler {
       val sourceTree = getOrThrow(treeResponse)
 
       val vc = ValidationContext(global)(getContextTpe(global)(sourceTree))
-      val globalUtils = GlobalUtils(global)
       import vc._
 
       def accessFromScopeMember(m: ScopeMember) = {
@@ -206,7 +202,7 @@ trait ScexPresentationCompiler extends ScexCompiler {
             if (sym.hasGetter) member.copy(sym = sym.getter(sym.owner)) else member
         } filter { m =>
           symbolValidator.validateMemberAccess(vc)(accessFromScopeMember(m)).deniedAccesses.isEmpty
-        } map translateMember(globalUtils)
+        } map translateMember(global)
 
         Completion(ast.EmptyTree, membersIterator.toVector)
       }
@@ -235,7 +231,6 @@ trait ScexPresentationCompiler extends ScexCompiler {
       val fullTree = getOrThrow(treeResponse)
 
       val vc = ValidationContext(global)(getContextTpe(global)(fullTree))
-      val globalUtils = GlobalUtils(global)
       import vc._
 
       inCompilerThread {
@@ -265,10 +260,10 @@ trait ScexPresentationCompiler extends ScexCompiler {
 
         val members = typeMembers.collect {
           case m if m.sym.isTerm && m.sym.isPublic && !m.sym.isConstructor
-            && !isAdapterWrappedMember(m.sym) && isMemberAllowed(m) => translateMember(globalUtils)(m)
+            && !isAdapterWrappedMember(m.sym) && isMemberAllowed(m) => translateMember(global)(m)
         }
 
-        val translator = new ast.Translator(globalUtils, offset, exprDef)
+        val translator = new ast.Translator(global, offset, exprDef)
         val translatedTree = translator.translateTree(tree.asInstanceOf[translator.u.Tree])
 
         Completion(translatedTree, members)
@@ -280,10 +275,10 @@ trait ScexPresentationCompiler extends ScexCompiler {
   }
 
   protected def parse(exprDef: ExpressionDef) = withGlobal { global =>
-    val parsedTree = global.parseExpression(exprDef.expression, exprDef.template)
+    val (parsedTree, _) = global.parseExpression(exprDef.expression, exprDef.template)
 
     inCompilerThread {
-      val translator = new ast.Translator(GlobalUtils(global), 0, exprDef)
+      val translator = new ast.Translator(global, 0, exprDef)
       translator.translateTree(parsedTree.asInstanceOf[translator.u.Tree])
     }
   }

@@ -221,4 +221,7 @@ object JavaTypeParsing {
       case TypeVariable(name, upperBounds, lowerBounds) =>
         name + bounds(upperBounds, lowerBounds)
     }
+
+  val stringSupertypes = Set(TypeAny, TypeAnyRef, classOf[Object], classOf[Serializable], classOf[CharSequence],
+    WrappedParameterizedType(classOf[Comparable[_]], null, Array(classOf[String])), classOf[String]).map(javaTypeAsScalaType)
 }

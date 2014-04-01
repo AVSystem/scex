@@ -52,7 +52,7 @@ trait ScexCompiler extends PackageGenerator with LoggingUtils {
     var expressionRef = new WeakReference(loadRawExpression)
 
     private def loadRawExpression =
-      compileExpression(exprDef).get.asInstanceOf[C => T]
+      compileExpression(exprDef).get.asInstanceOf[C => T].ensuring(e => {println(e.getClass); true})
 
     private def rawExpression: C => T =
       expressionRef.get match {
@@ -86,7 +86,7 @@ trait ScexCompiler extends PackageGenerator with LoggingUtils {
 
   private val reporter = new Reporter(settings)
 
-  private var global: Global = _
+  private var global: ScexGlobal = _
 
   /**
    * Classloader for stuff that will be never reclaimed after compilation -
@@ -99,7 +99,7 @@ trait ScexCompiler extends PackageGenerator with LoggingUtils {
   private def init(): Unit = {
     logger.info("Initializing Scala compiler")
     compilationCount = 0
-    global = new Global(settings, reporter)
+    global = new Global(settings, reporter) with ScexGlobal
     persistentClassLoader = new ScexClassLoader(new VirtualDirectory("(scex_persistent)", None), getClass.getClassLoader)
     initialized = true
   }
@@ -142,12 +142,11 @@ trait ScexCompiler extends PackageGenerator with LoggingUtils {
     val codeToCompile = wrapInSource(generateProfileObject(profile), pkgName)
     val sourceFile = new BatchSourceFile(pkgName, codeToCompile)
 
-    def result = {
+    def result =
       compile(sourceFile, persistentClassLoader, shared = true) match {
         case Nil => pkgName
         case errors => throw new CompilationFailedException(codeToCompile, errors)
       }
-    }
 
     Try(result)
   }

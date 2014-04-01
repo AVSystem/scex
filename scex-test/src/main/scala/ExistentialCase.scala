@@ -10,8 +10,6 @@ import java.{util => ju, lang => jl}
  */
 object ExistentialCase {
   def main(args: Array[String]) {
-
-
     val compiler = new XmlFriendlyJavaScexCompiler(new ScexCompilerConfig)
 
     val symbolValidator = SymbolValidator(PredefinedAccessSpecs.basicOperations)

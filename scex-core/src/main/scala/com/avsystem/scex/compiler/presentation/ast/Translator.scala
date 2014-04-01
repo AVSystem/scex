@@ -3,19 +3,19 @@ package compiler.presentation.ast
 
 import java.{util => ju, lang => jl}
 import com.avsystem.scex.util.CommonUtils
-import com.avsystem.scex.compiler.{GlobalUtils, ExpressionDef}
+import com.avsystem.scex.compiler.{ScexGlobal, ExpressionDef}
 import com.avsystem.scex.compiler.presentation.ScexPresentationCompiler.Type
 
 /**
  * Created: 12-03-2014
  * Author: ghik
  */
-class Translator(val globalUtils: GlobalUtils, offset: Int, exprDef: ExpressionDef) {
+class Translator(val global: ScexGlobal, offset: Int, exprDef: ExpressionDef) {
 
   import CommonUtils._
 
   private val reverseMapping = exprDef.positionMapping.reverse
-  val u: globalUtils.universe.type = globalUtils.universe
+  val u: global.type = global
 
   def translateTree(tree: u.Tree) =
     translateTreeIn[Tree](tree)
@@ -155,7 +155,7 @@ class Translator(val globalUtils: GlobalUtils, offset: Int, exprDef: ExpressionD
 
   def translateType(tpe: u.Type) =
     tpe.toOpt.map { tpe =>
-      Type(tpe.widen.toString(), globalUtils.erasureClass(tpe))
+      Type(tpe.widen.toString(), u.erasureClass(tpe))
     }.getOrElse(null)
 
   def translateAttachments(tree: u.Tree) =
