@@ -28,6 +28,7 @@ class PositionMapping(
 
   override def equals(other: Any) = other match {
     case op: PositionMapping => shiftMapping == op.shiftMapping
+    case _ => false
   }
 
   override lazy val hashCode =
