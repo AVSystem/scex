@@ -3,12 +3,13 @@ package compiler.presentation.ast
 
 import java.{util => ju, lang => jl}
 import scala.collection.JavaConverters._
+import compiler.presentation.ScexPresentationCompiler.Type
 
 /**
  * Created: 12-03-2014
  * Author: ghik
  */
-case class Attachments(tpe: String, position: Position)
+case class Attachments(tpe: Type, position: Position)
 
 object Attachments {
   val empty = new Attachments(null, null)

@@ -63,7 +63,7 @@ object CompletionPlayground {
       val profile = new ExpressionProfile(SyntaxValidator.SimpleExpressions, SymbolValidator(acl), header, utils)
 
       def memberRepr(member: Member) =
-        s"${member.name}${member.params.map(_.map(p => s"${p.name}: ${p.tpe}").mkString("(", ", ", ")")).mkString}: ${member.tpe}"
+        s"${member.name}${member.params.map(_.map(p => s"${p.name}: ${p.tpe}-${p.tpe.erasure}").mkString("(", ", ", ")")).mkString}: ${member.tpe}-${member.tpe.erasure}"
 
       val completer = compiler.getCompleter[SimpleContext[Root], String](profile)
       val scopeMembers = completer.getScopeCompletion.members.filterNot(_.iimplicit).map(memberRepr).mkString("\n")

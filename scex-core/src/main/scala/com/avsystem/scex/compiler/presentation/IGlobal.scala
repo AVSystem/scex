@@ -115,11 +115,10 @@ class IGlobal(settings: Settings, reporter: Reporter) extends Global(settings, r
 
     def addTypeMember(sym: Symbol, pre: Type, inherited: Boolean, implicitTree: Tree, implicitType: Type) = {
       val implicitlyAdded = implicitTree != EmptyTree
-      members.add(sym, pre, implicitTree) {
-        (s, st) =>
-          new ScexTypeMember(s, st,
-            context.isAccessible(if (s.hasGetter) s.getter(s.owner) else s, pre, superAccess && !implicitlyAdded),
-            inherited, implicitTree, implicitType)
+      members.add(sym, pre, implicitTree) { (s, st) =>
+        new ScexTypeMember(s, st,
+          context.isAccessible(if (s.hasGetter) s.getter(s.owner) else s, pre, superAccess && !implicitlyAdded),
+          inherited, implicitTree, implicitType)
       }
     }
 

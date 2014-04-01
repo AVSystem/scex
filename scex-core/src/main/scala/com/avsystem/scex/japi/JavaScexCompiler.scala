@@ -2,9 +2,8 @@ package com.avsystem.scex
 package japi
 
 import com.avsystem.scex.compiler.JavaTypeParsing._
-import com.avsystem.scex.compiler.ScexCompiler.CompileError
 import com.avsystem.scex.compiler.presentation.ScexPresentationCompiler
-import com.avsystem.scex.compiler.presentation.ScexPresentationCompiler.Param
+import com.avsystem.scex.compiler.presentation.ScexPresentationCompiler.{Type => SType, Param}
 import com.avsystem.scex.compiler.{PositionMapping, ExpressionDef, ScexCompiler, ScexCompilerConfig}
 import com.avsystem.scex.util.{Fluent, CacheImplicits}
 import com.avsystem.scex.{ExpressionProfile, ExpressionContext}
@@ -203,7 +202,7 @@ object JavaScexCompiler {
     new DefaultJavaScexCompiler(compilerConfig)
 
   case class Member(getName: String, getParams: ju.Collection[ju.Collection[Param]],
-    getType: String, isImplicit: Boolean)
+    getType: SType, isImplicit: Boolean)
 
   case class Completion(getTypedPrefixTree: Tree, getMembers: ju.Collection[Member])
 

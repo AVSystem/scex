@@ -3,18 +3,19 @@ package compiler.presentation.ast
 
 import java.{util => ju, lang => jl}
 import com.avsystem.scex.util.CommonUtils
-import scala.tools.nsc.Global
-import com.avsystem.scex.compiler.ExpressionDef
+import com.avsystem.scex.compiler.{GlobalUtils, ExpressionDef}
+import com.avsystem.scex.compiler.presentation.ScexPresentationCompiler.Type
 
 /**
  * Created: 12-03-2014
  * Author: ghik
  */
-class Translator(val u: Global, offset: Int, exprDef: ExpressionDef) {
+class Translator(val globalUtils: GlobalUtils, offset: Int, exprDef: ExpressionDef) {
 
   import CommonUtils._
 
   private val reverseMapping = exprDef.positionMapping.reverse
+  val u: globalUtils.universe.type = globalUtils.universe
 
   def translateTree(tree: u.Tree) =
     translateTreeIn[Tree](tree)
@@ -152,10 +153,13 @@ class Translator(val u: Global, offset: Int, exprDef: ExpressionDef) {
     else
       Constant(c.value)(c.escapedStringValue)
 
+  def translateType(tpe: u.Type) =
+    tpe.toOpt.map { tpe =>
+      Type(tpe.widen.toString(), globalUtils.erasureClass(tpe))
+    }.getOrElse(null)
 
-  def translateAttachments(tree: u.Tree) = new Attachments(
-    tree.tpe.toOpt.map(_.widen.toString()).getOrElse(null),
-    translatePosition(tree.pos))
+  def translateAttachments(tree: u.Tree) =
+    new Attachments(translateType(tree.tpe), translatePosition(tree.pos))
 
   def translateSymbol(sym: u.Symbol) = sym match {
     case null | u.NoSymbol => null

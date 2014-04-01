@@ -15,7 +15,7 @@ import java.io.PrintWriter
 trait ScexPresentationCompiler extends ScexCompiler {
   compiler =>
 
-  import ScexPresentationCompiler.{Member => SMember, Param, Completion}
+  import ScexPresentationCompiler.{Member => SMember, Type => SType, Param, Completion}
   import CommonUtils._
 
   private val logger = createLogger[ScexPresentationCompiler]
@@ -135,16 +135,21 @@ trait ScexPresentationCompiler extends ScexCompiler {
     }
   }
 
-  private def translateMember(macroUtils: MacroUtils {val universe: IGlobal})(member: macroUtils.universe.Member) = {
-    import macroUtils._
-    import macroUtils.universe._
+  private def translateMember(globalUtils: GlobalUtils {val universe: IGlobal})(member: globalUtils.universe.Member) = {
+    import globalUtils._
+    import globalUtils.universe._
+
+    def translateType(tpe: Type) =
+      tpe.toOpt.map { tpe =>
+        SType(tpe.widen.toString(), erasureClass(tpe))
+      }.getOrElse(null)
 
     def symbolToParam(sym: Symbol) =
-      Param(sym.decodedName, sym.typeSignature.toString())
+      Param(sym.decodedName, translateType(sym.typeSignature))
 
     SMember(member.sym.decodedName,
       paramsOf(member.tpe).map(_.map(symbolToParam)),
-      resultTypeOf(member.tpe).toString(),
+      translateType(resultTypeOf(member.tpe)),
       member.sym.isImplicit)
   }
 
@@ -180,6 +185,7 @@ trait ScexPresentationCompiler extends ScexCompiler {
       val sourceTree = getOrThrow(treeResponse)
 
       val vc = ValidationContext(global)(getContextTpe(global)(sourceTree))
+      val globalUtils = GlobalUtils(global)
       import vc._
 
       def accessFromScopeMember(m: ScopeMember) = {
@@ -200,7 +206,7 @@ trait ScexPresentationCompiler extends ScexCompiler {
             if (sym.hasGetter) member.copy(sym = sym.getter(sym.owner)) else member
         } filter { m =>
           symbolValidator.validateMemberAccess(vc)(accessFromScopeMember(m)).deniedAccesses.isEmpty
-        } map translateMember(vc)
+        } map translateMember(globalUtils)
 
         Completion(ast.EmptyTree, membersIterator.toVector)
       }
@@ -229,6 +235,7 @@ trait ScexPresentationCompiler extends ScexCompiler {
       val fullTree = getOrThrow(treeResponse)
 
       val vc = ValidationContext(global)(getContextTpe(global)(fullTree))
+      val globalUtils = GlobalUtils(global)
       import vc._
 
       inCompilerThread {
@@ -258,10 +265,10 @@ trait ScexPresentationCompiler extends ScexCompiler {
 
         val members = typeMembers.collect {
           case m if m.sym.isTerm && m.sym.isPublic && !m.sym.isConstructor
-            && !isAdapterWrappedMember(m.sym) && isMemberAllowed(m) => translateMember(vc)(m)
+            && !isAdapterWrappedMember(m.sym) && isMemberAllowed(m) => translateMember(globalUtils)(m)
         }
 
-        val translator = new ast.Translator(global, offset, exprDef)
+        val translator = new ast.Translator(globalUtils, offset, exprDef)
         val translatedTree = translator.translateTree(tree.asInstanceOf[translator.u.Tree])
 
         Completion(translatedTree, members)
@@ -276,7 +283,7 @@ trait ScexPresentationCompiler extends ScexCompiler {
     val parsedTree = global.parseExpression(exprDef.expression, exprDef.template)
 
     inCompilerThread {
-      val translator = new ast.Translator(global, 0, exprDef)
+      val translator = new ast.Translator(GlobalUtils(global), 0, exprDef)
       translator.translateTree(parsedTree.asInstanceOf[translator.u.Tree])
     }
   }
@@ -309,9 +316,13 @@ trait ScexPresentationCompiler extends ScexCompiler {
 
 object ScexPresentationCompiler {
 
-  case class Param(name: String, tpe: String)
+  case class Type(fullRepr: String, erasure: Class[_]) {
+    override def toString = fullRepr
+  }
 
-  case class Member(name: String, params: List[List[Param]], tpe: String, iimplicit: Boolean)
+  case class Param(name: String, tpe: Type)
+
+  case class Member(name: String, params: List[List[Param]], tpe: Type, iimplicit: Boolean)
 
   case class Completion(typedPrefixTree: ast.Tree, members: Vector[Member])
 
