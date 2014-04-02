@@ -12,6 +12,7 @@ object MemoryTest {
   def main(args: Array[String]) {
     val config = new ScexCompilerConfig
     config.expressionExpirationTime = 500
+    config.resetAfterCompilationCount = 10
 
     val compiler = new DefaultJavaScexCompiler(config)
 
@@ -30,7 +31,7 @@ object MemoryTest {
     var i = 0
     while (true) {
       i += 1
-      compiler.getCompiledExpression[ExpressionContext[_, _], String](profile, s"new MemoryTest.Dummy($i).toString")
+      compiler.getCompiledExpression[ExpressionContext[Any, Any], String](profile, s"new MemoryTest.Dummy($i).toString")
       if (i % 10 == 0) {
         println(i)
       }

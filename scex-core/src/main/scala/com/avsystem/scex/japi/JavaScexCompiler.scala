@@ -26,7 +26,10 @@ trait JavaScexCompiler extends ScexCompiler {
 
   private def getRootObjectClass(token: TypeToken[_ <: ExpressionContext[_, _]]): Class[_] =
     token.getSupertype(classOf[ExpressionContext[_, _]]).getType match {
-      case ParameterizedType(_, _, Array(rootObjectType, _)) => TypeToken.of(rootObjectType).getRawType
+      case ParameterizedType(_, _, Array(rootObjectType, _)) => rootObjectType match {
+        case TypeAny | TypeAnyVal => null
+        case _ => TypeToken.of(rootObjectType).getRawType
+      }
       case clazz if clazz == classOf[ExpressionContext[_, _]] => classOf[Object]
     }
 

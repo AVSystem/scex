@@ -9,7 +9,7 @@ import com.avsystem.scex.validation.{SymbolValidator, SyntaxValidator}
 import com.avsystem.scex.{ExpressionProfile, ExpressionContext, Expression}
 import java.{util => ju, lang => jl}
 import scala.collection.mutable.ListBuffer
-import scala.reflect.internal.util.{Position, SourceFile, BatchSourceFile}
+import scala.reflect.internal.util.{SourceFile, Position, BatchSourceFile}
 import scala.reflect.io.VirtualDirectory
 import scala.reflect.runtime.universe.TypeTag
 import scala.tools.nsc.interpreter.AbstractFileClassLoader
@@ -149,9 +149,6 @@ trait ScexCompiler extends PackageGenerator with LoggingUtils {
 
   protected def compile(sourceFile: SourceFile, classLoader: ScexClassLoader, shared: Boolean): Seq[CompileError] = {
     compilationCount += 1
-    if (compilationCount > config.resetAfterCompilationCount) {
-      reset()
-    }
 
     settings.outputDirs.setSingleOutput(classLoader.classfileDirectory)
     reporter.reset()
@@ -174,7 +171,13 @@ trait ScexCompiler extends PackageGenerator with LoggingUtils {
     val duration = System.nanoTime - startTime
     logger.debug(s"Compilation took ${duration / 1000000}ms")
 
-    reporter.compileErrors()
+    val result = reporter.compileErrors()
+
+    if (compilationCount > config.resetAfterCompilationCount) {
+      reset()
+    }
+
+    result
   }
 
   protected def preprocess(exprDef: ExpressionDef): ExpressionDef =
@@ -218,7 +221,10 @@ trait ScexCompiler extends PackageGenerator with LoggingUtils {
     val mirror = typeTag[C].mirror
     val contextType = typeOf[C]
     val TypeRef(_, _, List(rootObjectType, _)) = contextType.baseType(typeOf[ExpressionContext[_, _]].typeSymbol)
-    val rootObjectClass = mirror.runtimeClass(rootObjectType)
+    val rootObjectClass =
+      try mirror.runtimeClass(rootObjectType) catch {
+        case _: ClassNotFoundException => null
+      }
 
     getCompiledExpression(ExpressionDef(profile, template, setter = false, expression, PositionMapping.empty,
       header, rootObjectClass, contextType.toString, typeOf[T].toString))
@@ -239,7 +245,10 @@ trait ScexCompiler extends PackageGenerator with LoggingUtils {
     val mirror = typeTag[C].mirror
     val contextType = typeOf[C]
     val TypeRef(_, _, List(rootObjectType, _)) = contextType.baseType(typeOf[ExpressionContext[_, _]].typeSymbol)
-    val rootObjectClass = mirror.runtimeClass(rootObjectType)
+    val rootObjectClass =
+      try mirror.runtimeClass(rootObjectType) catch {
+        case _: ClassNotFoundException => null
+      }
 
     getCompiledExpression(ExpressionDef(profile, template, setter = true, expression, PositionMapping.empty,
       header, rootObjectClass, contextType.toString, typeOf[T].toString))
