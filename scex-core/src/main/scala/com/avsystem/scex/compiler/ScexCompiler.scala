@@ -9,7 +9,6 @@ import com.avsystem.scex.validation.{SymbolValidator, SyntaxValidator}
 import com.avsystem.scex.{ExpressionProfile, ExpressionContext, Expression}
 import java.{util => ju, lang => jl}
 import scala.collection.mutable.ListBuffer
-import scala.ref.WeakReference
 import scala.reflect.internal.util.{Position, SourceFile, BatchSourceFile}
 import scala.reflect.io.VirtualDirectory
 import scala.reflect.runtime.universe.TypeTag
@@ -45,31 +44,10 @@ trait ScexCompiler extends PackageGenerator with LoggingUtils {
     }
   }
 
-  /**
-   * Wrapper that avoids holding strong reference to actual compiled expression.
-   */
-  private class ExpressionWrapper[C <: ExpressionContext[_, _], T](exprDef: ExpressionDef) extends Expression[C, T] {
-    var expressionRef = new WeakReference(loadRawExpression)
-
-    private def loadRawExpression =
-      compileExpression(exprDef).get.asInstanceOf[C => T].ensuring(e => {println(e.getClass); true})
-
-    private def rawExpression: C => T =
-      expressionRef.get match {
-        case Some(expr) => expr
-        case None =>
-          expressionRef = new WeakReference(loadRawExpression)
-          rawExpression
-      }
-
-    def apply(context: C) =
-      rawExpression.apply(context)
-  }
-
   protected class ScexClassLoader(val classfileDirectory: VirtualDirectory, parent: ClassLoader)
     extends AbstractFileClassLoader(classfileDirectory, parent)
 
-  protected type RawExpression = Function[Any, Any]
+  protected type RawExpression = Expression[ExpressionContext[_, _], Any]
 
   private def underLock[T](code: => T) = synchronized {
     if (!initialized) {
@@ -223,7 +201,7 @@ trait ScexCompiler extends PackageGenerator with LoggingUtils {
   }
 
   protected final def getCompiledExpression[C <: ExpressionContext[_, _], T](exprDef: ExpressionDef): Expression[C, T] =
-    new ExpressionWrapper(exprDef)
+    compileExpression(exprDef).get.asInstanceOf[Expression[C, T]]
 
   def getCompiledExpression[C <: ExpressionContext[_, _] : TypeTag, T: TypeTag](
     profile: ExpressionProfile,

@@ -9,4 +9,10 @@ import com.avsystem.scex.compiler.presentation.{CachingScexPresentationCompiler,
  * Author: ghik
  */
 class DefaultScexCompiler(val config: ScexCompilerConfig)
-  extends ScexPresentationCompiler with CachingScexCompiler with CachingScexPresentationCompiler
+  extends ScexCompiler
+  with ScexPresentationCompiler
+  with CachingScexCompiler
+  with CachingScexPresentationCompiler
+  with WeakReferenceWrappingScexCompiler
+  with LiteralsOptimizingScexCompiler
+

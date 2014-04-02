@@ -222,6 +222,14 @@ object JavaTypeParsing {
         name + bounds(upperBounds, lowerBounds)
     }
 
-  val stringSupertypes = Set(TypeAny, TypeAnyRef, classOf[Object], classOf[Serializable], classOf[CharSequence],
-    WrappedParameterizedType(classOf[Comparable[_]], null, Array(classOf[String])), classOf[String]).map(javaTypeAsScalaType)
+  val stringSupertypes = Set(
+    TypeAny,
+    TypeAnyRef,
+    classOf[Object],
+    classOf[java.io.Serializable],
+    classOf[CharSequence],
+    WrappedParameterizedType(classOf[Comparable[_]], null, Array(classOf[String])),
+    classOf[String]
+  ).map(javaTypeAsScalaType)
+
 }

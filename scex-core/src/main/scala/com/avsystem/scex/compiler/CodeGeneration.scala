@@ -39,7 +39,8 @@ object CodeGeneration {
   val ContextSymbol = "_ctx"
   val VariablesSymbol = "_vars"
   val RootSymbol = "_root"
-  val CompilerPkg = "com.avsystem.scex.compiler"
+  val ScexPkg = "com.avsystem.scex"
+  val CompilerPkg = s"$ScexPkg.compiler"
   val AnnotationPkg = s"$CompilerPkg.annotation"
   val MarkersObj = s"$CompilerPkg.Markers"
   val MacroProcessor = s"$CompilerPkg.ExpressionMacroProcessor"
@@ -96,7 +97,7 @@ object CodeGeneration {
 
     val ExpressionDef(profile, template, setter, expression, _, header, _, contextType, resultType) = exprDef
 
-    val resultOrSetterType = if (setter) s"com.avsystem.scex.Setter[$resultType]" else resultType
+    val resultOrSetterType = if (setter) s"$ScexPkg.Setter[$resultType]" else resultType
 
     val profileHeader = Option(profile.expressionHeader).getOrElse("")
     val additionalHeader = Option(header).getOrElse("")
@@ -130,7 +131,7 @@ object CodeGeneration {
     val prefix =
       s"""
         |
-        |final class $ExpressionClassName extends (($contextType) => $resultOrSetterType)
+        |final class $ExpressionClassName extends $ScexPkg.Expression[$contextType, $resultOrSetterType]
         |                                 with $CompilerPkg.TemplateInterpolations[$resultType] {
         |  def apply($ContextSymbol: $contextType): $resultOrSetterType = {
         |    val $RootSymbol = $ContextSymbol.root

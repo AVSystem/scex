@@ -16,7 +16,8 @@ object Playground {
 
     val profile = new ExpressionProfile(syntaxValidator, symbolValidator, "", "")
 
-    compiler.getCompiledExpression[SimpleContext[Unit], jl.Boolean](profile, "true")
+    val expr = compiler.getCompiledExpression[SimpleContext[Unit], jl.Boolean](profile, "true")
+    println(expr.getClass)
   }
 
 }

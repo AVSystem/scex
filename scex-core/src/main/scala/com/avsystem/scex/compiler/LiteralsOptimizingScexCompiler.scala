@@ -6,10 +6,18 @@ import scala.util.{Try, Success}
 import com.avsystem.scex.util.Literal
 
 /**
+ * Avoids actual compilation of most simple template literal expressions by trying to parse them
+ * immediately into resulting values.
+ *
  * Created: 01-04-2014
  * Author: ghik
  */
 trait LiteralsOptimizingScexCompiler extends ScexCompiler {
+
+  private class LiteralExpression(value: Any) extends RawExpression {
+    def apply(ctx: ExpressionContext[_, _]) = value
+  }
+
   override protected def compileExpression(exprDef: ExpressionDef) = {
     val eligible =
       exprDef.template && !exprDef.setter && !exprDef.expression.contains("$")
@@ -30,9 +38,8 @@ trait LiteralsOptimizingScexCompiler extends ScexCompiler {
       }
     } else None
 
-    def wrap(value: Any): Try[RawExpression] =
-      Success(_ => value)
-
-    Try(parsedLiteral).getOrElse(None).map(wrap).getOrElse(super.compileExpression(exprDef))
+    Try(parsedLiteral).getOrElse(None)
+      .map(value => Success(new LiteralExpression(value)))
+      .getOrElse(super.compileExpression(exprDef))
   }
 }
