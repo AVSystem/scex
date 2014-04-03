@@ -24,7 +24,7 @@ object ExpressionMacroProcessor extends LoggingUtils {
     import validationContext._
 
     val profile = c.enclosingUnit.source match {
-      case scexSource: ExpressionSourceFile => scexSource.profile
+      case scexSource: ExpressionSourceFile => scexSource.exprDef.profile
       case _ => throw new Exception("This is not an expression source file")
     }
 

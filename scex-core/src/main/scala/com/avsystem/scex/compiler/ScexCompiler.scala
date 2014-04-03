@@ -189,7 +189,7 @@ trait ScexCompiler extends PackageGenerator with LoggingUtils {
     val (codeToCompile, _) = expressionCode(preprocessedExprDef, pkgName)
     // every single expression has its own classloader and virtual directory
     val classLoader = new ScexClassLoader(new VirtualDirectory("(scex)", None), persistentClassLoader)
-    val sourceFile = new ExpressionSourceFile(preprocessedExprDef.profile, pkgName, codeToCompile)
+    val sourceFile = new ExpressionSourceFile(preprocessedExprDef, pkgName, codeToCompile)
 
     def result =
       compile(sourceFile, classLoader, shared = false) match {

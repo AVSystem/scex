@@ -1,7 +1,6 @@
 package com.avsystem.scex.compiler
 
 import java.{util => ju, lang => jl}
-import com.avsystem.scex.ExpressionProfile
 import scala.reflect.internal.util.BatchSourceFile
 
 /**
@@ -9,9 +8,9 @@ import scala.reflect.internal.util.BatchSourceFile
  * Author: ghik
  */
 class ExpressionSourceFile(
-  val profile: ExpressionProfile,
+  val exprDef: ExpressionDef,
   sourceName: String,
   code: String) extends BatchSourceFile(sourceName, code) {
 
-  require(profile != null, "Profile cannot be null")
+  require(exprDef != null, "Expression definition cannot be null")
 }

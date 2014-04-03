@@ -154,7 +154,7 @@ trait ScexPresentationCompiler extends ScexCompiler {
     val pkgName = newInteractiveExpressionPackage()
     val (code, _) = expressionCode(exprDef, pkgName)
     val response = new global.Response[global.Tree]
-    val sourceFile = new ExpressionSourceFile(exprDef.profile, pkgName, code)
+    val sourceFile = new ExpressionSourceFile(exprDef, pkgName, code)
     try {
       global.askLoadedTyped(sourceFile, response)
       getOrThrow(response)
@@ -171,7 +171,7 @@ trait ScexPresentationCompiler extends ScexCompiler {
     val symbolValidator = exprDef.profile.symbolValidator
 
     val (code, offset) = expressionCode(exprDef, pkgName, noMacroProcessing = true)
-    val sourceFile = new ExpressionSourceFile(exprDef.profile, pkgName, code)
+    val sourceFile = new ExpressionSourceFile(exprDef, pkgName, code)
 
     try {
       val pos = sourceFile.position(offset)
@@ -219,7 +219,7 @@ trait ScexPresentationCompiler extends ScexCompiler {
     val pkgName = newInteractiveExpressionPackage()
 
     val (code, offset) = expressionCode(exprDef, pkgName, noMacroProcessing = true)
-    val sourceFile = new ExpressionSourceFile(exprDef.profile, pkgName, code)
+    val sourceFile = new ExpressionSourceFile(exprDef, pkgName, code)
 
     try {
       val sourcePosition = sourceFile.position(offset + exprDef.positionMapping(position))
