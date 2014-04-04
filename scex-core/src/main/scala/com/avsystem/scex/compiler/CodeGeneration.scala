@@ -36,6 +36,7 @@ object CodeGeneration {
   val ProfileObjectName = "Profile"
   val SyntaxValidatorClassName = "SyntaxValidator"
   val SymbolValidatorClassName = "SymbolValidator"
+  val ConversionSupplierClassName = "ConversionSupplier"
   val ContextSymbol = "_ctx"
   val VariablesSymbol = "_vars"
   val RootSymbol = "_root"
@@ -135,7 +136,7 @@ object CodeGeneration {
         |                                 with $CompilerPkg.TemplateInterpolations[$resultType] {
         |  def apply($ContextSymbol: $contextType): $resultOrSetterType = {
         |    val $RootSymbol = $ContextSymbol.root
-        |    val $VariablesSymbol = new com.avsystem.scex.util.DynamicVariableAccessor($ContextSymbol)
+        |    val $VariablesSymbol = new $ScexPkg.util.DynamicVariableAccessor($ContextSymbol)
         |    import $profileObjectPkg.$ProfileObjectName._
         |    import Utils._
         |    import $RootSymbol._
@@ -198,7 +199,7 @@ object CodeGeneration {
 
   def generateSyntaxValidator(code: String) = {
     s"""
-      |final class $SyntaxValidatorClassName extends com.avsystem.scex.validation.SyntaxValidator {
+      |final class $SyntaxValidatorClassName extends $ScexPkg.validation.SyntaxValidator {
       |$code
       |}
     """.stripMargin
@@ -206,7 +207,7 @@ object CodeGeneration {
 
   def generateSymbolValidator(accessSpecs: String) = {
     s"""
-      |final class $SymbolValidatorClassName extends com.avsystem.scex.validation.SymbolValidator {
+      |final class $SymbolValidatorClassName extends $ScexPkg.validation.SymbolValidator {
       |  val accessSpecs = {$accessSpecs}
       |}
     """.stripMargin
@@ -228,6 +229,29 @@ object CodeGeneration {
       |""".stripMargin
 
     (prefix + code, prefix.length + offset)
+  }
+
+  def implicitLiteralViewHeader(header: String) =
+    s"$header; val _dummy_literal: $ScexPkg.util.Literal = ???\n"
+
+  def implicitLiteralViewExpression(resultType: String) = {
+    val literalsOptimizingObj = s"$ScexPkg.compiler.LiteralsOptimizingScexCompiler"
+    s"$literalsOptimizingObj.checkConstant($literalsOptimizingObj.reifyImplicitView[$resultType](_dummy_literal))\n"
+  }
+
+  def implicitLiteralConversionClass(profileObjectPkg: String, profileHeader: String, header: String, resultType: String) = {
+    val literalsOptimizingScexCompiler = s"$ScexPkg.compiler.LiteralsOptimizingScexCompiler"
+    s"""
+      |final class $ConversionSupplierClassName extends $literalsOptimizingScexCompiler.ConversionSupplier[$resultType] {
+      |  def get = {
+      |    import $profileObjectPkg.$ProfileObjectName._
+      |    import Utils._
+      |    $profileHeader
+      |    $header
+      |    implicitly[$ScexPkg.util.Literal => ($resultType)]
+      |  }
+      |}
+    """.stripMargin
   }
 
 }

@@ -1,10 +1,10 @@
 package com.avsystem.scex
 
-import com.avsystem.scex.util.{Literal => ScexLiteral}
+import com.avsystem.scex.util.{Literal => ScexLiteral, MacroUtils}
 import java.{util => ju, lang => jl}
 import scala.reflect.macros.Context
 import scala.util.control.NonFatal
-import com.avsystem.scex.compiler.TemplateInterpolations
+import com.avsystem.scex.compiler.{CodeGeneration, TemplateInterpolations}
 import com.avsystem.scex.compiler.TemplateInterpolations.Splicer
 
 /**
@@ -42,8 +42,8 @@ object Macros {
       Apply(Apply(Select(templateInterpolationsObjectTree, newTermName("concat")), parts), convertedArgs)
     }
 
-    def isBlankStringLiteral(tree: Tree) = tree match {
-      case Literal(Constant(str: String)) if str.trim.isEmpty => true
+    def isEmptyStringLiteral(tree: Tree) = tree match {
+      case Literal(Constant(str: String)) if str.isEmpty => true
       case _ => false
     }
 
@@ -56,14 +56,14 @@ object Macros {
       val enumModuleSymbol = resultType.typeSymbol.companionSymbol
       val Literal(Constant(stringLiteral: String)) = parts.head
 
-      c.Expr[T](Select(Ident(enumModuleSymbol), newTermName(stringLiteral.trim)))
+      c.Expr[T](Select(Ident(enumModuleSymbol), newTermName(stringLiteral)))
 
-    } else if (resultType <:< typeOf[jl.Enum[_]] && args.size == 1 && parts.forall(isBlankStringLiteral) && !(args.head.actualType <:< resultType)) {
+    } else if (resultType <:< typeOf[jl.Enum[_]] && args.size == 1 && parts.forall(isEmptyStringLiteral) && !(args.head.actualType <:< resultType)) {
       val enumModuleSymbol = resultType.typeSymbol.companionSymbol
 
       c.Expr[T](Apply(Select(Ident(enumModuleSymbol), newTermName("valueOf")), List(args.head.tree)))
 
-    } else if (args.size == 1 && parts.forall(isBlankStringLiteral)) {
+    } else if (args.size == 1 && parts.forall(isEmptyStringLiteral)) {
       val soleTree = args.head.tree
       lazy val implicitConv = c.inferImplicitView(soleTree, soleTree.tpe, resultType)
 
@@ -93,6 +93,34 @@ object Macros {
       c.error(c.enclosingPosition, s"This template cannot represent value of type $resultType")
       null
     }
+  }
+
+  def reifyImplicitView_impl[T: c.WeakTypeTag](c: Context)(arg: c.Expr[Any]): c.Expr[T] = {
+    import c.universe._
+
+    val fromType = arg.actualType
+    val toType = weakTypeOf[T]
+
+    val view = c.inferImplicitView(arg.tree, fromType, toType, silent = false, withMacrosDisabled = true)
+    c.Expr[T](Apply(view, List(arg.tree)))
+  }
+
+  def checkConstantExpr_impl[T](c: Context)(expr: c.Expr[T]): c.Expr[T] = {
+    import c.universe._
+    val macroUtils = MacroUtils(c.universe)
+    import macroUtils._
+
+    import CodeGeneration._
+
+    lazy val inputSymbols = Set(ContextSymbol, RootSymbol, VariablesSymbol)
+
+    expr.tree.foreach {
+      case tree@Ident(TermName(name)) if inputSymbols.contains(name) =>
+        c.error(tree.pos, s"Tree references expression input")
+      case _ =>
+    }
+
+    expr
   }
 
   def tripleEquals_impl[A, B](c: Context)(right: c.Expr[B]): c.Expr[Boolean] = {

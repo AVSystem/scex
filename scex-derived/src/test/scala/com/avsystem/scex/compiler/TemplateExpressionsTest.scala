@@ -19,14 +19,6 @@ class TemplateExpressionsTest extends FunSuite with CompilationTest {
 
   import SymbolValidator._
 
-  test("string literal test") {
-    assert("trololo dafuq" === evaluateTemplate[String]("trololo dafuq"))
-  }
-
-  test("string literal with fancy characters test") {
-    assert( raw"""trololo "" \" \\ '' dafuq\n""" === evaluateTemplate[String]( raw"""trololo "" \" \\ '' dafuq\n"""))
-  }
-
   test("single-argument string expression test") {
     assert("trololo 5 dafuq" === evaluateTemplate[String]("trololo ${15/3} dafuq"))
   }
@@ -51,10 +43,6 @@ class TemplateExpressionsTest extends FunSuite with CompilationTest {
     assert("FANCY" === cexpr.apply(SimpleContext(new FancySplicedRoot)))
   }
 
-  test("single-argument int expression with blank surroundings") {
-    assert(5 === evaluateTemplate[Int]("  ${15/3}    "))
-  }
-
   test("single-argument int expression with non-blank surroundings") {
     intercept[CompilationFailedException] {
       evaluateTemplate[Int]("${15/3}srsly")
@@ -64,36 +52,6 @@ class TemplateExpressionsTest extends FunSuite with CompilationTest {
   test("multiple-argument int expression") {
     intercept[CompilationFailedException] {
       evaluateTemplate[Int]("${15/3} ${2342.60}")
-    }
-  }
-
-  test("boolean literal test") {
-    assert(true === evaluateTemplate[Boolean]("true"))
-  }
-
-  test("boolean literal test with surrounding whitespaces") {
-    assert(true === evaluateTemplate[Boolean](" true   "))
-  }
-
-  test("invalid boolean literal test") {
-    intercept[CompilationFailedException] {
-      evaluateTemplate[Boolean]("hueheuahueh")
-    }
-  }
-
-  test("invalid boolean literal test - expression as literal") {
-    intercept[CompilationFailedException] {
-      evaluateTemplate[Boolean]("true && false")
-    }
-  }
-
-  test("enum literal test") {
-    assert(RetentionPolicy.RUNTIME === evaluateTemplate[RetentionPolicy]("  RUNTIME  "))
-  }
-
-  test("bad enum literal test") {
-    intercept[CompilationFailedException] {
-      evaluateTemplate[RetentionPolicy]("HUEHUE")
     }
   }
 

@@ -20,7 +20,7 @@ trait ScexPresentationCompiler extends ScexCompiler {
 
   private object lock
 
-  private def underLock[T](code: => T) = lock.synchronized {
+  protected def underPresentationLock[T](code: => T) = lock.synchronized {
     if (!initialized) {
       init()
     }
@@ -51,7 +51,7 @@ trait ScexPresentationCompiler extends ScexCompiler {
     getOrThrow(global.askForResponse(() => code))
   }
 
-  private def withGlobal[T](code: IGlobal => T) = underLock {
+  private def withGlobal[T](code: IGlobal => T) = underPresentationLock {
     reporter.reset()
     val global = compiler.global
     val result = try code(global) finally {
@@ -287,7 +287,7 @@ trait ScexPresentationCompiler extends ScexCompiler {
     val result = super.compile(sourceFile, classLoader, usedInExpressions)
 
     if (result.isEmpty && usedInExpressions) {
-      underLock {
+      underPresentationLock {
         val global = this.global
         val response = new global.Response[global.Tree]
         global.askLoadedTyped(sourceFile, response)
@@ -299,8 +299,8 @@ trait ScexPresentationCompiler extends ScexCompiler {
   }
 
   override def reset() {
-    underLock {
-      synchronized {
+    underPresentationLock {
+      underLock {
         super.reset()
         global.askShutdown()
         init()

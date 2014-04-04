@@ -33,7 +33,7 @@ trait CachingScexCompiler extends ScexCompiler {
   override protected def compileFullJavaGetterAdapter(clazz: Class[_]) =
     fullJavaGetterAdaptersCache.get(clazz, callable(super.compileFullJavaGetterAdapter(clazz)))
 
-  override def reset(): Unit = synchronized {
+  override def reset(): Unit = underLock {
     super.reset()
     expressionCache.invalidateAll()
     profileCompilationResultsCache.invalidateAll()

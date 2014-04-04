@@ -222,7 +222,7 @@ object JavaTypeParsing {
         name + bounds(upperBounds, lowerBounds)
     }
 
-  val stringSupertypes = Set(
+  val StringSupertypes = Set("String", "Object", "Comparable[String]") ++ Set(
     TypeAny,
     TypeAnyRef,
     classOf[Object],

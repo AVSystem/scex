@@ -49,7 +49,7 @@ trait ScexCompiler extends PackageGenerator with LoggingUtils {
 
   protected type RawExpression = Expression[ExpressionContext[_, _], Any]
 
-  private def underLock[T](code: => T) = synchronized {
+  protected def underLock[T](code: => T) = synchronized {
     if (!initialized) {
       init()
     }
@@ -82,6 +82,10 @@ trait ScexCompiler extends PackageGenerator with LoggingUtils {
     initialized = true
   }
 
+  protected def createDedicatedClassLoader(dirName: String) = underLock {
+    new ScexClassLoader(new VirtualDirectory(dirName, None), persistentClassLoader)
+  }
+
   private def instantiatePersistent[T](className: String) =
     Class.forName(className, true, persistentClassLoader).newInstance.asInstanceOf[T]
 
@@ -106,7 +110,7 @@ trait ScexCompiler extends PackageGenerator with LoggingUtils {
     val sourceFile = new BatchSourceFile(pkgName, codeToCompile)
 
     def result = {
-      compile(sourceFile, persistentClassLoader, shared = true) match {
+      compile(sourceFile, persistentClassLoader, usedInExpressions = true) match {
         case Nil => pkgName
         case errors => throw new CompilationFailedException(codeToCompile, errors)
       }
@@ -121,7 +125,7 @@ trait ScexCompiler extends PackageGenerator with LoggingUtils {
     val sourceFile = new BatchSourceFile(pkgName, codeToCompile)
 
     def result =
-      compile(sourceFile, persistentClassLoader, shared = true) match {
+      compile(sourceFile, persistentClassLoader, usedInExpressions = true) match {
         case Nil => pkgName
         case errors => throw new CompilationFailedException(codeToCompile, errors)
       }
@@ -147,7 +151,7 @@ trait ScexCompiler extends PackageGenerator with LoggingUtils {
     wrapInSource(expressionCode, offset, pkgName)
   }
 
-  protected def compile(sourceFile: SourceFile, classLoader: ScexClassLoader, shared: Boolean): Seq[CompileError] = {
+  protected def compile(sourceFile: SourceFile, classLoader: ScexClassLoader, usedInExpressions: Boolean): Seq[CompileError] = {
     compilationCount += 1
 
     settings.outputDirs.setSingleOutput(classLoader.classfileDirectory)
@@ -188,11 +192,11 @@ trait ScexCompiler extends PackageGenerator with LoggingUtils {
     val pkgName = newExpressionPackage()
     val (codeToCompile, _) = expressionCode(preprocessedExprDef, pkgName)
     // every single expression has its own classloader and virtual directory
-    val classLoader = new ScexClassLoader(new VirtualDirectory("(scex)", None), persistentClassLoader)
+    val classLoader = createDedicatedClassLoader("(scex)")
     val sourceFile = new ExpressionSourceFile(preprocessedExprDef, pkgName, codeToCompile)
 
     def result =
-      compile(sourceFile, classLoader, shared = false) match {
+      compile(sourceFile, classLoader, usedInExpressions = false) match {
         case Nil =>
           Class.forName(s"$pkgName.$ExpressionClassName", true, classLoader).newInstance.asInstanceOf[RawExpression]
 
@@ -261,7 +265,7 @@ trait ScexCompiler extends PackageGenerator with LoggingUtils {
     val codeToCompile = wrapInSource(generateSyntaxValidator(code), pkgName)
     val sourceFile = new BatchSourceFile(pkgName, codeToCompile)
 
-    compile(sourceFile, persistentClassLoader, shared = true) match {
+    compile(sourceFile, persistentClassLoader, usedInExpressions = true) match {
       case Nil =>
         instantiatePersistent[SyntaxValidator](s"$pkgName.$SyntaxValidatorClassName")
       case errors =>
@@ -275,7 +279,7 @@ trait ScexCompiler extends PackageGenerator with LoggingUtils {
     val codeToCompile = wrapInSource(generateSymbolValidator(code), pkgName)
     val sourceFile = new BatchSourceFile(pkgName, codeToCompile)
 
-    compile(sourceFile, persistentClassLoader, shared = true) match {
+    compile(sourceFile, persistentClassLoader, usedInExpressions = true) match {
       case Nil =>
         instantiatePersistent[SymbolValidator](s"$pkgName.$SymbolValidatorClassName")
       case errors =>
@@ -291,7 +295,7 @@ trait ScexCompiler extends PackageGenerator with LoggingUtils {
     val sourceFile = new BatchSourceFile("(unknown)", code)
     val classLoader = new ScexClassLoader(new VirtualDirectory("(unknown)", None), getClass.getClassLoader)
 
-    compile(sourceFile, classLoader, shared = false) match {
+    compile(sourceFile, classLoader, usedInExpressions = false) match {
       case Nil =>
         Class.forName(name, true, classLoader)
       case errors =>
