@@ -23,12 +23,12 @@ trait LiteralsOptimizingScexCompiler extends ScexPresentationCompiler {
 
   import CacheImplicits._
 
-  private val implicitConversionsCache = CacheBuilder.newBuilder
+  private val literalConversionsCache = CacheBuilder.newBuilder
     .expireAfterAccess(config.expressionExpirationTime, TimeUnit.MILLISECONDS)
-    .build[(ExpressionProfile, String, String), Try[Literal => Any]]((compileImplicitConversion _).tupled)
+    .build[(ExpressionProfile, String, String), Try[Literal => Any]]((compileLiteralConversion _).tupled)
 
-  private def getImplicitConversion(exprDef: ExpressionDef) =
-    implicitConversionsCache.get((exprDef.profile, exprDef.resultType, exprDef.header))
+  private def getLiteralConversion(exprDef: ExpressionDef) =
+    literalConversionsCache.get((exprDef.profile, exprDef.resultType, exprDef.header))
 
   private val LiteralPattern = "([^$]|\\$\\$)*".r
 
@@ -42,7 +42,7 @@ trait LiteralsOptimizingScexCompiler extends ScexPresentationCompiler {
    * If there is no such conversion, <code>LiteralsOptimizingScexCompiler</code> will not attempt to optimize the
    * compilation and simply pass it to <code>super.compileExpression</code>.
    */
-  private def validateImplicitConversion(exprDef: ExpressionDef) = {
+  private def validateLiteralConversion(exprDef: ExpressionDef) = {
     import CodeGeneration._
     val actualHeader = implicitLiteralViewHeader(exprDef.header)
     val validationExpression = implicitLiteralViewExpression(exprDef.resultType)
@@ -51,7 +51,7 @@ trait LiteralsOptimizingScexCompiler extends ScexPresentationCompiler {
     super.compileExpression(validationExprDef)
   }
 
-  private def compileImplicitConversion(profile: ExpressionProfile, resultType: String, header: String) = underLock {
+  private def compileLiteralConversion(profile: ExpressionProfile, resultType: String, header: String) = underLock {
     import CodeGeneration._
 
     val pkgName = newPackageName("_scex_conversion_supplier")
@@ -78,7 +78,7 @@ trait LiteralsOptimizingScexCompiler extends ScexPresentationCompiler {
   private def isEligible(exprDef: ExpressionDef) =
     exprDef.template && !exprDef.setter &&
       LiteralPattern.pattern.matcher(exprDef.expression).matches &&
-      (isStringSupertype(exprDef.resultType) || validateImplicitConversion(exprDef).isSuccess)
+      (isStringSupertype(exprDef.resultType) || validateLiteralConversion(exprDef).isSuccess)
 
   private def toLiteral(exprDef: ExpressionDef) =
     Literal(preprocess(exprDef).expression.replaceAllLiterally("$$", "$"))
@@ -91,7 +91,7 @@ trait LiteralsOptimizingScexCompiler extends ScexPresentationCompiler {
       val literal = toLiteral(exprDef)
       if (isStringSupertype(exprDef.resultType))
         Success(LiteralExpression(literal.literalString))
-      else getImplicitConversion(exprDef).map { conversion =>
+      else getLiteralConversion(exprDef).map { conversion =>
         try LiteralExpression(conversion(literal)) catch {
           case throwable: Throwable =>
             throw new CompilationFailedException(literal.literalString,
@@ -103,7 +103,7 @@ trait LiteralsOptimizingScexCompiler extends ScexPresentationCompiler {
 
   override protected def getErrors(exprDef: ExpressionDef) = super.getErrors(exprDef) match {
     case Nil if isEligible(exprDef) && !isStringSupertype(exprDef.resultType) =>
-      getImplicitConversion(exprDef).map { conversion =>
+      getLiteralConversion(exprDef).map { conversion =>
         val literal = toLiteral(exprDef)
         try {
           conversion(literal)
@@ -119,7 +119,7 @@ trait LiteralsOptimizingScexCompiler extends ScexPresentationCompiler {
 
   override def reset() = underLock {
     super.reset()
-    implicitConversionsCache.invalidateAll()
+    literalConversionsCache.invalidateAll()
   }
 }
 
