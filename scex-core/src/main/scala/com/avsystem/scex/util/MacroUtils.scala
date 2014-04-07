@@ -227,7 +227,9 @@ trait MacroUtils {
     tree.tpe <:< typeOf[T]
 
   def toStringSymbol(tpe: Type) =
-    tpe.member(newTermName("toString")).asTerm.alternatives.find(s => s.isTerm && isParameterless(s.asTerm)).get
+    alternatives(tpe.member(newTermName("toString")))
+      .find(s => s.isTerm && isParameterless(s.asTerm))
+      .getOrElse(NoSymbol)
 
   lazy val standardStringInterpolations =
     Set("s", "raw").map(name => typeOf[StringContext].member(newTermName(name)))

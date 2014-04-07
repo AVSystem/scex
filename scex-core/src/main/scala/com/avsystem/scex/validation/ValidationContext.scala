@@ -93,8 +93,9 @@ abstract class ValidationContext protected extends MacroUtils {
 
         // special case for configuration convenience: 'any + <string>' (using any2stringadd) is also validated as
         // combination of toString and string concatenation
-        if (fun.symbol == any2stringadd && tree.symbol == stringAddPlus) {
-          val toStringAccess = SimpleMemberAccess(qualifier.tpe, toStringSymbol(qualifier.tpe), None, allowedByDefault = false, tree.pos)
+        lazy val toStringMember = toStringSymbol(qualifier.tpe)
+        if (fun.symbol == any2stringadd && tree.symbol == stringAddPlus && toStringMember != NoSymbol) {
+          val toStringAccess = SimpleMemberAccess(qualifier.tpe, toStringMember, None, allowedByDefault = false, tree.pos)
           val stringConcatAccess = SimpleMemberAccess(stringTpe, stringConcat, None, allowedByDefault = false, tree.pos)
           alternatives = MultipleMemberAccesses(List(toStringAccess, stringConcatAccess)) :: alternatives
         }
