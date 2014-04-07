@@ -57,12 +57,12 @@ object XmlFriendlyTranslator extends PositionTrackingParsers {
   def number: Parser[PString] =
     "[0-9]+".rp
 
-  def block = "{".p ~ standardExpression ~ opt("}".p) ^^ {
-    case lb ~ contents ~ rbOpt => lb + contents + rbOpt
+  def block = "{".p ~ standardExpression ~ "}".p ^^ {
+    case lb ~ contents ~ rb => lb + contents + rb
   }
 
   def operator: Parser[PString] =
-    "[~!@#$%^&*-=+<>/?\\\\|:]+".rp ^^ xmlFriendly
+    "[\\^\\-\\\\~!@#$%&*=+<>/?|:]+".rp ^^ xmlFriendly
 
   def delim = "[,;.]".rp
 
@@ -71,7 +71,7 @@ object XmlFriendlyTranslator extends PositionTrackingParsers {
   }
 
   def bracket: Parser[PString] =
-    "[()\\[\\]}]".rp
+    "[()\\[\\]]".rp
 
   def whitespace: Parser[PString] =
     "\\s+".rp
