@@ -58,10 +58,11 @@ object CodeGeneration {
    */
   def generateJavaGetterAdapter(clazz: Class[_], full: Boolean): Option[String] = {
     // generate scala getters
-    val javaGetters =
-      if (full) clazz.getMethods else clazz.getDeclaredMethods
+    val methods =
+      if (full) clazz.getMethods
+      else clazz.getMethods.filter(m => m.getDeclaringClass == clazz || isMultipleInherited(clazz, m))
 
-    val scalaGetters = javaGetters.collect {
+    val scalaGetters = methods.collect {
       case method@JavaGetter(propName, booleanIsGetter) if Modifier.isPublic(method.getModifiers) =>
         s"def `$propName` = _wrapped.${method.getName}\n"
     }

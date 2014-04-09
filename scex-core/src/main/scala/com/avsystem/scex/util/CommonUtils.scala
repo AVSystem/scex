@@ -2,6 +2,8 @@ package com.avsystem.scex
 package util
 
 import java.util.concurrent.Callable
+import scala.collection.mutable
+import java.lang.reflect.{Modifier, Method}
 
 
 /**
@@ -50,6 +52,30 @@ object CommonUtils {
     expr
     (System.nanoTime() - start) / 1000000000.0
   }
+
+  def directSuperclasses(clazz: Class[_]) = {
+    val resultBuilder = new mutable.HashSet[Class[_]]
+    if (clazz.getSuperclass != null) {
+      resultBuilder += clazz.getSuperclass
+    }
+    clazz.getInterfaces.foreach { iface =>
+      if (!resultBuilder.exists(iface.isAssignableFrom)) {
+        resultBuilder.retain(c => !c.isAssignableFrom(iface))
+        resultBuilder += iface
+      }
+    }
+    resultBuilder.toSet
+  }
+
+  def isMultipleInherited(clazz: Class[_], method: Method) =
+    directSuperclasses(clazz).flatMap { superClass =>
+      try {
+        Some(superClass.getMethod(method.getName, method.getParameterTypes: _*))
+          .filter(m => Modifier.isPublic(m.getModifiers)).map(_.getDeclaringClass)
+      } catch {
+        case _: NoSuchMethodException => None
+      }
+    }.size > 1
 
   def hierarchy(clazz: Class[_]): Set[Class[_]] = {
     val resultBuilder = Set.newBuilder[Class[_]]

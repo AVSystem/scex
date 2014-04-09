@@ -290,4 +290,15 @@ class ScexCompilerTest extends FunSuite with CompilationTest {
     assert("dynamicProperty" === cexpr(SimpleContext(())))
   }
 
+  test("java getter inherited from multiple bases test") {
+    val acl = allow {
+      on { sjr: SubRoot =>
+        sjr.all.members
+      }
+    }
+    val expr = "self.id"
+    val cexpr = compiler.getCompiledExpression[SimpleContext[SubRoot], String](createProfile(acl), expr, template = false)
+    assert("tehId" === cexpr(SimpleContext(new SubRoot)))
+  }
+
 }
