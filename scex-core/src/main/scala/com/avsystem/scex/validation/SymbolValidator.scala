@@ -9,6 +9,7 @@ import scala.collection.immutable.{SortedSet, TreeSet}
 import scala.language.dynamics
 import scala.language.experimental.macros
 import scala.language.implicitConversions
+import scala.annotation.compileTimeOnly
 
 trait SymbolValidator extends LoggingUtils {
   private val logger = createLogger[SymbolValidator]
@@ -59,7 +60,7 @@ trait SymbolValidator extends LoggingUtils {
         logger.trace(s"Validating access: $access")
 
         val signatures: List[String] =
-          (symbol :: symbol.allOverriddenSymbols).map(memberSignature)
+          (symbol :: symbol.overrides).map(memberSignature)
 
         // MemberAccessSpecs that match this invocation
         val matchingSpecs: List[SpecWithIndex] = signatures.flatMap { signature =>
@@ -128,6 +129,7 @@ object SymbolValidator {
 
   val empty: SymbolValidator = apply(Nil)
 
+  @compileTimeOnly("You cannot use this outside of symbol validator DSL")
   implicit def toDirectWildcardSelector(any: Any): DirectWildcardSelector = stub
 
   // indicates end of wildcard selector
@@ -316,5 +318,6 @@ object SymbolValidator {
    * @tparam T
    * @return
    */
+  @compileTimeOnly("You cannot use this outside of symbol validator DSL")
   def allStatic[T]: MemberSubsets = stub
 }

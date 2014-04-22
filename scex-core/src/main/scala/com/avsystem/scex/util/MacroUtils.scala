@@ -22,9 +22,9 @@ trait MacroUtils {
   lazy val rootAdapterAnnotType = typeOf[RootAdapter]
   lazy val notValidatedAnnotType = typeOf[NotValidated]
 
-  lazy val any2stringadd = typeOf[Predef.type].member(newTermName("any2stringadd"))
-  lazy val stringAddPlus = typeOf[StringAdd].member(newTermName("+").encodedName)
-  lazy val stringConcat = typeOf[String].member(newTermName("+").encodedName)
+  lazy val any2stringadd = typeOf[Predef.type].member(TermName("any2stringadd"))
+  lazy val stringAddPlus = typeOf[StringAdd].member(TermName("+").encodedName)
+  lazy val stringConcat = typeOf[String].member(TermName("+").encodedName)
   lazy val stringTpe = typeOf[String]
   lazy val booleanTpe = typeOf[Boolean]
   lazy val jBooleanTpe = typeOf[jl.Boolean]
@@ -58,10 +58,6 @@ trait MacroUtils {
     }
   }
 
-  object TermName {
-    def unapply(termName: TermName) = Some(termName.decoded)
-  }
-
   def isModuleOrPackage(symbol: Symbol) = symbol != null &&
     (symbol.isModule || symbol.isModuleClass || symbol.isPackage || symbol.isPackageClass)
 
@@ -72,7 +68,7 @@ trait MacroUtils {
     s.isMethod && s.asMethod.isConstructor
 
   def memberSignature(s: Symbol) =
-    if (s != null) s"${s.fullName}:${s.typeSignature}" else null
+    if (s != null) s"${s.fullName}${show(s.info.paramLists.map(_.map(_.typeSignature.toString).mkString("(", ",", ")")).mkString)}" else null
 
   def isStableTerm(s: Symbol) =
     s.isTerm && s.asTerm.isStable
@@ -95,7 +91,7 @@ trait MacroUtils {
   }
 
   private object FakeImplicitConversionTree {
-    def unapply(tree: Tree) = tree.attachments.get[FakeImplicitConversion] match {
+    def unapply(tree: Tree) = internal.attachments(tree).get[FakeImplicitConversion] match {
       case Some(FakeImplicitConversion(fakePath)) => Some(fakePath)
       case None => None
     }
@@ -162,10 +158,10 @@ trait MacroUtils {
   def isBooleanType(tpe: Type) =
     tpe <:< typeOf[Boolean] || tpe <:< typeOf[jl.Boolean]
 
-  lazy val getClassSymbol = typeOf[Any].member(newTermName("getClass"))
+  lazy val getClassSymbol = typeOf[Any].member(TermName("getClass"))
 
   def isGetClass(symbol: Symbol) =
-    symbol.name == newTermName("getClass") && (symbol :: symbol.allOverriddenSymbols).contains(getClassSymbol)
+    symbol.name == TermName("getClass") && (symbol :: symbol.allOverriddenSymbols).contains(getClassSymbol)
 
   def isBeanGetter(symbol: Symbol) = symbol.isMethod && {
     val methodSymbol = symbol.asMethod
@@ -227,12 +223,12 @@ trait MacroUtils {
     tree.tpe <:< typeOf[T]
 
   def toStringSymbol(tpe: Type) =
-    alternatives(tpe.member(newTermName("toString")))
+    alternatives(tpe.member(TermName("toString")))
       .find(s => s.isTerm && isParameterless(s.asTerm))
       .getOrElse(NoSymbol)
 
   lazy val standardStringInterpolations =
-    Set("s", "raw").map(name => typeOf[StringContext].member(newTermName(name)))
+    Set("s", "raw").map(name => typeOf[StringContext].member(TermName(name)))
 
   def alternatives(sym: Symbol) = sym match {
     case termSymbol: TermSymbol => termSymbol.alternatives
@@ -266,7 +262,7 @@ trait MacroUtils {
   def isAdapterWrappedMember(symbol: Symbol): Boolean =
     if (symbol != null && symbol.isTerm) {
       val ts = symbol.asTerm
-      (ts.isGetter && ts.name == newTermName("_wrapped") && ts.owner.isType && isAdapter(ts.owner.asType.toType)
+      (ts.isGetter && ts.name == TermName("_wrapped") && ts.owner.isType && isAdapter(ts.owner.asType.toType)
         || ts.isVal && isAdapterWrappedMember(ts.getter))
     } else false
 
@@ -280,7 +276,7 @@ trait MacroUtils {
 
     def fail = throw new Exception(s"Could not find Java getter for property ${symbol.name} on $javaTpe")
     def findGetter(getterName: String) =
-      alternatives(javaTpe.member(newTermName(getterName))).find(isBeanGetter)
+      alternatives(javaTpe.member(TermName(getterName))).find(isBeanGetter)
 
     if (isBooleanType(symbol.asMethod.returnType)) {
       findGetter(booleanGetterName) orElse findGetter(getterName) getOrElse fail
@@ -290,7 +286,7 @@ trait MacroUtils {
   }
 
   def memberBySignature(tpe: Type, signature: String): Symbol = {
-    val name = newTermName(signature.split(':')(0).split('.').last)
+    val name = TermName(signature.split(':')(0).split('.').last)
     alternatives(tpe.member(name)).find { m =>
       (memberSignature(m) :: m.allOverriddenSymbols.map(memberSignature)).contains(signature)
     }.getOrElse(NoSymbol)

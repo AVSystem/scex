@@ -12,7 +12,7 @@ import scala.collection.mutable.ListBuffer
 import scala.reflect.internal.util.{SourceFile, Position, BatchSourceFile}
 import scala.reflect.io.VirtualDirectory
 import scala.reflect.runtime.universe.TypeTag
-import scala.tools.nsc.interpreter.AbstractFileClassLoader
+import scala.reflect.internal.util.AbstractFileClassLoader
 import scala.tools.nsc.reporters.AbstractReporter
 import scala.tools.nsc.{Global, Settings}
 import scala.util.Try
@@ -59,6 +59,10 @@ trait ScexCompiler extends PackageGenerator with LoggingUtils {
   val settings = new Settings
   settings.usejavacp.value = true
   settings.exposeEmptyPackage.value = true
+  // preserving 2.10 behaviour of macro expansion in presentation compiler
+  // https://github.com/scala/scala/commit/6e4c926b4a4c5e8dd350ae3a150490a794b139ca
+  // TODO: maybe try to make it work with MacroExpand.Discard ?
+  settings.Ymacroexpand.value = settings.MacroExpand.Normal
 
   private var initialized = false
 

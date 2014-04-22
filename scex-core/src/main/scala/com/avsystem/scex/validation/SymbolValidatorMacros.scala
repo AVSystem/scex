@@ -6,7 +6,7 @@ import java.{util => ju, lang => jl}
 import scala.collection.mutable.ListBuffer
 import scala.reflect.api.TypeCreator
 import scala.reflect.internal.Flags
-import scala.reflect.macros.Context
+import scala.reflect.macros.whitebox.Context
 
 object SymbolValidatorMacros {
 
@@ -24,7 +24,7 @@ object SymbolValidatorMacros {
     extractMemberAccessSpecs(c)(expr, allow = false)
 
   def on_impl[T](c: Context)(expr: c.Expr[T => Any]): c.Expr[T => Any] = {
-    expr.tree.updateAttachment(SymbolValidatorOnMark)
+    c.internal.updateAttachment(expr.tree, SymbolValidatorOnMark)
     expr
   }
 
@@ -38,9 +38,8 @@ object SymbolValidatorMacros {
     def reifyFlattenLists(listExprs: List[c.Expr[List[MemberAccessSpec]]]) = {
       import c.universe._
 
-      val addToBuilderStatements = listExprs.map {
-        listExpr =>
-          Apply(Select(Ident(newTermName("b")), newTermName("++=").encodedName), List(listExpr.tree))
+      val addToBuilderStatements = listExprs.map { listExpr =>
+          Apply(Select(Ident(TermName("b")), TermName("++=").encodedName), List(listExpr.tree))
       }
       reify {
         val b = new ListBuffer[MemberAccessSpec]
@@ -77,10 +76,10 @@ object SymbolValidatorMacros {
 
         val symbolMapping = quantified.collect {
           case oldSymbol if oldSymbol.owner != rootSymbol =>
-            val newName = newTypeName(oldSymbol.fullName.replaceAllLiterally(".", "_"))
-            val flags = build.flagsFromBits(Flags.DEFERRED | Flags.EXISTENTIAL)
-            val newSymbol = build.newNestedSymbol(rootSymbol, newName, NoPosition, flags, isClass = false)
-            newSymbol.setTypeSignature(oldSymbol.typeSignature)
+            val newName = TypeName(oldSymbol.fullName.replaceAllLiterally(".", "_"))
+            val flags = internal.reificationSupport.FlagsRepr(Flags.DEFERRED | Flags.EXISTENTIAL)
+            val newSymbol = internal.reificationSupport.newNestedSymbol(rootSymbol, newName, NoPosition, flags, isClass = false)
+            internal.reificationSupport.setInfo(newSymbol, oldSymbol.typeSignature)
             (oldSymbol, newSymbol)
         }.toMap.withDefault {
           s: Symbol => s
@@ -89,11 +88,11 @@ object SymbolValidatorMacros {
         val newQuantified = quantified.map(symbolMapping)
 
         val newUnderlying = underlying.map {
-          case TypeRef(pre, sym, args) => TypeRef(pre, symbolMapping(sym), args)
+          case TypeRef(pre, sym, args) => internal.reificationSupport.TypeRef(pre, symbolMapping(sym), args)
           case t => t
         }
 
-        ExistentialType(newQuantified, newUnderlying)
+        internal.reificationSupport.ExistentialType(newQuantified, newUnderlying)
 
       case subTpe => subTpe
     }
@@ -102,7 +101,7 @@ object SymbolValidatorMacros {
       val typeToReify = detachExistentials(tpe.map(_.widen))
 
       val Block(List(_, _), Apply(_, List(_, typeCreatorTree))) =
-        c.reifyType(treeBuild.mkRuntimeUniverseRef, EmptyTree, typeToReify)
+        c.reifyType(internal.gen.mkRuntimeUniverseRef, EmptyTree, typeToReify)
 
       reify(new TypeInfo(
         c.Expr[TypeCreator](typeCreatorTree).splice,
@@ -161,9 +160,9 @@ object SymbolValidatorMacros {
       // have one reified type and implicit conversion spec for all MemberAccessSpecs generated from wildcard
       private def reifyAccessSpec(member: TermSymbol) = reify {
         List(MemberAccessSpec(
-          c.Expr[TypeInfo](Ident(newTermName("prefixTypeInfo"))).splice,
+          c.Expr[TypeInfo](Ident(TermName("prefixTypeInfo"))).splice,
           c.literal(memberSignature(member)).splice,
-          c.Expr[Option[(String, TypeInfo)]](Ident(newTermName("implConvOpt"))).splice,
+          c.Expr[Option[(String, TypeInfo)]](Ident(TermName("implConvOpt"))).splice,
           c.literal(allow).splice))
       }
 
@@ -320,7 +319,7 @@ object SymbolValidatorMacros {
         extractSymbols(requiredPrefix, inner)
 
       case Function(List(valdef@ValDef(_, _, prefixTpeTree, _)), actualBody)
-        if body.attachments.get[SymbolValidatorOnMark.type].isDefined =>
+        if internal.attachments(body).get[SymbolValidatorOnMark.type].isDefined =>
 
         extractSymbols(Some((valdef.symbol, prefixTpeTree.tpe)), actualBody)
 

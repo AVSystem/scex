@@ -30,8 +30,6 @@ class IGlobal(settings: Settings, reporter: Reporter) extends Global(settings, r
     override def implicitlyAdded = implicitTree != EmptyTree
   }
 
-  private val Dollar = newTermName("$")
-
   private class Members extends mutable.LinkedHashMap[Name, Set[ScexTypeMember]] {
     override def default(key: Name) = Set()
 
@@ -57,7 +55,7 @@ class IGlobal(settings: Settings, reporter: Reporter) extends Global(settings, r
     def add(sym: Symbol, pre: Type, implicitTree: Tree)(toMember: (Symbol, Type) => ScexTypeMember) {
       if (sym.hasGetter) {
         add(sym.getter(sym.owner), pre, implicitTree)(toMember)
-      } else if (!sym.name.decodedName.containsName(Dollar) && !sym.isSynthetic && sym.hasRawInfo) {
+      } else if (!sym.name.decodedName.containsName("$") && !sym.isSynthetic && sym.hasRawInfo) {
         val symtpe = pre.memberType(sym) onTypeError ErrorType
         matching(sym, symtpe, this(sym.name)) match {
           case Some(m) =>
