@@ -23,7 +23,7 @@ allprojects {
     sourceCompatibility = 1.7
     targetCompatibility = 1.7
 
-    ext.scalaVersion = '2.10.4'
+    ext.scalaVersion = '2.11.0'
 
     idea {
         module {
@@ -92,7 +92,7 @@ project("scex-test") {
         compile("org.eclipse.jetty:jetty-servlet:9.1.0.v20131115")
 
         testCompile("junit:junit:4.11")
-        testCompile("org.scalatest:scalatest_2.10:1.9.1")
+        testCompile("org.scalatest:scalatest_2.11:2.1.3")
     }
 }
 
