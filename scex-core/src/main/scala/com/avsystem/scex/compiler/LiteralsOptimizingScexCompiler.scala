@@ -30,11 +30,11 @@ trait LiteralsOptimizingScexCompiler extends ScexPresentationCompiler {
   private def getLiteralConversion(exprDef: ExpressionDef) =
     literalConversionsCache.get((exprDef.profile, exprDef.resultType, exprDef.header))
 
-  private val LiteralPattern = "([^$]|\\$\\$)*".r
-
   private case class LiteralExpression(value: Any) extends RawExpression {
     def apply(ctx: ExpressionContext[_, _]) = value
   }
+
+  val interpolatedParamStart = "(^|[^$])(\\$\\$)*\\$([^$]|$)".r
 
   /**
    * Compiles a dummy expression that tests if there is a valid implicit conversion from Literal to expected type
@@ -77,7 +77,7 @@ trait LiteralsOptimizingScexCompiler extends ScexPresentationCompiler {
 
   private def isEligible(exprDef: ExpressionDef) =
     exprDef.template && !exprDef.setter &&
-      LiteralPattern.pattern.matcher(exprDef.expression).matches &&
+      !interpolatedParamStart.findFirstIn(exprDef.expression).isDefined &&
       (isStringSupertype(exprDef.resultType) || validateLiteralConversion(exprDef).isSuccess)
 
   private def toLiteral(exprDef: ExpressionDef) =
