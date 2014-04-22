@@ -99,6 +99,7 @@ trait ScexGlobal extends Global with MacroUtils {
       (pos1 includes pos2) && pos1.end > pos2.start
   }
 
+  // Stuff to translate types into java classes copied from scala.reflect.runtime.JavaMirrors
 
   private val PackageAndClassPattern = """(.*\.)(.*)$""".r
 
@@ -190,9 +191,10 @@ trait ScexGlobal extends Global with MacroUtils {
      * (+6 for ".class"). MaxNameLength can therefore be computed as follows:
      */
     val marker = "$$$$"
+    val maxSuffixLength = "$.class".length + 1
     val MaxNameLength = math.min(
-      settings.maxClassfileName.value - 6,
-      2 * (settings.maxClassfileName.value - 6 - 2 * marker.length - 32)
+      settings.maxClassfileName.value - maxSuffixLength,
+      2 * (settings.maxClassfileName.value - maxSuffixLength - 2 * marker.length - 32)
     )
 
     def toMD5(s: String, edge: Int): String = {
