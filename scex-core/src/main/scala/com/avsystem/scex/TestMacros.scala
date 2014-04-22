@@ -1,7 +1,7 @@
 package com.avsystem.scex
 
 import java.{util => ju, lang => jl}
-import reflect.macros.Context
+import reflect.macros.whitebox.Context
 import scala.language.experimental.macros
 import scala.reflect.api.{TreeCreator, TypeCreator}
 
@@ -12,7 +12,7 @@ object TestMacros {
     import c.universe._
 
     val Block(List(_, _), Apply(_, List(_, typeCreatorTree))) =
-      c.reifyType(treeBuild.mkRuntimeUniverseRef, EmptyTree, weakTypeOf[T])
+      c.reifyType(internal.gen.mkRuntimeUniverseRef, EmptyTree, weakTypeOf[T])
 
     c.Expr[TypeCreator](typeCreatorTree)
   }
@@ -22,7 +22,7 @@ object TestMacros {
   def gimme_impl[T](c: Context)(expr: c.Expr[T]): c.Expr[(TreeCreator, TypeCreator)] = {
     import c.universe._
 
-    val reifiedTree = c.reifyTree(treeBuild.mkRuntimeUniverseRef, EmptyTree, expr.tree)
+    val reifiedTree = c.reifyTree(internal.gen.mkRuntimeUniverseRef, EmptyTree, expr.tree)
     val Block(List(_, _), Apply(Apply(_, List(_, treeCreatorTree)), List(Apply(_, List(_, typeCreatorTree))))) = reifiedTree
 
     reify {

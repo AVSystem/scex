@@ -96,7 +96,7 @@ trait ScexGlobal extends Global with MacroUtils {
     }
 
     private def includes(pos1: Position, pos2: Position) =
-      (pos1 includes pos2) && pos1.endOrPoint > pos2.startOrPoint
+      (pos1 includes pos2) && pos1.end > pos2.start
   }
 
 

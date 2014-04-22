@@ -189,7 +189,7 @@ object SymbolValidatorMacros {
       case TypeApply(Select(symbolValidatorModule, TermName("allStatic")), List(tpeTree))
         if hasType[SymbolValidator.type](symbolValidatorModule) && isJavaClass(tpeTree.symbol) =>
 
-        val tpeWithStatics = tpeTree.symbol.companionSymbol.typeSignature
+        val tpeWithStatics = tpeTree.symbol.companion.typeSignature
         ParsedWildcardSelector(tpeWithStatics, accessibleMembers(tpeWithStatics), None)
 
       // <prefix>.all
@@ -243,7 +243,7 @@ object SymbolValidatorMacros {
         val prevSelector = parseWildcardSelector(requiredPrefix, prefix)
         val sourceTpeSymbol = prevSelector.sourceTpe.typeSymbol
         // TODO: decide what "introduced" exactly means for scala val/var getters and setters
-        prevSelector.filterScope(m => m.owner == sourceTpeSymbol && m.allOverriddenSymbols.isEmpty)
+        prevSelector.filterScope(m => m.owner == sourceTpeSymbol && m.overrides.isEmpty)
 
       // <prefix>.constructors
       case Select(prefix, TermName("constructors")) if hasType[DirectMemberSubsets](prefix) =>
@@ -264,8 +264,8 @@ object SymbolValidatorMacros {
             "<invalid>"
         }.toSet
 
-        val result = parseWildcardSelector(requiredPrefix, prefix).filterScope(names contains _.name.decoded)
-        val absentMembers = names diff result.scope.map(_.name.decoded).toSet
+        val result = parseWildcardSelector(requiredPrefix, prefix).filterScope(names contains _.name.decodedName.toString)
+        val absentMembers = names diff result.scope.map(_.name.decodedName.toString).toSet
         if (absentMembers.nonEmpty) {
           absentMembers.foreach {
             name => c.error(tree.pos, s"No method named $name found in type ${result.sourceTpe.widen}")
@@ -347,7 +347,7 @@ object SymbolValidatorMacros {
 
     c.prefix.tree match {
       case Select(methodSubsets, TermName("membersNamed")) if hasType[MemberSubsets](methodSubsets) =>
-        c.Expr[CompleteWildcardSelector](Apply(Select(methodSubsets, newTermName("membersNamed")), List(name.tree)))
+        c.Expr[CompleteWildcardSelector](Apply(Select(methodSubsets, TermName("membersNamed")), List(name.tree)))
       case _ =>
         c.error(c.enclosingPosition, "Bad symbol specification syntax:")
         c.literalNull

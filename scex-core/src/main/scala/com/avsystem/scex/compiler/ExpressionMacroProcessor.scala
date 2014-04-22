@@ -5,7 +5,7 @@ import com.avsystem.scex.util.{LoggingUtils, CommonUtils, MacroUtils, TypesafeEq
 import com.avsystem.scex.validation.ValidationContext
 import java.{util => ju, lang => jl}
 import scala.language.experimental.macros
-import scala.reflect.macros.Context
+import scala.reflect.macros.whitebox.Context
 
 /**
  * Object used during expression compilation to validate the expression (syntax, invocations, etc.)
@@ -78,7 +78,7 @@ object ExpressionMacroProcessor extends LoggingUtils {
 
       object transformer extends Transformer {
         override def transform(tree: Tree) = tree match {
-          case Apply(Select(left, operator), List(right)) => operator.decoded match {
+          case Apply(Select(left, operator), List(right)) => operator.decodedName.toString match {
             case "==" => tripleEquals(transform(left), transform(right))
             case "!=" => Select(tripleEquals(transform(left), transform(right)), TermName("unary_!").encodedName)
             case _ => super.transform(tree)
@@ -112,7 +112,7 @@ object ExpressionMacroProcessor extends LoggingUtils {
         bodyGen(Ident(TermName("value"))))
 
     def translate(tree: Tree): Tree = tree match {
-      case Select(prefix@Ident(_), TermName(propertyName)) if prefix.symbol.annotations.exists(_.tpe <:< rootAdapterAnnotType) =>
+      case Select(prefix@Ident(_), TermName(propertyName)) if prefix.symbol.annotations.exists(_.tree.tpe <:< rootAdapterAnnotType) =>
         reifySetterFunction(Select(Ident(TermName(CodeGeneration.RootSymbol)), TermName("set" + propertyName.capitalize)))
 
       case Select(ImplicitlyConverted(prefix, fun), TermName(propertyName)) if isAdapterConversion(fun.symbol) =>

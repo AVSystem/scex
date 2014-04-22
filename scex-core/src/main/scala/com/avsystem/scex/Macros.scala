@@ -2,7 +2,7 @@ package com.avsystem.scex
 
 import com.avsystem.scex.util.{Literal => ScexLiteral, MacroUtils}
 import java.{util => ju, lang => jl}
-import scala.reflect.macros.Context
+import scala.reflect.macros.whitebox.Context
 import scala.util.control.NonFatal
 import com.avsystem.scex.compiler.{CodeGeneration, TemplateInterpolations}
 import com.avsystem.scex.compiler.TemplateInterpolations.Splicer
@@ -53,13 +53,13 @@ object Macros {
     // special cases for Java enums as there is no way to create general implicit conversion to arbitrary java enum
     // due to https://issues.scala-lang.org/browse/SI-7609
     else if (resultType <:< typeOf[jl.Enum[_]] && args.size == 0) {
-      val enumModuleSymbol = resultType.typeSymbol.companionSymbol
+      val enumModuleSymbol = resultType.typeSymbol.companion
       val Literal(Constant(stringLiteral: String)) = parts.head
 
       c.Expr[T](Select(Ident(enumModuleSymbol), TermName(stringLiteral)))
 
     } else if (resultType <:< typeOf[jl.Enum[_]] && args.size == 1 && parts.forall(isEmptyStringLiteral) && !(args.head.actualType <:< resultType)) {
-      val enumModuleSymbol = resultType.typeSymbol.companionSymbol
+      val enumModuleSymbol = resultType.typeSymbol.companion
 
       c.Expr[T](Apply(Select(Ident(enumModuleSymbol), TermName("valueOf")), List(args.head.tree)))
 
