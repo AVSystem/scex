@@ -14,6 +14,7 @@ import com.avsystem.scex.util.CommonUtils
  * Author: ghik
  */
 trait CachingScexPresentationCompiler extends ScexPresentationCompiler {
+
   import CommonUtils._
 
   private val errorsCache = CacheBuilder.newBuilder

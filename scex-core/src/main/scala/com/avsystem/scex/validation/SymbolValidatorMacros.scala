@@ -39,7 +39,7 @@ object SymbolValidatorMacros {
       import c.universe._
 
       val addToBuilderStatements = listExprs.map { listExpr =>
-          Apply(Select(Ident(TermName("b")), TermName("++=").encodedName), List(listExpr.tree))
+        Apply(Select(Ident(TermName("b")), TermName("++=").encodedName), List(listExpr.tree))
       }
       reify {
         val b = new ListBuffer[MemberAccessSpec]
@@ -56,20 +56,20 @@ object SymbolValidatorMacros {
       }
 
     /**
-    * Translates this type so that all existential types in this type do not refer to the defining class,
-    * as they do by default. Heavy wizardry.
-    *
-    * The problem is that when you reify an existential type (with `c.reifyType`), for example `Set[_]`, the
-    * wildcard is reified as a Symbol whose owner is the class that used that existential type.
-    * This effectively means that the definition of existential type refers the class that used it.
-    * This means that when the type is finally evaluated in some universe, things will blow up if that class is
-    * not visible to that universe.
-    *
-    * For example, this is exactly what happens if you use some existential type in the SymbolValidator DSL and
-    * the symbol validator is compiled at runtime using `compileSymbolValidator` method of ScexCompiler. That dynamically
-    * compiled class is not visible to the Scala compiler through classpath and when it tries to evaluate the reified
-    * type, we have a nice scala.reflect.internal.MissingRequirementError in our face.
-    */
+     * Translates this type so that all existential types in this type do not refer to the defining class,
+     * as they do by default. Heavy wizardry.
+     *
+     * The problem is that when you reify an existential type (with `c.reifyType`), for example `Set[_]`, the
+     * wildcard is reified as a Symbol whose owner is the class that used that existential type.
+     * This effectively means that the definition of existential type refers the class that used it.
+     * This means that when the type is finally evaluated in some universe, things will blow up if that class is
+     * not visible to that universe.
+     *
+     * For example, this is exactly what happens if you use some existential type in the SymbolValidator DSL and
+     * the symbol validator is compiled at runtime using `compileSymbolValidator` method of ScexCompiler. That dynamically
+     * compiled class is not visible to the Scala compiler through classpath and when it tries to evaluate the reified
+     * type, we have a nice scala.reflect.internal.MissingRequirementError in our face.
+     */
     def detachExistentials(tpe: Type) = tpe.map {
       case ExistentialType(quantified, underlying) =>
         val rootSymbol = rootMirror.RootClass
