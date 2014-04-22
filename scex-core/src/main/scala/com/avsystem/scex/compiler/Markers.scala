@@ -9,7 +9,11 @@ import scala.reflect.{ClassTag, classTag}
  * Author: ghik
  */
 object Markers {
+
   trait ExpressionUtil extends Any
+
   trait JavaGetterAdapter extends Any
+
   trait ProfileObject extends Any
+
 }

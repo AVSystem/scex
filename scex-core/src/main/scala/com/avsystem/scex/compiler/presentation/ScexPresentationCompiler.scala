@@ -197,9 +197,9 @@ trait ScexPresentationCompiler extends ScexCompiler {
       inCompilerThread {
         val membersIterator = scope.iterator.collect {
           case member@ScopeMember(sym, _, _, viaImport)
-            if viaImport != EmptyTree && sym.isTerm && !sym.isPackage &&
+            if viaImport != EmptyTree && sym.isTerm && !sym.hasPackageFlag &&
               !isAdapterWrappedMember(sym) && (!isScexSynthetic(sym) || (isExpressionUtil(sym) && !isExpressionUtilObject(sym))) =>
-            if (sym.hasGetter) member.copy(sym = sym.getter(sym.owner)) else member
+            if (sym.hasGetter) member.copy(sym = sym.getterIn(sym.owner)) else member
         } filter { m =>
           symbolValidator.validateMemberAccess(vc)(accessFromScopeMember(m)).deniedAccesses.isEmpty
         } map translateMember(global)
@@ -242,7 +242,7 @@ trait ScexPresentationCompiler extends ScexCompiler {
         }
 
         val tree = new Locator(sourcePosition).locateIn(fullTree).toOpt
-          .filter(t => t.pos != NoPosition && t.pos.startOrPoint >= offset).getOrElse(EmptyTree)
+          .filter(t => t.pos != NoPosition && t.pos.start >= offset).getOrElse(EmptyTree)
 
         val (ownerTpe, typeMembers) = global.typeMembers(tree, sourcePosition)
 

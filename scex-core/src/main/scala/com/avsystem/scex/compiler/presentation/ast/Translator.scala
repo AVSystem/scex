@@ -22,7 +22,7 @@ class Translator(val global: ScexGlobal, offset: Int, exprDef: ExpressionDef) {
 
   private object TemplateInterpolationTree {
     def unapply(tree: u.Apply) = tree match {
-      case _ if tree.pos.startOrPoint >= offset => None
+      case _ if tree.pos.start >= offset => None
       case u.Apply(u.Select(StringContextApply(parts), _), args) => Some((parts, args))
       case _ => None
     }
@@ -199,8 +199,8 @@ class Translator(val global: ScexGlobal, offset: Int, exprDef: ExpressionDef) {
   def translatePosition(pos: u.Position) = pos match {
     case u.NoPosition | null => null
     case _ => Position(
-      reverseMapping(math.max(pos.startOrPoint, offset) - offset),
-      reverseMapping(math.min(pos.endOrPoint, offset + exprDef.expression.length) - offset - 1) + 1,
+      reverseMapping(math.max(pos.start, offset) - offset),
+      reverseMapping(math.min(pos.end, offset + exprDef.expression.length) - offset - 1) + 1,
       pos.isTransparent)
   }
 

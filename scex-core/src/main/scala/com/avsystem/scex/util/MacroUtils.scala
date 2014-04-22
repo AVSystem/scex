@@ -7,7 +7,6 @@ import com.avsystem.scex.validation.FakeImplicitConversion
 import java.{util => ju, lang => jl}
 import scala.Some
 import scala.reflect.macros.Universe
-import scala.runtime.StringAdd
 import com.avsystem.scex.compiler.Markers.{ProfileObject, ExpressionUtil, JavaGetterAdapter}
 
 trait MacroUtils {
@@ -22,9 +21,9 @@ trait MacroUtils {
   lazy val rootAdapterAnnotType = typeOf[RootAdapter]
   lazy val notValidatedAnnotType = typeOf[NotValidated]
 
-  lazy val any2stringadd = typeOf[Predef.type].member(newTermName("any2stringadd"))
-  lazy val stringAddPlus = typeOf[StringAdd].member(newTermName("+").encodedName)
-  lazy val stringConcat = typeOf[String].member(newTermName("+").encodedName)
+  lazy val any2stringadd = typeOf[Predef.type].member(TermName("any2stringadd"))
+  lazy val stringAddPlus = typeOf[any2stringadd[_]].member(TermName("+").encodedName)
+  lazy val stringConcat = typeOf[String].member(TermName("+").encodedName)
   lazy val stringTpe = typeOf[String]
   lazy val booleanTpe = typeOf[Boolean]
   lazy val jBooleanTpe = typeOf[jl.Boolean]
@@ -51,15 +50,11 @@ trait MacroUtils {
 
   object NewInstance {
     def unapply(tree: Tree) = tree match {
-      case Apply(Select(New(tpeTree), nme.CONSTRUCTOR), args) =>
+      case Apply(Select(New(tpeTree), termNames.CONSTRUCTOR), args) =>
         Some((tpeTree, args))
       case _ =>
         None
     }
-  }
-
-  object TermName {
-    def unapply(termName: TermName) = Some(termName.decoded)
   }
 
   def isModuleOrPackage(symbol: Symbol) = symbol != null &&
@@ -72,7 +67,7 @@ trait MacroUtils {
     s.isMethod && s.asMethod.isConstructor
 
   def memberSignature(s: Symbol) =
-    if (s != null) s"${s.fullName}:${s.typeSignature}" else null
+    if (s != null) s"${s.fullName}${show(s.info.paramLists.map(_.map(_.typeSignature.toString).mkString("(", ",", ")")).mkString)}" else null
 
   def isStableTerm(s: Symbol) =
     s.isTerm && s.asTerm.isStable
@@ -95,7 +90,7 @@ trait MacroUtils {
   }
 
   private object FakeImplicitConversionTree {
-    def unapply(tree: Tree) = tree.attachments.get[FakeImplicitConversion] match {
+    def unapply(tree: Tree) = internal.attachments(tree).get[FakeImplicitConversion] match {
       case Some(FakeImplicitConversion(fakePath)) => Some(fakePath)
       case None => None
     }
@@ -103,9 +98,9 @@ trait MacroUtils {
 
   def path(tree: Tree): String = tree match {
     case FakeImplicitConversionTree(fakePath) => fakePath
-    case Select(prefix, name) => s"${path(prefix)}.${name.decoded}"
-    case Ident(name) => name.decoded
-    case This(name) => name.decoded
+    case Select(prefix, name) => s"${path(prefix)}.${name.decodedName.toString}"
+    case Ident(name) => name.decodedName.toString
+    case This(name) => name.decodedName.toString
     case EmptyTree => "<none>"
     case _ => throw new IllegalArgumentException("This tree does not represent simple path: " + showRaw(tree))
   }
@@ -137,11 +132,11 @@ trait MacroUtils {
     symbol != null && symbol.isModule && symbol.isStatic
 
   def isFromToplevelType(symbol: Symbol) =
-    (symbol :: symbol.allOverriddenSymbols).exists(toplevelSymbols contains _.owner)
+    (symbol :: symbol.overrides).exists(toplevelSymbols contains _.owner)
 
   def isJavaParameterlessMethod(symbol: Symbol) =
     symbol != null && symbol.isPublic && symbol.isJava && symbol.isMethod &&
-      symbol.asMethod.paramss == List(List()) && !symbol.typeSignature.takesTypeArgs
+      symbol.asMethod.paramLists == List(List()) && !symbol.typeSignature.takesTypeArgs
 
   def isJavaStaticType(tpe: Type) = {
     val symbol = tpe.typeSymbol
@@ -162,23 +157,23 @@ trait MacroUtils {
   def isBooleanType(tpe: Type) =
     tpe <:< typeOf[Boolean] || tpe <:< typeOf[jl.Boolean]
 
-  lazy val getClassSymbol = typeOf[Any].member(newTermName("getClass"))
+  lazy val getClassSymbol = typeOf[Any].member(TermName("getClass"))
 
   def isGetClass(symbol: Symbol) =
-    symbol.name == newTermName("getClass") && (symbol :: symbol.allOverriddenSymbols).contains(getClassSymbol)
+    symbol.name == TermName("getClass") && (symbol :: symbol.overrides).contains(getClassSymbol)
 
   def isBeanGetter(symbol: Symbol) = symbol.isMethod && {
     val methodSymbol = symbol.asMethod
-    val name = symbol.name.decoded
+    val name = symbol.name.decodedName.toString
 
-    !isGetClass(methodSymbol) && methodSymbol.paramss == List(List()) && methodSymbol.typeParams.isEmpty &&
+    !isGetClass(methodSymbol) && methodSymbol.paramLists == List(List()) && methodSymbol.typeParams.isEmpty &&
       (BeanGetterNamePattern.pattern.matcher(name).matches ||
         BooleanBeanGetterNamePattern.pattern.matcher(name).matches && isBooleanType(methodSymbol.returnType))
   }
 
   def isParameterless(s: TermSymbol) =
     !s.isMethod || {
-      val paramss = s.asMethod.paramss
+      val paramss = s.asMethod.paramLists
       paramss == Nil || paramss == List(Nil)
     }
 
@@ -200,7 +195,7 @@ trait MacroUtils {
   }
 
   def takesSingleParameter(symbol: MethodSymbol) =
-    symbol.paramss match {
+    symbol.paramLists match {
       case List(List(_)) => true
       case _ => false
     }
@@ -208,7 +203,7 @@ trait MacroUtils {
   def isBeanSetter(symbol: Symbol) =
     symbol.isMethod && {
       val methodSymbol = symbol.asMethod
-      val name = symbol.name.decoded
+      val name = symbol.name.decodedName.toString
 
       takesSingleParameter(methodSymbol) && methodSymbol.typeParams.isEmpty &&
         methodSymbol.returnType =:= typeOf[Unit] &&
@@ -227,12 +222,12 @@ trait MacroUtils {
     tree.tpe <:< typeOf[T]
 
   def toStringSymbol(tpe: Type) =
-    alternatives(tpe.member(newTermName("toString")))
+    alternatives(tpe.member(TermName("toString")))
       .find(s => s.isTerm && isParameterless(s.asTerm))
       .getOrElse(NoSymbol)
 
   lazy val standardStringInterpolations =
-    Set("s", "raw").map(name => typeOf[StringContext].member(newTermName(name)))
+    Set("s", "raw").map(name => typeOf[StringContext].member(TermName(name)))
 
   def alternatives(sym: Symbol) = sym match {
     case termSymbol: TermSymbol => termSymbol.alternatives
@@ -266,12 +261,12 @@ trait MacroUtils {
   def isAdapterWrappedMember(symbol: Symbol): Boolean =
     if (symbol != null && symbol.isTerm) {
       val ts = symbol.asTerm
-      (ts.isGetter && ts.name == newTermName("_wrapped") && ts.owner.isType && isAdapter(ts.owner.asType.toType)
+      (ts.isGetter && ts.name == TermName("_wrapped") && ts.owner.isType && isAdapter(ts.owner.asType.toType)
         || ts.isVal && isAdapterWrappedMember(ts.getter))
     } else false
 
   def isRootAdapter(symbol: Symbol) =
-    symbol != null && symbol.annotations.exists(_.tpe =:= rootAdapterAnnotType)
+    symbol != null && symbol.annotations.exists(_.tree.tpe =:= rootAdapterAnnotType)
 
   // gets Java getter called by implicit wrapper
   def getJavaGetter(symbol: Symbol, javaTpe: Type): Symbol = {
@@ -280,20 +275,13 @@ trait MacroUtils {
 
     def fail = throw new Exception(s"Could not find Java getter for property ${symbol.name} on $javaTpe")
     def findGetter(getterName: String) =
-      alternatives(javaTpe.member(newTermName(getterName))).find(isBeanGetter)
+      alternatives(javaTpe.member(TermName(getterName))).find(isBeanGetter)
 
     if (isBooleanType(symbol.asMethod.returnType)) {
       findGetter(booleanGetterName) orElse findGetter(getterName) getOrElse fail
     } else {
       findGetter(getterName) getOrElse fail
     }
-  }
-
-  def memberBySignature(tpe: Type, signature: String): Symbol = {
-    val name = newTermName(signature.split(':')(0).split('.').last)
-    alternatives(tpe.member(name)).find { m =>
-      (memberSignature(m) :: m.allOverriddenSymbols.map(memberSignature)).contains(signature)
-    }.getOrElse(NoSymbol)
   }
 
   def symbolType(symbol: Symbol) =

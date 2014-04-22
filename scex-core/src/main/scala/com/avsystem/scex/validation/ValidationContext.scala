@@ -75,7 +75,7 @@ abstract class ValidationContext protected extends MacroUtils {
 
   def extractAccess(tree: Tree, allowedSelectionPrefix: Boolean = false): MemberAccess = {
     tree match {
-      case (_: Select | _: Ident) if tree.symbol.annotations.exists(_.tpe <:< notValidatedAnnotType) =>
+      case (_: Select | _: Ident) if tree.symbol.annotations.exists(_.tree.tpe <:< notValidatedAnnotType) =>
         NoMemberAccess
 
       case Select(rootAdapter: Ident, _) if isRootAdapter(rootAdapter.symbol) && !isAdapterWrappedMember(tree.symbol) =>

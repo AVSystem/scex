@@ -6,7 +6,7 @@ import java.{util => ju, lang => jl}
 import scala.collection.mutable.ListBuffer
 import scala.reflect.api.TypeCreator
 import scala.reflect.internal.Flags
-import scala.reflect.macros.Context
+import scala.reflect.macros.whitebox.Context
 
 object SymbolValidatorMacros {
 
@@ -24,7 +24,7 @@ object SymbolValidatorMacros {
     extractMemberAccessSpecs(c)(expr, allow = false)
 
   def on_impl[T](c: Context)(expr: c.Expr[T => Any]): c.Expr[T => Any] = {
-    expr.tree.updateAttachment(SymbolValidatorOnMark)
+    c.internal.updateAttachment(expr.tree, SymbolValidatorOnMark)
     expr
   }
 
@@ -38,9 +38,8 @@ object SymbolValidatorMacros {
     def reifyFlattenLists(listExprs: List[c.Expr[List[MemberAccessSpec]]]) = {
       import c.universe._
 
-      val addToBuilderStatements = listExprs.map {
-        listExpr =>
-          Apply(Select(Ident(newTermName("b")), newTermName("++=").encodedName), List(listExpr.tree))
+      val addToBuilderStatements = listExprs.map { listExpr =>
+        Apply(Select(Ident(TermName("b")), TermName("++=").encodedName), List(listExpr.tree))
       }
       reify {
         val b = new ListBuffer[MemberAccessSpec]
@@ -57,30 +56,30 @@ object SymbolValidatorMacros {
       }
 
     /**
-    * Translates this type so that all existential types in this type do not refer to the defining class,
-    * as they do by default. Heavy wizardry.
-    *
-    * The problem is that when you reify an existential type (with `c.reifyType`), for example `Set[_]`, the
-    * wildcard is reified as a Symbol whose owner is the class that used that existential type.
-    * This effectively means that the definition of existential type refers the class that used it.
-    * This means that when the type is finally evaluated in some universe, things will blow up if that class is
-    * not visible to that universe.
-    *
-    * For example, this is exactly what happens if you use some existential type in the SymbolValidator DSL and
-    * the symbol validator is compiled at runtime using `compileSymbolValidator` method of ScexCompiler. That dynamically
-    * compiled class is not visible to the Scala compiler through classpath and when it tries to evaluate the reified
-    * type, we have a nice scala.reflect.internal.MissingRequirementError in our face.
-    */
+     * Translates this type so that all existential types in this type do not refer to the defining class,
+     * as they do by default. Heavy wizardry.
+     *
+     * The problem is that when you reify an existential type (with `c.reifyType`), for example `Set[_]`, the
+     * wildcard is reified as a Symbol whose owner is the class that used that existential type.
+     * This effectively means that the definition of existential type refers the class that used it.
+     * This means that when the type is finally evaluated in some universe, things will blow up if that class is
+     * not visible to that universe.
+     *
+     * For example, this is exactly what happens if you use some existential type in the SymbolValidator DSL and
+     * the symbol validator is compiled at runtime using `compileSymbolValidator` method of ScexCompiler. That dynamically
+     * compiled class is not visible to the Scala compiler through classpath and when it tries to evaluate the reified
+     * type, we have a nice scala.reflect.internal.MissingRequirementError in our face.
+     */
     def detachExistentials(tpe: Type) = tpe.map {
       case ExistentialType(quantified, underlying) =>
         val rootSymbol = rootMirror.RootClass
 
         val symbolMapping = quantified.collect {
           case oldSymbol if oldSymbol.owner != rootSymbol =>
-            val newName = newTypeName(oldSymbol.fullName.replaceAllLiterally(".", "_"))
-            val flags = build.flagsFromBits(Flags.DEFERRED | Flags.EXISTENTIAL)
-            val newSymbol = build.newNestedSymbol(rootSymbol, newName, NoPosition, flags, isClass = false)
-            newSymbol.setTypeSignature(oldSymbol.typeSignature)
+            val newName = TypeName(oldSymbol.fullName.replaceAllLiterally(".", "_"))
+            val flags = internal.reificationSupport.FlagsRepr(Flags.DEFERRED | Flags.EXISTENTIAL)
+            val newSymbol = internal.reificationSupport.newNestedSymbol(rootSymbol, newName, NoPosition, flags, isClass = false)
+            internal.reificationSupport.setInfo(newSymbol, oldSymbol.typeSignature)
             (oldSymbol, newSymbol)
         }.toMap.withDefault {
           s: Symbol => s
@@ -89,11 +88,11 @@ object SymbolValidatorMacros {
         val newQuantified = quantified.map(symbolMapping)
 
         val newUnderlying = underlying.map {
-          case TypeRef(pre, sym, args) => TypeRef(pre, symbolMapping(sym), args)
+          case TypeRef(pre, sym, args) => internal.reificationSupport.TypeRef(pre, symbolMapping(sym), args)
           case t => t
         }
 
-        ExistentialType(newQuantified, newUnderlying)
+        internal.reificationSupport.ExistentialType(newQuantified, newUnderlying)
 
       case subTpe => subTpe
     }
@@ -102,7 +101,7 @@ object SymbolValidatorMacros {
       val typeToReify = detachExistentials(tpe.map(_.widen))
 
       val Block(List(_, _), Apply(_, List(_, typeCreatorTree))) =
-        c.reifyType(treeBuild.mkRuntimeUniverseRef, EmptyTree, typeToReify)
+        c.reifyType(internal.gen.mkRuntimeUniverseRef, EmptyTree, typeToReify)
 
       reify(new TypeInfo(
         c.Expr[TypeCreator](typeCreatorTree).splice,
@@ -161,9 +160,9 @@ object SymbolValidatorMacros {
       // have one reified type and implicit conversion spec for all MemberAccessSpecs generated from wildcard
       private def reifyAccessSpec(member: TermSymbol) = reify {
         List(MemberAccessSpec(
-          c.Expr[TypeInfo](Ident(newTermName("prefixTypeInfo"))).splice,
+          c.Expr[TypeInfo](Ident(TermName("prefixTypeInfo"))).splice,
           c.literal(memberSignature(member)).splice,
-          c.Expr[Option[(String, TypeInfo)]](Ident(newTermName("implConvOpt"))).splice,
+          c.Expr[Option[(String, TypeInfo)]](Ident(TermName("implConvOpt"))).splice,
           c.literal(allow).splice))
       }
 
@@ -190,7 +189,7 @@ object SymbolValidatorMacros {
       case TypeApply(Select(symbolValidatorModule, TermName("allStatic")), List(tpeTree))
         if hasType[SymbolValidator.type](symbolValidatorModule) && isJavaClass(tpeTree.symbol) =>
 
-        val tpeWithStatics = tpeTree.symbol.companionSymbol.typeSignature
+        val tpeWithStatics = tpeTree.symbol.companion.typeSignature
         ParsedWildcardSelector(tpeWithStatics, accessibleMembers(tpeWithStatics), None)
 
       // <prefix>.all
@@ -244,7 +243,7 @@ object SymbolValidatorMacros {
         val prevSelector = parseWildcardSelector(requiredPrefix, prefix)
         val sourceTpeSymbol = prevSelector.sourceTpe.typeSymbol
         // TODO: decide what "introduced" exactly means for scala val/var getters and setters
-        prevSelector.filterScope(m => m.owner == sourceTpeSymbol && m.allOverriddenSymbols.isEmpty)
+        prevSelector.filterScope(m => m.owner == sourceTpeSymbol && m.overrides.isEmpty)
 
       // <prefix>.constructors
       case Select(prefix, TermName("constructors")) if hasType[DirectMemberSubsets](prefix) =>
@@ -265,8 +264,8 @@ object SymbolValidatorMacros {
             "<invalid>"
         }.toSet
 
-        val result = parseWildcardSelector(requiredPrefix, prefix).filterScope(names contains _.name.decoded)
-        val absentMembers = names diff result.scope.map(_.name.decoded).toSet
+        val result = parseWildcardSelector(requiredPrefix, prefix).filterScope(names contains _.name.decodedName.toString)
+        val absentMembers = names diff result.scope.map(_.name.decodedName.toString).toSet
         if (absentMembers.nonEmpty) {
           absentMembers.foreach {
             name => c.error(tree.pos, s"No method named $name found in type ${result.sourceTpe.widen}")
@@ -320,7 +319,7 @@ object SymbolValidatorMacros {
         extractSymbols(requiredPrefix, inner)
 
       case Function(List(valdef@ValDef(_, _, prefixTpeTree, _)), actualBody)
-        if body.attachments.get[SymbolValidatorOnMark.type].isDefined =>
+        if internal.attachments(body).get[SymbolValidatorOnMark.type].isDefined =>
 
         extractSymbols(Some((valdef.symbol, prefixTpeTree.tpe)), actualBody)
 
@@ -348,7 +347,7 @@ object SymbolValidatorMacros {
 
     c.prefix.tree match {
       case Select(methodSubsets, TermName("membersNamed")) if hasType[MemberSubsets](methodSubsets) =>
-        c.Expr[CompleteWildcardSelector](Apply(Select(methodSubsets, newTermName("membersNamed")), List(name.tree)))
+        c.Expr[CompleteWildcardSelector](Apply(Select(methodSubsets, TermName("membersNamed")), List(name.tree)))
       case _ =>
         c.error(c.enclosingPosition, "Bad symbol specification syntax:")
         c.literalNull

@@ -5,7 +5,7 @@ import com.avsystem.scex.util.{LoggingUtils, CommonUtils, MacroUtils, TypesafeEq
 import com.avsystem.scex.validation.ValidationContext
 import java.{util => ju, lang => jl}
 import scala.language.experimental.macros
-import scala.reflect.macros.Context
+import scala.reflect.macros.whitebox.Context
 
 /**
  * Object used during expression compilation to validate the expression (syntax, invocations, etc.)
@@ -73,14 +73,14 @@ object ExpressionMacroProcessor extends LoggingUtils {
 
       def tripleEquals(left: Tree, right: Tree) = {
         transformed = true
-        Apply(Select(left, newTermName("===").encodedName), List(right))
+        Apply(Select(left, TermName("===").encodedName), List(right))
       }
 
       object transformer extends Transformer {
         override def transform(tree: Tree) = tree match {
-          case Apply(Select(left, operator), List(right)) => operator.decoded match {
+          case Apply(Select(left, operator), List(right)) => operator.decodedName.toString match {
             case "==" => tripleEquals(transform(left), transform(right))
-            case "!=" => Select(tripleEquals(transform(left), transform(right)), newTermName("unary_!").encodedName)
+            case "!=" => Select(tripleEquals(transform(left), transform(right)), TermName("unary_!").encodedName)
             case _ => super.transform(tree)
           }
           case _ => super.transform(tree)
@@ -88,7 +88,7 @@ object ExpressionMacroProcessor extends LoggingUtils {
       }
 
       val result = transformer.transform(expr.tree)
-      c.Expr[T](if (transformed) c.resetAllAttrs(result) else result)
+      c.Expr[T](if (transformed) c.untypecheck(result) else result)
 
     } else expr
 
@@ -108,15 +108,15 @@ object ExpressionMacroProcessor extends LoggingUtils {
       reifyFunction(arg => Apply(setter, List(arg)))
 
     def reifyFunction(bodyGen: Tree => Tree): Tree =
-      Function(List(ValDef(Modifiers(Flag.PARAM), newTermName("value"), TypeTree(ttpe), EmptyTree)),
-        bodyGen(Ident(newTermName("value"))))
+      Function(List(ValDef(Modifiers(Flag.PARAM), TermName("value"), TypeTree(ttpe), EmptyTree)),
+        bodyGen(Ident(TermName("value"))))
 
     def translate(tree: Tree): Tree = tree match {
-      case Select(prefix@Ident(_), TermName(propertyName)) if prefix.symbol.annotations.exists(_.tpe <:< rootAdapterAnnotType) =>
-        reifySetterFunction(Select(Ident(newTermName(CodeGeneration.RootSymbol)), newTermName("set" + propertyName.capitalize)))
+      case Select(prefix@Ident(_), TermName(propertyName)) if prefix.symbol.annotations.exists(_.tree.tpe <:< rootAdapterAnnotType) =>
+        reifySetterFunction(Select(Ident(TermName(CodeGeneration.RootSymbol)), TermName("set" + propertyName.capitalize)))
 
       case Select(ImplicitlyConverted(prefix, fun), TermName(propertyName)) if isAdapterConversion(fun.symbol) =>
-        reifySetterFunction(Select(prefix, newTermName("set" + propertyName.capitalize)))
+        reifySetterFunction(Select(prefix, TermName("set" + propertyName.capitalize)))
 
       case Select(prefix, TermName(getterName)) if tree.symbol.isMethod =>
         import CommonUtils._
@@ -131,7 +131,7 @@ object ExpressionMacroProcessor extends LoggingUtils {
             getterName + "_="
         }
 
-        reifySetterFunction(Select(prefix, newTermName(setterName).encodedName))
+        reifySetterFunction(Select(prefix, TermName(setterName).encodedName))
 
       case Select(prefix, TermName(name)) if isJavaField(tree.symbol) =>
         reifyFunction(arg => Assign(tree, arg))
@@ -140,12 +140,12 @@ object ExpressionMacroProcessor extends LoggingUtils {
         translate(fun)
 
       case Apply(Select(prefix, TermName("apply")), List(soleArgument)) =>
-        reifyFunction(arg => Apply(Select(prefix, newTermName("update")), List(soleArgument, arg)))
+        reifyFunction(arg => Apply(Select(prefix, TermName("update")), List(soleArgument, arg)))
 
       case Apply(Select(prefix, TermName("selectDynamic")), List(dynamicNameArg))
         if prefix.tpe <:< typeOf[Dynamic] =>
 
-        reifySetterFunction(Apply(Select(prefix, newTermName("updateDynamic")), List(dynamicNameArg)))
+        reifySetterFunction(Apply(Select(prefix, TermName("updateDynamic")), List(dynamicNameArg)))
 
       case _ =>
         c.error(tree.pos, "Cannot translate this expression into setter")
