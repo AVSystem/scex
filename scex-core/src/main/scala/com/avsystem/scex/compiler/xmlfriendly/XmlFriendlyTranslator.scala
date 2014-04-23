@@ -30,8 +30,11 @@ object XmlFriendlyTranslator extends PositionTrackingParsers {
   val expressionParser = standardExpression ~ arbitraryEnding ^^ concat
   val templateParser = stringExpression ~ arbitraryEnding ^^ concat
 
+  def literalPart: Parser[PString] =
+    rep1("[^$]+".rp | "$$".p) ^^ join
+
   def stringExpression: Parser[PString] =
-    rep("([^$]|\\$\\$)+".rp | interpolatedParam) ^^ join
+    rep(literalPart | interpolatedParam) ^^ join
 
   def interpolatedParam: Parser[PString] =
     "$".p ~ (ident | block) ^^ concat
