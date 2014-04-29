@@ -86,8 +86,6 @@ class IGlobal(settings: Settings, reporter: Reporter) extends Global(settings, r
       case _ =>
     }
 
-    val sym = Option(tree.symbol).getOrElse(NoSymbol)
-
     val context = doLocateContext(pos)
 
     val shouldTypeQualifier = tree.tpe match {
@@ -146,7 +144,7 @@ class IGlobal(settings: Settings, reporter: Reporter) extends Global(settings, r
       }
     }
 
-    (ownerTpe, members.allMembers)
+    (tree, ownerTpe, members.allMembers)
   }
 
 }

@@ -244,7 +244,7 @@ trait ScexPresentationCompiler extends ScexCompiler {
         val tree = new Locator(sourcePosition).locateIn(fullTree).toOpt
           .filter(t => t.pos != NoPosition && t.pos.start >= offset).getOrElse(EmptyTree)
 
-        val (ownerTpe, typeMembers) = global.typeMembers(tree, sourcePosition)
+        val (typedTree, ownerTpe, typeMembers) = global.typeMembers(tree, sourcePosition)
 
         val fakeDirectPrefix = Ident(nme.EMPTY).setSymbol(Option(tree.symbol).getOrElse(NoSymbol)).setType(ownerTpe)
         def fakeSelect(member: ScexTypeMember) = {
@@ -264,7 +264,7 @@ trait ScexPresentationCompiler extends ScexCompiler {
         }
 
         val translator = new ast.Translator(global, offset, exprDef)
-        val translatedTree = translator.translateTree(tree.asInstanceOf[translator.u.Tree])
+        val translatedTree = translator.translateTree(typedTree.asInstanceOf[translator.u.Tree])
 
         Completion(translatedTree, members)
       }
