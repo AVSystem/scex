@@ -9,7 +9,7 @@ allprojects {
     apply plugin: 'idea'
 
     group = "com.avsystem"
-    version = '1.9.3'
+    version = '1.9.4'
 
     repositories {
         mavenCentral()
@@ -23,7 +23,7 @@ allprojects {
     sourceCompatibility = 1.7
     targetCompatibility = 1.7
 
-    ext.scalaVersion = '2.11.0'
+    ext.scalaVersion = '2.11.1'
 
     idea {
         module {
