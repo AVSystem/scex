@@ -7,7 +7,7 @@ import java.{util => ju, lang => jl}
  * Created: 18-11-2013
  * Author: ghik
  */
-case class Literal(literalString: String) {
+case class Literal(literalString: String) extends AnyVal {
   override def toString = literalString
 
   def toBoolean = literalString.toBoolean
