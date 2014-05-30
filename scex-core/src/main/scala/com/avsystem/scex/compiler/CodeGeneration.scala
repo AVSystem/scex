@@ -78,7 +78,7 @@ object CodeGeneration {
 
       val result =
         s"""
-        |class $adapterWithGenerics(val _wrapped: $wrappedTpe)
+        |class $adapterWithGenerics(private val _wrapped: $wrappedTpe)
         |  extends AnyVal with $MarkersObj.JavaGetterAdapter {
         |
         |$classBody
