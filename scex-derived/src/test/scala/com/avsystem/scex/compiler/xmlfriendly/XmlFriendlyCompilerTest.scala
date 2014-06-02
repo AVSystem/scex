@@ -63,4 +63,13 @@ class XmlFriendlyCompilerTest extends FunSuite {
     val cexpr = compiler.getCompiledExpression[SimpleContext[Unit], String](createProfile(acl), expr, template = true)
     assert("lol srsly wtf" === cexpr(context))
   }
+
+  test("dynamic variables unary operator test") {
+    val acl = PredefinedAccessSpecs.basicOperations
+    val expr = "!#shiet.toBoolean"
+    val context = SimpleContext(())
+    context.setVariable("shiet", "true")
+    val cexpr = compiler.getCompiledExpression[SimpleContext[Unit], Boolean](createProfile(acl), expr, template = false)
+    assert(false === cexpr(context))
+  }
 }

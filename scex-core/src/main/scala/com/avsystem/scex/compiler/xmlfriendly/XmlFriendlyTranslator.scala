@@ -65,7 +65,7 @@ object XmlFriendlyTranslator extends PositionTrackingParsers {
   }
 
   def operator: Parser[PString] =
-    "[\\^\\-\\\\~!@#$%&*=+<>/?|:]+".rp ^^ xmlFriendly
+    "[\\^\\-\\\\~!@#$%&*=+<>/?|:]".rp ^^ xmlFriendly
 
   def delim = "[,;.]".rp
 
