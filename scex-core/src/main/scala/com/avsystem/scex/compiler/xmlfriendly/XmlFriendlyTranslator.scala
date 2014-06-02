@@ -70,7 +70,7 @@ object XmlFriendlyTranslator extends PositionTrackingParsers {
   def delim = "[,;.]".rp
 
   def variable = "#".p ~> ident ^^ { id =>
-    (CodeGeneration.VariablesSymbol + ".") ~+ id
+    (" " + CodeGeneration.VariablesSymbol + ".") ~+ id
   }
 
   def bracket: Parser[PString] =
