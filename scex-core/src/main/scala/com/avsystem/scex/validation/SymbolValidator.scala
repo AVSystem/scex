@@ -46,11 +46,12 @@ trait SymbolValidator extends LoggingUtils {
 
   def validateMemberAccess(vc: ValidationContext)(access: vc.MemberAccess): vc.ValidationResult = {
     import vc._
+    import vc.universe._
 
-    def implicitConversionsMatch(actual: Option[ImplicitConversion], fromSpec: Option[(String, TypeInfo)]) =
+    def implicitConversionsMatch(actual: Option[Tree], fromSpec: Option[String]) =
       (actual, fromSpec) match {
-        case (Some(ImplicitConversion(actualPathTree, actualImplicitTpe)), Some((specPath, specImplicitTypeInfo))) =>
-          path(actualPathTree) == specPath && actualImplicitTpe <:< specImplicitTypeInfo.typeIn(vc.universe)
+        case (Some(actualPathTree), Some(specPath)) =>
+          path(actualPathTree) == specPath
         case (None, None) => true
         case _ => false
       }
@@ -112,10 +113,10 @@ object SymbolValidator {
   private def stub =
     throw new NotImplementedError("You cannot use this outside of symbol validator DSL")
 
-  case class MemberAccessSpec(typeInfo: TypeInfo, memberSignature: String, implicitConv: Option[(String, TypeInfo)], allow: Boolean) {
+  case class MemberAccessSpec(typeInfo: TypeInfo, memberSignature: String, implicitConv: Option[String], allow: Boolean) {
     override def toString = {
       val implicitConvRepr = implicitConv match {
-        case Some((implicitConvPath, implicitTypeInfo)) => s"when implicitly converted to |$implicitTypeInfo| by |$implicitConvPath|"
+        case Some(implicitConvPath) => s"when implicitly converted by |$implicitConvPath|"
         case None => ""
       }
       (if (allow) "Allowed" else "Denied") + s" on type |$typeInfo| member |$memberSignature| $implicitConvRepr"

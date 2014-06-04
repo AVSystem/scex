@@ -25,8 +25,8 @@ abstract class ValidationContext protected extends MacroUtils {
 
       case SimpleMemberAccess(tpe, symbol, implicitConv, allowedByDefault, _) =>
         val implicitConvRepr = implicitConv match {
-          case Some(ImplicitConversion(tree, implicitTpe)) =>
-            s" implicitly converted by |${path(tree)}| to |$implicitTpe|"
+          case Some(tree) =>
+            s" implicitly converted by |${path(tree)}|"
           case None => ""
         }
 
@@ -43,15 +43,9 @@ abstract class ValidationContext protected extends MacroUtils {
     }
   }
 
-  // Denotes occurence of implicit conversion
-  case class ImplicitConversion(tree: Tree, tpe: Type) {
-    override def toString =
-      s"implicit conversion ${path(tree)} to $tpe"
-  }
-
   case object NoMemberAccess extends MemberAccess
 
-  case class SimpleMemberAccess(tpe: Type, symbol: Symbol, implicitConv: Option[ImplicitConversion],
+  case class SimpleMemberAccess(tpe: Type, symbol: Symbol, implicitConv: Option[Tree],
     allowedByDefault: Boolean, pos: Position) extends MemberAccess {
 
     override def toString =
@@ -85,7 +79,7 @@ abstract class ValidationContext protected extends MacroUtils {
 
       case Select(apply@ImplicitlyConverted(qualifier, fun), _) if !isScexSynthetic(fun.symbol) =>
         val accessByImplicit = SimpleMemberAccess(qualifier.tpe, tree.symbol,
-          Some(ImplicitConversion(stripTypeApply(fun), apply.tpe)), allowedByDefault = false, tree.pos)
+          Some(stripTypeApply(fun)), allowedByDefault = false, tree.pos)
 
         val implicitConversionAccess = extractAccess(fun)
         val plainAccess = SimpleMemberAccess(apply.tpe, tree.symbol, None, allowedByDefault = false, tree.pos)

@@ -281,6 +281,20 @@ class ScexCompilerTest extends FunSuite with CompilationTest {
     }
   }
 
+  test("member by generic implicit conversion on existential type test") {
+    import scala.collection.JavaConversions._
+    val acl = allow {
+      on { l: ju.List[_] =>
+        l.apply(_: Int)
+      }
+    }
+    val header = "import scala.collection.JavaConversions._"
+    val expr = "_root(0)"
+    val cexpr = compiler.getCompiledExpression[SimpleContext[ju.List[String]], Any](createProfile(acl, header), expr, template = false)
+    val list = ju.Arrays.asList("0", "1", "2")
+    assert("0" === cexpr(SimpleContext(list)))
+  }
+
   test("dynamic test") {
     val acl = allow {
       SomeDynamic.selectDynamic _

@@ -110,12 +110,10 @@ object SymbolValidatorMacros {
         c.literal(typeToReify.toString).splice))
     }
 
-    val reifyImplicitConvSpec: ((Tree, Type)) => c.Expr[(String, TypeInfo)] = {
-      case (implicitConvTree, implicitTpe) =>
-        reify((c.literal(path(implicitConvTree)).splice, reifyTypeInfo(implicitTpe).splice))
-    }
+    val reifyImplicitConvSpec =
+      (tree: Tree) => c.literal(path(tree))
 
-    def reifyAccessSpec(prefixTpe: Type, symbol: Symbol, implicitConv: Option[(Tree, Type)]) = reify {
+    def reifyAccessSpec(prefixTpe: Type, symbol: Symbol, implicitConv: Option[Tree]) = reify {
       List(MemberAccessSpec(
         reifyTypeInfo(prefixTpe).splice,
         c.literal(memberSignature(symbol)).splice,
@@ -162,13 +160,13 @@ object SymbolValidatorMacros {
         List(MemberAccessSpec(
           c.Expr[TypeInfo](Ident(TermName("prefixTypeInfo"))).splice,
           c.literal(memberSignature(member)).splice,
-          c.Expr[Option[(String, TypeInfo)]](Ident(TermName("implConvOpt"))).splice,
+          c.Expr[Option[String]](Ident(TermName("implConvOpt"))).splice,
           c.literal(allow).splice))
       }
 
       def reifyMemberAccessSpecs = reify {
         val prefixTypeInfo = reifyTypeInfo(prefixTpe).splice
-        val implConvOpt = reifyOption(implConv, reifyImplicitConvSpec).splice
+        val implConvOpt = reifyOption(implConv.map(_._1), reifyImplicitConvSpec).splice
         // separate method to avoid "Code size too large" error
         def fromWildcard = reifyFlattenLists(scope.map(m => reifyAccessSpec(m))).splice
         fromWildcard
@@ -307,7 +305,7 @@ object SymbolValidatorMacros {
         reifyAccessSpec(checkNewInstanceTpe(requiredPrefix, tpeTree), body.symbol, None)
 
       case Select(apply@ImplicitlyConverted(prefix, fun), _) =>
-        reifyAccessSpec(checkPrefix(requiredPrefix, unwrapConvertedPrefix(prefix)), body.symbol, Some((stripTypeApply(fun), apply.tpe)))
+        reifyAccessSpec(checkPrefix(requiredPrefix, unwrapConvertedPrefix(prefix)), body.symbol, Some(stripTypeApply(fun)))
 
       case Select(prefix, _) =>
         reifyAccessSpec(checkPrefix(requiredPrefix, unwrapConvertedPrefix(prefix)), body.symbol, None)
