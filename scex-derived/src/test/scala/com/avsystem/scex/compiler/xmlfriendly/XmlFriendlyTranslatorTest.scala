@@ -16,12 +16,16 @@ class XmlFriendlyTranslatorTest extends FunSuite {
   import XmlFriendlyTranslator.translate
 
   test("variables test") {
-    assert("_vars.lol" === translate("#lol", template = false).result)
+    assert(" _vars.lol" === translate("#lol", template = false).result)
   }
 
   test("variables in template test") {
-    assert("fuu #lol $lol haha ${_vars.dafuq + 5} ss" ===
+    assert("fuu #lol $lol haha ${ _vars.dafuq + 5} ss" ===
       translate("fuu #lol $lol haha ${#dafuq + 5} ss", template = true).result)
+  }
+
+  test("negated variable test") {
+    assert("! _vars.costam" === translate("!#costam", template = false).result)
   }
 
   test("operator translation test") {
