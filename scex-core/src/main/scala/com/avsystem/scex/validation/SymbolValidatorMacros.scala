@@ -55,6 +55,14 @@ object SymbolValidatorMacros {
         reify(Some(c.Expr[Class[_]](c.reifyRuntimeClass(tpe)).splice))
       }
 
+    def existentialSymbol(name: String, typeSignature: Type) = {
+      val typeName = TypeName(name)
+      val flags = internal.reificationSupport.FlagsRepr(Flags.DEFERRED | Flags.EXISTENTIAL)
+      val result = internal.reificationSupport.newNestedSymbol(rootMirror.RootClass, typeName, NoPosition, flags, isClass = false)
+      internal.reificationSupport.setInfo(result, typeSignature)
+      result
+    }
+
     /**
      * Translates this type so that all existential types in this type do not refer to the defining class,
      * as they do by default. Heavy wizardry.
@@ -76,17 +84,10 @@ object SymbolValidatorMacros {
 
         val symbolMapping = quantified.collect {
           case oldSymbol if oldSymbol.owner != rootSymbol =>
-            val newName = TypeName(oldSymbol.fullName.replaceAllLiterally(".", "_"))
-            val flags = internal.reificationSupport.FlagsRepr(Flags.DEFERRED | Flags.EXISTENTIAL)
-            val newSymbol = internal.reificationSupport.newNestedSymbol(rootSymbol, newName, NoPosition, flags, isClass = false)
-            internal.reificationSupport.setInfo(newSymbol, oldSymbol.typeSignature)
-            (oldSymbol, newSymbol)
-        }.toMap.withDefault {
-          s: Symbol => s
-        }
+            (oldSymbol, existentialSymbol(oldSymbol.fullName.replaceAllLiterally(".", "_"), oldSymbol.typeSignature))
+        }.toMap.withDefault(identity)
 
         val newQuantified = quantified.map(symbolMapping)
-
         val newUnderlying = underlying.map {
           case TypeRef(pre, sym, args) => internal.reificationSupport.TypeRef(pre, symbolMapping(sym), args)
           case t => t
@@ -97,8 +98,41 @@ object SymbolValidatorMacros {
       case subTpe => subTpe
     }
 
+    /**
+     * Handles @plus and @minus type annotations.
+     * For example `java.util.List[Number@plus]` is translated to `java.util.List[_ <: Number]`
+     */
+    def existentialize(tpe: Type) = {
+      object PlusOrMinus {
+        def unapply(ann: Annotation) =
+          if (ann.tree.tpe =:= typeOf[plus]) Some(true)
+          else if (ann.tree.tpe =:= typeOf[minus]) Some(false)
+          else None
+      }
+
+      val (quantifiedBuffer, tpeToTranslate) = tpe match {
+        case ExistentialType(quantified, underlying) => (ListBuffer(quantified: _*), underlying)
+        case _ => (new ListBuffer[Symbol], tpe)
+      }
+
+      val translated = tpeToTranslate.map {
+        case AnnotatedType(List(PlusOrMinus(plus)), bound) =>
+          val bounds =
+            if (plus) internal.reificationSupport.TypeBounds(typeOf[Nothing], bound)
+            else internal.reificationSupport.TypeBounds(bound, typeOf[Any])
+
+          val sym = existentialSymbol(c.freshName(), bounds)
+          quantifiedBuffer += sym
+          internal.reificationSupport.TypeRef(NoPrefix, sym, Nil)
+
+        case t => t
+      }
+
+      internal.reificationSupport.ExistentialType(quantifiedBuffer.result(), translated)
+    }
+
     def reifyTypeInfo(tpe: Type) = {
-      val typeToReify = detachExistentials(tpe.map(_.widen))
+      val typeToReify = existentialize(detachExistentials(tpe.map(_.widen)))
 
       val Block(List(_, _), Apply(_, List(_, typeCreatorTree))) =
         c.reifyType(internal.gen.mkRuntimeUniverseRef, EmptyTree, typeToReify)

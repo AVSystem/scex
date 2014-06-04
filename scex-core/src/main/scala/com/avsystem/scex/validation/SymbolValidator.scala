@@ -9,7 +9,7 @@ import scala.collection.immutable.{SortedSet, TreeSet}
 import scala.language.dynamics
 import scala.language.experimental.macros
 import scala.language.implicitConversions
-import scala.annotation.compileTimeOnly
+import scala.annotation.{StaticAnnotation, compileTimeOnly}
 
 trait SymbolValidator extends LoggingUtils {
   private val logger = createLogger[SymbolValidator]
@@ -109,6 +109,10 @@ trait SymbolValidator extends LoggingUtils {
 object SymbolValidator {
 
   import SymbolValidatorMacros._
+
+  class plus extends StaticAnnotation
+
+  class minus extends StaticAnnotation
 
   private def stub =
     throw new NotImplementedError("You cannot use this outside of symbol validator DSL")

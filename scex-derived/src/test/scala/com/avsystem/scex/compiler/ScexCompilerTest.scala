@@ -295,6 +295,32 @@ class ScexCompilerTest extends FunSuite with CompilationTest {
     assert("0" === cexpr(SimpleContext(list)))
   }
 
+  test("covariance by @plus annotation test") {
+    val acl = allow {
+      on { l: ju.List[Any@plus] =>
+        l.add(_: Any)
+      }
+    }
+    val expr = "_root.add(\"string\")"
+    val cexpr = compiler.getCompiledExpression[SimpleContext[ju.List[String]], Unit](createProfile(acl), expr, template = false)
+    val list = new ju.ArrayList[String]
+    cexpr(SimpleContext(list))
+    assert("string" === list.get(0))
+  }
+
+  test("contravariance by @minus annotation test") {
+    val acl = allow {
+      on { l: ju.List[String@minus] =>
+        l.get _
+      }
+    }
+    val expr = "_root.get(0)"
+    val cexpr = compiler.getCompiledExpression[SimpleContext[ju.List[Any]], Any](createProfile(acl), expr, template = false)
+    val list = ju.Arrays.asList[Any]("cos")
+    cexpr(SimpleContext(list))
+    assert("cos" === list.get(0))
+  }
+
   test("dynamic test") {
     val acl = allow {
       SomeDynamic.selectDynamic _
