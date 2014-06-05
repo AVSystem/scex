@@ -20,8 +20,8 @@ class XmlFriendlyTranslatorTest extends FunSuite {
   }
 
   test("variables in template test") {
-    assert("fuu #lol $lol haha ${ _vars.dafuq + 5} ss" ===
-      translate("fuu #lol $lol haha ${#dafuq + 5} ss", template = true).result)
+    assert("fuu #lol $$lol ${fuu} haha ${ _vars.dafuq + 5} ss" ===
+      translate("fuu #lol $lol ${fuu} haha ${#dafuq + 5} ss", template = true).result)
   }
 
   test("negated variable test") {
@@ -42,7 +42,7 @@ class XmlFriendlyTranslatorTest extends FunSuite {
   }
 
   test("large template test 2") {
-    val str = "lol$$" * 10000
+    val str = "lol${}" * 10000
     assert(str === translate(str, template = true).result)
   }
 

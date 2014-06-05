@@ -40,7 +40,7 @@ class XmlFriendlyCompilerTest extends FunSuite {
 
   test("complex expression test") {
     val profile = createProfile(PredefinedAccessSpecs.basicOperations)
-    val stringExpr = "letters`'\"lol`'{{\"} $$srsly and or ${'sqs'} ${true or {true; false}}"
+    val stringExpr = "letters`'\"lol`'{{\"} $srsly and or ${'sqs'} ${true or {true; false}}"
 
     val expr = compiler.getCompiledExpression[SimpleContext[Unit], String](profile, stringExpr, template = true)
     assert("letters`'\"lol`'{{\"} $srsly and or sqs true" === expr.apply(SimpleContext(())))
