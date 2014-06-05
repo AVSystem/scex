@@ -1,4 +1,5 @@
-package com.avsystem.scex.validation
+package com.avsystem.scex
+package validation
 
 import java.{util => ju, lang => jl}
 

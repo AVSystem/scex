@@ -1,4 +1,5 @@
-package com.avsystem.scex.compiler.presentation.ast
+package com.avsystem.scex
+package compiler.presentation.ast
 
 import java.{util => ju, lang => jl}
 import scala.collection.JavaConverters._

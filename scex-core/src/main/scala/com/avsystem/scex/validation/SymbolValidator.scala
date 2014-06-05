@@ -110,6 +110,25 @@ object SymbolValidator {
 
   import SymbolValidatorMacros._
 
+  /**
+   * Type annotation that serves as an alternative way of expressing existential types (types with wildcards) with
+   * higher bounds in the symbol validator DSL.
+   *
+   * For example, imagine you want to allow invoking <tt>insert</tt> method on all lists of type
+   * <tt>java.util.List[_ <: Number]</tt>. Unfortunately, you can't do it this way:
+   *
+   * <pre>
+   * allow {
+   *   on { l: java.util.List[_ <: Number] =>
+   *     l.insert _
+   *   }
+   * }
+   * </pre>
+   *
+   *
+   *
+   *
+   */
   class plus extends StaticAnnotation
 
   class minus extends StaticAnnotation

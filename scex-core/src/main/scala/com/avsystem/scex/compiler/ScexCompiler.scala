@@ -32,7 +32,12 @@ trait ScexCompiler extends PackageGenerator with LoggingUtils {
 
     def display(pos: Position, msg: String, severity: Severity) {
       if (severity == ERROR) {
-        errorsBuilder += CompileError(pos.lineContent, if (pos.isDefined) pos.column else 1, msg)
+        val actualPos = pos.source match {
+          case source: ExpressionSourceFile if source.expressionPos includes pos =>
+            pos.withSource(source.bareSource).withShift(-source.expressionPos.start)
+          case _ => pos
+        }
+        errorsBuilder += CompileError(actualPos.lineContent, if (actualPos.isDefined) actualPos.column else 1, msg)
       }
     }
 
@@ -194,10 +199,10 @@ trait ScexCompiler extends PackageGenerator with LoggingUtils {
   protected def compileExpression(exprDef: ExpressionDef): Try[RawExpression] = underLock {
     val preprocessedExprDef = preprocess(exprDef)
     val pkgName = newExpressionPackage()
-    val (codeToCompile, _) = expressionCode(preprocessedExprDef, pkgName)
+    val (codeToCompile, offset) = expressionCode(preprocessedExprDef, pkgName)
     // every single expression has its own classloader and virtual directory
     val classLoader = createDedicatedClassLoader("(scex)")
-    val sourceFile = new ExpressionSourceFile(preprocessedExprDef, pkgName, codeToCompile)
+    val sourceFile = new ExpressionSourceFile(preprocessedExprDef, pkgName, codeToCompile, offset)
 
     def result =
       compile(sourceFile, classLoader, usedInExpressions = false) match {

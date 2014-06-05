@@ -23,7 +23,7 @@ object ExpressionMacroProcessor extends LoggingUtils {
     val validationContext = ValidationContext(c.universe)(weakTypeOf[C])
     import validationContext._
 
-    val profile = c.enclosingUnit.source match {
+    val profile = expr.tree.pos.source match {
       case scexSource: ExpressionSourceFile => scexSource.exprDef.profile
       case _ => throw new Exception("This is not an expression source file")
     }
@@ -71,19 +71,29 @@ object ExpressionMacroProcessor extends LoggingUtils {
     if (c.inferImplicitValue(typeOf[TypesafeEquals.TypesafeEqualsEnabled.type]) != EmptyTree) {
       var transformed = false
 
-      def tripleEquals(left: Tree, right: Tree) = {
-        transformed = true
-        Apply(Select(left, TermName("===").encodedName), List(right))
-      }
-
       object transformer extends Transformer {
         override def transform(tree: Tree) = tree match {
-          case Apply(Select(left, operator), List(right)) => operator.decodedName.toString match {
-            case "==" => tripleEquals(transform(left), transform(right))
-            case "!=" => Select(tripleEquals(transform(left), transform(right)), TermName("unary_!").encodedName)
-            case _ => super.transform(tree)
+          case apply@Apply(select@Select(left, operator), List(right)) => operator.decodedName.toString match {
+            case "==" =>
+              transformed = true
+              internal.setPos(Apply(
+                internal.setPos(Select(transform(left), TermName("===").encodedName), select.pos),
+                List(transform(right))
+              ), apply.pos)
+            case "!=" =>
+              transformed = true
+              internal.setPos(Select(
+                internal.setPos(Apply(
+                  internal.setPos(Select(transform(left), TermName("===").encodedName), select.pos),
+                  List(transform(right))
+                ), apply.pos),
+                TermName("unary_!").encodedName
+              ), apply.pos)
+            case _ =>
+              super.transform(tree)
           }
-          case _ => super.transform(tree)
+          case _ =>
+            super.transform(tree)
         }
       }
 

@@ -1,4 +1,5 @@
-package com.avsystem.scex.validation
+package com.avsystem.scex
+package validation
 
 import com.avsystem.scex.util.CommonUtils
 import com.google.common.cache.CacheBuilder
