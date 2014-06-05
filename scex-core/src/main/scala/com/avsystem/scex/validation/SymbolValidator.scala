@@ -113,24 +113,35 @@ object SymbolValidator {
   /**
    * Type annotation that serves as an alternative way of expressing existential types (types with wildcards) with
    * higher bounds in the symbol validator DSL.
-   *
+   * </p>
    * For example, imagine you want to allow invoking <tt>insert</tt> method on all lists of type
-   * <tt>java.util.List[_ <: Number]</tt>. Unfortunately, you can't do it this way:
-   *
+   * <tt>java.util.List[_ <: Number]</tt>. Unfortunately, the following will NOT work:
    * <pre>
    * allow {
    *   on { l: java.util.List[_ <: Number] =>
+   *     l.insert _  // won't typecheck
+   *   }
+   * }
+   * </pre>
+   * </p>
+   * Scala typechecker will report an error on <tt>l.insert _</tt> because this method cannot be called
+   * when the element type of the list is unknown.
+   * </p>
+   * To overcome this limitation, you can use alternative syntax to express the same:
+   * <pre>
+   * allow {
+   *   on { l: java.util.List[Number@plus] =>
    *     l.insert _
    *   }
    * }
    * </pre>
-   *
-   *
-   *
-   *
    */
   class plus extends StaticAnnotation
 
+  /**
+   * Analogous to {@link com.avsystem.scex.validation.SymbolValidator.plus plus},
+   * but used to express wildcards with lower bounds, e.g. <tt>java.lang.List[_ >: String]</tt>
+   */
   class minus extends StaticAnnotation
 
   private def stub =
