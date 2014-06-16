@@ -24,15 +24,14 @@ abstract class AbstractExpression[-C <: ExpressionContext[_, _], +T]
       def isRelevant(el: StackTraceElement) =
         el.getFileName == si.sourceName && el.getLineNumber >= si.firstLine && el.getLineNumber < si.lastLine
 
-      def lineInfo(el: StackTraceElement) = {
+      def exception(el: StackTraceElement) = {
         val lineNumber = el.getLineNumber - si.firstLine
-        (si.fullCode.substring(si.startOffset, si.endOffset).split('\n')(lineNumber), lineNumber + 1)
+        val lineContent = si.fullCode.substring(si.startOffset, si.endOffset).split('\n')(lineNumber)
+        new EvaluationException(lineContent, lineNumber + 1, cause)
       }
 
-      val (code, line) = Option(cause.getStackTrace).getOrElse(Array.empty).iterator
-        .find(isRelevant).map(lineInfo).orNull
-
-      throw new EvaluationException(code, line, cause)
+      throw Option(cause.getStackTrace).getOrElse(Array.empty).iterator
+        .find(isRelevant).map(exception).getOrElse(new EvaluationException(cause))
   }
 
 }

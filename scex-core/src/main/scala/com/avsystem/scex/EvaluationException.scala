@@ -6,5 +6,11 @@ import java.{lang => jl, util => ju}
  * Created: 16-06-2014
  * Author: ghik
  */
-class EvaluationException(val code: String, val line: Int, cause: Throwable)
-  extends RuntimeException(s"in line $line:\n$code", cause)
+class EvaluationException(message: String, cause: Throwable) extends RuntimeException(message, cause) {
+  def this(code: String, line: Int, cause: Throwable) =
+    this(s"in line $line:\n$code", cause)
+
+  def this(cause: Throwable) =
+    this(null, cause)
+}
+
