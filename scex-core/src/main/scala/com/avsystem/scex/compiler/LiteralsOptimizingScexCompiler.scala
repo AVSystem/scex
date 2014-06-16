@@ -1,15 +1,17 @@
 package com.avsystem.scex
 package compiler
 
-import java.{util => ju, lang => jl}
-import scala.util.{Success, Try}
-import com.avsystem.scex.util.{CacheImplicits, Literal}
-import scala.reflect.internal.util.BatchSourceFile
-import com.avsystem.scex.compiler.ScexCompiler.{CompileError, CompilationFailedException}
-import com.avsystem.scex.compiler.LiteralsOptimizingScexCompiler.ConversionSupplier
-import com.avsystem.scex.compiler.presentation.ScexPresentationCompiler
-import com.google.common.cache.CacheBuilder
 import java.util.concurrent.TimeUnit
+import java.{lang => jl, util => ju}
+
+import com.avsystem.scex.compiler.LiteralsOptimizingScexCompiler.ConversionSupplier
+import com.avsystem.scex.compiler.ScexCompiler.{CompilationFailedException, CompileError}
+import com.avsystem.scex.compiler.presentation.ScexPresentationCompiler
+import com.avsystem.scex.util.Literal
+import com.google.common.cache.CacheBuilder
+
+import scala.reflect.internal.util.BatchSourceFile
+import scala.util.{Success, Try}
 
 /**
  * Avoids actual compilation of most simple template literal expressions by trying to parse them
@@ -21,7 +23,7 @@ import java.util.concurrent.TimeUnit
  */
 trait LiteralsOptimizingScexCompiler extends ScexPresentationCompiler {
 
-  import CacheImplicits._
+  import com.avsystem.scex.util.CacheImplicits._
 
   private val literalConversionsCache = CacheBuilder.newBuilder
     .expireAfterAccess(config.expressionExpirationTime, TimeUnit.MILLISECONDS)
@@ -30,7 +32,7 @@ trait LiteralsOptimizingScexCompiler extends ScexPresentationCompiler {
   private def getLiteralConversion(exprDef: ExpressionDef) =
     literalConversionsCache.get((exprDef.profile, exprDef.resultType, exprDef.header))
 
-  private case class LiteralExpression(value: Any) extends RawExpression {
+  private case class LiteralExpression(value: Any)(val debugInfo: ExpressionDebugInfo) extends RawExpression {
     def apply(ctx: ExpressionContext[_, _]) = value
   }
 
@@ -43,7 +45,7 @@ trait LiteralsOptimizingScexCompiler extends ScexPresentationCompiler {
    * compilation and simply pass it to <code>super.compileExpression</code>.
    */
   private def validateLiteralConversion(exprDef: ExpressionDef) = {
-    import CodeGeneration._
+    import com.avsystem.scex.compiler.CodeGeneration._
     val actualHeader = implicitLiteralViewHeader(exprDef.header)
     val validationExpression = implicitLiteralViewExpression(exprDef.resultType)
     val validationExprDef = exprDef.copy(template = false, setter = false, expression = validationExpression,
@@ -52,7 +54,7 @@ trait LiteralsOptimizingScexCompiler extends ScexPresentationCompiler {
   }
 
   private def compileLiteralConversion(profile: ExpressionProfile, resultType: String, header: String) = underLock {
-    import CodeGeneration._
+    import com.avsystem.scex.compiler.CodeGeneration._
 
     val pkgName = newPackageName("_scex_conversion_supplier")
     val profileObjectPkg = compileProfileObject(profile).get
@@ -87,12 +89,15 @@ trait LiteralsOptimizingScexCompiler extends ScexPresentationCompiler {
     JavaTypeParsing.StringSupertypes.contains(tpe)
 
   override protected def compileExpression(exprDef: ExpressionDef) = {
+    val sourceInfo = new SourceInfo(null, exprDef.expression, 0, exprDef.expression.length, 1, exprDef.expression.count(_ == '\n') + 2)
+    val debugInfo = new ExpressionDebugInfo(exprDef, sourceInfo)
+
     if (isEligible(exprDef)) {
       val literal = toLiteral(exprDef)
       if (isStringSupertype(exprDef.resultType))
-        Success(LiteralExpression(literal.literalString))
+        Success(LiteralExpression(literal.literalString)(debugInfo))
       else getLiteralConversion(exprDef).map { conversion =>
-        try LiteralExpression(conversion(literal)) catch {
+        try LiteralExpression(conversion(literal))(debugInfo) catch {
           case throwable: Throwable =>
             throw new CompilationFailedException(literal.literalString,
               List(toCompileError(literal.literalString, throwable)))

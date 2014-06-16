@@ -1,12 +1,13 @@
 package com.avsystem.scex
 package compiler
 
-import JavaTypeParsing._
-import java.lang.reflect.{Modifier, Method}
-import java.{util => ju, lang => jl}
-import scala.Some
+import java.lang.reflect.{Method, Modifier}
+import java.{lang => jl, util => ju}
+
+import com.avsystem.scex.compiler.JavaTypeParsing._
+import com.avsystem.scex.util.CommonUtils._
+
 import scala.language.existentials
-import util.CommonUtils._
 
 object CodeGeneration {
 
@@ -133,9 +134,11 @@ object CodeGeneration {
     val prefix =
       s"""
         |
-        |final class $ExpressionClassName extends $ScexPkg.Expression[$contextType, $resultOrSetterType]
-        |                                 with $CompilerPkg.TemplateInterpolations[$resultType] {
-        |  def apply($ContextSymbol: $contextType): $resultOrSetterType = {
+        |final class $ExpressionClassName(val debugInfo: com.avsystem.scex.ExpressionDebugInfo)
+        |  extends $ScexPkg.AbstractExpression[$contextType, $resultOrSetterType]
+        |  with $CompilerPkg.TemplateInterpolations[$resultType] {
+        |
+        |  def eval($ContextSymbol: $contextType): $resultOrSetterType = {
         |    val $RootSymbol = $ContextSymbol.root
         |    val $VariablesSymbol = new $ScexPkg.util.DynamicVariableAccessor($ContextSymbol)
         |    import $profileObjectPkg.$ProfileObjectName._

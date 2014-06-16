@@ -1,18 +1,18 @@
 package com.avsystem.scex
 package compiler
 
+import java.{lang => jl, util => ju}
+
 import com.avsystem.scex.compiler.CodeGeneration._
 import com.avsystem.scex.compiler.ScexCompiler._
 import com.avsystem.scex.util.CommonUtils._
 import com.avsystem.scex.util.LoggingUtils
 import com.avsystem.scex.validation.{SymbolValidator, SyntaxValidator}
-import com.avsystem.scex.{ExpressionProfile, ExpressionContext, Expression}
-import java.{util => ju, lang => jl}
+
 import scala.collection.mutable.ListBuffer
-import scala.reflect.internal.util.{SourceFile, Position, BatchSourceFile}
+import scala.reflect.internal.util.{AbstractFileClassLoader, BatchSourceFile, Position, SourceFile}
 import scala.reflect.io.VirtualDirectory
 import scala.reflect.runtime.universe.TypeTag
-import scala.reflect.internal.util.AbstractFileClassLoader
 import scala.tools.nsc.reporters.AbstractReporter
 import scala.tools.nsc.{Global, Settings}
 import scala.util.Try
@@ -203,11 +203,16 @@ trait ScexCompiler extends PackageGenerator with LoggingUtils {
     // every single expression has its own classloader and virtual directory
     val classLoader = createDedicatedClassLoader("(scex)")
     val sourceFile = new ExpressionSourceFile(preprocessedExprDef, pkgName, codeToCompile, offset)
+    val sourceInfo = new SourceInfo(pkgName, codeToCompile, offset, offset + exprDef.expression.length,
+      sourceFile.offsetToLine(offset) + 1, sourceFile.offsetToLine(offset + exprDef.expression.length - 1) + 2)
+    val debugInfo = new ExpressionDebugInfo(exprDef, sourceInfo)
 
     def result =
       compile(sourceFile, classLoader, usedInExpressions = false) match {
         case Nil =>
-          Class.forName(s"$pkgName.$ExpressionClassName", true, classLoader).newInstance.asInstanceOf[RawExpression]
+          Class.forName(s"$pkgName.$ExpressionClassName", true, classLoader)
+            .getConstructor(classOf[ExpressionDebugInfo]).newInstance(debugInfo)
+            .asInstanceOf[RawExpression]
 
         case errors =>
           throw new CompilationFailedException(codeToCompile, errors)
