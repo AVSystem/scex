@@ -8,7 +8,7 @@ import java.{lang => jl, util => ju}
  */
 class EvaluationException(message: String, cause: Throwable) extends RuntimeException(message, cause) {
   def this(code: String, line: Int, cause: Throwable) =
-    this(s"in line $line:\n$code", cause)
+    this(s"Failed to evaluate expression - error in line $line:\n$code", cause)
 
   def this(cause: Throwable) =
     this(null, cause)
