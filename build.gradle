@@ -1,5 +1,5 @@
 task wrapper(type: Wrapper) {
-    gradleVersion = "1.12"
+    gradleVersion = "2.0"
 }
 
 apply plugin: 'maven'
@@ -9,7 +9,7 @@ allprojects {
     apply plugin: 'idea'
 
     group = "com.avsystem"
-    version = '1.9.11'
+    version = '1.9.12'
 
     repositories {
         mavenCentral()
