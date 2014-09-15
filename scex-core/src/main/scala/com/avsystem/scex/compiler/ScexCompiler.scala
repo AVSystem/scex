@@ -5,12 +5,11 @@ import java.{lang => jl, util => ju}
 
 import com.avsystem.scex.compiler.CodeGeneration._
 import com.avsystem.scex.compiler.ScexCompiler._
-import com.avsystem.scex.util.CommonUtils._
 import com.avsystem.scex.util.LoggingUtils
 import com.avsystem.scex.validation.{SymbolValidator, SyntaxValidator}
 
 import scala.collection.mutable.ListBuffer
-import scala.reflect.internal.util.{AbstractFileClassLoader, BatchSourceFile, Position, SourceFile}
+import scala.reflect.internal.util._
 import scala.reflect.io.VirtualDirectory
 import scala.reflect.runtime.universe.TypeTag
 import scala.tools.nsc.reporters.AbstractReporter
@@ -30,14 +29,25 @@ trait ScexCompiler extends PackageGenerator with LoggingUtils {
       errorsBuilder.result()
     }
 
+    def includes(pos1: Position, pos2: Position) =
+      pos1.start <= pos2.start && pos1.end > pos2.end
+
+    // standard `lineContent` method fails on last line (wtf?)
+    def lineContent(pos: Position) = if (pos.source ne NoSourceFile) {
+      val start = pos.source.lineToOffset(pos.line - 1)
+      var end = start
+      while (!pos.source.isEndOfLine(end) && end < pos.source.length) end += 1
+      new String(pos.source.content, start, end - start)
+    } else ""
+
     def display(pos: Position, msg: String, severity: Severity) {
       if (severity == ERROR) {
         val actualPos = pos.source match {
-          case source: ExpressionSourceFile if pos.point >= source.expressionPos.start && pos.point < source.expressionPos.end =>
+          case source: ExpressionSourceFile if includes(source.expressionPos, pos) =>
             pos.withSource(source.bareSource).withShift(-source.expressionPos.start)
           case _ => pos
         }
-        errorsBuilder += CompileError(actualPos.lineContent, if (actualPos.isDefined) actualPos.column else 1, msg)
+        errorsBuilder += CompileError(lineContent(actualPos), if (actualPos.isDefined) actualPos.column else 1, msg)
       }
     }
 
