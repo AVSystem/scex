@@ -33,7 +33,7 @@ trait ScexCompiler extends PackageGenerator with LoggingUtils {
     def display(pos: Position, msg: String, severity: Severity) {
       if (severity == ERROR) {
         val actualPos = pos.source match {
-          case source: ExpressionSourceFile if source.expressionPos includes pos =>
+          case source: ExpressionSourceFile if pos.point >= source.expressionPos.start && pos.point < source.expressionPos.end =>
             pos.withSource(source.bareSource).withShift(-source.expressionPos.start)
           case _ => pos
         }
