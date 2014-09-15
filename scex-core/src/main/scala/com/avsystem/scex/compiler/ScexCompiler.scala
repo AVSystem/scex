@@ -5,6 +5,7 @@ import java.{lang => jl, util => ju}
 
 import com.avsystem.scex.compiler.CodeGeneration._
 import com.avsystem.scex.compiler.ScexCompiler._
+import com.avsystem.scex.util.CommonUtils._
 import com.avsystem.scex.util.LoggingUtils
 import com.avsystem.scex.validation.{SymbolValidator, SyntaxValidator}
 
