@@ -5,7 +5,7 @@ import java.{lang => jl, util => ju}
 
 import com.avsystem.scex.compiler.ScexCompiler.CompileError
 import com.avsystem.scex.compiler.{ExpressionDef, _}
-import com.avsystem.scex.util.CommonUtils
+import com.avsystem.scex.util.CommonUtils._
 import com.avsystem.scex.validation.ValidationContext
 
 import scala.reflect.internal.util.SourceFile
@@ -15,7 +15,6 @@ trait ScexPresentationCompiler extends ScexCompiler {
   compiler =>
 
   import ScexPresentationCompiler.{Completion, Param, Member => SMember, Type => SType}
-  import CommonUtils._
 
   private val logger = createLogger[ScexPresentationCompiler]
 
@@ -238,7 +237,8 @@ trait ScexPresentationCompiler extends ScexCompiler {
         // fix selectDynamic positions, which scalac computes incorrectly...
         fullTree.foreach {
           case tree@Apply(Select(_, TermName("selectDynamic")), List(lit@Literal(Constant(_: String))))
-            if lit.pos.isTransparent => tree.setPos(tree.pos.withEnd(lit.pos.end))
+            if lit.pos.isTransparent && lit.pos.end >= tree.pos.end =>
+            tree.setPos(tree.pos.withEnd(lit.pos.end))
           case _ =>
         }
 
