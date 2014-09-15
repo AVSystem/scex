@@ -1,19 +1,20 @@
 package com.avsystem.scex
 package compiler.presentation
 
-import com.avsystem.scex.compiler._
+import java.{lang => jl, util => ju}
+
+import com.avsystem.scex.compiler.ScexCompiler.CompileError
+import com.avsystem.scex.compiler.{ExpressionDef, _}
 import com.avsystem.scex.util.CommonUtils
 import com.avsystem.scex.validation.ValidationContext
-import java.{util => ju, lang => jl}
+
 import scala.reflect.internal.util.SourceFile
 import scala.reflect.runtime.universe.TypeTag
-import com.avsystem.scex.compiler.ScexCompiler.CompileError
-import com.avsystem.scex.compiler.ExpressionDef
 
 trait ScexPresentationCompiler extends ScexCompiler {
   compiler =>
 
-  import ScexPresentationCompiler.{Member => SMember, Type => SType, Param, Completion}
+  import ScexPresentationCompiler.{Completion, Param, Member => SMember, Type => SType}
   import CommonUtils._
 
   private val logger = createLogger[ScexPresentationCompiler]
@@ -127,7 +128,7 @@ trait ScexPresentationCompiler extends ScexCompiler {
     import global._
 
     inCompilerThread {
-      val PackageDef(_, List(ClassDef(_, _, _, Template(List(_, expressionParent, _), _, _)))) = tree
+      val PackageDef(_, List(ClassDef(_, _, _, Template(List(expressionParent, _), _, _)))) = tree
       val TypeRef(_, _, List(contextTpe, _)) = expressionParent.tpe
       contextTpe
     }
@@ -139,7 +140,7 @@ trait ScexPresentationCompiler extends ScexCompiler {
     def translateType(tpe: Type) =
       tpe.toOpt.map { tpe =>
         SType(tpe.widen.toString(), erasureClass(tpe))
-      }.getOrElse(null)
+      }.orNull
 
     def symbolToParam(sym: Symbol) =
       Param(sym.decodedName, translateType(sym.typeSignature))
@@ -165,7 +166,7 @@ trait ScexPresentationCompiler extends ScexCompiler {
   }
 
   protected def getScopeCompletion(exprDef: ExpressionDef): Completion = withGlobal { global =>
-    import global.{sourceFile => _, position => _, _}
+    import global.{position => _, sourceFile => _, _}
     val pkgName = newInteractiveExpressionPackage()
 
     val symbolValidator = exprDef.profile.symbolValidator
@@ -213,7 +214,7 @@ trait ScexPresentationCompiler extends ScexCompiler {
   }
 
   protected def getTypeCompletion(exprDef: ExpressionDef, position: Int) = withGlobal { global =>
-    import global.{sourceFile => _, position => _, _}
+    import global.{position => _, sourceFile => _, _}
     val symbolValidator = exprDef.profile.symbolValidator
 
     val pkgName = newInteractiveExpressionPackage()
