@@ -1,14 +1,15 @@
 package com.avsystem.scex
 package compiler.presentation
 
-import java.{util => ju, lang => jl}
-import scala.tools.nsc.interactive.Global
-import scala.tools.nsc.{symtab, Settings}
-import scala.tools.nsc.reporters.Reporter
+import java.{lang => jl, util => ju}
+
+import com.avsystem.scex.compiler.ScexGlobal
+
 import scala.collection.mutable
-import symtab.Flags.{ACCESSOR, PARAMACCESSOR}
-import scala.reflect.internal.util.{SourceFile, BatchSourceFile, TransparentPosition, RangePosition, OffsetPosition}
-import com.avsystem.scex.compiler.{ScexGlobal, CodeGeneration}
+import scala.tools.nsc.interactive.Global
+import scala.tools.nsc.reporters.Reporter
+import scala.tools.nsc.symtab.Flags.{ACCESSOR, PARAMACCESSOR}
+import scala.tools.nsc.{Settings, symtab}
 
 /**
  * Created: 13-12-2013
@@ -146,5 +147,18 @@ class IGlobal(settings: Settings, reporter: Reporter) extends Global(settings, r
 
     (tree, ownerTpe, members.allMembers)
   }
+
+  // workaround for Scala parser bug that is a root cause of SI-8459
+  override def newUnitParser(unit: CompilationUnit) =
+    new syntaxAnalyzer.UnitParser(unit) {
+      override def selector(t: Tree): Tree = {
+        val point = if (isIdent) in.offset else in.lastOffset
+        //assert(t.pos.isDefined, t)
+        if (t != EmptyTree)
+          Select(t, ident(skipIt = false)) setPos r2p(t.pos.start, point, in.lastOffset)
+        else
+          errorTermTree // has already been reported
+      }
+    }
 
 }
