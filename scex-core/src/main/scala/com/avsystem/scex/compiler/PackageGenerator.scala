@@ -1,13 +1,12 @@
 package com.avsystem.scex
 package compiler
 
+import java.util.concurrent.atomic.AtomicInteger
 import java.{util => ju, lang => jl}
 
 trait PackageGenerator {
-  private var idx = 0
+  private val idx = new AtomicInteger(0)
 
-  protected def newPackageName(prefix: String) = {
-    idx += 1
-    prefix + "$" + idx
-  }
+  protected def newPackageName(prefix: String) =
+    prefix + "$" + idx.incrementAndGet()
 }
