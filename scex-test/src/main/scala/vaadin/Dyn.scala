@@ -9,6 +9,6 @@ import scala.language.dynamics
  * Author: ghik
  */
 object Dyn extends Dynamic {
-  def selectDynamic(name: String) = this
+  def selectDynamic(name: String) = name
 }
 

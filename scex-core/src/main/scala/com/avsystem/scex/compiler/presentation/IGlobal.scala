@@ -6,10 +6,10 @@ import java.{lang => jl, util => ju}
 import com.avsystem.scex.compiler.ScexGlobal
 
 import scala.collection.mutable
+import scala.tools.nsc.Settings
 import scala.tools.nsc.interactive.Global
 import scala.tools.nsc.reporters.Reporter
 import scala.tools.nsc.symtab.Flags.{ACCESSOR, PARAMACCESSOR}
-import scala.tools.nsc.{Settings, symtab}
 
 /**
  * Created: 13-12-2013
@@ -83,7 +83,11 @@ class IGlobal(settings: Settings, reporter: Reporter) extends Global(settings, r
     // if tree consists of just x. or x.fo where fo is not yet a full member name
     // ignore the selection and look in just x.
     tree match {
-      case Select(qual, name) if tree.tpe == ErrorType => tree = qual
+      case Select(qual, name) if tree.tpe == null || tree.tpe == ErrorType =>
+        tree = qual
+      //workaround for another stupid scalac WTF regarding dynamics
+      case Apply(Select(qual, TermName("selectDynamic")), List(lit@Literal(Constant("<error>")))) =>
+        tree = qual
       case _ =>
     }
 
@@ -95,8 +99,18 @@ class IGlobal(settings: Settings, reporter: Reporter) extends Global(settings, r
       case _ => false
     }
 
-    if (shouldTypeQualifier)
+    if (shouldTypeQualifier) {
       tree = analyzer.newTyper(context).typedQualifier(tree)
+
+      tree match {
+        case Select(dyn, name) if (tree.tpe == null || tree.tpe == ErrorType) && dyn.tpe != null && dyn.tpe <:< typeOf[Dynamic] =>
+          // why I have to do this manually is beyond me
+          val literal = Literal(Constant(name.decoded)).setPos(tree.pos.withStart(dyn.pos.end + 1).makeTransparent)
+          tree = Apply(Select(dyn, TermName("selectDynamic")).setPos(dyn.pos.withEnd(dyn.pos.end + 1)), List(literal)).setPos(tree.pos)
+          tree = analyzer.newTyper(context).typedQualifier(tree)
+        case _ =>
+      }
+    }
 
     val pre = stabilizedType(tree)
 
