@@ -77,39 +77,60 @@ class IGlobal(settings: Settings, reporter: Reporter) extends Global(settings, r
     def allMembers: Vector[ScexTypeMember] = values.toVector.flatten
   }
 
+  private def printTree(pref: String, tree: Tree): Unit = {
+    println(pref)
+    tree.foreach { t =>
+      println(("" + t.tpe).padTo(50, ' ') + show(t))
+    }
+  }
+
+  /**
+   * Reimplementation of `scala.tools.interactive.Global.typeMembers` method, adjusted to SCEX needs:
+   * <ul>
+   * <li>returned completion members contain more information (e.g. implicit view tree instead of just symbol)</li>
+   * <li>there is a number of hacks and workarounds for scalac inability to properly handle dynamic invocations</li>
+   * <li>all members are returned at once, instead of returning a stream</li>
+   * </ul>
+   */
   def typeMembers(typedTree: Tree, pos: Position) = {
+    val context = doLocateContext(pos)
     var tree = typedTree
 
-    // if tree consists of just x. or x.fo where fo is not yet a full member name
-    // ignore the selection and look in just x.
+    // apparently, in some cases with dynamics, the tree comes completely untyped
+
+    if (tree.tpe == null) {
+      tree = analyzer.newTyper(context).typedQualifier(tree)
+    }
+
+    // now, drop incomplete selection
+
     tree match {
-      case Select(qual, name) if tree.tpe == null || tree.tpe == ErrorType =>
+      case Select(qual, name) if tree.tpe == ErrorType && !(qual.tpe != ErrorType && qual.tpe <:< dynamicTpe) =>
         tree = qual
-      //workaround for another stupid scalac WTF regarding dynamics
-      case Apply(Select(qual, TermName("selectDynamic")), List(lit@Literal(Constant("<error>")))) =>
+      case SelectDynamic(qual, "<error>") =>
         tree = qual
       case _ =>
     }
 
-    val context = doLocateContext(pos)
+    // manually help the compiler understand that the qualifier is a proper dynamic call
 
-    val shouldTypeQualifier = tree.tpe match {
+    tree match {
+      case Select(qual, name) if tree.tpe == ErrorType && qual.tpe <:< dynamicTpe =>
+        val literal = Literal(Constant(name.decoded)).setPos(tree.pos.withStart(qual.pos.end + 1).makeTransparent)
+        tree = Apply(Select(qual, TermName("selectDynamic")).setPos(qual.pos), List(literal)).setPos(tree.pos)
+      case _ =>
+    }
+
+    // possibly retype to catch up with changes made to the tree
+
+    val shouldRetypeQualifier = tree.tpe match {
       case null => true
       case mt: MethodType => mt.isImplicit
       case _ => false
     }
 
-    if (shouldTypeQualifier) {
+    if (shouldRetypeQualifier) {
       tree = analyzer.newTyper(context).typedQualifier(tree)
-
-      tree match {
-        case Select(dyn, name) if (tree.tpe == null || tree.tpe == ErrorType) && dyn.tpe != null && dyn.tpe <:< typeOf[Dynamic] =>
-          // why I have to do this manually is beyond me
-          val literal = Literal(Constant(name.decoded)).setPos(tree.pos.withStart(dyn.pos.end + 1).makeTransparent)
-          tree = Apply(Select(dyn, TermName("selectDynamic")).setPos(dyn.pos.withEnd(dyn.pos.end + 1)), List(literal)).setPos(tree.pos)
-          tree = analyzer.newTyper(context).typedQualifier(tree)
-        case _ =>
-      }
     }
 
     val pre = stabilizedType(tree)
@@ -162,7 +183,7 @@ class IGlobal(settings: Settings, reporter: Reporter) extends Global(settings, r
     (tree, ownerTpe, members.allMembers)
   }
 
-  // workaround for Scala parser bug that is a root cause of SI-8459
+  // workaround for Scala parser bug that is a root cause of SI-8459 (should be fixed in Scala 2.11.3)
   override def newUnitParser(unit: CompilationUnit) =
     new syntaxAnalyzer.UnitParser(unit) {
       override def selector(t: Tree): Tree = {

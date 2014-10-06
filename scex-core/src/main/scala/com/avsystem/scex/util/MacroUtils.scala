@@ -5,7 +5,6 @@ import com.avsystem.scex.compiler.annotation._
 import com.avsystem.scex.util.CommonUtils._
 import com.avsystem.scex.validation.FakeImplicitConversion
 import java.{util => ju, lang => jl}
-import scala.Some
 import scala.reflect.macros.Universe
 import com.avsystem.scex.compiler.Markers.{ProfileObject, ExpressionUtil, JavaGetterAdapter}
 
@@ -27,6 +26,7 @@ trait MacroUtils {
   lazy val stringTpe = typeOf[String]
   lazy val booleanTpe = typeOf[Boolean]
   lazy val jBooleanTpe = typeOf[jl.Boolean]
+  lazy val dynamicTpe = typeOf[Dynamic]
 
   object LiteralString {
     def unapply(tree: Tree) = tree match {
@@ -54,6 +54,15 @@ trait MacroUtils {
         Some((tpeTree, args))
       case _ =>
         None
+    }
+  }
+
+  object SelectDynamic {
+    def unapply(tree: Tree) = tree match {
+      case Apply(Select(qual, TermName("selectDynamic")), List(lit@Literal(Constant(name: String))))
+        if qual.tpe != null && qual.tpe <:< dynamicTpe && lit.pos.isTransparent =>
+        Some((qual, name))
+      case _ => None
     }
   }
 
