@@ -77,13 +77,6 @@ class IGlobal(settings: Settings, reporter: Reporter) extends Global(settings, r
     def allMembers: Vector[ScexTypeMember] = values.toVector.flatten
   }
 
-  private def printTree(pref: String, tree: Tree): Unit = {
-    println(pref)
-    tree.foreach { t =>
-      println(("" + t.tpe).padTo(50, ' ') + show(t))
-    }
-  }
-
   /**
    * Reimplementation of `scala.tools.interactive.Global.typeMembers` method, adjusted to SCEX needs:
    * <ul>
@@ -115,7 +108,7 @@ class IGlobal(settings: Settings, reporter: Reporter) extends Global(settings, r
     // manually help the compiler understand that the qualifier is a proper dynamic call
 
     tree match {
-      case Select(qual, name) if tree.tpe == ErrorType && qual.tpe <:< dynamicTpe =>
+      case Select(qual, name) if tree.tpe == ErrorType && (qual.tpe != ErrorType && qual.tpe <:< dynamicTpe) =>
         val literal = Literal(Constant(name.decoded)).setPos(tree.pos.withStart(qual.pos.end + 1).makeTransparent)
         tree = Apply(Select(qual, TermName("selectDynamic")).setPos(qual.pos), List(literal)).setPos(tree.pos)
       case _ =>
@@ -125,12 +118,20 @@ class IGlobal(settings: Settings, reporter: Reporter) extends Global(settings, r
 
     val shouldRetypeQualifier = tree.tpe match {
       case null => true
-      case mt: MethodType => mt.isImplicit
+      case mt: MethodType => mt.isImplicit || mt.params.isEmpty
       case _ => false
     }
 
     if (shouldRetypeQualifier) {
       tree = analyzer.newTyper(context).typedQualifier(tree)
+    }
+
+    // remove dangling implicit conversion
+
+    tree match {
+      case ImplicitlyConverted(qual, _) =>
+        tree = qual
+      case _ =>
     }
 
     val pre = stabilizedType(tree)

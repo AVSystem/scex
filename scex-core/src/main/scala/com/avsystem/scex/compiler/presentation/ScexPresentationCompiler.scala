@@ -14,7 +14,7 @@ import scala.reflect.runtime.universe.TypeTag
 trait ScexPresentationCompiler extends ScexCompiler {
   compiler =>
 
-  import ScexPresentationCompiler.{Completion, Param, Member => SMember, Type => SType}
+  import com.avsystem.scex.compiler.presentation.ScexPresentationCompiler.{Completion, Param, Member => SMember, Type => SType}
 
   private val logger = createLogger[ScexPresentationCompiler]
 
@@ -240,19 +240,57 @@ trait ScexPresentationCompiler extends ScexCompiler {
 
         inCompilerThread {
           // fix selectDynamic positions, which scalac computes incorrectly...
-          fullTree.foreach {
-            case tree@Apply(Select(_, TermName("selectDynamic")), List(lit@Literal(Constant(_: String))))
-              if lit.pos.isTransparent && lit.pos.end >= tree.pos.end =>
-              tree.setPos(tree.pos.withEnd(lit.pos.end))
-            case _ =>
+          object positionFixer extends Traverser {
+            override def traverse(tree: Tree) = {
+              super.traverse(tree)
+              tree match {
+                case tree@Apply(Select(_, TermName("selectDynamic")), List(lit@Literal(Constant(_: String))))
+                  if lit.pos.isTransparent && lit.pos.end >= tree.pos.end =>
+                  tree.setPos(tree.pos.withEnd(lit.pos.end))
+                case _ =>
+              }
+              if (tree.pos.isRange) {
+                def positions = (tree :: tree.children).iterator.map(_.pos).filter(_.isRange)
+                val start = positions.map(_.start).min
+                val end = positions.map(_.end).max
+                val transparent = tree.pos.isTransparent
+                tree.pos = tree.pos.withStart(start).withEnd(end)
+                if (transparent) {
+                  tree.pos = tree.pos.makeTransparent
+                }
+              }
+            }
           }
+          positionFixer.traverse(fullTree)
 
           val tree = new Locator(sourcePosition).locateIn(fullTree).toOpt
             .filter(t => t.pos != NoPosition && t.pos.start >= offset).getOrElse(EmptyTree)
 
+          def fakeIdent(tpe: Type, symbol: Symbol) =
+            Ident(nme.EMPTY).setSymbol(Option(symbol).getOrElse(NoSymbol)).setType(tpe)
+
+          def isAllowed(tree: Tree) =
+            symbolValidator.validateMemberAccess(vc)(extractAccess(tree)).deniedAccesses.isEmpty
+
+          val validated = tree match {
+            case Select(apply@ImplicitlyConverted(qual, fun), name) =>
+              treeCopy.Select(tree, treeCopy.Apply(apply, fun, List(fakeIdent(qual.tpe, qual.symbol))), name)
+            case Select(qual, name) =>
+              treeCopy.Select(tree, fakeIdent(qual.tpe, qual.symbol), name)
+            case _ =>
+              EmptyTree
+          }
+
+          // predent type error on forbidden member selection
+          if (!isAllowed(validated)) {
+            tree.setType(ErrorType)
+          }
+
           val (typedTree, ownerTpe, typeMembers) = global.typeMembers(tree, sourcePosition)
 
-          val fakeDirectPrefix = Ident(nme.EMPTY).setSymbol(Option(tree.symbol).getOrElse(NoSymbol)).setType(ownerTpe)
+          logger.debug("Prefix tree for type completion:\n" + show(typedTree, printTypes = true, printPositions = true))
+
+          val fakeDirectPrefix = fakeIdent(ownerTpe, tree.symbol)
           def fakeSelect(member: ScexTypeMember) = {
             val fakePrefix =
               if (!member.implicitlyAdded) fakeDirectPrefix
@@ -261,12 +299,9 @@ trait ScexPresentationCompiler extends ScexCompiler {
             Select(fakePrefix, member.sym)
           }
 
-          def isMemberAllowed(member: ScexTypeMember) =
-            symbolValidator.validateMemberAccess(vc)(extractAccess(fakeSelect(member))).deniedAccesses.isEmpty
-
           val members = typeMembers.collect {
             case m if m.sym.isTerm && m.sym.isPublic && !m.sym.isConstructor
-              && !isAdapterWrappedMember(m.sym) && isMemberAllowed(m) => translateMember(global)(m)
+              && !isAdapterWrappedMember(m.sym) && isAllowed(fakeSelect(m)) => translateMember(global)(m)
           }
 
           val translator = new ast.Translator(global, offset, exprDef)

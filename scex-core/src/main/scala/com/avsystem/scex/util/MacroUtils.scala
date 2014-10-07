@@ -66,6 +66,9 @@ trait MacroUtils {
     }
   }
 
+  def isProperPosition(pos: Position) =
+    pos != null && pos != NoPosition
+
   def isModuleOrPackage(symbol: Symbol) = symbol != null &&
     (symbol.isModule || symbol.isModuleClass || symbol.isPackage || symbol.isPackageClass)
 
@@ -305,6 +308,14 @@ trait MacroUtils {
 
   def isAdapterConversion(symbol: Symbol) =
     isProfileObject(symbol.owner) && symbol.isImplicit && symbol.isMethod && isAdapter(symbol.asMethod.returnType)
+
+  def debugTree(pref: String, tree: Tree): Unit = {
+    println(pref)
+    tree.foreach { t =>
+      println(show(t.pos).padTo(15, ' ') + ("" + t.tpe).padTo(50, ' ') + show(t))
+    }
+    println()
+  }
 }
 
 object MacroUtils {
