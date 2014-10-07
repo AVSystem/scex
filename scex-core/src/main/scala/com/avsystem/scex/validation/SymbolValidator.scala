@@ -311,7 +311,8 @@ object SymbolValidator {
   }
 
   /**
-   * Encompases block of expressions that specify methods that are allowed to be called in expressions.
+   * Encloses block of statements that specify methods that are allowed to be called in expressions.
+   * Code inside <tt>allow</tt> block is virtualized - it's not actually compiled to bytecode.
    * Multiple allow/deny blocks joined with <tt>++</tt> operator form an ACL-like structure.
    * @param expr
    * @return
@@ -319,7 +320,8 @@ object SymbolValidator {
   def allow(expr: Any): List[SymbolValidator.MemberAccessSpec] = macro allow_impl
 
   /**
-   * Encompases block of expressions that specify methods that are not allowed to be called in expressions.
+   * Encloses block of statements that specify methods that are not allowed to be called in expressions.
+   * Code inside <tt>deny</tt> block is virtualized - it's not actually compiled to bytecode.
    * Multiple allow/deny blocks joined with <tt>++</tt> operator form an ACL-like structure.
    * @param expr
    * @return
