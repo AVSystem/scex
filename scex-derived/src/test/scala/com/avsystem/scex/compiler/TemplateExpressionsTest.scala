@@ -19,6 +19,14 @@ class TemplateExpressionsTest extends FunSuite with CompilationTest {
 
   import SymbolValidator._
 
+  test("literal string test") {
+    assert("stuff" === evaluateTemplate[String]("stuff"))
+  }
+
+  test("literal string as Any test") {
+    assert("stuff" === evaluateTemplate[Any]("stuff"))
+  }
+
   test("single-argument string expression test") {
     assert("trololo 5 dafuq" === evaluateTemplate[String]("trololo ${15/3} dafuq"))
   }
@@ -29,6 +37,10 @@ class TemplateExpressionsTest extends FunSuite with CompilationTest {
 
   test("single-argument int expression") {
     assert(5 === evaluateTemplate[Int]("${15/3}"))
+  }
+
+  test("single-argument int expression as Any test") {
+    assert(5 === evaluateTemplate[Any]("${15/3}"))
   }
 
   test("custom splicer test") {

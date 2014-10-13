@@ -2,9 +2,9 @@ package com.avsystem.scex
 
 import java.{lang => jl, util => ju}
 
+import com.avsystem.scex.compiler.TemplateInterpolations
 import com.avsystem.scex.compiler.TemplateInterpolations.Splicer
-import com.avsystem.scex.compiler.{CodeGeneration, TemplateInterpolations}
-import com.avsystem.scex.util.{MacroUtils, Literal => ScexLiteral}
+import com.avsystem.scex.util.{Literal => ScexLiteral}
 
 import scala.reflect.macros.whitebox
 
@@ -48,33 +48,33 @@ object Macros {
       case _ => false
     }
 
-    if (typeOf[String] <:< resultType) {
-      c.Expr[T](reifyConcatenation(parts, argTrees))
-    }
+    lazy val singleArgNoParts = args.size == 1 && parts.forall(isEmptyStringLiteral)
+    lazy val soleArgTree = args.head.tree
+    lazy val soleArgImplicitConv = c.inferImplicitView(soleArgTree, soleArgTree.tpe, resultType)
+
     // special cases for Java enums as there is no way to create general implicit conversion to arbitrary java enum
     // due to https://issues.scala-lang.org/browse/SI-7609
-    else if (resultType <:< typeOf[jl.Enum[_]] && args.size == 0) {
+    if (resultType <:< typeOf[jl.Enum[_]] && args.size == 0) {
       val enumModuleSymbol = resultType.typeSymbol.companion
       val Literal(Constant(stringLiteral: String)) = parts.head
 
       c.Expr[T](Select(Ident(enumModuleSymbol), TermName(stringLiteral)))
 
-    } else if (resultType <:< typeOf[jl.Enum[_]] && args.size == 1 && parts.forall(isEmptyStringLiteral) && !(args.head.actualType <:< resultType)) {
+    } else if (resultType <:< typeOf[jl.Enum[_]] && singleArgNoParts && !(soleArgTree.tpe <:< resultType)) {
       val enumModuleSymbol = resultType.typeSymbol.companion
 
       c.Expr[T](Apply(Select(Ident(enumModuleSymbol), TermName("valueOf")), List(args.head.tree)))
 
-    } else if (args.size == 1 && parts.forall(isEmptyStringLiteral)) {
-      val soleTree = args.head.tree
-      lazy val implicitConv = c.inferImplicitView(soleTree, soleTree.tpe, resultType)
-
+    } else if (singleArgNoParts) {
       // typecheck result manually
-      if (soleTree.tpe <:< resultType) {
-        c.Expr[T](soleTree)
-      } else if (implicitConv != EmptyTree) {
-        c.Expr[T](Apply(implicitConv, List(soleTree)))
+      if (soleArgTree.tpe <:< resultType) {
+        c.Expr[T](soleArgTree)
+      } else if (soleArgImplicitConv != EmptyTree) {
+        c.Expr[T](Apply(soleArgImplicitConv, List(soleArgTree)))
+      } else if (typeOf[String] <:< resultType) {
+        c.Expr[T](reifyConcatenation(parts, argTrees))
       } else {
-        c.error(soleTree.pos, s"This template (type ${soleTree.tpe.widen}) cannot represent value of type $resultType")
+        c.error(soleArgTree.pos, s"This template (type ${soleArgTree.tpe.widen}) cannot represent value of type $resultType")
         null
       }
 
@@ -90,6 +90,8 @@ object Macros {
           c.Expr[T](Apply(conversion, List(literalExpr.tree)))
       }
 
+    } else if (typeOf[String] <:< resultType) {
+      c.Expr[T](reifyConcatenation(parts, argTrees))
     } else {
       c.error(c.enclosingPosition, s"This template cannot represent value of type $resultType")
       null
@@ -108,7 +110,6 @@ object Macros {
 
   def checkConstantExpr_impl[T](c: whitebox.Context)(expr: c.Expr[T]): c.Expr[T] = {
     import c.universe._
-    val macroUtils = MacroUtils(c.universe)
     import com.avsystem.scex.compiler.CodeGeneration._
 
     lazy val inputSymbols = Set(ContextSymbol, RootSymbol, VariablesSymbol)
