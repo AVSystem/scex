@@ -26,6 +26,7 @@ class TypeCompletionPrefixTest extends FunSuite with CompilationTest {
   private val acl = deny {
     on { api: Api =>
       api.zuo
+      api.zle
     }
   } ++ allow {
     on { r: Root =>
@@ -158,6 +159,12 @@ class TypeCompletionPrefixTest extends FunSuite with CompilationTest {
     "api.|ccc"
   )
 
+  tests("forbidden implicit member selection", "api", scexType[Api])(
+    "api.zle|",
+    "api.zl|e",
+    "api.|zle"
+  )
+
 }
 
 object TypeCompletionPrefixTest {
@@ -182,6 +189,8 @@ object TypeCompletionPrefixTest {
 
   trait ExtApi {
     def iii: String
+
+    def zle: Int
   }
 
   import scala.language.dynamics
