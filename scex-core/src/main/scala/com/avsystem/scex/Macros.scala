@@ -1,18 +1,19 @@
 package com.avsystem.scex
 
-import com.avsystem.scex.util.{Literal => ScexLiteral, MacroUtils}
-import java.{util => ju, lang => jl}
-import scala.reflect.macros.whitebox.Context
-import scala.util.control.NonFatal
-import com.avsystem.scex.compiler.{CodeGeneration, TemplateInterpolations}
+import java.{lang => jl, util => ju}
+
 import com.avsystem.scex.compiler.TemplateInterpolations.Splicer
+import com.avsystem.scex.compiler.{CodeGeneration, TemplateInterpolations}
+import com.avsystem.scex.util.{MacroUtils, Literal => ScexLiteral}
+
+import scala.reflect.macros.whitebox
 
 /**
  * Created: 18-11-2013
  * Author: ghik
  */
 object Macros {
-  def templateInterpolation_impl[T: c.WeakTypeTag](c: Context)(args: c.Expr[Any]*): c.Expr[T] = {
+  def templateInterpolation_impl[T: c.WeakTypeTag](c: whitebox.Context)(args: c.Expr[Any]*): c.Expr[T] = {
     import c.universe._
 
     val Apply(_, List(Apply(_, parts))) = c.prefix.tree
@@ -95,7 +96,7 @@ object Macros {
     }
   }
 
-  def reifyImplicitView_impl[T: c.WeakTypeTag](c: Context)(arg: c.Expr[Any]): c.Expr[T] = {
+  def reifyImplicitView_impl[T: c.WeakTypeTag](c: whitebox.Context)(arg: c.Expr[Any]): c.Expr[T] = {
     import c.universe._
 
     val fromType = arg.actualType
@@ -105,12 +106,10 @@ object Macros {
     c.Expr[T](Apply(view, List(arg.tree)))
   }
 
-  def checkConstantExpr_impl[T](c: Context)(expr: c.Expr[T]): c.Expr[T] = {
+  def checkConstantExpr_impl[T](c: whitebox.Context)(expr: c.Expr[T]): c.Expr[T] = {
     import c.universe._
     val macroUtils = MacroUtils(c.universe)
-    import macroUtils._
-
-    import CodeGeneration._
+    import com.avsystem.scex.compiler.CodeGeneration._
 
     lazy val inputSymbols = Set(ContextSymbol, RootSymbol, VariablesSymbol)
 
@@ -123,7 +122,7 @@ object Macros {
     expr
   }
 
-  def tripleEquals_impl[A, B](c: Context)(right: c.Expr[B]): c.Expr[Boolean] = {
+  def tripleEquals_impl[A, B](c: whitebox.Context)(right: c.Expr[B]): c.Expr[Boolean] = {
     import c.universe._
 
     val Apply(_, List(leftTree)) = c.prefix.tree

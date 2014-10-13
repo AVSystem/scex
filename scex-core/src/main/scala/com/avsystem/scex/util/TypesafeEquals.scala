@@ -1,8 +1,7 @@
 package com.avsystem.scex
 package util
 
-import com.avsystem.scex.Macros
-import java.{util => ju, lang => jl}
+import java.{lang => jl, util => ju}
 
 /**
  * Created: 20-11-2013

@@ -1,11 +1,13 @@
 package com.avsystem.scex
 package compiler
 
-import com.avsystem.scex.util.{LoggingUtils, CommonUtils, MacroUtils, TypesafeEquals}
+import java.{lang => jl, util => ju}
+
+import com.avsystem.scex.util.{LoggingUtils, MacroUtils, TypesafeEquals}
 import com.avsystem.scex.validation.ValidationContext
-import java.{util => ju, lang => jl}
+
 import scala.language.experimental.macros
-import scala.reflect.macros.whitebox.Context
+import scala.reflect.macros.whitebox
 
 /**
  * Object used during expression compilation to validate the expression (syntax, invocations, etc.)
@@ -18,7 +20,7 @@ object ExpressionMacroProcessor extends LoggingUtils {
 
   def processExpression[C, T](expr: T): T = macro processExpression_impl[C, T]
 
-  def processExpression_impl[C: c.WeakTypeTag, T](c: Context)(expr: c.Expr[T]): c.Expr[T] = {
+  def processExpression_impl[C: c.WeakTypeTag, T](c: whitebox.Context)(expr: c.Expr[T]): c.Expr[T] = {
     import c.universe._
     val validationContext = ValidationContext(c.universe)(weakTypeOf[C])
     import validationContext._
@@ -65,7 +67,7 @@ object ExpressionMacroProcessor extends LoggingUtils {
 
   def applyTypesafeEquals[T](expr: T): T = macro applyTypesafeEquals_impl[T]
 
-  def applyTypesafeEquals_impl[T](c: Context)(expr: c.Expr[T]): c.Expr[T] = {
+  def applyTypesafeEquals_impl[T](c: whitebox.Context)(expr: c.Expr[T]): c.Expr[T] = {
     import c.universe._
 
     if (c.inferImplicitValue(typeOf[TypesafeEquals.TypesafeEqualsEnabled.type]) != EmptyTree) {
@@ -106,7 +108,7 @@ object ExpressionMacroProcessor extends LoggingUtils {
 
   def asSetter[T](expr: T): Setter[T] = macro asSetter_impl[T]
 
-  def asSetter_impl[T: c.WeakTypeTag](c: Context)(expr: c.Expr[T]): c.Expr[Setter[T]] = {
+  def asSetter_impl[T: c.WeakTypeTag](c: whitebox.Context)(expr: c.Expr[T]): c.Expr[Setter[T]] = {
     val macroUtils = MacroUtils(c.universe)
 
     import c.universe._
@@ -129,7 +131,7 @@ object ExpressionMacroProcessor extends LoggingUtils {
         reifySetterFunction(Select(prefix, TermName("set" + propertyName.capitalize)))
 
       case Select(prefix, TermName(getterName)) if tree.symbol.isMethod =>
-        import CommonUtils._
+        import com.avsystem.scex.util.CommonUtils._
 
         val returnType = tree.symbol.asMethod.returnType
         val setterName = getterName match {
