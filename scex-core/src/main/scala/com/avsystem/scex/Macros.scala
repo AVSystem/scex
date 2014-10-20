@@ -13,7 +13,7 @@ import scala.reflect.macros.whitebox
  * Author: ghik
  */
 object Macros {
-  def templateInterpolation_impl[T: c.WeakTypeTag](c: whitebox.Context)(args: c.Expr[Any]*): c.Expr[T] = {
+  def templateInterpolation_impl[T: c.WeakTypeTag, A](c: whitebox.Context)(args: c.Expr[A]*): c.Expr[T] = {
     import c.universe._
 
     val Apply(_, List(Apply(_, parts))) = c.prefix.tree

@@ -74,4 +74,28 @@ class TemplateExpressionsTest extends FunSuite with CompilationTest {
   test("enum literally test") {
     assert(RetentionPolicy.RUNTIME === evaluateTemplate[RetentionPolicy]("${java.lang.annotation.RetentionPolicy.RUNTIME}"))
   }
+
+  test("interpolation argument inference test") {
+    val acl = PredefinedAccessSpecs.basicOperations ++ allow {
+      on { vr: ValueRoot[_] =>
+        vr.value
+      }
+    }
+    val cexpr = compiler.getCompiledExpression[SimpleContext[ValueRoot[String]], String](
+      createProfile(acl), "${if(value.endsWith(\"lol\")) value + \"lol\" else value}", template = true)
+
+    assert("fuulollol" === cexpr(SimpleContext(new ValueRoot("fuulol"))))
+  }
+
+  test("multiple interpolation arguments inference test") {
+    val acl = PredefinedAccessSpecs.basicOperations ++ allow {
+      on { vr: ValueRoot[_] =>
+        vr.value
+      }
+    }
+    val cexpr = compiler.getCompiledExpression[SimpleContext[ValueRoot[String]], String](
+      createProfile(acl), "${if(value.endsWith(\"lol\")) value + \"lol\" else value}${123}", template = true)
+
+    assert("fuulollol123" === cexpr(SimpleContext(new ValueRoot("fuulol"))))
+  }
 }

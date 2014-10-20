@@ -1,10 +1,11 @@
 package com.avsystem.scex
 package compiler
 
-import com.avsystem.scex.Macros
-import java.{util => ju, lang => jl}
-import scala.language.experimental.macros
+import java.{lang => jl, util => ju}
+
 import com.avsystem.scex.compiler.annotation.NotValidated
+
+import scala.language.experimental.macros
 
 /**
  * Created: 18-11-2013
@@ -46,7 +47,7 @@ trait TemplateInterpolations[T] {
      * @param args
      * @return
      */
-    def t(args: Any*): T = macro Macros.templateInterpolation_impl[T]
+    def t[A](args: A*): T = macro Macros.templateInterpolation_impl[T, A]
   }
 
 }
