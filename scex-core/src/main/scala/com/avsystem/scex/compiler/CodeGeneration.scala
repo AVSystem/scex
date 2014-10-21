@@ -101,20 +101,6 @@ object CodeGeneration {
     } else None
   }
 
-  def expressionPackage(exprDef: ExpressionDef) = {
-    val baos = new ByteArrayOutputStream
-    val dos = new DataOutputStream(baos)
-    dos.writeUTF(exprDef.profile.name)
-    dos.writeUTF(exprDef.contextType)
-    dos.writeUTF(exprDef.resultType)
-    dos.writeUTF(exprDef.expression)
-    dos.writeBoolean(exprDef.template)
-    dos.writeBoolean(exprDef.setter)
-    dos.writeUTF(exprDef.header)
-    dos.close()
-    "_scex_expr_" + DigestUtils.md5Hex(baos.toByteArray)
-  }
-
   def generateExpressionClass(
     exprDef: ExpressionDef,
     fullAdapterClassNameOpt: Option[String],

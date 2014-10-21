@@ -106,7 +106,7 @@ trait ScexCompiler extends LoggingUtils {
 
   protected def compileFullJavaGetterAdapter(clazz: Class[_]): Try[Unit] = underLock {
     val codeToCompile = wrapInSource(generateJavaGetterAdapter(clazz, full = true).get, AdaptersPkg)
-    val sourceFile = new BatchSourceFile(AdaptersPkg, codeToCompile)
+    val sourceFile = new BatchSourceFile(adapterName(clazz), codeToCompile)
 
     def result() = {
       compile(sourceFile, shared = true) match {
@@ -168,7 +168,7 @@ trait ScexCompiler extends LoggingUtils {
     settings.outputDirs.setSingleOutput(classfileDirectory)
     reporter.reset()
 
-    logger.debug(s"Compiling source file ${sourceFile.path}:\n${new String(sourceFile.content)}")
+    logger.debug(s"Compiling source file ${sourceFile.path} to $classfileDirectory:\n${new String(sourceFile.content)}")
 
     val startTime = System.nanoTime
 

@@ -8,16 +8,25 @@ import com.avsystem.scex.japi.DefaultJavaScexCompiler
 import com.avsystem.scex.util.SimpleContext
 import com.avsystem.scex.validation.SymbolValidator.MemberAccessSpec
 import com.avsystem.scex.validation.{SymbolValidator, SyntaxValidator}
+import com.google.common.io.Files
 import org.scalatest.{Suite, BeforeAndAfterAll}
 
+import scala.reflect.io.AbstractFile
 import scala.reflect.runtime.universe.TypeTag
 
 /**
  * Created: 18-11-2013
  * Author: ghik
  */
-trait CompilationTest {
+trait CompilationTest extends BeforeAndAfterAll { this: Suite =>
   val compiler = new DefaultJavaScexCompiler
+
+  override protected def beforeAll() = {
+    val classfileDir = AbstractFile.getDirectory(compiler.settings.classfileDirectory.value)
+    if(classfileDir != null) {
+      classfileDir.delete()
+    }
+  }
 
   def catchAndPrint(code: => Any) {
     try code catch {

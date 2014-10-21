@@ -11,5 +11,7 @@ class ExpressionProfile(
   val expressionHeader: String,
   val expressionUtils: String) {
 
+  require(name.matches("[a-zA-Z0-9]+"), s"Invalid profile name $name, only alphanumeric characters are allowed")
+
   override def toString = s"ExpressionProfile[$name]"
 }

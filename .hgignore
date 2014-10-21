@@ -13,6 +13,8 @@ target
 build
 out
 .gradle
+testClassfileCache
+classfileCache
 
 # gedit temporary files
 *~

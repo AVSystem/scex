@@ -29,4 +29,7 @@ class ScexSettings extends Settings {
   val resetAfterCount = IntSetting("-SCEXreset-after-count",
     "Number of compilations after which the compiler will be reset", 2000, Positive, _ => None)
 
+  val classfileDirectory = StringSetting("-SCEXclassfile-directory", "directory",
+    "Directory for classfile cache", "")
+
 }

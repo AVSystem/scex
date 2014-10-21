@@ -17,7 +17,11 @@ import org.eclipse.jetty.servlet.{ServletContextHandler, ServletHolder}
 
 object CompletionPlayground {
 
-  lazy val compiler = new XmlFriendlyJavaScexCompiler
+  lazy val compiler = {
+    val result = new XmlFriendlyJavaScexCompiler
+    result.settings.classfileDirectory.value = "classfileCache"
+    result
+  }
 
   class SampleServlet extends AbstractApplicationServlet {
     def getNewApplication(request: HttpServletRequest) = new SampleApplication
