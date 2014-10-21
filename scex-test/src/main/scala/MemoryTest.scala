@@ -1,8 +1,8 @@
-import com.avsystem.scex.compiler.{ScexCompilerConfig}
+import java.{lang => jl, util => ju}
+
 import com.avsystem.scex.japi.DefaultJavaScexCompiler
-import com.avsystem.scex.validation.{SyntaxValidator, SymbolValidator}
-import com.avsystem.scex.{ExpressionProfile, ExpressionContext, PredefinedAccessSpecs}
-import java.{util => ju, lang => jl}
+import com.avsystem.scex.validation.{SymbolValidator, SyntaxValidator}
+import com.avsystem.scex.{ExpressionContext, ExpressionProfile, PredefinedAccessSpecs}
 
 
 object MemoryTest {
@@ -10,13 +10,11 @@ object MemoryTest {
   case class Dummy(costam: Int)
 
   def main(args: Array[String]) {
-    val config = new ScexCompilerConfig
-    config.expressionExpirationTime = 500
-    config.resetAfterCompilationCount = 10
+    val compiler = new DefaultJavaScexCompiler
+    compiler.settings.expressionExpirationTime.value = 500
+    compiler.settings.resetAfterCount.value = 10
 
-    val compiler = new DefaultJavaScexCompiler(config)
-
-    import SymbolValidator._
+    import com.avsystem.scex.validation.SymbolValidator._
     val symbolValidator = SymbolValidator(
       PredefinedAccessSpecs.basicOperations ++ allow {
         on { dummy: Dummy =>
@@ -26,7 +24,7 @@ object MemoryTest {
       }
     )
 
-    val profile = new ExpressionProfile(SyntaxValidator.SimpleExpressions, symbolValidator, "", "")
+    val profile = new ExpressionProfile("test", SyntaxValidator.SimpleExpressions, symbolValidator, "", "")
 
     var i = 0
     while (true) {

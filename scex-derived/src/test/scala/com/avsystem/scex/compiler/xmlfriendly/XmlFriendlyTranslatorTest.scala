@@ -2,6 +2,7 @@ package com.avsystem.scex
 package compiler.xmlfriendly
 
 import java.{util => ju, lang => jl}
+import com.avsystem.scex.compiler.ScexFunSuite
 import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
 import org.scalatest.FunSuite
@@ -10,8 +11,7 @@ import org.scalatest.FunSuite
  * Created: 23-04-2014
  * Author: ghik
  */
-@RunWith(classOf[JUnitRunner])
-class XmlFriendlyTranslatorTest extends FunSuite {
+class XmlFriendlyTranslatorTest extends ScexFunSuite {
 
   import XmlFriendlyTranslator.translate
 

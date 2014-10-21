@@ -1,23 +1,23 @@
 package vaadin
 
-import com.avsystem.scex.compiler.ScexCompilerConfig
+import java.{lang => jl, util => ju}
+import javax.servlet.http.HttpServletRequest
+
 import com.avsystem.scex.compiler.presentation.ScexPresentationCompiler.Member
 import com.avsystem.scex.japi.XmlFriendlyJavaScexCompiler
 import com.avsystem.scex.util.SimpleContext
 import com.avsystem.scex.validation.{SymbolValidator, SyntaxValidator}
-import com.avsystem.scex.{PredefinedAccessSpecs, ExpressionProfile}
+import com.avsystem.scex.{ExpressionProfile, PredefinedAccessSpecs}
 import com.vaadin.event.FieldEvents.{TextChangeEvent, TextChangeListener}
 import com.vaadin.terminal.gwt.server.AbstractApplicationServlet
 import com.vaadin.ui.{Label, TextField, Window}
-import java.{util => ju, lang => jl}
-import javax.servlet.http.HttpServletRequest
 import org.eclipse.jetty.server.Server
 import org.eclipse.jetty.server.session.SessionHandler
-import org.eclipse.jetty.servlet.{ServletHolder, ServletContextHandler}
+import org.eclipse.jetty.servlet.{ServletContextHandler, ServletHolder}
 
 object CompletionPlayground {
 
-  lazy val compiler = new XmlFriendlyJavaScexCompiler(new ScexCompilerConfig)
+  lazy val compiler = new XmlFriendlyJavaScexCompiler
 
   class SampleServlet extends AbstractApplicationServlet {
     def getNewApplication(request: HttpServletRequest) = new SampleApplication
@@ -30,7 +30,7 @@ object CompletionPlayground {
       val window = new Window
       setMainWindow(window)
 
-      import SymbolValidator._
+      import com.avsystem.scex.validation.SymbolValidator._
       val acl = PredefinedAccessSpecs.basicOperations ++ allow {
         Dyn.selectDynamic _
 
@@ -60,7 +60,7 @@ object CompletionPlayground {
           |val utilStuff = "dafuq"
         """.stripMargin
 
-      val profile = new ExpressionProfile(SyntaxValidator.SimpleExpressions, SymbolValidator(acl), header, utils)
+      val profile = new ExpressionProfile("test", SyntaxValidator.SimpleExpressions, SymbolValidator(acl), header, utils)
 
       def memberRepr(member: Member) =
         s"${member.name}${member.params.map(_.map(p => s"${p.name}: ${p.tpe}-${p.tpe.erasure}").mkString("(", ", ", ")")).mkString}: ${member.tpe}-${member.tpe.erasure}"

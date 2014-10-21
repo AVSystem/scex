@@ -1,22 +1,18 @@
 package com.avsystem.scex
 package compiler
 
-import com.avsystem.scex.PredefinedAccessSpecs
+import java.{lang => jl, util => ju}
+
 import com.avsystem.scex.compiler.ParameterizedClass.StaticInnerGeneric
 import com.avsystem.scex.compiler.ScexCompiler.CompilationFailedException
-import com.avsystem.scex.validation.SymbolValidator
-import com.google.common.reflect.TypeToken
-import java.{util => ju, lang => jl}
-import org.junit.runner.RunWith
-import org.scalatest.FunSuite
-import org.scalatest.junit.JUnitRunner
-import scala.collection.immutable.StringOps
 import com.avsystem.scex.util.SimpleContext
+import com.google.common.reflect.TypeToken
 
-@RunWith(classOf[JUnitRunner])
-class ScexCompilerTest extends FunSuite with CompilationTest {
+import scala.collection.immutable.StringOps
 
-  import SymbolValidator._
+class ScexCompilerTest extends ScexFunSuite with CompilationTest {
+
+  import com.avsystem.scex.validation.SymbolValidator._
 
   override def defaultAcl = Nil
 

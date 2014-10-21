@@ -61,6 +61,7 @@ project("scex-core") {
         compile("org.slf4j:slf4j-api:1.6.4")
         compile("ch.qos.logback:logback-core:1.0.6")
         compile("ch.qos.logback:logback-classic:1.0.6")
+        compile("commons-codec:commons-codec:1.7")
 
         testCompile("org.scalatest:scalatest_2.11:2.1.3")
     }

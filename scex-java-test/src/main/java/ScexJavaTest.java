@@ -4,7 +4,6 @@ import java.io.InputStreamReader;
 
 import com.avsystem.scex.ExpressionContext;
 import com.avsystem.scex.ExpressionProfile;
-import com.avsystem.scex.compiler.ScexCompilerConfig;
 import com.avsystem.scex.japi.DefaultJavaScexCompiler;
 import com.avsystem.scex.japi.JavaScexCompiler;
 import com.avsystem.scex.validation.SymbolValidator;
@@ -12,12 +11,12 @@ import com.avsystem.scex.validation.SyntaxValidator;
 
 public class ScexJavaTest {
     public static void main(String[] args) throws Exception {
-        DefaultJavaScexCompiler compiler = new DefaultJavaScexCompiler(new ScexCompilerConfig());
+        DefaultJavaScexCompiler compiler = new DefaultJavaScexCompiler();
 
-        SyntaxValidator syntaxValidator = compiler.compileSyntaxValidator(readResource("/syntaxValidator.scala"));
-        SymbolValidator symbolValidator = compiler.compileSymbolValidator(readResource("/symbolValidator.scala"));
+        SyntaxValidator syntaxValidator = compiler.compileSyntaxValidator("test", readResource("/syntaxValidator.scala"));
+        SymbolValidator symbolValidator = compiler.compileSymbolValidator("test", readResource("/symbolValidator.scala"));
 
-        ExpressionProfile profile = new ExpressionProfile(syntaxValidator, symbolValidator, "", "");
+        ExpressionProfile profile = new ExpressionProfile("test", syntaxValidator, symbolValidator, "", "");
 
         Class<ExpressionContext<?, ?>> aecClass = (Class) ExpressionContext.class;
         JavaScexCompiler.JavaCompleter ctx = compiler.buildCompleter().contextType(aecClass)

@@ -8,20 +8,21 @@ import com.avsystem.scex.compiler.ScexCompiler._
 import com.avsystem.scex.util.CommonUtils._
 import com.avsystem.scex.util.LoggingUtils
 import com.avsystem.scex.validation.{SymbolValidator, SyntaxValidator}
+import org.apache.commons.codec.digest.DigestUtils
 
 import scala.collection.mutable.ListBuffer
 import scala.reflect.internal.util._
-import scala.reflect.io.VirtualDirectory
+import scala.reflect.io.{AbstractFile, VirtualDirectory}
 import scala.reflect.runtime.universe.TypeTag
 import scala.tools.nsc.reporters.AbstractReporter
 import scala.tools.nsc.{Global, Settings}
 import scala.util.Try
 
-trait ScexCompiler extends PackageGenerator with LoggingUtils {
-
-  val config: ScexCompilerConfig
+trait ScexCompiler extends LoggingUtils {
 
   private val logger = createLogger[ScexCompiler]
+
+  private object lock
 
   class Reporter(val settings: Settings) extends AbstractReporter {
     private val errorsBuilder = new ListBuffer[CompileError]
@@ -60,25 +61,23 @@ trait ScexCompiler extends PackageGenerator with LoggingUtils {
     }
   }
 
-  protected class ScexClassLoader(val classfileDirectory: VirtualDirectory, parent: ClassLoader)
-    extends AbstractFileClassLoader(classfileDirectory, parent)
+  protected class ScexClassLoader(val classfileDirectory: AbstractFile, parent: ClassLoader)
+    extends AbstractFileClassLoader(classfileDirectory, parent) {
+
+    // locking on classfile directory which otherwise could be modified by compiler during class loading
+    override def getClassLoadingLock(className: String) = classfileDirectory
+  }
 
   protected type RawExpression = Expression[ExpressionContext[_, _], Any]
 
-  protected def underLock[T](code: => T) = synchronized {
+  protected def underLock[T](code: => T) = lock.synchronized {
     if (!initialized) {
       init()
     }
     code
   }
 
-  val settings = new Settings
-  settings.usejavacp.value = true
-  settings.exposeEmptyPackage.value = true
-  // preserving 2.10 behaviour of macro expansion in presentation compiler
-  // https://github.com/scala/scala/commit/6e4c926b4a4c5e8dd350ae3a150490a794b139ca
-  // TODO: maybe try to make it work with MacroExpand.Discard ?
-  settings.Ymacroexpand.value = settings.MacroExpand.Normal
+  val settings = new ScexSettings
 
   private var initialized = false
 
@@ -90,7 +89,7 @@ trait ScexCompiler extends PackageGenerator with LoggingUtils {
    * Classloader for stuff that will be never reclaimed after compilation -
    * profiles, validators, custom util classes, etc.
    */
-  private var persistentClassLoader: ScexClassLoader = _
+  private var sharedClassLoader: ScexClassLoader = _
 
   private var compilationCount: Int = _
 
@@ -98,95 +97,86 @@ trait ScexCompiler extends PackageGenerator with LoggingUtils {
     logger.info("Initializing Scala compiler")
     compilationCount = 0
     global = new Global(settings, reporter) with ScexGlobal
-    persistentClassLoader = new ScexClassLoader(new VirtualDirectory("(scex_persistent)", None), getClass.getClassLoader)
+    sharedClassLoader = new ScexClassLoader(new VirtualDirectory("(scex_shared)", None), getClass.getClassLoader)
     initialized = true
   }
 
-  protected def createDedicatedClassLoader(dirName: String) = underLock {
-    new ScexClassLoader(new VirtualDirectory(dirName, None), persistentClassLoader)
-  }
+  private def instantiate[T](classLoader: ClassLoader, className: String) =
+    Class.forName(className, true, classLoader).newInstance.asInstanceOf[T]
 
-  private def instantiatePersistent[T](className: String) =
-    Class.forName(className, true, persistentClassLoader).newInstance.asInstanceOf[T]
+  protected def compileFullJavaGetterAdapter(clazz: Class[_]): Try[Unit] = underLock {
+    val codeToCompile = wrapInSource(generateJavaGetterAdapter(clazz, full = true).get, AdaptersPkg)
+    val sourceFile = new BatchSourceFile(AdaptersPkg, codeToCompile)
 
-  private def newExpressionPackage() =
-    newPackageName("_scex_expr")
-
-  private def newProfilePackage() =
-    newPackageName("_scex_profile")
-
-  private def newAdapterPackage() =
-    newPackageName("_scex_adapter")
-
-  private def newSyntaxValidatorPackage() =
-    newPackageName("_scex_syntax_validator")
-
-  private def newSymbolValidatorPackage() =
-    newPackageName("_scex_symbol_validator")
-
-  protected def compileFullJavaGetterAdapter(clazz: Class[_]): Try[String] = underLock {
-    val pkgName = newAdapterPackage()
-    val codeToCompile = wrapInSource(generateJavaGetterAdapter(clazz, full = true).get, pkgName)
-    val sourceFile = new BatchSourceFile(pkgName, codeToCompile)
-
-    def result = {
-      compile(sourceFile, persistentClassLoader, usedInExpressions = true) match {
-        case Nil => pkgName
-        case errors => throw new CompilationFailedException(codeToCompile, errors)
+    def result() = {
+      compile(sourceFile, shared = true) match {
+        case Left(_) => ()
+        case Right(errors) => throw new CompilationFailedException(codeToCompile, errors)
       }
     }
 
-    Try(result)
+    Try(result())
   }
 
   protected def compileProfileObject(profile: ExpressionProfile): Try[String] = underLock {
-    val pkgName = newProfilePackage()
+    val pkgName = ProfilePkgPrefix + profile.name
     val codeToCompile = wrapInSource(generateProfileObject(profile), pkgName)
     val sourceFile = new BatchSourceFile(pkgName, codeToCompile)
 
     def result =
-      compile(sourceFile, persistentClassLoader, usedInExpressions = true) match {
-        case Nil => pkgName
-        case errors => throw new CompilationFailedException(codeToCompile, errors)
+      compile(sourceFile, shared = true) match {
+        case Left(_) => pkgName
+        case Right(errors) => throw new CompilationFailedException(codeToCompile, errors)
       }
 
     Try(result)
   }
 
-  protected def expressionCode(exprDef: ExpressionDef, pkgName: String, noMacroProcessing: Boolean = false): (String, Int) = {
+  protected def expressionCode(exprDef: ExpressionDef, noMacroProcessing: Boolean = false): (String, String, Int) = {
     val profile = exprDef.profile
     val rootObjectClass = exprDef.rootObjectClass
 
     val fullAdapterClassNameOpt =
       if (profile.symbolValidator.referencedJavaClasses.contains(rootObjectClass)) {
-        val adapterPkg = compileFullJavaGetterAdapter(rootObjectClass).get
+        compileFullJavaGetterAdapter(rootObjectClass).get
         val adapterClassName = adapterName(rootObjectClass)
-        Some(s"$adapterPkg.$adapterClassName")
+        Some(s"$AdaptersPkg.$adapterClassName")
       } else None
 
     val profileObjectPkg = compileProfileObject(profile).get
     val (expressionCode, offset) =
       generateExpressionClass(exprDef, fullAdapterClassNameOpt, profileObjectPkg, noMacroProcessing)
+    val pkgName = ExpressionPkgPrefix + DigestUtils.md5Hex(expressionCode)
 
     wrapInSource(expressionCode, offset, pkgName)
   }
 
-  protected def compile(sourceFile: SourceFile, classLoader: ScexClassLoader, usedInExpressions: Boolean): Seq[CompileError] = {
+  protected def compile(sourceFile: SourceFile, shared: Boolean): Either[ScexClassLoader, Seq[CompileError]] = {
+    val classLoader =
+      if (shared) sharedClassLoader
+      else new ScexClassLoader(new VirtualDirectory(sourceFile.file.name, None), sharedClassLoader)
+
+    compileTo(sourceFile, classLoader.classfileDirectory) match {
+      case Nil => Left(classLoader)
+      case errors => Right(errors)
+    }
+  }
+
+  protected def compileTo(sourceFile: SourceFile, classfileDirectory: AbstractFile): Seq[CompileError] = {
     compilationCount += 1
 
-    settings.outputDirs.setSingleOutput(classLoader.classfileDirectory)
+    settings.outputDirs.setSingleOutput(classfileDirectory)
     reporter.reset()
 
     logger.debug(s"Compiling source file ${sourceFile.path}:\n${new String(sourceFile.content)}")
 
     val startTime = System.nanoTime
 
-    // Every ClassLoader not registered as parallel-capable loads its classes while being locked on itself
-    // (see sources of ClassLoader). ScexClassLoader loads classes from its virtual directory, which is not thread safe.
-    // Compiler writes classes to this virtual directory, so synchronization over classLoader is needed during compilation.
-    // So, compilation is effectively under two locks: ScexCompiler and ScexClassLoader, in that order.
-    // There should not be deadlocks, because nobody locks first over ScexClassLoader and then over ScexCompiler.
-    classLoader.synchronized {
+    // ScexClassLoader loads classes while being locked on classfileDirectory.
+    // Compiler writes classes to this directory, so synchronization over it is needed during compilation.
+    // So, compilation is effectively under two locks: ScexCompiler's internal lock and classfileDirectory, in that order.
+    // There should not be deadlocks, because nobody locks first over classfileDirectory and then over ScexCompiler.
+    classfileDirectory.synchronized {
       val global = this.global
       val run = new global.Run
       run.compileSources(List(sourceFile))
@@ -197,7 +187,7 @@ trait ScexCompiler extends PackageGenerator with LoggingUtils {
 
     val result = reporter.compileErrors()
 
-    if (compilationCount > config.resetAfterCompilationCount) {
+    if (compilationCount > settings.resetAfterCount.value) {
       reset()
     }
 
@@ -209,23 +199,21 @@ trait ScexCompiler extends PackageGenerator with LoggingUtils {
 
   protected def compileExpression(exprDef: ExpressionDef): Try[RawExpression] = underLock {
     val preprocessedExprDef = preprocess(exprDef)
-    val pkgName = newExpressionPackage()
-    val (codeToCompile, offset) = expressionCode(preprocessedExprDef, pkgName)
+    val (pkgName, codeToCompile, offset) = expressionCode(preprocessedExprDef)
     // every single expression has its own classloader and virtual directory
-    val classLoader = createDedicatedClassLoader("(scex)")
     val sourceFile = new ExpressionSourceFile(preprocessedExprDef, pkgName, codeToCompile, offset)
     val sourceInfo = new SourceInfo(pkgName, codeToCompile, offset, offset + exprDef.expression.length,
       sourceFile.offsetToLine(offset) + 1, sourceFile.offsetToLine(offset + exprDef.expression.length - 1) + 2)
     val debugInfo = new ExpressionDebugInfo(exprDef, sourceInfo)
 
     def result =
-      compile(sourceFile, classLoader, usedInExpressions = false) match {
-        case Nil =>
+      compile(sourceFile, shared = false) match {
+        case Left(classLoader) =>
           Class.forName(s"$pkgName.$ExpressionClassName", true, classLoader)
             .getConstructor(classOf[ExpressionDebugInfo]).newInstance(debugInfo)
             .asInstanceOf[RawExpression]
 
-        case errors =>
+        case Right(errors) =>
           throw new CompilationFailedException(codeToCompile, errors)
       }
 
@@ -285,29 +273,29 @@ trait ScexCompiler extends PackageGenerator with LoggingUtils {
 
 
   @throws[CompilationFailedException]
-  def compileSyntaxValidator(code: String): SyntaxValidator = underLock {
-    val pkgName = newSyntaxValidatorPackage()
+  def compileSyntaxValidator(name: String, code: String): SyntaxValidator = underLock {
+    val pkgName = SyntaxValidatorPkgPrefix + name
     val codeToCompile = wrapInSource(generateSyntaxValidator(code), pkgName)
     val sourceFile = new BatchSourceFile(pkgName, codeToCompile)
 
-    compile(sourceFile, persistentClassLoader, usedInExpressions = true) match {
-      case Nil =>
-        instantiatePersistent[SyntaxValidator](s"$pkgName.$SyntaxValidatorClassName")
-      case errors =>
+    compile(sourceFile, shared = true) match {
+      case Left(classLoader) =>
+        instantiate[SyntaxValidator](classLoader, s"$pkgName.$SyntaxValidatorClassName")
+      case Right(errors) =>
         throw new CompilationFailedException(codeToCompile, errors)
     }
   }
 
   @throws[CompilationFailedException]
-  def compileSymbolValidator(code: String): SymbolValidator = underLock {
-    val pkgName = newSymbolValidatorPackage()
+  def compileSymbolValidator(name: String, code: String): SymbolValidator = underLock {
+    val pkgName = SymbolValidatorPkgPrefix + name
     val codeToCompile = wrapInSource(generateSymbolValidator(code), pkgName)
     val sourceFile = new BatchSourceFile(pkgName, codeToCompile)
 
-    compile(sourceFile, persistentClassLoader, usedInExpressions = true) match {
-      case Nil =>
-        instantiatePersistent[SymbolValidator](s"$pkgName.$SymbolValidatorClassName")
-      case errors =>
+    compile(sourceFile, shared = true) match {
+      case Left(classLoader) =>
+        instantiate[SymbolValidator](classLoader, s"$pkgName.$SymbolValidatorClassName")
+      case Right(errors) =>
         throw new CompilationFailedException(codeToCompile, errors)
     }
   }
@@ -318,12 +306,11 @@ trait ScexCompiler extends PackageGenerator with LoggingUtils {
    */
   def compileClass(code: String, name: String): Class[_] = underLock {
     val sourceFile = new BatchSourceFile("(unknown)", code)
-    val classLoader = new ScexClassLoader(new VirtualDirectory("(unknown)", None), getClass.getClassLoader)
 
-    compile(sourceFile, classLoader, usedInExpressions = false) match {
-      case Nil =>
+    compile(sourceFile, shared = false) match {
+      case Left(classLoader) =>
         Class.forName(name, true, classLoader)
-      case errors =>
+      case Right(errors) =>
         throw new CompilationFailedException(code, errors)
     }
   }

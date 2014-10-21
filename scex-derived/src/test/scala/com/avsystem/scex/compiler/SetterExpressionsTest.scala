@@ -1,11 +1,12 @@
 package com.avsystem.scex
 package compiler
 
-import com.avsystem.scex.PredefinedAccessSpecs
-import java.{util => ju, lang => jl}
-import org.scalatest.FunSuite
-import scala.reflect.runtime.universe.TypeTag
+import java.{lang => jl, util => ju}
+
 import com.avsystem.scex.util.SimpleContext
+import org.scalatest.FunSuite
+
+import scala.reflect.runtime.universe.TypeTag
 
 class SetterTarget {
   var costam = 0
@@ -24,7 +25,7 @@ class SetterTarget {
  * Created: 28-11-2013
  * Author: ghik
  */
-class SetterExpressionsTest extends FunSuite with CompilationTest {
+class SetterExpressionsTest extends ScexFunSuite with CompilationTest {
 
   import com.avsystem.scex.validation.SymbolValidator._
 

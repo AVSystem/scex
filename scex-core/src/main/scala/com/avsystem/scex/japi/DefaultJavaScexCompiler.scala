@@ -1,7 +1,7 @@
 package com.avsystem.scex
 package japi
 
-import com.avsystem.scex.compiler.{WeakReferenceWrappingScexCompiler, LiteralsOptimizingScexCompiler, CachingScexCompiler, ScexCompilerConfig}
+import com.avsystem.scex.compiler._
 import java.{util => ju, lang => jl}
 import com.avsystem.scex.compiler.presentation.{CachingScexPresentationCompiler, ScexPresentationCompiler}
 
@@ -9,8 +9,7 @@ import com.avsystem.scex.compiler.presentation.{CachingScexPresentationCompiler,
  * Created: 17-09-2013
  * Author: ghik
  */
-class DefaultJavaScexCompiler(val config: ScexCompilerConfig)
-  extends ScexCompilerConfig
+class DefaultJavaScexCompiler extends ScexCompiler
   with ScexPresentationCompiler
   with CachingScexCompiler
   with CachingScexPresentationCompiler

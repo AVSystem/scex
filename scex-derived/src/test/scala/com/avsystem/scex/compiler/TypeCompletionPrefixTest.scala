@@ -4,9 +4,7 @@ package compiler
 import java.{lang => jl, util => ju}
 
 import com.avsystem.scex.util.SimpleContext
-import org.junit.runner.RunWith
 import org.scalatest.FunSuite
-import org.scalatest.junit.JUnitRunner
 
 import scala.reflect.runtime.{universe => ru}
 
@@ -14,8 +12,7 @@ import scala.reflect.runtime.{universe => ru}
  * Created: 07-10-2014
  * Author: ghik
  */
-@RunWith(classOf[JUnitRunner])
-class TypeCompletionPrefixTest extends FunSuite with CompilationTest {
+class TypeCompletionPrefixTest extends ScexFunSuite with CompilationTest {
 
   import com.avsystem.scex.compiler.TypeCompletionPrefixTest._
   import com.avsystem.scex.compiler.presentation.ScexPresentationCompiler._

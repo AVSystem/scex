@@ -39,9 +39,6 @@ trait ScexPresentationCompiler extends ScexCompiler {
     initialized = true
   }
 
-  private def newInteractiveExpressionPackage() =
-    newPackageName("_scex_interactive_expr")
-
   def getOrThrow[T](resp: IGlobal#Response[T]) = resp.get match {
     case Left(res) => res
     case Right(t) => throw t
@@ -151,8 +148,7 @@ trait ScexPresentationCompiler extends ScexCompiler {
   }
 
   protected def getErrors(exprDef: ExpressionDef) = {
-    val pkgName = newInteractiveExpressionPackage()
-    val (code, offset) = expressionCode(exprDef, pkgName)
+    val (pkgName, code, offset) = expressionCode(exprDef)
     val sourceFile = new ExpressionSourceFile(exprDef, pkgName, code, offset)
     withGlobal { global =>
       val response = new global.Response[global.Tree]
@@ -167,11 +163,9 @@ trait ScexPresentationCompiler extends ScexCompiler {
   }
 
   protected def getScopeCompletion(exprDef: ExpressionDef): Completion = {
-    val pkgName = newInteractiveExpressionPackage()
-
     val symbolValidator = exprDef.profile.symbolValidator
 
-    val (code, offset) = expressionCode(exprDef, pkgName, noMacroProcessing = true)
+    val (pkgName, code, offset) = expressionCode(exprDef, noMacroProcessing = true)
     val sourceFile = new ExpressionSourceFile(exprDef, pkgName, code, offset)
 
     withGlobal { global =>
@@ -219,9 +213,7 @@ trait ScexPresentationCompiler extends ScexCompiler {
   protected def getTypeCompletion(exprDef: ExpressionDef, position: Int) = {
     val symbolValidator = exprDef.profile.symbolValidator
 
-    val pkgName = newInteractiveExpressionPackage()
-
-    val (code, offset) = expressionCode(exprDef, pkgName, noMacroProcessing = true)
+    val (pkgName, code, offset) = expressionCode(exprDef, noMacroProcessing = true)
     val sourceFile = new ExpressionSourceFile(exprDef, pkgName, code, offset)
 
     withGlobal { global =>
@@ -325,21 +317,22 @@ trait ScexPresentationCompiler extends ScexCompiler {
     }
   }
 
-  override protected def compile(sourceFile: SourceFile, classLoader: ScexClassLoader, usedInExpressions: Boolean) = {
-    val result = super.compile(sourceFile, classLoader, usedInExpressions)
+  override protected def compile(sourceFile: SourceFile, shared: Boolean) = {
+    val result = super.compile(sourceFile, shared)
 
-    if (result.isEmpty && usedInExpressions) {
-      underPresentationLock {
+    result match {
+      case Left(_) if shared => underPresentationLock {
         val global = this.global
         val response = new global.Response[global.Tree]
         global.askLoadedTyped(sourceFile, response)
         getOrThrow(response)
       }
+      case _ =>
     }
 
     result
   }
-
+  
   override def reset() {
     underPresentationLock {
       underLock {

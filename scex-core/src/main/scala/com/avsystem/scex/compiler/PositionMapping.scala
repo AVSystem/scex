@@ -1,7 +1,8 @@
 package com.avsystem.scex
 package compiler
 
-import java.{util => ju, lang => jl}
+import java.{lang => jl, util => ju}
+
 import scala.collection.immutable.SortedMap
 
 /**
@@ -33,6 +34,9 @@ class PositionMapping(
 
   override lazy val hashCode =
     shiftMapping.hashCode()
+
+  override def toString =
+    s"PositionMapping($shiftMapping)"
 }
 
 object PositionMapping {

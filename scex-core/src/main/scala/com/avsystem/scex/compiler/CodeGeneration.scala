@@ -1,11 +1,13 @@
 package com.avsystem.scex
 package compiler
 
+import java.io.{ByteArrayOutputStream, DataOutputStream}
 import java.lang.reflect.{Method, Modifier}
 import java.{lang => jl, util => ju}
 
 import com.avsystem.scex.compiler.JavaTypeParsing._
 import com.avsystem.scex.util.CommonUtils._
+import org.apache.commons.codec.digest.DigestUtils
 
 import scala.language.existentials
 
@@ -32,6 +34,13 @@ object CodeGeneration {
       } else None
 
   }
+
+  val AdaptersPkg = "_scex_adapter"
+  val ProfilePkgPrefix = "_scex_profile_"
+  val ExpressionPkgPrefix = "_scex_expr_"
+  val SyntaxValidatorPkgPrefix = "_syntax_validator_"
+  val SymbolValidatorPkgPrefix = "_symbol_validator_"
+  val ConversionSupplierPkgPrefix = "_conversion_supplier_"
 
   val ExpressionClassName = "Expression"
   val ProfileObjectName = "Profile"
@@ -70,7 +79,7 @@ object CodeGeneration {
 
     if (full || scalaGetters.nonEmpty) {
 
-      val classBody = scalaGetters.mkString
+      val classBody = scalaGetters.sorted.mkString
 
       val ExistentialType(polyTpe, typeVariables) = classToExistential(clazz)
       val generics = if (typeVariables.nonEmpty) typeVariableDeclarations(typeVariables).mkString("[", ", ", "]") else ""
@@ -90,6 +99,20 @@ object CodeGeneration {
       Some(result)
 
     } else None
+  }
+
+  def expressionPackage(exprDef: ExpressionDef) = {
+    val baos = new ByteArrayOutputStream
+    val dos = new DataOutputStream(baos)
+    dos.writeUTF(exprDef.profile.name)
+    dos.writeUTF(exprDef.contextType)
+    dos.writeUTF(exprDef.resultType)
+    dos.writeUTF(exprDef.expression)
+    dos.writeBoolean(exprDef.template)
+    dos.writeBoolean(exprDef.setter)
+    dos.writeUTF(exprDef.header)
+    dos.close()
+    "_scex_expr_" + DigestUtils.md5Hex(baos.toByteArray)
   }
 
   def generateExpressionClass(
@@ -169,7 +192,8 @@ object CodeGeneration {
   }
 
   def generateProfileObject(profile: ExpressionProfile) = {
-    val adapters = profile.symbolValidator.referencedJavaClasses.flatMap { clazz =>
+    val classes = profile.symbolValidator.referencedJavaClasses.toVector.sortBy(_.getName)
+    val adapters = classes.flatMap { clazz =>
       generateJavaGetterAdapter(clazz, full = false).toList.map { adapterCode =>
         val ExistentialType(polyTpe, typeVariables) = classToExistential(clazz)
         val wrappedTpe = javaTypeAsScalaType(polyTpe)
@@ -225,14 +249,14 @@ object CodeGeneration {
     """.stripMargin
   }
 
-  def wrapInSource(code: String, offset: Int, pkgName: String): (String, Int) = {
+  def wrapInSource(code: String, offset: Int, pkgName: String): (String, String, Int) = {
     val prefix =
       s"""
       |package $pkgName
       |
       |""".stripMargin
 
-    (prefix + code, prefix.length + offset)
+    (pkgName, prefix + code, prefix.length + offset)
   }
 
   def implicitLiteralViewHeader(header: String) =

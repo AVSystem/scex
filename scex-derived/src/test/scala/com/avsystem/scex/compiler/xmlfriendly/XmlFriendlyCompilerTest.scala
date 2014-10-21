@@ -1,28 +1,24 @@
 package com.avsystem.scex
 package compiler.xmlfriendly
 
-import com.avsystem.scex.compiler.{ScexCompilerConfig}
+import java.{lang => jl, util => ju}
+
+import com.avsystem.scex.compiler.ScexFunSuite
 import com.avsystem.scex.japi.XmlFriendlyJavaScexCompiler
+import com.avsystem.scex.util.SimpleContext
 import com.avsystem.scex.validation.SymbolValidator._
 import com.avsystem.scex.validation.{SymbolValidator, SyntaxValidator}
-import com.avsystem.scex.{ExpressionProfile, PredefinedAccessSpecs}
-import java.{util => ju, lang => jl}
-import org.junit.runner.RunWith
-import org.scalatest.FunSuite
-import org.scalatest.junit.JUnitRunner
-import com.avsystem.scex.util.SimpleContext
 
 /**
  * Created: 17-09-2013
  * Author: ghik
  */
-@RunWith(classOf[JUnitRunner])
-class XmlFriendlyCompilerTest extends FunSuite {
+class XmlFriendlyCompilerTest extends ScexFunSuite {
 
-  val compiler = new XmlFriendlyJavaScexCompiler(new ScexCompilerConfig)
+  val compiler = new XmlFriendlyJavaScexCompiler
 
   def createProfile(acl: List[MemberAccessSpec], header: String = "import com.avsystem.scex.compiler._", utils: String = "") =
-    new ExpressionProfile(SyntaxValidator.SimpleExpressions, SymbolValidator(acl), header, utils)
+    new ExpressionProfile("test", SyntaxValidator.SimpleExpressions, SymbolValidator(acl), header, utils)
 
   test("single quotes test") {
     val profile = createProfile(Nil)

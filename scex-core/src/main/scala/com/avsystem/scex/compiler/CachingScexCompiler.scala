@@ -13,7 +13,7 @@ trait CachingScexCompiler extends ScexCompiler {
   import CommonUtils._
 
   private val expressionCache = CacheBuilder.newBuilder
-    .expireAfterAccess(config.expressionExpirationTime, TimeUnit.MILLISECONDS)
+    .expireAfterAccess(settings.expressionExpirationTime.value, TimeUnit.SECONDS)
     .build[ExpressionDef, Try[RawExpression]]
 
   // holds names of packages to which profiles are compiled
@@ -22,7 +22,7 @@ trait CachingScexCompiler extends ScexCompiler {
 
   // holds code of implicit adapters over Java classes that add Scala-style getters to Java bean getters
   private val fullJavaGetterAdaptersCache =
-    CacheBuilder.newBuilder.build[Class[_], Try[String]]
+    CacheBuilder.newBuilder.build[Class[_], Try[Unit]]
 
   override protected def compileExpression(exprDef: ExpressionDef) =
     expressionCache.get(exprDef, callable(super.compileExpression(exprDef)))

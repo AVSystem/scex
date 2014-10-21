@@ -1,22 +1,22 @@
 package com.avsystem.scex
 package japi
 
+import java.lang.reflect.Type
+import java.{lang => jl, util => ju}
+
 import com.avsystem.scex.compiler.JavaTypeParsing._
 import com.avsystem.scex.compiler.presentation.ScexPresentationCompiler
-import com.avsystem.scex.compiler.presentation.ScexPresentationCompiler.{Type => SType, Param}
-import com.avsystem.scex.compiler.{PositionMapping, ExpressionDef, ScexCompiler, ScexCompilerConfig}
-import com.avsystem.scex.util.{Fluent, CacheImplicits}
-import com.avsystem.scex.{ExpressionProfile, ExpressionContext}
+import com.avsystem.scex.compiler.presentation.ScexPresentationCompiler.{Param, Type => SType}
+import com.avsystem.scex.compiler.presentation.ast.Tree
+import com.avsystem.scex.compiler.{ExpressionDef, PositionMapping, ScexCompiler}
+import com.avsystem.scex.util.Fluent
 import com.google.common.cache.CacheBuilder
 import com.google.common.reflect.TypeToken
-import java.lang.reflect.Type
-import java.{util => ju, lang => jl}
-import com.avsystem.scex.compiler.presentation.ast.Tree
 
 trait JavaScexCompiler extends ScexCompiler {
   this: ScexPresentationCompiler =>
 
-  import CacheImplicits._
+  import com.avsystem.scex.util.CacheImplicits._
 
   private val typesCache = CacheBuilder.newBuilder.weakKeys
     .build[Type, String](javaTypeAsScalaType _)
@@ -201,8 +201,6 @@ trait JavaScexCompiler extends ScexCompiler {
 }
 
 object JavaScexCompiler {
-  def apply(compilerConfig: ScexCompilerConfig) =
-    new DefaultJavaScexCompiler(compilerConfig)
 
   case class Member(getName: String, getParams: ju.Collection[ju.Collection[Param]],
     getType: SType, isImplicit: Boolean)

@@ -2,18 +2,14 @@ package com.avsystem.scex
 package compiler
 
 import java.util.concurrent.Callable
-import java.{util => ju, lang => jl}
-import org.junit.runner.RunWith
-import org.scalatest.FunSuite
-import org.scalatest.junit.JUnitRunner
+import java.{lang => jl, util => ju}
 
 /**
  * Created: 17-10-2013
  * Author: ghik
  */
-@RunWith(classOf[JUnitRunner])
-class ArbitraryCompilationTest extends FunSuite {
-  val compiler = new DefaultScexCompiler(new ScexCompilerConfig)
+class ArbitraryCompilationTest extends ScexFunSuite {
+  val compiler = new DefaultScexCompiler
 
   test("arbitrary source code compilation test") {
     val code =

@@ -1,27 +1,25 @@
 package com.avsystem.scex
 package compiler
 
+import java.{lang => jl, util => ju}
+
 import com.avsystem.scex.compiler.ScexCompiler.CompilationFailedException
-import com.avsystem.scex.validation.{SymbolValidator, SyntaxValidator}
-import com.avsystem.scex.{ExpressionProfile, PredefinedAccessSpecs}
-import java.{util => ju, lang => jl}
-import org.junit.runner.RunWith
-import org.scalatest.FunSuite
-import org.scalatest.junit.JUnitRunner
-import scala.reflect.runtime.universe.TypeTag
 import com.avsystem.scex.util.SimpleContext
+import com.avsystem.scex.validation.{SymbolValidator, SyntaxValidator}
+import org.scalatest.FunSuite
+
+import scala.reflect.runtime.universe.TypeTag
 
 /**
  * Created: 20-11-2013
  * Author: ghik
  */
-@RunWith(classOf[JUnitRunner])
-class TypesafeEqualsTest extends FunSuite with CompilationTest {
+class TypesafeEqualsTest extends ScexFunSuite with CompilationTest {
 
   import com.avsystem.scex.validation.SymbolValidator._
 
   override def evaluate[T: TypeTag](expr: String, acl: List[MemberAccessSpec] = PredefinedAccessSpecs.basicOperations) = {
-    val profile = new ExpressionProfile(SyntaxValidator.SimpleExpressions, SymbolValidator(acl),
+    val profile = new ExpressionProfile(newProfileName(), SyntaxValidator.SimpleExpressions, SymbolValidator(acl),
       "import com.avsystem.scex.util.TypesafeEquals._", "")
 
     compiler.getCompiledExpression[SimpleContext[Unit], T](profile, expr, template = false).apply(SimpleContext(()))

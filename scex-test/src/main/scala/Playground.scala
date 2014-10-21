@@ -1,32 +1,29 @@
 
-import com.avsystem.scex.compiler.ScexCompilerConfig
+import java.{lang => jl, util => ju}
+
 import com.avsystem.scex.japi.XmlFriendlyJavaScexCompiler
-import com.avsystem.scex.{PredefinedAccessSpecs, ExpressionProfile}
 import com.avsystem.scex.validation.{SymbolValidator, SyntaxValidator}
-import java.{util => ju, lang => jl}
+import com.avsystem.scex.{ExpressionProfile, PredefinedAccessSpecs}
+
 import scala.language.experimental.macros
 
 object Playground {
 
   def main(args: Array[String]) {
-    val compiler = new XmlFriendlyJavaScexCompiler(new ScexCompilerConfig)
+    val compiler = new XmlFriendlyJavaScexCompiler
+    compiler.settings.usejavacp.value = false
+    compiler.settings.classpath.value = System.getProperty("java.class.path")
+    compiler.settings.classpath.append("/home/ghik/testcp")
 
-    val symbolValidator = SymbolValidator(PredefinedAccessSpecs.basicOperations)
-    val syntaxValidator = SyntaxValidator.SimpleExpressions
-
-    val profile = new ExpressionProfile(syntaxValidator, symbolValidator, "", "")
-
-    val expr = compiler.getCompiledExpression[SimpleContext[Unit], String](profile,
-      """          asdfasd
-        |jkfalsdjkl
+    compiler.compileClass(
+      """
+        |import com.avsystem.lol.Wutf
         |
+        |class Klass {
+        |  println(Wutf.srsly)
+        |}
         |
-        |${(null: String).toString}
-        |
-        |asdfasd
-      """.stripMargin)
-
-    println(expr(SimpleContext(null)))
+      """.stripMargin, "Klass")
   }
 
 }

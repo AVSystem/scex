@@ -1,23 +1,20 @@
 package com.avsystem.scex
 package compiler
 
-import com.avsystem.scex.compiler.ScexCompiler.CompilationFailedException
-import com.avsystem.scex.validation.SymbolValidator
 import java.lang.annotation.RetentionPolicy
-import java.{util => ju, lang => jl}
-import org.junit.runner.RunWith
-import org.scalatest.FunSuite
-import org.scalatest.junit.JUnitRunner
+import java.{lang => jl, util => ju}
+
+import com.avsystem.scex.compiler.ScexCompiler.CompilationFailedException
 import com.avsystem.scex.util.SimpleContext
+import org.scalatest.FunSuite
 
 /**
  * Created: 18-11-2013
  * Author: ghik
  */
-@RunWith(classOf[JUnitRunner])
-class TemplateExpressionsTest extends FunSuite with CompilationTest {
+class TemplateExpressionsTest extends ScexFunSuite with CompilationTest {
 
-  import SymbolValidator._
+  import com.avsystem.scex.validation.SymbolValidator._
 
   test("literal string test") {
     assert("stuff" === evaluateTemplate[String]("stuff"))

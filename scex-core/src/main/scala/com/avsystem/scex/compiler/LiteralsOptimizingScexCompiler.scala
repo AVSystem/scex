@@ -9,6 +9,7 @@ import com.avsystem.scex.compiler.ScexCompiler.{CompilationFailedException, Comp
 import com.avsystem.scex.compiler.presentation.ScexPresentationCompiler
 import com.avsystem.scex.util.Literal
 import com.google.common.cache.CacheBuilder
+import org.apache.commons.codec.digest.DigestUtils
 
 import scala.reflect.internal.util.BatchSourceFile
 import scala.util.{Success, Try}
@@ -26,7 +27,7 @@ trait LiteralsOptimizingScexCompiler extends ScexPresentationCompiler {
   import com.avsystem.scex.util.CacheImplicits._
 
   private val literalConversionsCache = CacheBuilder.newBuilder
-    .expireAfterAccess(config.expressionExpirationTime, TimeUnit.MILLISECONDS)
+    .expireAfterAccess(settings.expressionExpirationTime.value, TimeUnit.SECONDS)
     .build[(ExpressionProfile, String, String), Try[Literal => Any]]((compileLiteralConversion _).tupled)
 
   private def getLiteralConversion(exprDef: ExpressionDef) =
@@ -56,19 +57,18 @@ trait LiteralsOptimizingScexCompiler extends ScexPresentationCompiler {
   private def compileLiteralConversion(profile: ExpressionProfile, resultType: String, header: String) = underLock {
     import com.avsystem.scex.compiler.CodeGeneration._
 
-    val pkgName = newPackageName("_scex_conversion_supplier")
     val profileObjectPkg = compileProfileObject(profile).get
-    val conversionSupplierClass = wrapInSource(implicitLiteralConversionClass(profileObjectPkg,
-      profile.expressionHeader, header, resultType), pkgName)
-    val classLoader = createDedicatedClassLoader("(scex_conversion_supplier)")
+    val conversionClassCode = implicitLiteralConversionClass(profileObjectPkg, profile.expressionHeader, header, resultType)
+    val pkgName = ConversionSupplierPkgPrefix + DigestUtils.md5Hex(conversionClassCode)
+    val fullCode = wrapInSource(conversionClassCode, pkgName)
 
     def result =
-      compile(new BatchSourceFile(pkgName, conversionSupplierClass), classLoader, usedInExpressions = false) match {
-        case Nil =>
+      compile(new BatchSourceFile(pkgName, fullCode), shared = false) match {
+        case Left(classLoader) =>
           Class.forName(s"$pkgName.$ConversionSupplierClassName", true, classLoader)
             .newInstance.asInstanceOf[ConversionSupplier[Any]].get
-        case errors =>
-          throw new CompilationFailedException(conversionSupplierClass, errors)
+        case Right(errors) =>
+          throw new CompilationFailedException(fullCode, errors)
       }
 
     Try(result)

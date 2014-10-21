@@ -1,8 +1,7 @@
 package com.avsystem.scex
 package compiler
 
-import com.avsystem.scex.ExpressionProfile
-import java.{util => ju, lang => jl}
+import java.{lang => jl, util => ju}
 
 /**
  * Created: 14-11-2013

@@ -11,8 +11,7 @@ import scala.collection.immutable.SortedMap
  * Created: 24-10-2013
  * Author: ghik
  */
-@RunWith(classOf[JUnitRunner])
-class PositionMappingTest extends FunSuite {
+class PositionMappingTest extends ScexFunSuite {
   test("empty mapping test") {
     val mapping = new PositionMapping(SortedMap.empty, SortedMap.empty)
     val reverse = mapping.reverse

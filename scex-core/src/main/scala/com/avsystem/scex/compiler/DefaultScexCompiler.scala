@@ -8,8 +8,7 @@ import com.avsystem.scex.compiler.presentation.{CachingScexPresentationCompiler,
  * Created: 17-10-2013
  * Author: ghik
  */
-class DefaultScexCompiler(val config: ScexCompilerConfig)
-  extends ScexCompiler
+class DefaultScexCompiler extends ScexCompiler
   with ScexPresentationCompiler
   with CachingScexCompiler
   with CachingScexPresentationCompiler

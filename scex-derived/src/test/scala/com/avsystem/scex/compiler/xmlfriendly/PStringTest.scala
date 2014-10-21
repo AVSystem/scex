@@ -6,14 +6,13 @@ import org.junit.runner.RunWith
 import org.scalatest.FunSuite
 import org.scalatest.junit.JUnitRunner
 import scala.collection.immutable.SortedMap
-import com.avsystem.scex.compiler.ShiftInfo
+import com.avsystem.scex.compiler.{ScexFunSuite, ShiftInfo}
 
 /**
  * Created: 25-10-2013
  * Author: ghik
  */
-@RunWith(classOf[JUnitRunner])
-class PStringTest extends FunSuite {
+class PStringTest extends ScexFunSuite {
   def test(name: String)(modifications: Modification*)
     (shiftMapping: (Int, ShiftInfo)*)(reverseShiftMapping: (Int, ShiftInfo)*): Unit = super.test(name) {
     val (actualShiftMapping, actualReverseShiftMapping) =
