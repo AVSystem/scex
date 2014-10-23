@@ -83,17 +83,18 @@ trait LiteralsOptimizingScexCompiler extends ScexPresentationCompiler {
       (isStringSupertype(exprDef.resultType) || validateLiteralConversion(exprDef).isSuccess)
 
   private def toLiteral(exprDef: ExpressionDef) =
-    Literal(preprocess(exprDef).expression.replaceAllLiterally("$$", "$"))
+    Literal(exprDef.expression.replaceAllLiterally("$$", "$"))
 
   private def isStringSupertype(tpe: String) =
     JavaTypeParsing.StringSupertypes.contains(tpe)
 
   override protected def compileExpression(exprDef: ExpressionDef) = {
-    val sourceInfo = new SourceInfo(null, exprDef.expression, 0, exprDef.expression.length, 1, exprDef.expression.count(_ == '\n') + 2)
-    val debugInfo = new ExpressionDebugInfo(exprDef, sourceInfo)
+    lazy val sourceInfo = new SourceInfo(null, exprDef.expression, 0, exprDef.expression.length, 1, exprDef.expression.count(_ == '\n') + 2)
+    lazy val debugInfo = new ExpressionDebugInfo(exprDef, sourceInfo)
+    val preprocessedExprDef = preprocess(exprDef)
 
-    if (isEligible(exprDef)) {
-      val literal = toLiteral(exprDef)
+    if (isEligible(preprocessedExprDef)) {
+      val literal = toLiteral(preprocessedExprDef)
       if (isStringSupertype(exprDef.resultType))
         Success(LiteralExpression(literal.literalString)(debugInfo))
       else getLiteralConversion(exprDef).map { conversion =>
