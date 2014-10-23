@@ -11,6 +11,7 @@ import com.avsystem.scex.validation.{SymbolValidator, SyntaxValidator}
 import org.apache.commons.codec.digest.DigestUtils
 
 import scala.collection.mutable.ListBuffer
+import scala.reflect.NameTransformer
 import scala.reflect.internal.util._
 import scala.reflect.io.{AbstractFile, VirtualDirectory}
 import scala.reflect.runtime.universe.TypeTag
@@ -117,7 +118,7 @@ trait ScexCompiler extends LoggingUtils {
   }
 
   protected def compileProfileObject(profile: ExpressionProfile): Try[String] = underLock {
-    val pkgName = ProfilePkgPrefix + profile.name
+    val pkgName = ProfilePkgPrefix + NameTransformer.encode(profile.name)
     val codeToCompile = wrapInSource(generateProfileObject(profile), pkgName)
     val sourceFile = new BatchSourceFile(pkgName, codeToCompile)
 
@@ -272,9 +273,7 @@ trait ScexCompiler extends LoggingUtils {
 
   @throws[CompilationFailedException]
   def compileSyntaxValidator(name: String, code: String): SyntaxValidator = underLock {
-    require(name.isAlphaNumeric, s"Name must contain only alphanumeric characters, got $name")
-
-    val pkgName = SyntaxValidatorPkgPrefix + name
+    val pkgName = SyntaxValidatorPkgPrefix + NameTransformer.encode(name)
     val codeToCompile = wrapInSource(generateSyntaxValidator(code), pkgName)
     val sourceFile = new BatchSourceFile(pkgName, codeToCompile)
 
@@ -288,9 +287,7 @@ trait ScexCompiler extends LoggingUtils {
 
   @throws[CompilationFailedException]
   def compileSymbolValidator(name: String, code: String): SymbolValidator = underLock {
-    require(name.isAlphaNumeric, s"Name must contain only alphanumeric characters, got $name")
-
-    val pkgName = SymbolValidatorPkgPrefix + name
+    val pkgName = SymbolValidatorPkgPrefix + NameTransformer.encode(name)
     val codeToCompile = wrapInSource(generateSymbolValidator(code), pkgName)
     val sourceFile = new BatchSourceFile(pkgName, codeToCompile)
 
