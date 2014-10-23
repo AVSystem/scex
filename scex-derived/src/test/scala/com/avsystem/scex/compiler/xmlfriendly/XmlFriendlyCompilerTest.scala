@@ -3,7 +3,7 @@ package compiler.xmlfriendly
 
 import java.{lang => jl, util => ju}
 
-import com.avsystem.scex.compiler.ScexFunSuite
+import com.avsystem.scex.compiler.{ScexSettings, ScexFunSuite}
 import com.avsystem.scex.japi.XmlFriendlyJavaScexCompiler
 import com.avsystem.scex.util.SimpleContext
 import com.avsystem.scex.validation.SymbolValidator._
@@ -15,7 +15,7 @@ import com.avsystem.scex.validation.{SymbolValidator, SyntaxValidator}
  */
 class XmlFriendlyCompilerTest extends ScexFunSuite {
 
-  val compiler = new XmlFriendlyJavaScexCompiler
+  val compiler = new XmlFriendlyJavaScexCompiler(new ScexSettings)
 
   def createProfile(acl: List[MemberAccessSpec], header: String = "import com.avsystem.scex.compiler._", utils: String = "") =
     new ExpressionProfile("test", SyntaxValidator.SimpleExpressions, SymbolValidator(acl), header, utils)

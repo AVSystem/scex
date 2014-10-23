@@ -1,5 +1,6 @@
 import java.{lang => jl, util => ju}
 
+import com.avsystem.scex.compiler.ScexSettings
 import com.avsystem.scex.japi.XmlFriendlyJavaScexCompiler
 import com.avsystem.scex.validation.{SymbolValidator, SyntaxValidator}
 import com.avsystem.scex.{ExpressionProfile, PredefinedAccessSpecs}
@@ -10,7 +11,7 @@ import com.avsystem.scex.{ExpressionProfile, PredefinedAccessSpecs}
  */
 object ExistentialCase {
   def main(args: Array[String]) {
-    val compiler = new XmlFriendlyJavaScexCompiler
+    val compiler = new XmlFriendlyJavaScexCompiler(new ScexSettings)
 
     val symbolValidator = SymbolValidator(PredefinedAccessSpecs.basicOperations)
     val syntaxValidator = SyntaxValidator.SimpleExpressions

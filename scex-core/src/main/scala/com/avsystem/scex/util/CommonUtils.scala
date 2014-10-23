@@ -45,6 +45,8 @@ object CommonUtils {
       else {
         str + " " * (str.length - w)
       }
+
+    def isAlphaNumeric = str.forall(_.isLetterOrDigit)
   }
 
   def benchmark(expr: => Any): Double = {

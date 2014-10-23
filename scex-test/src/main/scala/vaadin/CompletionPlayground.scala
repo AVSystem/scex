@@ -3,6 +3,7 @@ package vaadin
 import java.{lang => jl, util => ju}
 import javax.servlet.http.HttpServletRequest
 
+import com.avsystem.scex.compiler.ScexSettings
 import com.avsystem.scex.compiler.presentation.ScexPresentationCompiler.Member
 import com.avsystem.scex.japi.XmlFriendlyJavaScexCompiler
 import com.avsystem.scex.util.SimpleContext
@@ -17,11 +18,10 @@ import org.eclipse.jetty.servlet.{ServletContextHandler, ServletHolder}
 
 object CompletionPlayground {
 
-  lazy val compiler = {
-    val result = new XmlFriendlyJavaScexCompiler
-    result.settings.classfileDirectory.value = "classfileCache"
-    result
-  }
+  val settings = new ScexSettings
+  settings.classfileDirectory.value = "classfileCache"
+
+  lazy val compiler = new XmlFriendlyJavaScexCompiler(settings)
 
   class SampleServlet extends AbstractApplicationServlet {
     def getNewApplication(request: HttpServletRequest) = new SampleApplication

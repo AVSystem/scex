@@ -77,12 +77,10 @@ trait ScexCompiler extends LoggingUtils {
     code
   }
 
-  val settings = new ScexSettings
+  val settings: ScexSettings
+  private lazy val reporter = new Reporter(settings)
 
   private var initialized = false
-
-  private val reporter = new Reporter(settings)
-
   private var global: ScexGlobal = _
 
   /**
@@ -274,6 +272,8 @@ trait ScexCompiler extends LoggingUtils {
 
   @throws[CompilationFailedException]
   def compileSyntaxValidator(name: String, code: String): SyntaxValidator = underLock {
+    require(name.isAlphaNumeric, s"Name must contain only alphanumeric characters, got $name")
+
     val pkgName = SyntaxValidatorPkgPrefix + name
     val codeToCompile = wrapInSource(generateSyntaxValidator(code), pkgName)
     val sourceFile = new BatchSourceFile(pkgName, codeToCompile)
@@ -288,6 +288,8 @@ trait ScexCompiler extends LoggingUtils {
 
   @throws[CompilationFailedException]
   def compileSymbolValidator(name: String, code: String): SymbolValidator = underLock {
+    require(name.isAlphaNumeric, s"Name must contain only alphanumeric characters, got $name")
+
     val pkgName = SymbolValidatorPkgPrefix + name
     val codeToCompile = wrapInSource(generateSymbolValidator(code), pkgName)
     val sourceFile = new BatchSourceFile(pkgName, codeToCompile)
@@ -305,7 +307,8 @@ trait ScexCompiler extends LoggingUtils {
    * from that class loader.
    */
   def compileClass(code: String, name: String): Class[_] = underLock {
-    val sourceFile = new BatchSourceFile("(unknown)", code)
+    val sourceName = ArbitraryClassSourceNamePrefix + DigestUtils.md5Hex(code)
+    val sourceFile = new BatchSourceFile(sourceName, code)
 
     compile(sourceFile, shared = false) match {
       case Left(classLoader) =>
@@ -315,6 +318,10 @@ trait ScexCompiler extends LoggingUtils {
     }
   }
 
+  /**
+   * Resets internal compiler state by creating completely new instance of Scala compiler and invalidating all
+   * internal caches.
+   */
   def reset(): Unit = underLock {
     init()
   }

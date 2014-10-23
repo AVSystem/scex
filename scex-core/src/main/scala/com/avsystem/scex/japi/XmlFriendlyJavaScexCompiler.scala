@@ -10,10 +10,10 @@ import com.avsystem.scex.compiler.presentation.{CachingScexPresentationCompiler,
  * Created: 17-09-2013
  * Author: ghik
  */
-class XmlFriendlyJavaScexCompiler
+class XmlFriendlyJavaScexCompiler(val settings: ScexSettings)
   extends ScexCompiler
-  with ScexPresentationCompiler
   with ClassfilePersistingScexCompiler
+  with ScexPresentationCompiler
   with XmlFriendlyScexCompiler
   with CachingScexCompiler
   with CachingScexPresentationCompiler

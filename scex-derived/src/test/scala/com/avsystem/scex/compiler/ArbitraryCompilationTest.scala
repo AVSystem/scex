@@ -9,7 +9,7 @@ import java.{lang => jl, util => ju}
  * Author: ghik
  */
 class ArbitraryCompilationTest extends ScexFunSuite {
-  val compiler = new DefaultScexCompiler
+  val compiler = new DefaultScexCompiler(new ScexSettings)
 
   test("arbitrary source code compilation test") {
     val code =

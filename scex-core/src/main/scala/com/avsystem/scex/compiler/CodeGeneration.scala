@@ -41,6 +41,7 @@ object CodeGeneration {
   val SyntaxValidatorPkgPrefix = "_syntax_validator_"
   val SymbolValidatorPkgPrefix = "_symbol_validator_"
   val ConversionSupplierPkgPrefix = "_conversion_supplier_"
+  val ArbitraryClassSourceNamePrefix = "_scex_class_"
 
   val ExpressionClassName = "Expression"
   val ProfileObjectName = "Profile"

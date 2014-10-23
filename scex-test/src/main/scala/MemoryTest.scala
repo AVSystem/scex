@@ -1,5 +1,6 @@
 import java.{lang => jl, util => ju}
 
+import com.avsystem.scex.compiler.ScexSettings
 import com.avsystem.scex.japi.DefaultJavaScexCompiler
 import com.avsystem.scex.validation.{SymbolValidator, SyntaxValidator}
 import com.avsystem.scex.{ExpressionContext, ExpressionProfile, PredefinedAccessSpecs}
@@ -10,7 +11,7 @@ object MemoryTest {
   case class Dummy(costam: Int)
 
   def main(args: Array[String]) {
-    val compiler = new DefaultJavaScexCompiler
+    val compiler = new DefaultJavaScexCompiler(new ScexSettings)
     compiler.settings.expressionExpirationTime.value = 500
     compiler.settings.resetAfterCount.value = 10
 
