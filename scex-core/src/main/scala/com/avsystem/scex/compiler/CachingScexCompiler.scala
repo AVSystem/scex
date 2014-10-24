@@ -1,16 +1,17 @@
 package com.avsystem.scex
 package compiler
 
-import com.avsystem.scex.util.CommonUtils
+import java.util.concurrent.{ExecutionException, TimeUnit}
+import java.{lang => jl, util => ju}
+
+import com.avsystem.scex.validation.{SymbolValidator, SyntaxValidator}
 import com.google.common.cache.CacheBuilder
-import java.util.concurrent.TimeUnit
-import java.{util => ju, lang => jl}
+
 import scala.util.Try
-import com.avsystem.scex.ExpressionProfile
 
 trait CachingScexCompiler extends ScexCompiler {
 
-  import CommonUtils._
+  import com.avsystem.scex.util.CommonUtils._
 
   private val expressionCache = CacheBuilder.newBuilder
     .expireAfterAccess(settings.expressionExpirationTime.value, TimeUnit.SECONDS)
@@ -24,6 +25,12 @@ trait CachingScexCompiler extends ScexCompiler {
   private val fullJavaGetterAdaptersCache =
     CacheBuilder.newBuilder.build[Class[_], Try[Unit]]
 
+  private val syntaxValidatorsCache =
+    CacheBuilder.newBuilder.build[(String, String), SyntaxValidator]
+
+  private val symbolValidatorsCache =
+    CacheBuilder.newBuilder.build[(String, String), SymbolValidator]
+
   override protected def compileExpression(exprDef: ExpressionDef) =
     expressionCache.get(exprDef, callable(super.compileExpression(exprDef)))
 
@@ -33,10 +40,23 @@ trait CachingScexCompiler extends ScexCompiler {
   override protected def compileFullJavaGetterAdapter(clazz: Class[_]) =
     fullJavaGetterAdaptersCache.get(clazz, callable(super.compileFullJavaGetterAdapter(clazz)))
 
+  override def compileSyntaxValidator(name: String, code: String) =
+    stripExecutionException(syntaxValidatorsCache.get((name, code), callable(super.compileSyntaxValidator(name, code))))
+
+  override def compileSymbolValidator(name: String, code: String) =
+    stripExecutionException(symbolValidatorsCache.get((name, code), callable(super.compileSymbolValidator(name, code))))
+
   override def reset(): Unit = underLock {
     super.reset()
     expressionCache.invalidateAll()
     profileCompilationResultsCache.invalidateAll()
     fullJavaGetterAdaptersCache.invalidateAll()
+    syntaxValidatorsCache.invalidateAll()
+    symbolValidatorsCache.invalidateAll()
   }
+
+  private def stripExecutionException[T](code: => T) =
+    try code catch {
+      case e: ExecutionException => throw e.getCause
+    }
 }
