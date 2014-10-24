@@ -6,7 +6,7 @@ import java.{util => ju, lang => jl}
 import scala.collection.mutable.ListBuffer
 import scala.reflect.api.TypeCreator
 import scala.reflect.internal.Flags
-import scala.reflect.macros.whitebox.Context
+import scala.reflect.macros.whitebox
 
 object SymbolValidatorMacros {
 
@@ -17,18 +17,18 @@ object SymbolValidatorMacros {
 
   object AlreadyReified
 
-  def allow_impl(c: Context)(expr: c.Expr[Any]) =
+  def allow_impl(c: whitebox.Context)(expr: c.Expr[Any]) =
     extractMemberAccessSpecs(c)(expr, allow = true)
 
-  def deny_impl(c: Context)(expr: c.Expr[Any]) =
+  def deny_impl(c: whitebox.Context)(expr: c.Expr[Any]) =
     extractMemberAccessSpecs(c)(expr, allow = false)
 
-  def on_impl[T](c: Context)(expr: c.Expr[T => Any]): c.Expr[T => Any] = {
+  def on_impl[T](c: whitebox.Context)(expr: c.Expr[T => Any]): c.Expr[T => Any] = {
     c.internal.updateAttachment(expr.tree, SymbolValidatorOnMark)
     expr
   }
 
-  private def extractMemberAccessSpecs(c: Context)(expr: c.Expr[Any], allow: Boolean): c.Expr[List[MemberAccessSpec]] = {
+  private def extractMemberAccessSpecs(c: whitebox.Context)(expr: c.Expr[Any], allow: Boolean): c.Expr[List[MemberAccessSpec]] = {
     import c.universe._
     val macroUtils = MacroUtils(c.universe)
     import macroUtils._
@@ -372,7 +372,7 @@ object SymbolValidatorMacros {
   /**
    * Translates '<prefix>.membersNamed.costam' into '<prefix>.membersNamed("costam")'
    */
-  def methodsNamed_selectDynamic_impl(c: Context)(name: c.Expr[String]): c.Expr[CompleteWildcardSelector] = {
+  def methodsNamed_selectDynamic_impl(c: whitebox.Context)(name: c.Expr[String]): c.Expr[CompleteWildcardSelector] = {
     import c.universe._
     val macroUtils = MacroUtils(c.universe)
     import macroUtils._
