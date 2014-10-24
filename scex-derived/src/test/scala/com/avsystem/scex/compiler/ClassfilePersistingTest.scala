@@ -73,42 +73,11 @@ class ClassfilePersistingTest extends ScexFunSuite with BeforeAndAfter {
     assert(c1 !== c3) // there will be new class loader after reset
   }
 
-  test("shared classfile persisting test") {
-    val c1 = compiler.compileSymbolValidator("test", "Nil").getClass
-    assert(compiler.sourcesCompiled.size === 1)
-
-    val c2 = compiler.compileSymbolValidator("test", "Nil").getClass
-    assert(compiler.sourcesCompiled.size === 1)
-
-    assert(c1 === c2) // both compilations should use the same class loader
-
-    compiler.reset()
-
-    val c3 = compiler.compileSymbolValidator("test", "Nil").getClass
-    assert(compiler.sourcesCompiled.size === 0)
-    assert(c1 !== c3) // there will be new class loader after reset
-  }
-
-  test("reusing profile classfiles test") {
-    assert(applyIntExpr("1") === 1)
-    assert(compiledSourceNames.contains("_scex_profile_test"))
-
-    compiler.reset()
-
-    assert(applyIntExpr("2") === 2)
-    assert(!compiledSourceNames.contains("_scex_profile_test"))
-  }
-
   test("visibility from presentation compiler test") {
     val completer = compiler.getCompleter[SimpleContext[Unit], Int](emptyProfile, template = false)
 
     assert(completer.getErrors("1") === Nil)
     assert(compiledSourceNames.contains("_scex_profile_test"))
-
-    compiler.reset()
-
-    assert(completer.getErrors("2") === Nil)
-    assert(!compiledSourceNames.contains("_scex_profile_test"))
   }
 
 }

@@ -4,7 +4,6 @@ import java.io.File
 import java.{lang => jl, util => ju}
 
 import com.google.common.cache.CacheBuilder
-import org.apache.commons.codec.digest.DigestUtils
 
 import scala.reflect.internal.util.SourceFile
 import scala.reflect.io.{AbstractFile, Directory, PlainDirectory}
@@ -52,19 +51,8 @@ trait ClassfilePersistingScexCompiler extends ScexCompiler {
       val sourceName = sourceFile.file.name
       val targetDir = if (shared) sharedDir else nonSharedDir.subdirectoryNamed(sourceName)
 
-      lazy val hashFile = targetDir.fileNamed(sourceName + ".hash")
-      lazy val prevHash = new String(hashFile.toByteArray)
-      lazy val contentsHash = DigestUtils.md5Hex(sourceFile.file.toByteArray)
-
-      val errors = if (targetDir.isEmpty || shared && prevHash != contentsHash) {
-        val errors = compileTo(sourceFile, targetDir)
-
-        if (shared && errors.isEmpty) {
-          val os = hashFile.output
-          try os.write(contentsHash.getBytes) finally os.close()
-        }
-
-        errors
+      val errors = if (targetDir.isEmpty || shared) {
+        compileTo(sourceFile, targetDir)
       } else {
         logger.debug(s"File $sourceFile has already been compiled to $targetDir")
         Nil
