@@ -15,6 +15,7 @@ import scala.reflect.NameTransformer
 import scala.reflect.internal.util._
 import scala.reflect.io.{AbstractFile, VirtualDirectory}
 import scala.reflect.runtime.universe.TypeTag
+import scala.tools.nsc.plugins.Plugin
 import scala.tools.nsc.reporters.AbstractReporter
 import scala.tools.nsc.{Global, Settings}
 import scala.util.Try
@@ -72,9 +73,7 @@ trait ScexCompiler extends LoggingUtils {
   protected type RawExpression = Expression[ExpressionContext[_, _], Any]
 
   protected def underLock[T](code: => T) = lock.synchronized {
-    if (!initialized) {
-      init()
-    }
+    ensureSetup()
     code
   }
 
@@ -92,13 +91,23 @@ trait ScexCompiler extends LoggingUtils {
 
   private var compilationCount: Int = _
 
-  private def init(): Unit = {
+  protected def setup(): Unit = {
     logger.info("Initializing Scala compiler")
     compilationCount = 0
-    global = new Global(settings, reporter) with ScexGlobal
+    global = new Global(settings, reporter) with ScexGlobal {
+      override def loadAdditionalPlugins() = loadCompilerPlugins(this)
+    }
     sharedClassLoader = new ScexClassLoader(new VirtualDirectory("(scex_shared)", None), getClass.getClassLoader)
-    initialized = true
   }
+  
+  protected final def ensureSetup(): Unit = lock.synchronized {
+    if(!initialized) {
+      setup()
+      initialized = true
+    }
+  }
+
+  protected def loadCompilerPlugins(global: ScexGlobal): List[Plugin] = Nil
 
   private def instantiate[T](classLoader: ClassLoader, className: String) =
     Class.forName(className, true, classLoader).newInstance.asInstanceOf[T]
@@ -150,19 +159,16 @@ trait ScexCompiler extends LoggingUtils {
     wrapInSource(expressionCode, offset, pkgName)
   }
 
-  protected def compile(sourceFile: SourceFile, shared: Boolean): Either[ScexClassLoader, Seq[CompileError]] = {
-    val classLoader =
-      if (shared) sharedClassLoader
-      else new ScexClassLoader(new VirtualDirectory(sourceFile.file.name, None), sharedClassLoader)
-
-    compileTo(sourceFile, classLoader.classfileDirectory) match {
-      case Nil => Left(classLoader)
-      case errors => Right(errors)
-    }
+  protected def chooseClassLoader(sourceFile: SourceFile, shared: Boolean): ScexClassLoader = {
+    if (shared) sharedClassLoader
+    else new ScexClassLoader(new VirtualDirectory(sourceFile.file.name, None), sharedClassLoader)
   }
 
-  protected def compileTo(sourceFile: SourceFile, classfileDirectory: AbstractFile): Seq[CompileError] = {
+  protected def compile(sourceFile: SourceFile, shared: Boolean): Either[ScexClassLoader, Seq[CompileError]] = {
     compilationCount += 1
+
+    val classLoader = chooseClassLoader(sourceFile, shared)
+    val classfileDirectory = classLoader.classfileDirectory
 
     settings.outputDirs.setSingleOutput(classfileDirectory)
     reporter.reset()
@@ -184,13 +190,13 @@ trait ScexCompiler extends LoggingUtils {
     val duration = System.nanoTime - startTime
     logger.debug(s"Compilation took ${duration / 1000000}ms")
 
-    val result = reporter.compileErrors()
+    val errors = reporter.compileErrors()
 
     if (compilationCount > settings.resetAfterCount.value) {
       reset()
     }
 
-    result
+    if (errors.isEmpty) Left(classLoader) else Right(errors)
   }
 
   protected def preprocess(exprDef: ExpressionDef): ExpressionDef =
@@ -319,9 +325,8 @@ trait ScexCompiler extends LoggingUtils {
    * Resets internal compiler state by creating completely new instance of Scala compiler and invalidating all
    * internal caches.
    */
-  def reset(): Unit = underLock {
-    init()
-  }
+  def reset(): Unit =
+    underLock(setup())
 }
 
 object ScexCompiler {

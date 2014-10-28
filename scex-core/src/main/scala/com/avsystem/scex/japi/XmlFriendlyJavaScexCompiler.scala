@@ -13,7 +13,7 @@ import com.avsystem.scex.compiler.presentation.{CachingScexPresentationCompiler,
 class XmlFriendlyJavaScexCompiler(val settings: ScexSettings)
   extends ScexCompiler
   with ScexPresentationCompiler
-  with ClassfilePersistingScexCompiler
+  with ClassfileReusingScexCompiler
   with LiteralsOptimizingScexCompiler
   with XmlFriendlyScexCompiler
   with CachingScexCompiler

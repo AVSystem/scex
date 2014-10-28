@@ -11,8 +11,8 @@ import com.avsystem.scex.compiler.presentation.{CachingScexPresentationCompiler,
  */
 class DefaultScexCompiler(val settings: ScexSettings)
   extends ScexCompiler
-  with ClassfilePersistingScexCompiler
   with ScexPresentationCompiler
+  with ClassfileReusingScexCompiler
   with CachingScexCompiler
   with CachingScexPresentationCompiler
   with WeakReferenceWrappingScexCompiler

@@ -20,23 +20,23 @@ trait ScexPresentationCompiler extends ScexCompiler {
 
   private object lock
 
-  protected def underPresentationLock[T](code: => T) = lock.synchronized {
-    if (!initialized) {
-      init()
+  protected def underPresentationLock[T](code: => T) = {
+    ensureSetup()
+    lock.synchronized {
+      code
     }
-    code
   }
-
-  private var initialized = false
 
   private var reporter: Reporter = _
   private var global: IGlobal = _
 
-  private def init(): Unit = {
-    logger.info("Initializing Scala presentation compiler")
-    reporter = new Reporter(settings)
-    global = new IGlobal(settings, reporter)
-    initialized = true
+  override protected def setup(): Unit = {
+    super.setup()
+    lock.synchronized {
+      logger.info("Initializing Scala presentation compiler")
+      reporter = new Reporter(settings)
+      global = new IGlobal(settings, reporter)
+    }
   }
 
   def getOrThrow[T](resp: IGlobal#Response[T]) = resp.get match {
@@ -332,16 +332,12 @@ trait ScexPresentationCompiler extends ScexCompiler {
 
     result
   }
-  
-  override def reset() {
-    underPresentationLock {
-      underLock {
-        super.reset()
-        global.askShutdown()
-        init()
-      }
-    }
-  }
+
+  override def reset(): Unit =
+    underLock(underPresentationLock {
+      global.askShutdown()
+      super.reset()
+    })
 }
 
 object ScexPresentationCompiler {

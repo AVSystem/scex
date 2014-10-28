@@ -19,7 +19,9 @@ import scala.reflect.runtime.universe.TypeTag
  * Author: ghik
  */
 trait CompilationTest extends BeforeAndAfterAll { this: Suite =>
-  val compiler = new DefaultJavaScexCompiler(new ScexSettings)
+  val settings = new ScexSettings
+  settings.classfileDirectory.value = "testClassfileCache"
+  val compiler = new DefaultJavaScexCompiler(settings)
 
   override protected def beforeAll() = {
     val classfileDir = AbstractFile.getDirectory(compiler.settings.classfileDirectory.value)
