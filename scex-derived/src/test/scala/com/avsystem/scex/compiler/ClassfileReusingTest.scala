@@ -115,4 +115,34 @@ class ClassfileReusingTest extends ScexFunSuite with BeforeAndAfter {
     assert(!compiledSourceNames.contains("_scex_profile_test"))
   }
 
+  test("recompilation on binary compatibility breach test") {
+    import SymbolValidator._
+
+    val acl = allow {
+      Predef.implicitly(_: Any)
+    }
+    val symbolValidator = SymbolValidator(acl)
+    val expr = "implicitly[String]"
+
+    val utils1 =
+      """
+        |implicit def implicitString1: String = "implicitString1"
+      """.stripMargin
+    val profile1 = new ExpressionProfile("test", SyntaxValidator.SimpleExpressions, symbolValidator, "", utils1)
+    val cexpr1 = compiler.getCompiledExpression[SimpleContext[Unit], String](profile1, expr, template = false)
+
+    assert(cexpr1(SimpleContext(())) === "implicitString1")
+
+    compiler.reset()
+
+    val utils2 =
+      """
+        |implicit def implicitString2: String = "implicitString2"
+      """.stripMargin
+    val profile2 = new ExpressionProfile("test", SyntaxValidator.SimpleExpressions, symbolValidator, "", utils2)
+    val cexpr2 = compiler.getCompiledExpression[SimpleContext[Unit], String](profile2, expr, template = false)
+
+    assert(cexpr2(SimpleContext(())) === "implicitString2")
+  }
+
 }
