@@ -99,9 +99,9 @@ trait ScexCompiler extends LoggingUtils {
     }
     sharedClassLoader = new ScexClassLoader(new VirtualDirectory("(scex_shared)", None), getClass.getClassLoader)
   }
-  
+
   protected final def ensureSetup(): Unit = lock.synchronized {
-    if(!initialized) {
+    if (!initialized) {
       setup()
       initialized = true
     }
@@ -114,10 +114,10 @@ trait ScexCompiler extends LoggingUtils {
 
   protected def compileFullJavaGetterAdapter(clazz: Class[_]): Try[Unit] = underLock {
     val codeToCompile = wrapInSource(generateJavaGetterAdapter(clazz, full = true).get, AdaptersPkg)
-    val sourceFile = new BatchSourceFile(adapterName(clazz), codeToCompile)
+    val sourceFile = new ScexSourceFile(adapterName(clazz), codeToCompile, shared = true)
 
     def result() = {
-      compile(sourceFile, shared = true) match {
+      compile(sourceFile) match {
         case Left(_) => ()
         case Right(errors) => throw new CompilationFailedException(codeToCompile, errors)
       }
@@ -129,10 +129,10 @@ trait ScexCompiler extends LoggingUtils {
   protected def compileProfileObject(profile: ExpressionProfile): Try[String] = underLock {
     val pkgName = ProfilePkgPrefix + NameTransformer.encode(profile.name)
     val codeToCompile = wrapInSource(generateProfileObject(profile), pkgName)
-    val sourceFile = new BatchSourceFile(pkgName, codeToCompile)
+    val sourceFile = new ScexSourceFile(pkgName, codeToCompile, shared = true)
 
     def result =
-      compile(sourceFile, shared = true) match {
+      compile(sourceFile) match {
         case Left(_) => pkgName
         case Right(errors) => throw new CompilationFailedException(codeToCompile, errors)
       }
@@ -159,15 +159,15 @@ trait ScexCompiler extends LoggingUtils {
     wrapInSource(expressionCode, offset, pkgName)
   }
 
-  protected def chooseClassLoader(sourceFile: SourceFile, shared: Boolean): ScexClassLoader = {
-    if (shared) sharedClassLoader
+  protected def chooseClassLoader(sourceFile: ScexSourceFile): ScexClassLoader = {
+    if (sourceFile.shared) sharedClassLoader
     else new ScexClassLoader(new VirtualDirectory(sourceFile.file.name, None), sharedClassLoader)
   }
 
-  protected def compile(sourceFile: SourceFile, shared: Boolean): Either[ScexClassLoader, Seq[CompileError]] = {
+  protected def compile(sourceFile: ScexSourceFile): Either[ScexClassLoader, Seq[CompileError]] = {
     compilationCount += 1
 
-    val classLoader = chooseClassLoader(sourceFile, shared)
+    val classLoader = chooseClassLoader(sourceFile)
     val classfileDirectory = classLoader.classfileDirectory
 
     settings.outputDirs.setSingleOutput(classfileDirectory)
@@ -185,6 +185,9 @@ trait ScexCompiler extends LoggingUtils {
       val global = this.global
       val run = new global.Run
       run.compileSources(List(sourceFile))
+      if (!sourceFile.shared) {
+        global.forgetSymbolsFromSource(sourceFile.file)
+      }
     }
 
     val duration = System.nanoTime - startTime
@@ -212,7 +215,7 @@ trait ScexCompiler extends LoggingUtils {
     val debugInfo = new ExpressionDebugInfo(exprDef, sourceInfo)
 
     def result =
-      compile(sourceFile, shared = false) match {
+      compile(sourceFile) match {
         case Left(classLoader) =>
           Class.forName(s"$pkgName.$ExpressionClassName", true, classLoader)
             .getConstructor(classOf[ExpressionDebugInfo]).newInstance(debugInfo)
@@ -281,9 +284,9 @@ trait ScexCompiler extends LoggingUtils {
   def compileSyntaxValidator(name: String, code: String): SyntaxValidator = underLock {
     val pkgName = SyntaxValidatorPkgPrefix + NameTransformer.encode(name)
     val codeToCompile = wrapInSource(generateSyntaxValidator(code), pkgName)
-    val sourceFile = new BatchSourceFile(pkgName, codeToCompile)
+    val sourceFile = new ScexSourceFile(pkgName, codeToCompile, shared = false)
 
-    compile(sourceFile, shared = true) match {
+    compile(sourceFile) match {
       case Left(classLoader) =>
         instantiate[SyntaxValidator](classLoader, s"$pkgName.$SyntaxValidatorClassName")
       case Right(errors) =>
@@ -295,9 +298,9 @@ trait ScexCompiler extends LoggingUtils {
   def compileSymbolValidator(name: String, code: String): SymbolValidator = underLock {
     val pkgName = SymbolValidatorPkgPrefix + NameTransformer.encode(name)
     val codeToCompile = wrapInSource(generateSymbolValidator(code), pkgName)
-    val sourceFile = new BatchSourceFile(pkgName, codeToCompile)
+    val sourceFile = new ScexSourceFile(pkgName, codeToCompile, shared = false)
 
-    compile(sourceFile, shared = true) match {
+    compile(sourceFile) match {
       case Left(classLoader) =>
         instantiate[SymbolValidator](classLoader, s"$pkgName.$SymbolValidatorClassName")
       case Right(errors) =>
@@ -311,9 +314,9 @@ trait ScexCompiler extends LoggingUtils {
    */
   def compileClass(code: String, name: String): Class[_] = underLock {
     val sourceName = ArbitraryClassSourceNamePrefix + DigestUtils.md5Hex(code)
-    val sourceFile = new BatchSourceFile(sourceName, code)
+    val sourceFile = new ScexSourceFile(sourceName, code, shared = false)
 
-    compile(sourceFile, shared = false) match {
+    compile(sourceFile) match {
       case Left(classLoader) =>
         Class.forName(name, true, classLoader)
       case Right(errors) =>

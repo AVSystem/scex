@@ -12,7 +12,7 @@ class ExpressionSourceFile(
   val exprDef: ExpressionDef,
   sourceName: String,
   val code: String,
-  startOffset: Int) extends BatchSourceFile(sourceName, code) {
+  startOffset: Int) extends ScexSourceFile(sourceName, code, shared = false) {
 
   require(exprDef != null, "Expression definition cannot be null")
 

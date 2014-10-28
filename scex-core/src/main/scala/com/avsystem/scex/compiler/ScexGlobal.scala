@@ -1,14 +1,16 @@
 package com.avsystem.scex
 package compiler
 
-import java.{util => ju, lang => jl}
-import scala.tools.nsc.Global
-import java.security.MessageDigest
-import scala.io.Codec
-import scala.reflect.internal.util._
-import com.avsystem.scex.util.MacroUtils
+import java.{lang => jl, util => ju}
+
 import com.avsystem.scex.compiler.ScexCompiler.CompileError
+import com.avsystem.scex.util.MacroUtils
+
+import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
+import scala.reflect.internal.util._
+import scala.reflect.io.AbstractFile
+import scala.tools.nsc.Global
 import scala.tools.nsc.plugins.Plugin
 
 /**
@@ -102,4 +104,21 @@ trait ScexGlobal extends Global with MacroUtils with JavaClassComputation {
 
   override protected def loadRoughPluginsList() =
     loadAdditionalPlugins() ::: super.loadRoughPluginsList()
+
+  // toplevel symbol dropping is implemented based on how it's done in the Scala Presentation Compiler
+  // (which happens e.g. when a source file is deleted)
+  private val toplevelSymbolsMap = new mutable.WeakHashMap[AbstractFile, mutable.Set[Symbol]]
+
+  override def registerTopLevelSym(sym: Symbol): Unit = {
+    toplevelSymbolsMap.getOrElseUpdate(sym.sourceFile, new mutable.HashSet) += sym
+  }
+
+  def forgetSymbolsFromSource(file: AbstractFile) = {
+    val symbols = toplevelSymbolsMap.get(file).map(_.toSet).getOrElse(Set.empty)
+    symbols.foreach { s =>
+      //like in: scala.tools.nsc.interactive.Global.filesDeleted
+      s.owner.info.decls unlink s
+    }
+    toplevelSymbolsMap.remove(file)
+  }
 }

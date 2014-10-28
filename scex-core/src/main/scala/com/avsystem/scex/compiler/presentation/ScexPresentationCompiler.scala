@@ -317,11 +317,11 @@ trait ScexPresentationCompiler extends ScexCompiler {
     }
   }
 
-  override protected def compile(sourceFile: SourceFile, shared: Boolean) = {
-    val result = super.compile(sourceFile, shared)
+  override protected def compile(sourceFile: ScexSourceFile) = {
+    val result = super.compile(sourceFile)
 
     result match {
-      case Left(_) if shared => underPresentationLock {
+      case Left(_) if sourceFile.shared => underPresentationLock {
         val global = this.global
         val response = new global.Response[global.Tree]
         global.askLoadedTyped(sourceFile, response)

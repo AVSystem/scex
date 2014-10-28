@@ -93,28 +93,6 @@ class ClassfileReusingTest extends ScexFunSuite with BeforeAndAfter {
     assert(c1 !== c3) // there will be new class loader after reset
   }
 
-  test("reusing profile classfiles test") {
-    assert(applyIntExpr("1") === 1)
-    assert(compiledSourceNames.contains("_scex_profile_test"))
-
-    compiler.reset()
-
-    assert(applyIntExpr("2") === 2)
-    assert(!compiledSourceNames.contains("_scex_profile_test"))
-  }
-
-  test("visibility from presentation compiler test") {
-    val completer = compiler.getCompleter[SimpleContext[Unit], Int](emptyProfile, template = false)
-
-    assert(completer.getErrors("1") === Nil)
-    assert(compiledSourceNames.contains("_scex_profile_test"))
-
-    compiler.reset()
-
-    assert(completer.getErrors("2") === Nil)
-    assert(!compiledSourceNames.contains("_scex_profile_test"))
-  }
-
   test("recompilation on binary compatibility breach test") {
     import SymbolValidator._
 

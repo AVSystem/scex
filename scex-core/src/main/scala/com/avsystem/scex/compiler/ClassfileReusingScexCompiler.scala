@@ -52,7 +52,7 @@ trait ClassfileReusingScexCompiler extends ScexCompiler {
     _stateOpt
   }
 
-  override protected def chooseClassLoader(sourceFile: SourceFile, shared: Boolean) = stateOpt match {
+  override protected def chooseClassLoader(sourceFile: ScexSourceFile) = stateOpt match {
     case Some(state) =>
       import state._
 
@@ -64,11 +64,11 @@ trait ClassfileReusingScexCompiler extends ScexCompiler {
       def createNonSharedClassLoader =
         new ScexClassLoader(nonSharedDir.subdirectoryNamed(sourceName), sharedClassLoader)
 
-      if (shared) sharedClassLoader
+      if (sourceFile.shared) sharedClassLoader
       else nonSharedClassLoaders.get(sourceName, callable(createNonSharedClassLoader))
 
     case None =>
-      super.chooseClassLoader(sourceFile, shared)
+      super.chooseClassLoader(sourceFile)
   }
 
   override protected def setup(): Unit = {
@@ -102,8 +102,8 @@ trait ClassfileReusingScexCompiler extends ScexCompiler {
 
     private object digestCheckingComponent extends BaseComponent("typer", "digestChecking") {
       def applyComponentPhase(unit: CompilationUnit): Unit =
-        (stateOpt, global.settings.outputDirs.getSingleOutput) match {
-          case (Some(state), Some(outDir)) =>
+        (stateOpt, global.settings.outputDirs.getSingleOutput, unit.source) match {
+          case (Some(state), Some(outDir), scexSource: ScexSourceFile) if !scexSource.shared =>
 
             val sourceName = unit.source.file.name
             val hashFile = outDir.fileNamed(sourceName + ".hash")
@@ -124,6 +124,7 @@ trait ClassfileReusingScexCompiler extends ScexCompiler {
               digests(unit) = newHash
             } else {
               unit.body = EmptyTree
+              //forgetSymbolsFromSource(unit.source)
               logger.debug(s"Source file $sourceName has already been compiled to $outDir")
             }
 

@@ -63,7 +63,7 @@ trait LiteralsOptimizingScexCompiler extends ScexPresentationCompiler {
     val fullCode = wrapInSource(conversionClassCode, pkgName)
 
     def result =
-      compile(new BatchSourceFile(pkgName, fullCode), shared = false) match {
+      compile(new ScexSourceFile(pkgName, fullCode, shared = false)) match {
         case Left(classLoader) =>
           Class.forName(s"$pkgName.$ConversionSupplierClassName", true, classLoader)
             .newInstance.asInstanceOf[ConversionSupplier[Any]].get
