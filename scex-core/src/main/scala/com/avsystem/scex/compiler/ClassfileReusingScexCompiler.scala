@@ -7,15 +7,14 @@ import com.google.common.cache.CacheBuilder
 import org.apache.commons.codec.digest.DigestUtils
 
 import scala.collection.mutable
-import scala.reflect.internal.util.SourceFile
 import scala.reflect.io.{AbstractFile, Directory, PlainDirectory}
 import scala.tools.nsc.Phase
 import scala.tools.nsc.plugins.{Plugin, PluginComponent}
 import scala.tools.nsc.util.ClassPath
 
 /**
- * An adaptation of ScexCompiler which compiles classes to disk instead of memory (assuming that classfile directory
- * is configured). Class files are never being deleted automatically and thus are reused even if the entire
+ * An adaptation of ScexCompiler which compiles non-shared classes to disk instead of memory (assuming that classfile
+ * directory is configured). Class files are never being deleted automatically and thus are reused even if the entire
  * process is restarted.
  *
  * The decision about need for recompilation is made based on fully typechecked tree of source file being compiled.
@@ -32,12 +31,8 @@ trait ClassfileReusingScexCompiler extends ScexCompiler {
   private val logger = createLogger[ClassfileReusingScexCompiler]
 
   private class State(val classfileDir: AbstractFile) {
-    val sharedDir = classfileDir.subdirectoryNamed("shared")
-    val nonSharedDir = classfileDir.subdirectoryNamed("non-shared")
-
-    val sharedClassLoader = new ScexClassLoader(sharedDir, getClass.getClassLoader)
-    if (!ClassPath.split(settings.classpath.value).contains(sharedDir.path)) {
-      settings.classpath.append(sharedDir.path)
+    if (!ClassPath.split(settings.classpath.value).contains(classfileDir.path)) {
+      settings.classpath.append(classfileDir.path)
     }
 
     val nonSharedClassLoaders = CacheBuilder.newBuilder.weakValues.build[String, ScexClassLoader]
@@ -52,24 +47,18 @@ trait ClassfileReusingScexCompiler extends ScexCompiler {
     _stateOpt
   }
 
-  override protected def chooseClassLoader(sourceFile: ScexSourceFile) = stateOpt match {
-    case Some(state) =>
+  override protected def createNonSharedClassLoader(sourceFile: ScexSourceFile) =
+    stateOpt.map { state =>
       import state._
 
-      sharedDir.file.mkdirs()
-      nonSharedDir.file.mkdirs()
-
+      classfileDir.file.mkdirs()
       val sourceName = sourceFile.file.name
 
-      def createNonSharedClassLoader =
-        new ScexClassLoader(nonSharedDir.subdirectoryNamed(sourceName), sharedClassLoader)
+      def createClassLoader =
+        new ScexClassLoader(classfileDir.subdirectoryNamed(sourceName), getSharedClassLoader)
 
-      if (sourceFile.shared) sharedClassLoader
-      else nonSharedClassLoaders.get(sourceName, callable(createNonSharedClassLoader))
-
-    case None =>
-      super.chooseClassLoader(sourceFile)
-  }
+      nonSharedClassLoaders.get(sourceName, callable(createClassLoader))
+    } getOrElse super.createNonSharedClassLoader(sourceFile)
 
   override protected def setup(): Unit = {
     _stateOpt = Option(settings.classfileDirectory.value)

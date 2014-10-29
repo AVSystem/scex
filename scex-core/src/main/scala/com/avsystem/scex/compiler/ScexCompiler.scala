@@ -158,16 +158,17 @@ trait ScexCompiler extends LoggingUtils {
 
     wrapInSource(expressionCode, offset, pkgName)
   }
+  
+  protected def getSharedClassLoader: ScexClassLoader =
+    sharedClassLoader
 
-  protected def chooseClassLoader(sourceFile: ScexSourceFile): ScexClassLoader = {
-    if (sourceFile.shared) sharedClassLoader
-    else new ScexClassLoader(new VirtualDirectory(sourceFile.file.name, None), sharedClassLoader)
-  }
+  protected def createNonSharedClassLoader(sourceFile: ScexSourceFile): ScexClassLoader =
+    new ScexClassLoader(new VirtualDirectory(sourceFile.file.name, None), getSharedClassLoader)
 
   protected def compile(sourceFile: ScexSourceFile): Either[ScexClassLoader, Seq[CompileError]] = {
     compilationCount += 1
 
-    val classLoader = chooseClassLoader(sourceFile)
+    val classLoader = if(sourceFile.shared) getSharedClassLoader else createNonSharedClassLoader(sourceFile)
     val classfileDirectory = classLoader.classfileDirectory
 
     settings.outputDirs.setSingleOutput(classfileDirectory)
