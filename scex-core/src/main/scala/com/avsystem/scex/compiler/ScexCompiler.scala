@@ -18,7 +18,7 @@ import scala.reflect.runtime.universe.TypeTag
 import scala.tools.nsc.plugins.Plugin
 import scala.tools.nsc.reporters.AbstractReporter
 import scala.tools.nsc.{Global, Settings}
-import scala.util.Try
+import scala.util.{Success, Try}
 
 trait ScexCompiler extends LoggingUtils {
 
@@ -112,32 +112,43 @@ trait ScexCompiler extends LoggingUtils {
   private def instantiate[T](classLoader: ClassLoader, className: String) =
     Class.forName(className, true, classLoader).newInstance.asInstanceOf[T]
 
-  protected def compileFullJavaGetterAdapter(clazz: Class[_]): Try[Unit] = underLock {
-    val codeToCompile = wrapInSource(generateJavaGetterAdapter(clazz, full = true).get, AdaptersPkg)
-    val sourceFile = new ScexSourceFile(adapterName(clazz), codeToCompile, shared = true)
+  protected def compileJavaGetterAdapter(clazz: Class[_], full: Boolean): Try[Option[String]] =
+    generateJavaGetterAdapter(clazz, full) match {
+      case Some(code) => underLock {
+        val codeToCompile = wrapInSource(code, AdaptersPkg)
+        val name = adapterName(clazz, full)
+        val sourceFile = new ScexSourceFile(name, codeToCompile, shared = true)
 
-    def result() = {
-      compile(sourceFile) match {
-        case Left(_) => ()
-        case Right(errors) => throw new CompilationFailedException(codeToCompile, errors)
+        def result() = {
+          compile(sourceFile) match {
+            case Left(_) => Some(name)
+            case Right(errors) => throw new CompilationFailedException(codeToCompile, errors)
+          }
+        }
+
+        Try(result())
       }
+      case None => Success(None)
     }
 
-    Try(result())
-  }
+  protected def compileProfileObject(profile: ExpressionProfile): Try[String] = {
+    val adapters = profile.symbolValidator.referencedJavaClasses.toVector.sortBy(_.getName).flatMap {
+      clazz => compileJavaGetterAdapter(clazz, full = false).get.map(adapterName => (clazz, adapterName))
+    }
 
-  protected def compileProfileObject(profile: ExpressionProfile): Try[String] = underLock {
-    val pkgName = ProfilePkgPrefix + NameTransformer.encode(profile.name)
-    val codeToCompile = wrapInSource(generateProfileObject(profile), pkgName)
-    val sourceFile = new ScexSourceFile(pkgName, codeToCompile, shared = true)
+    underLock {
+      val pkgName = ProfilePkgPrefix + NameTransformer.encode(profile.name)
+      val codeToCompile = wrapInSource(generateProfileObject(profile, adapters), pkgName)
+      val sourceFile = new ScexSourceFile(pkgName, codeToCompile, shared = true)
 
-    def result =
-      compile(sourceFile) match {
-        case Left(_) => pkgName
-        case Right(errors) => throw new CompilationFailedException(codeToCompile, errors)
-      }
+      def result =
+        compile(sourceFile) match {
+          case Left(_) => pkgName
+          case Right(errors) => throw new CompilationFailedException(codeToCompile, errors)
+        }
 
-    Try(result)
+      Try(result)
+    }
   }
 
   protected def compileExpressionUtils(utils: NamedSource): Try[String] = underLock {
@@ -154,15 +165,13 @@ trait ScexCompiler extends LoggingUtils {
     Try(result)
   }
 
-  protected def expressionCode(exprDef: ExpressionDef, noMacroProcessing: Boolean = false): (String, String, Int) = {
+  protected final def expressionCode(exprDef: ExpressionDef, noMacroProcessing: Boolean = false): (String, String, Int) = {
     val profile = exprDef.profile
     val rootObjectClass = exprDef.rootObjectClass
 
     val fullAdapterClassNameOpt =
       if (profile.symbolValidator.referencedJavaClasses.contains(rootObjectClass)) {
-        compileFullJavaGetterAdapter(rootObjectClass).get
-        val adapterClassName = adapterName(rootObjectClass)
-        Some(s"$AdaptersPkg.$adapterClassName")
+        compileJavaGetterAdapter(rootObjectClass, full = true).get.map(name => s"$AdaptersPkg.$name")
       } else None
 
     val profileObjectPkg = compileProfileObject(profile).get
@@ -173,7 +182,7 @@ trait ScexCompiler extends LoggingUtils {
 
     wrapInSource(expressionCode, offset, pkgName)
   }
-  
+
   protected def getSharedClassLoader: ScexClassLoader =
     sharedClassLoader
 
@@ -183,7 +192,7 @@ trait ScexCompiler extends LoggingUtils {
   protected def compile(sourceFile: ScexSourceFile): Either[ScexClassLoader, Seq[CompileError]] = {
     compilationCount += 1
 
-    val classLoader = if(sourceFile.shared) getSharedClassLoader else createNonSharedClassLoader(sourceFile)
+    val classLoader = if (sourceFile.shared) getSharedClassLoader else createNonSharedClassLoader(sourceFile)
     val classfileDirectory = classLoader.classfileDirectory
 
     settings.outputDirs.setSingleOutput(classfileDirectory)

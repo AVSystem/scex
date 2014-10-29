@@ -60,8 +60,8 @@ object CodeGeneration {
   val NoMacrosInterpolationOpen = "s\"\"\""
   val InterpolationClose = "\"\"\""
 
-  def adapterName(clazz: Class[_]) =
-    "Adapter_" + clazz.getName.replaceAll("\\.", "_")
+  def adapterName(clazz: Class[_], full: Boolean) =
+    (if (full) "Full" else "") + "Adapter_" + clazz.getName.replaceAll("\\.", "_")
 
   /**
    * Generates code of implicit view for given Java class that adds Scala-style getters
@@ -85,7 +85,7 @@ object CodeGeneration {
       val ExistentialType(polyTpe, typeVariables) = classToExistential(clazz)
       val generics = if (typeVariables.nonEmpty) typeVariableDeclarations(typeVariables).mkString("[", ", ", "]") else ""
       val wrappedTpe = javaTypeAsScalaType(polyTpe)
-      val adapterWithGenerics = adapterName(clazz) + generics
+      val adapterWithGenerics = adapterName(clazz, full) + generics
 
       val result =
         s"""
@@ -179,26 +179,21 @@ object CodeGeneration {
     (exprCode, exprOffset)
   }
 
-  def generateProfileObject(profile: ExpressionProfile) = {
-    val classes = profile.symbolValidator.referencedJavaClasses.toVector.sortBy(_.getName)
-    val adapters = classes.flatMap { clazz =>
-      generateJavaGetterAdapter(clazz, full = false).toList.map { adapterCode =>
-        val ExistentialType(polyTpe, typeVariables) = classToExistential(clazz)
-        val wrappedTpe = javaTypeAsScalaType(polyTpe)
-        val adapter = adapterName(clazz)
-        val generics = if (typeVariables.nonEmpty) typeVariableDeclarations(typeVariables).mkString("[", ", ", "]") else ""
-        val adapterWithGenerics = adapter + generics
+  def generateProfileObject(profile: ExpressionProfile, adapters: Seq[(Class[_], String)]) = {
+    val adapterConversions = adapters.iterator.map { case (clazz, adapterName) =>
+      val ExistentialType(polyTpe, typeVariables) = classToExistential(clazz)
+      val wrappedTpe = javaTypeAsScalaType(polyTpe)
+      val generics = if (typeVariables.nonEmpty) typeVariableDeclarations(typeVariables).mkString("[", ", ", "]") else ""
+      val adapterWithGenerics = adapterName + generics
 
-        s"""
-          |implicit def $adapterWithGenerics(_wrapped: $wrappedTpe) = new $adapter(_wrapped)
-          |$adapterCode
+      s"""
+          |implicit def $adapterWithGenerics(_wrapped: $wrappedTpe) = new $AdaptersPkg.$adapterName(_wrapped)
         """.stripMargin
-      }
-    }
+    }.mkString
 
     s"""
       |object $ProfileObjectName extends $MarkersObj.ProfileObject {
-      |${adapters.mkString}
+      |$adapterConversions
       |}
       |
     """.stripMargin
