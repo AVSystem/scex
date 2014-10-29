@@ -43,8 +43,11 @@ trait CompilationTest extends BeforeAndAfterAll { this: Suite =>
     "test" + profileId
   }
 
-  def createProfile(acl: List[MemberAccessSpec], header: String = "import com.avsystem.scex.compiler._", utils: String = "") =
-    new ExpressionProfile(newProfileName(), SyntaxValidator.SimpleExpressions, SymbolValidator(acl), header, utils)
+  def createProfile(acl: List[MemberAccessSpec], header: String = "import com.avsystem.scex.compiler._", utils: String = "") = {
+    val profileName = newProfileName()
+    val expressionUtils = NamedSource(profileName, utils)
+    new ExpressionProfile(profileName, SyntaxValidator.SimpleExpressions, SymbolValidator(acl), header, expressionUtils)
+  }
 
   def assertMemberAccessForbidden(expr: => Any) {
     try expr catch {

@@ -9,7 +9,7 @@ class ExpressionProfile(
   val syntaxValidator: SyntaxValidator,
   val symbolValidator: SymbolValidator,
   val expressionHeader: String,
-  val expressionUtils: String) {
+  val expressionUtils: NamedSource) {
 
   override def toString = s"ExpressionProfile[$name]"
 }

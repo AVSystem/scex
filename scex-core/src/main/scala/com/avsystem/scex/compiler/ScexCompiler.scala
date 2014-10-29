@@ -140,6 +140,20 @@ trait ScexCompiler extends LoggingUtils {
     Try(result)
   }
 
+  protected def compileExpressionUtils(utils: NamedSource): Try[String] = underLock {
+    val pkgName = UtilsPkgPrefix + NameTransformer.encode(utils.name)
+    val codeToCompile = wrapInSource(generateExpressionUtils(utils.code), pkgName)
+    val sourceFile = new ScexSourceFile(pkgName, codeToCompile, shared = true)
+
+    def result =
+      compile(sourceFile) match {
+        case Left(_) => pkgName
+        case Right(errors) => throw new CompilationFailedException(codeToCompile, errors)
+      }
+
+    Try(result)
+  }
+
   protected def expressionCode(exprDef: ExpressionDef, noMacroProcessing: Boolean = false): (String, String, Int) = {
     val profile = exprDef.profile
     val rootObjectClass = exprDef.rootObjectClass
@@ -152,8 +166,9 @@ trait ScexCompiler extends LoggingUtils {
       } else None
 
     val profileObjectPkg = compileProfileObject(profile).get
+    val utilsObjectPkg = compileExpressionUtils(profile.expressionUtils).get
     val (expressionCode, offset) =
-      generateExpressionClass(exprDef, fullAdapterClassNameOpt, profileObjectPkg, noMacroProcessing)
+      generateExpressionClass(exprDef, fullAdapterClassNameOpt, profileObjectPkg, utilsObjectPkg, noMacroProcessing)
     val pkgName = ExpressionPkgPrefix + DigestUtils.md5Hex(expressionCode)
 
     wrapInSource(expressionCode, offset, pkgName)
@@ -282,9 +297,9 @@ trait ScexCompiler extends LoggingUtils {
 
 
   @throws[CompilationFailedException]
-  def compileSyntaxValidator(name: String, code: String): SyntaxValidator = underLock {
-    val pkgName = SyntaxValidatorPkgPrefix + NameTransformer.encode(name)
-    val codeToCompile = wrapInSource(generateSyntaxValidator(code), pkgName)
+  def compileSyntaxValidator(source: NamedSource): SyntaxValidator = underLock {
+    val pkgName = SyntaxValidatorPkgPrefix + NameTransformer.encode(source.name)
+    val codeToCompile = wrapInSource(generateSyntaxValidator(source.code), pkgName)
     val sourceFile = new ScexSourceFile(pkgName, codeToCompile, shared = false)
 
     compile(sourceFile) match {
@@ -296,9 +311,9 @@ trait ScexCompiler extends LoggingUtils {
   }
 
   @throws[CompilationFailedException]
-  def compileSymbolValidator(name: String, code: String): SymbolValidator = underLock {
-    val pkgName = SymbolValidatorPkgPrefix + NameTransformer.encode(name)
-    val codeToCompile = wrapInSource(generateSymbolValidator(code), pkgName)
+  def compileSymbolValidator(source: NamedSource): SymbolValidator = underLock {
+    val pkgName = SymbolValidatorPkgPrefix + NameTransformer.encode(source.name)
+    val codeToCompile = wrapInSource(generateSymbolValidator(source.code), pkgName)
     val sourceFile = new ScexSourceFile(pkgName, codeToCompile, shared = false)
 
     compile(sourceFile) match {

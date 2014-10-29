@@ -1,13 +1,11 @@
 package com.avsystem.scex
 package compiler
 
-import java.io.{ByteArrayOutputStream, DataOutputStream}
 import java.lang.reflect.{Method, Modifier}
 import java.{lang => jl, util => ju}
 
 import com.avsystem.scex.compiler.JavaTypeParsing._
 import com.avsystem.scex.util.CommonUtils._
-import org.apache.commons.codec.digest.DigestUtils
 
 import scala.language.existentials
 
@@ -37,6 +35,7 @@ object CodeGeneration {
 
   val AdaptersPkg = "_scex_adapter"
   val ProfilePkgPrefix = "_scex_profile_"
+  val UtilsPkgPrefix = "_scex_utils_"
   val ExpressionPkgPrefix = "_scex_expr_"
   val SyntaxValidatorPkgPrefix = "_syntax_validator_"
   val SymbolValidatorPkgPrefix = "_symbol_validator_"
@@ -45,6 +44,7 @@ object CodeGeneration {
 
   val ExpressionClassName = "Expression"
   val ProfileObjectName = "Profile"
+  val UtilsObjectName = "Utils"
   val SyntaxValidatorClassName = "SyntaxValidator"
   val SymbolValidatorClassName = "SymbolValidator"
   val ConversionSupplierClassName = "ConversionSupplier"
@@ -106,6 +106,7 @@ object CodeGeneration {
     exprDef: ExpressionDef,
     fullAdapterClassNameOpt: Option[String],
     profileObjectPkg: String,
+    utilsObjectPkg: String,
     noMacroProcessing: Boolean) = {
 
     val ExpressionDef(profile, template, setter, expression, _, header, _, contextType, resultType) = exprDef
@@ -152,7 +153,7 @@ object CodeGeneration {
         |    val $RootSymbol = $ContextSymbol.root
         |    val $VariablesSymbol = new $ScexPkg.util.DynamicVariableAccessor($ContextSymbol)
         |    import $profileObjectPkg.$ProfileObjectName._
-        |    import Utils._
+        |    import $utilsObjectPkg.$UtilsObjectName._
         |    import $RootSymbol._
         |    $rootGetterAdapterCode
         |    $profileHeader
@@ -198,12 +199,17 @@ object CodeGeneration {
     s"""
       |object $ProfileObjectName extends $MarkersObj.ProfileObject {
       |${adapters.mkString}
-      |  object Utils extends $MarkersObj.ExpressionUtil {
-      |${profile.expressionUtils}
-      |  }
       |}
       |
     """.stripMargin
+  }
+
+  def generateExpressionUtils(code: String) = {
+    s"""
+       |object Utils extends $MarkersObj.ExpressionUtil {
+       |$code
+       |}
+     """.stripMargin
   }
 
   def wrapForParsing(code: String, template: Boolean): (String, Int) = {
@@ -254,13 +260,13 @@ object CodeGeneration {
     s"$literalsOptimizingObj.checkConstant($literalsOptimizingObj.reifyImplicitView[$resultType](_dummy_literal))\n"
   }
 
-  def implicitLiteralConversionClass(profileObjectPkg: String, profileHeader: String, header: String, resultType: String) = {
+  def implicitLiteralConversionClass(profileObjectPkg: String, utilsObjectPkg: String, profileHeader: String, header: String, resultType: String) = {
     val literalsOptimizingScexCompiler = s"$ScexPkg.compiler.LiteralsOptimizingScexCompiler"
     s"""
       |final class $ConversionSupplierClassName extends $literalsOptimizingScexCompiler.ConversionSupplier[$resultType] {
       |  def get = {
       |    import $profileObjectPkg.$ProfileObjectName._
-      |    import Utils._
+      |    import $utilsObjectPkg.$UtilsObjectName._
       |    $profileHeader
       |    $header
       |    implicitly[$ScexPkg.util.Literal => ($resultType)]

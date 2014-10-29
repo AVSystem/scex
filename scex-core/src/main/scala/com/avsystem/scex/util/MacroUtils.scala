@@ -6,7 +6,7 @@ import com.avsystem.scex.util.CommonUtils._
 import com.avsystem.scex.validation.FakeImplicitConversion
 import java.{util => ju, lang => jl}
 import scala.reflect.macros.Universe
-import com.avsystem.scex.compiler.Markers.{ProfileObject, ExpressionUtil, JavaGetterAdapter}
+import com.avsystem.scex.compiler.Markers.{Synthetic, ProfileObject, ExpressionUtil, JavaGetterAdapter}
 
 trait MacroUtils {
   val universe: Universe
@@ -14,6 +14,7 @@ trait MacroUtils {
   import universe._
 
   lazy val adapterType = typeOf[JavaGetterAdapter]
+  lazy val syntheticType = typeOf[Synthetic]
   lazy val expressionUtilType = typeOf[ExpressionUtil]
   lazy val profileObjectType = typeOf[ProfileObject]
 
@@ -259,7 +260,7 @@ trait MacroUtils {
 
   def isScexSynthetic(symbol: Symbol): Boolean =
     symbol != null && symbol != NoSymbol &&
-      (isProfileObject(symbol) || isScexSynthetic(symbol.owner))
+      (nonBottomSymbolType(symbol) <:< syntheticType || isScexSynthetic(symbol.owner))
 
   def isAdapter(tpe: Type): Boolean =
     tpe != null && !isBottom(tpe) && tpe <:< adapterType

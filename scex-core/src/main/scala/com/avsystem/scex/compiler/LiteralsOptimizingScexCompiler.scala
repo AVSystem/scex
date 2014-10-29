@@ -58,7 +58,8 @@ trait LiteralsOptimizingScexCompiler extends ScexPresentationCompiler {
     import com.avsystem.scex.compiler.CodeGeneration._
 
     val profileObjectPkg = compileProfileObject(profile).get
-    val conversionClassCode = implicitLiteralConversionClass(profileObjectPkg, profile.expressionHeader, header, resultType)
+    val utilsObjectPkg = compileExpressionUtils(profile.expressionUtils).get
+    val conversionClassCode = implicitLiteralConversionClass(profileObjectPkg, utilsObjectPkg, profile.expressionHeader, header, resultType)
     val pkgName = ConversionSupplierPkgPrefix + DigestUtils.md5Hex(conversionClassCode)
     val fullCode = wrapInSource(conversionClassCode, pkgName)
 

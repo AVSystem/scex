@@ -11,10 +11,12 @@ import scala.reflect.{ClassTag, classTag}
  */
 object Markers {
 
-  trait ExpressionUtil extends Any
+  trait Synthetic extends Any
 
-  trait JavaGetterAdapter extends Any
+  trait ExpressionUtil extends Any with Synthetic
 
-  trait ProfileObject extends Any
+  trait JavaGetterAdapter extends Any with Synthetic
+
+  trait ProfileObject extends Any with Synthetic
 
 }

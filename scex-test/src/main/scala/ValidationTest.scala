@@ -1,10 +1,10 @@
 import java.util.Collections
 import java.{lang => jl, util => ju}
 
+import com.avsystem.scex._
 import com.avsystem.scex.compiler.ScexSettings
 import com.avsystem.scex.japi.DefaultJavaScexCompiler
 import com.avsystem.scex.validation._
-import com.avsystem.scex.{ExpressionContext, ExpressionProfile, PredefinedAccessSpecs}
 
 import scala.language.{dynamics, existentials}
 import scala.reflect.macros.Universe
@@ -162,7 +162,8 @@ object ValidationTest {
 
     val symbolValidator = SymbolValidator(PredefinedAccessSpecs.basicOperations)
 
-    val profile = new ExpressionProfile("test", syntaxValidator, symbolValidator, "", "val lol = \"dafuq\"; def immaUtil = \"util, lol\"")
+    val utils = NamedSource("test", "val lol = \"dafuq\"; def immaUtil = \"util, lol\"")
+    val profile = new ExpressionProfile("test", syntaxValidator, symbolValidator, "", utils)
     val compiler = new DefaultJavaScexCompiler(new ScexSettings)
 
     val myexpr = "(null: A[_])"

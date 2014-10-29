@@ -3,7 +3,7 @@ import java.{lang => jl, util => ju}
 import com.avsystem.scex.compiler.ScexSettings
 import com.avsystem.scex.japi.DefaultJavaScexCompiler
 import com.avsystem.scex.validation.{SymbolValidator, SyntaxValidator}
-import com.avsystem.scex.{ExpressionContext, ExpressionProfile, PredefinedAccessSpecs}
+import com.avsystem.scex.{NamedSource, ExpressionContext, ExpressionProfile, PredefinedAccessSpecs}
 
 
 object MemoryTest {
@@ -25,7 +25,7 @@ object MemoryTest {
       }
     )
 
-    val profile = new ExpressionProfile("test", SyntaxValidator.SimpleExpressions, symbolValidator, "", "")
+    val profile = new ExpressionProfile("test", SyntaxValidator.SimpleExpressions, symbolValidator, "", NamedSource("test", ""))
 
     var i = 0
     while (true) {

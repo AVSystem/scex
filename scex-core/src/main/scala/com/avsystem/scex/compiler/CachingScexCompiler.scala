@@ -21,15 +21,19 @@ trait CachingScexCompiler extends ScexCompiler {
   private val profileCompilationResultsCache =
     CacheBuilder.newBuilder.build[ExpressionProfile, Try[String]]
 
+  // holds names of packages to which utils are compiled
+  private val utilsCompilationResultsCache =
+    CacheBuilder.newBuilder.build[String, Try[String]]
+
   // holds code of implicit adapters over Java classes that add Scala-style getters to Java bean getters
   private val fullJavaGetterAdaptersCache =
     CacheBuilder.newBuilder.build[Class[_], Try[Unit]]
 
   private val syntaxValidatorsCache =
-    CacheBuilder.newBuilder.build[(String, String), SyntaxValidator]
+    CacheBuilder.newBuilder.build[String, SyntaxValidator]
 
   private val symbolValidatorsCache =
-    CacheBuilder.newBuilder.build[(String, String), SymbolValidator]
+    CacheBuilder.newBuilder.build[String, SymbolValidator]
 
   override protected def compileExpression(exprDef: ExpressionDef) =
     expressionCache.get(exprDef, callable(super.compileExpression(exprDef)))
@@ -37,25 +41,29 @@ trait CachingScexCompiler extends ScexCompiler {
   override protected def compileProfileObject(profile: ExpressionProfile) =
     profileCompilationResultsCache.get(profile, callable(super.compileProfileObject(profile)))
 
+  override protected def compileExpressionUtils(source: NamedSource) =
+    utilsCompilationResultsCache.get(source.name, callable(super.compileExpressionUtils(source)))
+
   override protected def compileFullJavaGetterAdapter(clazz: Class[_]) =
     fullJavaGetterAdaptersCache.get(clazz, callable(super.compileFullJavaGetterAdapter(clazz)))
 
-  override def compileSyntaxValidator(name: String, code: String) =
-    stripExecutionException(syntaxValidatorsCache.get((name, code), callable(super.compileSyntaxValidator(name, code))))
+  override def compileSyntaxValidator(source: NamedSource) =
+    unwrapExecutionException(syntaxValidatorsCache.get(source.name, callable(super.compileSyntaxValidator(source))))
 
-  override def compileSymbolValidator(name: String, code: String) =
-    stripExecutionException(symbolValidatorsCache.get((name, code), callable(super.compileSymbolValidator(name, code))))
+  override def compileSymbolValidator(source: NamedSource) =
+    unwrapExecutionException(symbolValidatorsCache.get(source.name, callable(super.compileSymbolValidator(source))))
 
   override def reset(): Unit = underLock {
     super.reset()
     expressionCache.invalidateAll()
     profileCompilationResultsCache.invalidateAll()
+    utilsCompilationResultsCache.invalidateAll()
     fullJavaGetterAdaptersCache.invalidateAll()
     syntaxValidatorsCache.invalidateAll()
     symbolValidatorsCache.invalidateAll()
   }
 
-  private def stripExecutionException[T](code: => T) =
+  private def unwrapExecutionException[T](code: => T) =
     try code catch {
       case e: ExecutionException => throw e.getCause
     }

@@ -2,7 +2,7 @@ package com.avsystem.scex.compiler
 
 import java.{lang => jl, util => ju}
 
-import com.avsystem.scex.ExpressionProfile
+import com.avsystem.scex.{NamedSource, ExpressionProfile}
 import com.avsystem.scex.compiler.presentation.ScexPresentationCompiler
 import com.avsystem.scex.util.SimpleContext
 import com.avsystem.scex.validation.{SymbolValidator, SyntaxValidator}
@@ -46,7 +46,7 @@ class ClassfileReusingTest extends ScexFunSuite with BeforeAndAfter {
     settings.classfileDirectory.value = "testClassfileCache"
   }
 
-  val emptyProfile = new ExpressionProfile("test", SyntaxValidator.SimpleExpressions, SymbolValidator(Nil), "", "")
+  val emptyProfile = new ExpressionProfile("test", SyntaxValidator.SimpleExpressions, SymbolValidator(Nil), "", null)
 
   def applyIntExpr(expr: String) =
     compiler.getCompiledExpression[SimpleContext[Unit], Int](emptyProfile, expr, template = false).apply(SimpleContext(()))
@@ -77,24 +77,8 @@ class ClassfileReusingTest extends ScexFunSuite with BeforeAndAfter {
     assert(c1 !== c3) // there will be new class loader after reset
   }
 
-  test("shared classfile reusing test") {
-    val c1 = compiler.compileSymbolValidator("test", "Nil").getClass
-    assert(compiler.sourcesCompiled.size === 1)
-
-    val c2 = compiler.compileSymbolValidator("test", "Nil").getClass
-    assert(compiler.sourcesCompiled.size === 1)
-
-    assert(c1 === c2) // both compilations should use the same class loader
-
-    compiler.reset()
-
-    val c3 = compiler.compileSymbolValidator("test", "Nil").getClass
-    assert(compiler.sourcesCompiled.size === 0)
-    assert(c1 !== c3) // there will be new class loader after reset
-  }
-
   test("recompilation on binary compatibility breach test") {
-    import SymbolValidator._
+    import com.avsystem.scex.validation.SymbolValidator._
 
     val acl = allow {
       Predef.implicitly(_: Any)
@@ -106,7 +90,7 @@ class ClassfileReusingTest extends ScexFunSuite with BeforeAndAfter {
       """
         |implicit def implicitString1: String = "implicitString1"
       """.stripMargin
-    val profile1 = new ExpressionProfile("test", SyntaxValidator.SimpleExpressions, symbolValidator, "", utils1)
+    val profile1 = new ExpressionProfile("test", SyntaxValidator.SimpleExpressions, symbolValidator, "", NamedSource("test", utils1))
     val cexpr1 = compiler.getCompiledExpression[SimpleContext[Unit], String](profile1, expr, template = false)
 
     assert(cexpr1(SimpleContext(())) === "implicitString1")
@@ -117,7 +101,7 @@ class ClassfileReusingTest extends ScexFunSuite with BeforeAndAfter {
       """
         |implicit def implicitString2: String = "implicitString2"
       """.stripMargin
-    val profile2 = new ExpressionProfile("test", SyntaxValidator.SimpleExpressions, symbolValidator, "", utils2)
+    val profile2 = new ExpressionProfile("test", SyntaxValidator.SimpleExpressions, symbolValidator, "", NamedSource("test", utils2))
     val cexpr2 = compiler.getCompiledExpression[SimpleContext[Unit], String](profile2, expr, template = false)
 
     assert(cexpr2(SimpleContext(())) === "implicitString2")
