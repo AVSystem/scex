@@ -56,8 +56,9 @@ trait JavaScexCompiler extends ScexCompiler {
       val scalaResultType = typesCache.get(_resultTypeToken.getType)
       val rootObjectClass = rootObjectClassCache.get(_contextTypeToken)
 
-      getCompiledExpression[C, T](ExpressionDef(_profile, _template, _setter, _expression, PositionMapping.empty,
-        _header, rootObjectClass, scalaContextType, scalaResultType))
+      val (actualExpression, positionMapping) = preprocess(_expression, _template)
+      getCompiledExpression[C, T](ExpressionDef(_profile, _template, _setter, _expression, actualExpression,
+        positionMapping, _header, rootObjectClass, scalaContextType, scalaResultType))
     }
 
     def contextType[NC <: ExpressionContext[_, _]](contextTypeToken: TypeToken[NC]) = fluent {

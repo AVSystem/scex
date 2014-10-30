@@ -227,14 +227,13 @@ trait ScexCompiler extends LoggingUtils {
     if (errors.isEmpty) Left(classLoader) else Right(errors)
   }
 
-  protected def preprocess(exprDef: ExpressionDef): ExpressionDef =
-    exprDef
+  protected def preprocess(expression: String, template: Boolean): (String, PositionMapping) =
+    (expression, PositionMapping.empty)
 
   protected def compileExpression(exprDef: ExpressionDef): Try[RawExpression] = underLock {
-    val preprocessedExprDef = preprocess(exprDef)
-    val (pkgName, codeToCompile, offset) = expressionCode(preprocessedExprDef)
+    val (pkgName, codeToCompile, offset) = expressionCode(exprDef)
     // every single expression has its own classloader and virtual directory
-    val sourceFile = new ExpressionSourceFile(preprocessedExprDef, pkgName, codeToCompile, offset)
+    val sourceFile = new ExpressionSourceFile(exprDef, pkgName, codeToCompile, offset)
     val sourceInfo = new SourceInfo(pkgName, codeToCompile, offset, offset + exprDef.expression.length,
       sourceFile.offsetToLine(offset) + 1, sourceFile.offsetToLine(offset + exprDef.expression.length - 1) + 2)
     val debugInfo = new ExpressionDebugInfo(exprDef, sourceInfo)
@@ -276,8 +275,9 @@ trait ScexCompiler extends LoggingUtils {
         case _: ClassNotFoundException => null
       }
 
-    getCompiledExpression(ExpressionDef(profile, template, setter = false, expression, PositionMapping.empty,
-      header, rootObjectClass, contextType.toString, typeOf[T].toString))
+    val (actualExpression, positionMapping) = preprocess(expression, template)
+    getCompiledExpression(ExpressionDef(profile, template, setter = false, expression, actualExpression,
+      positionMapping, header, rootObjectClass, contextType.toString, typeOf[T].toString))
   }
 
   def getCompiledSetterExpression[C <: ExpressionContext[_, _] : TypeTag, T: TypeTag](
@@ -300,8 +300,9 @@ trait ScexCompiler extends LoggingUtils {
         case _: ClassNotFoundException => null
       }
 
-    getCompiledExpression(ExpressionDef(profile, template, setter = true, expression, PositionMapping.empty,
-      header, rootObjectClass, contextType.toString, typeOf[T].toString))
+    val (actualExpression, positionMapping) = preprocess(expression, template)
+    getCompiledExpression(ExpressionDef(profile, template, setter = true, expression, actualExpression,
+      positionMapping, header, rootObjectClass, contextType.toString, typeOf[T].toString))
   }
 
 

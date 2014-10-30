@@ -72,9 +72,11 @@ trait ScexPresentationCompiler extends ScexCompiler {
     require(resultType != null, "Result type cannot be null")
 
     private def exprDef(expression: String, bare: Boolean) = {
-      val result = ExpressionDef(profile, template && !bare, setter && !bare, expression, PositionMapping.empty,
+      val (actualExpression, positionMapping) =
+        if(bare) (expression, PositionMapping.empty) else preprocess(expression, template)
+
+      ExpressionDef(profile, template && !bare, setter && !bare, expression, actualExpression, positionMapping,
         header, rootObjectClass, contextType, if (bare) "Any" else resultType)
-      if (bare) result else preprocess(result)
     }
 
     def getErrors(expression: String): List[CompileError] =

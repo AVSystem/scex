@@ -17,8 +17,8 @@ import java.{util => ju, lang => jl}
  * Author: ghik
  */
 trait XmlFriendlyScexCompiler extends ScexCompiler {
-  override def preprocess(exprDef: ExpressionDef) = {
-    val ps = XmlFriendlyTranslator.translate(exprDef.expression, exprDef.template)
-    exprDef.copy(expression = ps.result, positionMapping = ps.positionMapping)
+  override def preprocess(expression: String, template: Boolean) = {
+    val ps = XmlFriendlyTranslator.translate(expression, template)
+    (ps.result, ps.positionMapping)
   }
 }

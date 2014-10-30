@@ -16,5 +16,5 @@ class DefaultScexCompiler(val settings: ScexSettings)
   with CachingScexCompiler
   with CachingScexPresentationCompiler
   with WeakReferenceWrappingScexCompiler
-  with LiteralsOptimizingScexCompiler
+  with TemplateOptimizingScexCompiler
 

@@ -14,7 +14,7 @@ class XmlFriendlyJavaScexCompiler(val settings: ScexSettings)
   extends ScexCompiler
   with ScexPresentationCompiler
   with ClassfileReusingScexCompiler
-  with LiteralsOptimizingScexCompiler
+  with TemplateOptimizingScexCompiler
   with XmlFriendlyScexCompiler
   with CachingScexCompiler
   with CachingScexPresentationCompiler

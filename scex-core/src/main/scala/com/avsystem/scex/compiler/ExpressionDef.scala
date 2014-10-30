@@ -11,6 +11,7 @@ case class ExpressionDef(
   profile: ExpressionProfile,
   template: Boolean,
   setter: Boolean,
+  originalExpression: String,
   expression: String,
   positionMapping: PositionMapping,
   header: String,

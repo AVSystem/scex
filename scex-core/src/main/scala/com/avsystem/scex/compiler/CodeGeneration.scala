@@ -109,7 +109,7 @@ object CodeGeneration {
     utilsObjectPkg: String,
     noMacroProcessing: Boolean) = {
 
-    val ExpressionDef(profile, template, setter, expression, _, header, _, contextType, resultType) = exprDef
+    val ExpressionDef(profile, template, setter, _, expression, _, header, _, contextType, resultType) = exprDef
 
     val resultOrSetterType = if (setter) s"$ScexPkg.Setter[$resultType]" else resultType
 
@@ -251,14 +251,14 @@ object CodeGeneration {
     s"$header; val _dummy_literal: $ScexPkg.util.Literal = ???\n"
 
   def implicitLiteralViewExpression(resultType: String) = {
-    val literalsOptimizingObj = s"$ScexPkg.compiler.LiteralsOptimizingScexCompiler"
-    s"$literalsOptimizingObj.checkConstant($literalsOptimizingObj.reifyImplicitView[$resultType](_dummy_literal))\n"
+    val templateOptimizingObj = s"$ScexPkg.compiler.TemplateOptimizingScexCompiler"
+    s"$templateOptimizingObj.checkConstant($templateOptimizingObj.reifyImplicitView[$resultType](_dummy_literal))\n"
   }
 
   def implicitLiteralConversionClass(profileObjectPkg: String, utilsObjectPkg: String, profileHeader: String, header: String, resultType: String) = {
-    val literalsOptimizingScexCompiler = s"$ScexPkg.compiler.LiteralsOptimizingScexCompiler"
+    val templateOptimizingScexCompiler = s"$ScexPkg.compiler.TemplateOptimizingScexCompiler"
     s"""
-      |final class $ConversionSupplierClassName extends $literalsOptimizingScexCompiler.ConversionSupplier[$resultType] {
+      |final class $ConversionSupplierClassName extends $templateOptimizingScexCompiler.ConversionSupplier[$resultType] {
       |  def get = {
       |    import $profileObjectPkg.$ProfileObjectName._
       |    import $utilsObjectPkg.$UtilsObjectName._

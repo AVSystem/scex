@@ -4,14 +4,13 @@ package compiler
 import java.util.concurrent.TimeUnit
 import java.{lang => jl, util => ju}
 
-import com.avsystem.scex.compiler.LiteralsOptimizingScexCompiler.ConversionSupplier
 import com.avsystem.scex.compiler.ScexCompiler.{CompilationFailedException, CompileError}
+import com.avsystem.scex.compiler.TemplateOptimizingScexCompiler.ConversionSupplier
 import com.avsystem.scex.compiler.presentation.ScexPresentationCompiler
 import com.avsystem.scex.util.Literal
 import com.google.common.cache.CacheBuilder
 import org.apache.commons.codec.digest.DigestUtils
 
-import scala.reflect.internal.util.BatchSourceFile
 import scala.util.{Success, Try}
 
 /**
@@ -22,7 +21,7 @@ import scala.util.{Success, Try}
  * Created: 01-04-2014
  * Author: ghik
  */
-trait LiteralsOptimizingScexCompiler extends ScexPresentationCompiler {
+trait TemplateOptimizingScexCompiler extends ScexPresentationCompiler {
 
   import com.avsystem.scex.util.CacheImplicits._
 
@@ -49,8 +48,9 @@ trait LiteralsOptimizingScexCompiler extends ScexPresentationCompiler {
     import com.avsystem.scex.compiler.CodeGeneration._
     val actualHeader = implicitLiteralViewHeader(exprDef.header)
     val validationExpression = implicitLiteralViewExpression(exprDef.resultType)
-    val validationExprDef = exprDef.copy(template = false, setter = false, expression = validationExpression,
-      positionMapping = PositionMapping.empty, header = actualHeader)
+    val validationExprDef = ExpressionDef(exprDef.profile, template = false, setter = false,
+      validationExpression, validationExpression, PositionMapping.empty, actualHeader, exprDef.rootObjectClass,
+      exprDef.contextType, exprDef.resultType)
     super.compileExpression(validationExprDef)
   }
 
@@ -92,10 +92,9 @@ trait LiteralsOptimizingScexCompiler extends ScexPresentationCompiler {
   override protected def compileExpression(exprDef: ExpressionDef) = {
     lazy val sourceInfo = new SourceInfo(null, exprDef.expression, 0, exprDef.expression.length, 1, exprDef.expression.count(_ == '\n') + 2)
     lazy val debugInfo = new ExpressionDebugInfo(exprDef, sourceInfo)
-    val preprocessedExprDef = preprocess(exprDef)
 
-    if (isEligible(preprocessedExprDef)) {
-      val literal = toLiteral(preprocessedExprDef)
+    if (isEligible(exprDef)) {
+      val literal = toLiteral(exprDef)
       if (isStringSupertype(exprDef.resultType))
         Success(LiteralExpression(literal.literalString)(debugInfo))
       else getLiteralConversion(exprDef).map { conversion =>
@@ -130,7 +129,7 @@ trait LiteralsOptimizingScexCompiler extends ScexPresentationCompiler {
   }
 }
 
-object LiteralsOptimizingScexCompiler {
+object TemplateOptimizingScexCompiler {
 
   trait ConversionSupplier[+T] {
     def get: Literal => T
