@@ -13,4 +13,3 @@ class EvaluationException(message: String, cause: Throwable) extends RuntimeExce
   def this(cause: Throwable) =
     this(null, cause)
 }
-

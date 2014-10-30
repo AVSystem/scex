@@ -44,11 +44,24 @@ trait ScexCompiler extends LoggingUtils {
       new String(pos.source.content, start, end - start)
     } else ""
 
+    def mapPosition(pos: Position, mapping: PositionMapping) =
+      if (pos.isRange) {
+        val result = pos
+          .withStart(mapping(pos.start))
+          .withPoint(mapping(pos.point))
+          .withEnd(mapping(pos.end))
+        if (pos.isTransparent) result.makeTransparent else result
+      }
+      else if (pos.isOffset)
+        pos.withPoint(mapping(pos.point))
+      else pos
+
     def display(pos: Position, msg: String, severity: Severity) {
       if (severity == ERROR) {
         val actualPos = pos.source match {
           case source: ExpressionSourceFile if includes(source.expressionPos, pos) =>
-            pos.withSource(source.bareSource).withShift(-source.expressionPos.start)
+            val positionMapping = source.exprDef.positionMapping.reverse
+            mapPosition(pos.withShift(-source.expressionPos.start), positionMapping).withSource(source.bareSource)
           case _ => pos
         }
         errorsBuilder += CompileError(lineContent(actualPos), if (actualPos.isDefined) actualPos.column else 1, msg)
@@ -189,7 +202,7 @@ trait ScexCompiler extends LoggingUtils {
   protected def createNonSharedClassLoader(sourceFile: ScexSourceFile): ScexClassLoader =
     new ScexClassLoader(new VirtualDirectory(sourceFile.file.name, None), getSharedClassLoader)
 
-  protected def compile(sourceFile: ScexSourceFile): Either[ScexClassLoader, Seq[CompileError]] = {
+  protected def compile(sourceFile: ScexSourceFile): Either[ScexClassLoader, List[CompileError]] = {
     compilationCount += 1
 
     val classLoader = if (sourceFile.shared) getSharedClassLoader else createNonSharedClassLoader(sourceFile)
@@ -360,7 +373,7 @@ trait ScexCompiler extends LoggingUtils {
 
 object ScexCompiler {
 
-  case class CompilationFailedException(source: String, errors: Seq[CompileError])
+  case class CompilationFailedException(source: String, errors: List[CompileError])
     extends RuntimeException(s"Compilation failed with ${pluralize(errors.size, "error")}:\n${errors.mkString("\n")}")
 
   case class CompileError(line: String, column: Int, msg: String) {

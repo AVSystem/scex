@@ -17,5 +17,5 @@ class ExpressionSourceFile(
   require(exprDef != null, "Expression definition cannot be null")
 
   val expressionPos = Position.range(this, startOffset, startOffset, startOffset + exprDef.expression.length)
-  lazy val bareSource = new BatchSourceFile(sourceName, exprDef.expression)
+  lazy val bareSource = new ScexSourceFile(sourceName, exprDef.originalExpression, shared = false)
 }

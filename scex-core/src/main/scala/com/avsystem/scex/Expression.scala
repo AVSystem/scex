@@ -26,7 +26,7 @@ abstract class AbstractExpression[-C <: ExpressionContext[_, _], +T]
 
       def exception(el: StackTraceElement) = {
         val lineNumber = el.getLineNumber - si.firstLine
-        val lineContent = si.fullCode.substring(si.startOffset, si.endOffset).split('\n')(lineNumber)
+        val lineContent = debugInfo.definition.originalExpression.split('\n')(lineNumber)
         new EvaluationException(lineContent, lineNumber + 1, cause)
       }
 

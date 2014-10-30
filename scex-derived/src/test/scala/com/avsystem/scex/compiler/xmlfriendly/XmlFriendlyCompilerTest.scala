@@ -3,6 +3,7 @@ package compiler.xmlfriendly
 
 import java.{lang => jl, util => ju}
 
+import com.avsystem.scex.compiler.ScexCompiler.{CompileError, CompilationFailedException}
 import com.avsystem.scex.compiler.{ScexSettings, ScexFunSuite}
 import com.avsystem.scex.japi.XmlFriendlyJavaScexCompiler
 import com.avsystem.scex.util.SimpleContext
@@ -67,5 +68,27 @@ class XmlFriendlyCompilerTest extends ScexFunSuite {
     context.setVariable("shiet", "true")
     val cexpr = compiler.getCompiledExpression[SimpleContext[Unit], Boolean](createProfile(acl), expr, template = false)
     assert(false === cexpr(context))
+  }
+
+  test("compilation error translation test") {
+    val acl = PredefinedAccessSpecs.basicOperations
+    val expr = "#variable fuu #other"
+    try {
+      compiler.getCompiledExpression[SimpleContext[Unit], String](createProfile(acl), expr, template = false)
+    } catch {
+      case CompilationFailedException(_, List(CompileError(source, column, _))) =>
+        assert(source === expr)
+        assert(column === 11)
+    }
+  }
+
+  test("evaluation exception translation test") {
+    val acl = PredefinedAccessSpecs.basicOperations
+    val expr = "#nonexistent.toString"
+    val cexpr = compiler.getCompiledExpression[SimpleContext[Unit], String](createProfile(acl), expr, template = false)
+    try cexpr(SimpleContext(())) catch {
+      case ee: EvaluationException =>
+        assert(ee.getMessage === new EvaluationException(expr, 1, null).getMessage)
+    }
   }
 }
