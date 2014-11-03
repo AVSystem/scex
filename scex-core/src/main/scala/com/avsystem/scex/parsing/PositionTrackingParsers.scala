@@ -1,7 +1,7 @@
-package com.avsystem.scex
-package compiler.xmlfriendly
+package com.avsystem.scex.parsing
 
-import java.{util => ju, lang => jl}
+import java.{lang => jl, util => ju}
+
 import scala.util.parsing.combinator.RegexParsers
 
 /**
@@ -41,4 +41,11 @@ trait PositionTrackingParsers extends RegexParsers {
   def join(pstrs: Traversable[PString]) =
     if (pstrs.nonEmpty) pstrs.reduce(_ + _) else PString("", 0, 0, Vector.empty)
 
+  def withOffset[T](parser: Parser[T]): Parser[(T, Int)] = new Parser[(T, Int)] {
+    override def apply(in: Input) =
+      parser.apply(in).map(r => (r, in.offset))
+  }
+
 }
+
+object PositionTrackingParsers extends PositionTrackingParsers

@@ -3,6 +3,8 @@ package compiler
 
 import java.{lang => jl, util => ju}
 
+import com.avsystem.scex.parsing.PositionMapping
+
 /**
  * Created: 14-11-2013
  * Author: ghik
@@ -11,10 +13,12 @@ case class ExpressionDef(
   profile: ExpressionProfile,
   template: Boolean,
   setter: Boolean,
-  originalExpression: String,
   expression: String,
-  positionMapping: PositionMapping,
   header: String,
-  rootObjectClass: Class[_],
   contextType: String,
-  resultType: String)
+  resultType: String)(
+
+  val originalExpression: String,
+  val positionMapping: PositionMapping,
+  val rootObjectClass: Class[_]) {
+}

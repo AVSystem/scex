@@ -109,7 +109,7 @@ object CodeGeneration {
     utilsObjectPkg: String,
     noMacroProcessing: Boolean) = {
 
-    val ExpressionDef(profile, template, setter, _, expression, _, header, _, contextType, resultType) = exprDef
+    val ExpressionDef(profile, template, setter, expression, header, contextType, resultType) = exprDef
 
     val resultOrSetterType = if (setter) s"$ScexPkg.Setter[$resultType]" else resultType
 
@@ -145,7 +145,10 @@ object CodeGeneration {
     val prefix =
       s"""
         |
-        |final class $ExpressionClassName(val debugInfo: com.avsystem.scex.ExpressionDebugInfo)
+        |final class $ExpressionClassName(
+        |  val debugInfo: com.avsystem.scex.ExpressionDebugInfo,
+        |  val sourceInfo: com.avsystem.scex.compiler.SourceInfo)
+        |
         |  extends $ScexPkg.AbstractExpression[$contextType, $resultOrSetterType]
         |  with $CompilerPkg.TemplateInterpolations[$resultType] {
         |

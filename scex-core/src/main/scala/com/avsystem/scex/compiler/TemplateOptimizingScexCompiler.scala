@@ -7,16 +7,24 @@ import java.{lang => jl, util => ju}
 import com.avsystem.scex.compiler.ScexCompiler.{CompilationFailedException, CompileError}
 import com.avsystem.scex.compiler.TemplateOptimizingScexCompiler.ConversionSupplier
 import com.avsystem.scex.compiler.presentation.ScexPresentationCompiler
+import com.avsystem.scex.parsing._
 import com.avsystem.scex.util.Literal
 import com.google.common.cache.CacheBuilder
 import org.apache.commons.codec.digest.DigestUtils
 
-import scala.util.{Success, Try}
+import scala.annotation.tailrec
+import scala.util.control.NonFatal
+import scala.util.{Failure, Success, Try}
 
 /**
- * Avoids actual compilation of most simple template literal expressions by trying to parse them
+ * An extension of ScexCompiler which:
+ *
+ * <ul>
+ * <li>Avoids actual compilation of most simple template literal expressions by trying to parse them
  * immediately into resulting values. This also means that conversion of literal values to expected result type
- * is performed immediately during compilation and conversion errors will be reported as compilation errors.
+ * is performed immediately during compilation and conversion errors will be reported as compilation errors.</li>
+ * <li>Manually parses template expressions and compiles each template argument as a separate expression.</li>
+ * </ul>
  *
  * Created: 01-04-2014
  * Author: ghik
@@ -36,7 +44,18 @@ trait TemplateOptimizingScexCompiler extends ScexPresentationCompiler {
     def apply(ctx: ExpressionContext[_, _]) = value
   }
 
-  val interpolatedParamStart = "(^|[^$])(\\$\\$)*\\$([^$]|$)".r
+  private class OptimizedTemplateExpression(parts: List[String], args: List[RawExpression], val debugInfo: ExpressionDebugInfo)
+    extends RawExpression {
+
+    def apply(c: ExpressionContext[_, _]) = {
+      val firstPart :: partsRest = parts
+      firstPart + (args.iterator zip partsRest.iterator).map {
+        case (argExpr, part) => argExpr.apply(c).toString + part
+      }.mkString
+    }
+  }
+
+  import com.avsystem.scex.parsing.TemplateParser.{parseTemplate, Success => ParsingSuccess}
 
   /**
    * Compiles a dummy expression that tests if there is a valid implicit conversion from Literal to expected type
@@ -48,9 +67,8 @@ trait TemplateOptimizingScexCompiler extends ScexPresentationCompiler {
     import com.avsystem.scex.compiler.CodeGeneration._
     val actualHeader = implicitLiteralViewHeader(exprDef.header)
     val validationExpression = implicitLiteralViewExpression(exprDef.resultType)
-    val validationExprDef = ExpressionDef(exprDef.profile, template = false, setter = false,
-      validationExpression, validationExpression, PositionMapping.empty, actualHeader, exprDef.rootObjectClass,
-      exprDef.contextType, exprDef.resultType)
+    val validationExprDef = ExpressionDef(exprDef.profile, template = false, setter = false, validationExpression,
+      actualHeader, exprDef.contextType, exprDef.resultType)(validationExpression, EmptyPositionMapping, exprDef.rootObjectClass)
     super.compileExpression(validationExprDef)
   }
 
@@ -78,48 +96,81 @@ trait TemplateOptimizingScexCompiler extends ScexPresentationCompiler {
   private def toCompileError(expr: String, throwable: Throwable) =
     new CompileError(expr, 1, throwable.getClass.getName + ": " + throwable.getMessage)
 
-  private def isEligible(exprDef: ExpressionDef) =
-    exprDef.template && !exprDef.setter &&
-      !interpolatedParamStart.findFirstIn(exprDef.expression).isDefined &&
-      (isStringSupertype(exprDef.resultType) || validateLiteralConversion(exprDef).isSuccess)
-
-  private def toLiteral(exprDef: ExpressionDef) =
-    Literal(exprDef.expression.replaceAllLiterally("$$", "$"))
-
   private def isStringSupertype(tpe: String) =
     JavaTypeParsing.StringSupertypes.contains(tpe)
 
-  override protected def compileExpression(exprDef: ExpressionDef) = {
-    lazy val sourceInfo = new SourceInfo(null, exprDef.expression, 0, exprDef.expression.length, 1, exprDef.expression.count(_ == '\n') + 2)
-    lazy val debugInfo = new ExpressionDebugInfo(exprDef, sourceInfo)
+  override protected def compileExpression(exprDef: ExpressionDef) = if (exprDef.template && !exprDef.setter) {
+    lazy val debugInfo = new ExpressionDebugInfo(exprDef)
 
-    if (isEligible(exprDef)) {
-      val literal = toLiteral(exprDef)
-      if (isStringSupertype(exprDef.resultType))
-        Success(LiteralExpression(literal.literalString)(debugInfo))
-      else getLiteralConversion(exprDef).map { conversion =>
-        try LiteralExpression(conversion(literal))(debugInfo) catch {
-          case throwable: Throwable =>
-            throw new CompilationFailedException(literal.literalString,
-              List(toCompileError(literal.literalString, throwable)))
+    parseTemplate(exprDef.expression) match {
+      case ParsingSuccess((List(singlePart), Nil), _) =>
+
+        if (isStringSupertype(exprDef.resultType))
+          Success(LiteralExpression(singlePart)(debugInfo))
+        else if (validateLiteralConversion(exprDef).isSuccess)
+          getLiteralConversion(exprDef).map { conversion =>
+            try LiteralExpression(conversion(Literal(singlePart)))(debugInfo) catch {
+              case NonFatal(throwable) =>
+                throw new CompilationFailedException(singlePart, List(toCompileError(singlePart, throwable)))
+            }
+          }
+        else super.compileExpression(exprDef)
+
+      case ParsingSuccess((List("", ""), List(_)), _) =>
+        super.compileExpression(exprDef)
+
+      case ParsingSuccess((parts, args), _) if isStringSupertype(exprDef.resultType) =>
+        val argExprTries = args.map { arg =>
+          val shift = new SingleShiftPositionMapping(arg.beg)
+          val reverseMapping = exprDef.positionMapping.reverse
+          val originalArg = exprDef.originalExpression.substring(reverseMapping(arg.beg), reverseMapping(arg.end - 1) + 1)
+          val shiftedMapping = shift andThen exprDef.positionMapping andThen shift.reverse
+
+          super.compileExpression(
+            ExpressionDef(exprDef.profile, template = true, setter = false, arg.result, exprDef.header,
+              exprDef.contextType, "String")(originalArg, shiftedMapping, exprDef.rootObjectClass))
         }
-      }
-    } else super.compileExpression(exprDef)
-  }
+
+        @tailrec
+        def merge(exprs: List[Try[RawExpression]], successAcc: List[RawExpression], errorsAcc: List[CompileError]): Try[List[RawExpression]] =
+          exprs match {
+            case Success(expr) :: rest =>
+              merge(rest, expr :: successAcc, errorsAcc)
+            case Failure(CompilationFailedException(_, errors)) :: rest =>
+              merge(rest, successAcc, errors ::: errorsAcc)
+            case Failure(throwable) :: _ =>
+              Failure(throwable)
+            case Nil =>
+              if (errorsAcc.nonEmpty)
+                Failure(CompilationFailedException(exprDef.expression, errorsAcc))
+              else
+                Success(successAcc)
+          }
+
+        merge(argExprTries.reverse, Nil, Nil).map(new OptimizedTemplateExpression(parts, _, debugInfo))
+
+      case _ =>
+        super.compileExpression(exprDef)
+    }
+  } else super.compileExpression(exprDef)
 
   override protected def getErrors(exprDef: ExpressionDef) = super.getErrors(exprDef) match {
-    case Nil if isEligible(exprDef) && !isStringSupertype(exprDef.resultType) =>
-      getLiteralConversion(exprDef).map { conversion =>
-        val literal = toLiteral(exprDef)
-        try {
-          conversion(literal)
-          Nil
-        } catch {
-          case throwable: Throwable =>
-            List(toCompileError(literal.literalString, throwable))
-        }
-      }.getOrElse(Nil)
+    case Nil if exprDef.template && !exprDef.setter && !isStringSupertype(exprDef.resultType) =>
+      parseTemplate(exprDef.expression) match {
+        case ParsingSuccess((List(singlePart), Nil), _) if validateLiteralConversion(exprDef).isSuccess =>
+          getLiteralConversion(exprDef).map { conversion =>
+            val literal = Literal(singlePart)
+            try {
+              conversion(literal)
+              Nil
+            } catch {
+              case throwable: Throwable =>
+                List(toCompileError(singlePart, throwable))
+            }
+          }.getOrElse(Nil)
 
+        case _ => Nil
+      }
     case errors => errors
   }
 

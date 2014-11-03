@@ -5,6 +5,8 @@ import java.{lang => jl, util => ju}
 
 import com.avsystem.scex.compiler.CodeGeneration._
 import com.avsystem.scex.compiler.ScexCompiler._
+import com.avsystem.scex.compiler.presentation.IGlobal
+import com.avsystem.scex.parsing.{EmptyPositionMapping, PositionMapping}
 import com.avsystem.scex.util.CommonUtils._
 import com.avsystem.scex.util.LoggingUtils
 import com.avsystem.scex.validation.{SymbolValidator, SyntaxValidator}
@@ -196,6 +198,15 @@ trait ScexCompiler extends LoggingUtils {
     wrapInSource(expressionCode, offset, pkgName)
   }
 
+  protected def withGlobal[T](code: ScexGlobal => T) = underLock {
+    reporter.reset()
+    val global = this.global
+    val result = try code(global) finally {
+      reporter.reset()
+    }
+    result
+  }
+
   protected def getSharedClassLoader: ScexClassLoader =
     sharedClassLoader
 
@@ -241,7 +252,7 @@ trait ScexCompiler extends LoggingUtils {
   }
 
   protected def preprocess(expression: String, template: Boolean): (String, PositionMapping) =
-    (expression, PositionMapping.empty)
+    (expression, EmptyPositionMapping)
 
   protected def compileExpression(exprDef: ExpressionDef): Try[RawExpression] = underLock {
     val (pkgName, codeToCompile, offset) = expressionCode(exprDef)
@@ -249,13 +260,14 @@ trait ScexCompiler extends LoggingUtils {
     val sourceFile = new ExpressionSourceFile(exprDef, pkgName, codeToCompile, offset)
     val sourceInfo = new SourceInfo(pkgName, codeToCompile, offset, offset + exprDef.expression.length,
       sourceFile.offsetToLine(offset) + 1, sourceFile.offsetToLine(offset + exprDef.expression.length - 1) + 2)
-    val debugInfo = new ExpressionDebugInfo(exprDef, sourceInfo)
+    val debugInfo = new ExpressionDebugInfo(exprDef)
 
     def result =
       compile(sourceFile) match {
         case Left(classLoader) =>
           Class.forName(s"$pkgName.$ExpressionClassName", true, classLoader)
-            .getConstructor(classOf[ExpressionDebugInfo]).newInstance(debugInfo)
+            .getConstructor(classOf[ExpressionDebugInfo], classOf[SourceInfo])
+            .newInstance(debugInfo, sourceInfo)
             .asInstanceOf[RawExpression]
 
         case Right(errors) =>
@@ -289,8 +301,8 @@ trait ScexCompiler extends LoggingUtils {
       }
 
     val (actualExpression, positionMapping) = preprocess(expression, template)
-    getCompiledExpression(ExpressionDef(profile, template, setter = false, expression, actualExpression,
-      positionMapping, header, rootObjectClass, contextType.toString, typeOf[T].toString))
+    getCompiledExpression(ExpressionDef(profile, template, setter = false, actualExpression,
+      header, contextType.toString, typeOf[T].toString)(expression, positionMapping, rootObjectClass))
   }
 
   def getCompiledSetterExpression[C <: ExpressionContext[_, _] : TypeTag, T: TypeTag](
@@ -314,8 +326,8 @@ trait ScexCompiler extends LoggingUtils {
       }
 
     val (actualExpression, positionMapping) = preprocess(expression, template)
-    getCompiledExpression(ExpressionDef(profile, template, setter = true, expression, actualExpression,
-      positionMapping, header, rootObjectClass, contextType.toString, typeOf[T].toString))
+    getCompiledExpression(ExpressionDef(profile, template, setter = true, actualExpression,
+      header, contextType.toString, typeOf[T].toString)(expression, positionMapping, rootObjectClass))
   }
 
 

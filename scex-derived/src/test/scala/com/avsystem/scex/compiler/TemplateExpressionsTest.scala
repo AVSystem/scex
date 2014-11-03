@@ -24,11 +24,11 @@ class TemplateExpressionsTest extends ScexFunSuite with CompilationTest {
     assert("stuff" === evaluateTemplate[Any]("stuff"))
   }
 
-  test("single-argument string expression test") {
+  test("single-argument template test") {
     assert("trololo 5 dafuq" === evaluateTemplate[String]("trololo ${15/3} dafuq"))
   }
 
-  test("multiple-argument string expression test") {
+  test("multiple-argument template test") {
     assert("trololo 5 dafuq 68" === evaluateTemplate[String]("trololo ${15/3} dafuq ${12+56}"))
   }
 
@@ -48,8 +48,8 @@ class TemplateExpressionsTest extends ScexFunSuite with CompilationTest {
       FancySplicedRoot.fancySplicer.toString(_: FancySplicedRoot)
     }
     val cexpr = compiler.getCompiledExpression[SimpleContext[FancySplicedRoot], String](
-      createProfile(acl), "${self}", template = true)
-    assert("FANCY" === cexpr.apply(SimpleContext(new FancySplicedRoot)))
+      createProfile(acl), "${self}stuff", template = true)
+    assert("FANCYstuff" === cexpr.apply(SimpleContext(new FancySplicedRoot)))
   }
 
   test("single-argument int expression with non-blank surroundings") {
@@ -94,5 +94,13 @@ class TemplateExpressionsTest extends ScexFunSuite with CompilationTest {
       createProfile(acl), "${if(value.endsWith(\"lol\")) value + \"lol\" else value}${123}", template = true)
 
     assert("fuulollol123" === cexpr(SimpleContext(new ValueRoot("fuulol"))))
+  }
+
+  test("compilation errors merging test") {
+    val exception = intercept[CompilationFailedException] {
+      compiler.getCompiledExpression[SimpleContext[Unit], Any](createProfile(Nil), "fds${1+}asd${3+}abc")
+    }
+    exception.printStackTrace()
+    assert(exception.errors.size === 2)
   }
 }

@@ -1,9 +1,8 @@
-package com.avsystem.scex
-package compiler.xmlfriendly
+package com.avsystem.scex.parsing
 
-import java.{util => ju, lang => jl}
+import java.{lang => jl, util => ju}
+
 import scala.collection.immutable.SortedMap
-import com.avsystem.scex.compiler.{ShiftInfo, PositionMapping}
 
 /**
  * Created: 24-10-2013
@@ -15,7 +14,7 @@ case class PString(result: String, beg: Int, end: Int, mods: Vector[Modification
   lazy val positionMapping = {
     val normalizedMods = if (beg > 0) Modification(0, -beg) :: mods.toList else mods.toList
     val (shiftMapping, reverseShiftMapping) = PString.computeMapping(normalizedMods, Nil, Nil)
-    new PositionMapping(shiftMapping, reverseShiftMapping)
+    new ShiftInfoPositionMapping(shiftMapping, reverseShiftMapping)
   }
 
   def +(other: PString): PString = other match {

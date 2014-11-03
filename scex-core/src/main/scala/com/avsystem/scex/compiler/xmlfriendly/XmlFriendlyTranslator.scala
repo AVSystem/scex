@@ -1,8 +1,10 @@
 package com.avsystem.scex
 package compiler.xmlfriendly
 
+import java.{lang => jl, util => ju}
+
 import com.avsystem.scex.compiler.CodeGeneration
-import java.{util => ju, lang => jl}
+import com.avsystem.scex.parsing.{PString, PositionTrackingParsers}
 
 /**
  * Parser that translates XML-friendly expressions into correct scala code.

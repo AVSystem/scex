@@ -91,4 +91,14 @@ class XmlFriendlyCompilerTest extends ScexFunSuite {
         assert(ee.getMessage === new EvaluationException(expr, 1, null).getMessage)
     }
   }
+
+  test("compilation error message test") {
+    val expr = "abc${5 + #shiet.toLol}fuu"
+    intercept[CompilationFailedException] {
+      compiler.getCompiledExpression[SimpleContext[Unit], String](createProfile(Nil), expr)
+    }.errors match {
+      case List(CompileError("${5 + #shiet.toLol}", 14, _)) =>
+    }
+
+  }
 }

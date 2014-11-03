@@ -2,6 +2,7 @@ package com.avsystem.scex
 package compiler
 
 import java.{util => ju, lang => jl}
+import com.avsystem.scex.parsing.{ShiftInfoPositionMapping, ShiftInfo, PositionMapping}
 import org.junit.runner.RunWith
 import org.scalatest.FunSuite
 import org.scalatest.junit.JUnitRunner
@@ -11,9 +12,9 @@ import scala.collection.immutable.SortedMap
  * Created: 24-10-2013
  * Author: ghik
  */
-class PositionMappingTest extends ScexFunSuite {
+class ShiftInfoPositionMappingTest extends ScexFunSuite {
   test("empty mapping test") {
-    val mapping = new PositionMapping(SortedMap.empty, SortedMap.empty)
+    val mapping = new ShiftInfoPositionMapping(SortedMap.empty, SortedMap.empty)
     val reverse = mapping.reverse
 
     for (i <- -5 to 5) {
@@ -26,7 +27,7 @@ class PositionMappingTest extends ScexFunSuite {
 
   test("something was added at the beginning") {
     val added = 5
-    val mapping = new PositionMapping(SortedMap(
+    val mapping = new ShiftInfoPositionMapping(SortedMap(
       0 -> ShiftInfo(0, added)
     ), null)
 
@@ -40,7 +41,7 @@ class PositionMappingTest extends ScexFunSuite {
 
   test("something was removed at the beginning") {
     val removed = 5
-    val mapping = new PositionMapping(SortedMap(
+    val mapping = new ShiftInfoPositionMapping(SortedMap(
       0 -> ShiftInfo(0, -removed)
     ), null)
 
@@ -58,7 +59,7 @@ class PositionMappingTest extends ScexFunSuite {
   test("something was added and removed at the beginning") {
     val added = 3
     val removed = 5
-    val mapping = new PositionMapping(SortedMap(
+    val mapping = new ShiftInfoPositionMapping(SortedMap(
       0 -> ShiftInfo(0, added, removed)
     ), null)
 
@@ -80,7 +81,7 @@ class PositionMappingTest extends ScexFunSuite {
     012334567890000122234567
     */
 
-    val mapping = new PositionMapping(SortedMap(
+    val mapping = new ShiftInfoPositionMapping(SortedMap(
       3 -> ShiftInfo(0, 5, 1),
       6 -> ShiftInfo(4, 1, 3),
       10 -> ShiftInfo(2, 0, 2)

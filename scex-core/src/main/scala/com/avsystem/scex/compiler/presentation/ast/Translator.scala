@@ -1,49 +1,26 @@
 package com.avsystem.scex
 package compiler.presentation.ast
 
-import java.{util => ju, lang => jl}
-import com.avsystem.scex.util.CommonUtils
-import com.avsystem.scex.compiler.{ScexGlobal, ExpressionDef}
+import java.{lang => jl, util => ju}
+
 import com.avsystem.scex.compiler.presentation.ScexPresentationCompiler.Type
+import com.avsystem.scex.compiler.{ExpressionDef, ScexGlobal}
+import com.avsystem.scex.util.MacroUtils
 
 /**
  * Created: 12-03-2014
  * Author: ghik
  */
-class Translator(val global: ScexGlobal, offset: Int, exprDef: ExpressionDef) {
+class Translator(val global: ScexGlobal, offset: Int, exprDef: ExpressionDef) extends MacroUtils {
+  val universe: global.type = global
+  val u: universe.type = universe
 
-  import CommonUtils._
+  import com.avsystem.scex.util.CommonUtils._
 
   private val reverseMapping = exprDef.positionMapping.reverse
-  val u: global.type = global
 
   def translateTree(tree: u.Tree) =
     translateTreeIn[Tree](tree)
-
-  private object TemplateInterpolationTree {
-    def unapply(tree: u.Apply) = tree match {
-      case _ if tree.pos.start >= offset => None
-      case u.Apply(u.Select(StringContextApply(parts), _), args) => Some((parts, args))
-      case _ => None
-    }
-  }
-
-  object StringContextTree {
-    def unapply(tree: u.Tree) = tree match {
-      case u.Ident(name) if name.decoded == "StringContext" => true
-      case u.Select(_, name) if name.decoded == "StringContext" => true
-      case _ => false
-    }
-  }
-
-  object StringContextApply {
-    def unapply(tree: u.Tree) = tree match {
-      case _ if !tree.pos.isTransparent => None
-      case u.Apply(u.Select(StringContextTree(), name), parts) if name.decoded == "apply" => Some(parts)
-      case u.Apply(StringContextTree(), parts) => Some(parts)
-      case _ => None
-    }
-  }
 
   private def translateTreeIn[T <: Tree](tree: u.Tree): T = {
     lazy val attachments = translateAttachments(tree)
@@ -53,7 +30,7 @@ class Translator(val global: ScexGlobal, offset: Int, exprDef: ExpressionDef) {
         null
       case u.EmptyTree =>
         EmptyTree
-      case TemplateInterpolationTree(parts, args) =>
+      case StringInterpolation(parts, args) if tree.pos.start < offset =>
         TemplateInterpolation(parts.map(translateTreeIn[Literal]), args.map(translateTree))(attachments)
       case u.Select(qualifier, name) =>
         Select(translateTree(qualifier), translateName(name))(attachments)

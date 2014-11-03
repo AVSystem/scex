@@ -1,12 +1,12 @@
 package com.avsystem.scex
 package compiler.xmlfriendly
 
-import java.{util => ju, lang => jl}
-import org.junit.runner.RunWith
-import org.scalatest.FunSuite
-import org.scalatest.junit.JUnitRunner
+import java.{lang => jl, util => ju}
+
+import com.avsystem.scex.compiler.ScexFunSuite
+import com.avsystem.scex.parsing.{Modification, PString, ShiftInfo}
+
 import scala.collection.immutable.SortedMap
-import com.avsystem.scex.compiler.{ScexFunSuite, ShiftInfo}
 
 /**
  * Created: 25-10-2013

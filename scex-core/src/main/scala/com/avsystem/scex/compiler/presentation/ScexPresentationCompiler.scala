@@ -5,6 +5,7 @@ import java.{lang => jl, util => ju}
 
 import com.avsystem.scex.compiler.ScexCompiler.CompileError
 import com.avsystem.scex.compiler.{ExpressionDef, _}
+import com.avsystem.scex.parsing.EmptyPositionMapping
 import com.avsystem.scex.util.CommonUtils._
 import com.avsystem.scex.validation.ValidationContext
 
@@ -48,7 +49,7 @@ trait ScexPresentationCompiler extends ScexCompiler {
     getOrThrow(global.askForResponse(() => code))
   }
 
-  private def withGlobal[T](code: IGlobal => T) = underPresentationLock {
+  protected final def withIGlobal[T](code: IGlobal => T) = underPresentationLock {
     reporter.reset()
     val global = compiler.global
     val result = try code(global) finally {
@@ -73,10 +74,10 @@ trait ScexPresentationCompiler extends ScexCompiler {
 
     private def exprDef(expression: String, bare: Boolean) = {
       val (actualExpression, positionMapping) =
-        if(bare) (expression, PositionMapping.empty) else preprocess(expression, template)
+        if(bare) (expression, EmptyPositionMapping) else preprocess(expression, template)
 
-      ExpressionDef(profile, template && !bare, setter && !bare, expression, actualExpression, positionMapping,
-        header, rootObjectClass, contextType, if (bare) "Any" else resultType)
+      ExpressionDef(profile, template && !bare, setter && !bare, actualExpression, header, contextType,
+        if (bare) "Any" else resultType)(expression, positionMapping, rootObjectClass)
     }
 
     def getErrors(expression: String): List[CompileError] =
@@ -152,7 +153,7 @@ trait ScexPresentationCompiler extends ScexCompiler {
   protected def getErrors(exprDef: ExpressionDef) = {
     val (pkgName, code, offset) = expressionCode(exprDef)
     val sourceFile = new ExpressionSourceFile(exprDef, pkgName, code, offset)
-    withGlobal { global =>
+    withIGlobal { global =>
       val response = new global.Response[global.Tree]
       try {
         global.askLoadedTyped(sourceFile, response)
@@ -170,7 +171,7 @@ trait ScexPresentationCompiler extends ScexCompiler {
     val (pkgName, code, offset) = expressionCode(exprDef, noMacroProcessing = true)
     val sourceFile = new ExpressionSourceFile(exprDef, pkgName, code, offset)
 
-    withGlobal { global =>
+    withIGlobal { global =>
       import global.{position => _, sourceFile => _, _}
       try {
         val pos = sourceFile.position(offset)
@@ -218,7 +219,7 @@ trait ScexPresentationCompiler extends ScexCompiler {
     val (pkgName, code, offset) = expressionCode(exprDef, noMacroProcessing = true)
     val sourceFile = new ExpressionSourceFile(exprDef, pkgName, code, offset)
 
-    withGlobal { global =>
+    withIGlobal { global =>
       import global.{position => _, sourceFile => _, _}
       try {
         val sourcePosition = sourceFile.position(offset + exprDef.positionMapping(position))
@@ -310,7 +311,7 @@ trait ScexPresentationCompiler extends ScexCompiler {
     }
   }
 
-  protected def parse(exprDef: ExpressionDef) = withGlobal { global =>
+  protected def parse(exprDef: ExpressionDef) = withIGlobal { global =>
     val (parsedTree, _) = global.parseExpression(exprDef.expression, exprDef.template)
 
     inCompilerThread {

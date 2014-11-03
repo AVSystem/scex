@@ -8,7 +8,7 @@ import com.avsystem.scex.compiler.JavaTypeParsing._
 import com.avsystem.scex.compiler.presentation.ScexPresentationCompiler
 import com.avsystem.scex.compiler.presentation.ScexPresentationCompiler.{Param, Type => SType}
 import com.avsystem.scex.compiler.presentation.ast.Tree
-import com.avsystem.scex.compiler.{ExpressionDef, PositionMapping, ScexCompiler}
+import com.avsystem.scex.compiler.{ExpressionDef, ScexCompiler}
 import com.avsystem.scex.util.Fluent
 import com.google.common.cache.CacheBuilder
 import com.google.common.reflect.TypeToken
@@ -57,8 +57,8 @@ trait JavaScexCompiler extends ScexCompiler {
       val rootObjectClass = rootObjectClassCache.get(_contextTypeToken)
 
       val (actualExpression, positionMapping) = preprocess(_expression, _template)
-      getCompiledExpression[C, T](ExpressionDef(_profile, _template, _setter, _expression, actualExpression,
-        positionMapping, _header, rootObjectClass, scalaContextType, scalaResultType))
+      getCompiledExpression[C, T](ExpressionDef(_profile, _template, _setter, actualExpression, _header,
+        scalaContextType, scalaResultType)(_expression, positionMapping, rootObjectClass))
     }
 
     def contextType[NC <: ExpressionContext[_, _]](contextTypeToken: TypeToken[NC]) = fluent {

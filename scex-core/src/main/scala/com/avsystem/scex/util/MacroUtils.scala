@@ -67,6 +67,29 @@ trait MacroUtils {
     }
   }
 
+  object StringInterpolation {
+    def unapply(tree: Apply) = tree match {
+      case Apply(Select(StringContextApply(parts), _), args) => Some((parts, args))
+      case _ => None
+    }
+  }
+
+  object StringContextTree {
+    def unapply(tree: Tree) = tree match {
+      case Ident(name) if name.decodedName.toString == "StringContext" => true
+      case Select(_, name) if name.decodedName.toString == "StringContext" => true
+      case _ => false
+    }
+  }
+
+  object StringContextApply {
+    def unapply(tree: Tree) = tree match {
+      case Apply(Select(StringContextTree(), name), parts) if name.decodedName.toString == "apply" => Some(parts)
+      case Apply(StringContextTree(), parts) => Some(parts)
+      case _ => None
+    }
+  }
+
   def isProperPosition(pos: Position) =
     pos != null && pos != NoPosition
 

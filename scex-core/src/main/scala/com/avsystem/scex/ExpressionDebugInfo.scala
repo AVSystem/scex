@@ -9,13 +9,15 @@ import com.avsystem.scex.compiler.ExpressionDef
  * Author: ghik
  */
 class ExpressionDebugInfo(
-  val definition: ExpressionDef,
-  val sourceInfo: SourceInfo)
+  val definition: ExpressionDef) {
 
-class SourceInfo(
-  val sourceName: String,
-  val fullCode: String,
-  val startOffset: Int,
-  val endOffset: Int,
-  val firstLine: Int,
-  val lastLine: Int)
+  lazy val originalLines = {
+    val mapping = definition.positionMapping.reverse
+    val lineLengths = definition.expression.split('\n').iterator.map(l => l.length + 1)
+    val originalLineStarts = lineLengths.scanLeft(0)(_ + _).map(mapping.apply)
+
+    originalLineStarts.sliding(2).map {
+      case Seq(start, end) => definition.originalExpression.substring(start, end - 1)
+    }.toVector
+  }
+}

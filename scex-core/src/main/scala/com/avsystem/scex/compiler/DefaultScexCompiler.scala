@@ -13,8 +13,8 @@ class DefaultScexCompiler(val settings: ScexSettings)
   extends ScexCompiler
   with ScexPresentationCompiler
   with ClassfileReusingScexCompiler
+  with TemplateOptimizingScexCompiler
   with CachingScexCompiler
   with CachingScexPresentationCompiler
   with WeakReferenceWrappingScexCompiler
-  with TemplateOptimizingScexCompiler
 
