@@ -51,6 +51,7 @@ object CodeGeneration {
   val ContextSymbol = "_ctx"
   val VariablesSymbol = "_vars"
   val RootSymbol = "_root"
+  val AdaptedRootSymbol = "_adapted_root"
   val ScexPkg = "com.avsystem.scex"
   val CompilerPkg = s"$ScexPkg.compiler"
   val AnnotationPkg = s"$CompilerPkg.annotation"
@@ -119,9 +120,8 @@ object CodeGeneration {
     val rootGetterAdapterCode = fullAdapterClassNameOpt match {
       case Some(fullAdapterClassName) =>
         s"""
-        |@$AnnotationPkg.RootAdapter
-        |val _adapted_root = new $fullAdapterClassName($RootSymbol)
-        |import _adapted_root._
+        |val $AdaptedRootSymbol = new $fullAdapterClassName($RootSymbol): @$AnnotationPkg.RootAdapter
+        |import $AdaptedRootSymbol._
         |""".stripMargin
       case None =>
         ""
@@ -152,9 +152,9 @@ object CodeGeneration {
         |  extends $ScexPkg.AbstractExpression[$contextType, $resultOrSetterType]
         |  with $CompilerPkg.TemplateInterpolations[$resultType] {
         |
-        |  def eval($ContextSymbol: $contextType): $resultOrSetterType = {
-        |    val $RootSymbol = $ContextSymbol.root
-        |    val $VariablesSymbol = new $ScexPkg.util.DynamicVariableAccessor($ContextSymbol)
+        |  def eval($ContextSymbol: $contextType @$AnnotationPkg.Input): $resultOrSetterType = {
+        |    val $RootSymbol = $ContextSymbol.root: @$AnnotationPkg.Input
+        |    val $VariablesSymbol = new $ScexPkg.util.DynamicVariableAccessor($ContextSymbol): @$AnnotationPkg.Input
         |    import $profileObjectPkg.$ProfileObjectName._
         |    import $utilsObjectPkg.$UtilsObjectName._
         |    import $RootSymbol._

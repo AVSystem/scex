@@ -62,6 +62,8 @@ object ExpressionMacroProcessor extends LoggingUtils {
       c.error(access.pos, s"Member access forbidden: $access")
     }
 
+
+
     expr
   }
 
@@ -124,7 +126,7 @@ object ExpressionMacroProcessor extends LoggingUtils {
         bodyGen(Ident(TermName("value"))))
 
     def translate(tree: Tree): Tree = tree match {
-      case Select(prefix@Ident(_), TermName(propertyName)) if prefix.symbol.annotations.exists(_.tree.tpe <:< rootAdapterAnnotType) =>
+      case Select(prefix@Ident(_), TermName(propertyName)) if isRootAdapter(prefix.tpe.widen) =>
         reifySetterFunction(Select(Ident(TermName(CodeGeneration.RootSymbol)), TermName("set" + propertyName.capitalize)))
 
       case Select(ImplicitlyConverted(prefix, fun), TermName(propertyName)) if isAdapterConversion(fun.symbol) =>

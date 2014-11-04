@@ -4,7 +4,7 @@ import java.{lang => jl, util => ju}
 
 import com.avsystem.scex.compiler.TemplateInterpolations
 import com.avsystem.scex.compiler.TemplateInterpolations.Splicer
-import com.avsystem.scex.util.{Literal => ScexLiteral}
+import com.avsystem.scex.util.{Literal => ScexLiteral, MacroUtils}
 
 import scala.reflect.macros.whitebox
 
@@ -109,15 +109,13 @@ object Macros {
   }
 
   def checkConstantExpr_impl[T](c: whitebox.Context)(expr: c.Expr[T]): c.Expr[T] = {
-    import c.universe._
-    import com.avsystem.scex.compiler.CodeGeneration._
+    val utils = MacroUtils(c.universe)
+    import utils._
 
-    lazy val inputSymbols = Set(ContextSymbol, RootSymbol, VariablesSymbol)
-
-    expr.tree.foreach {
-      case tree@Ident(TermName(name)) if inputSymbols.contains(name) =>
-        c.error(tree.pos, s"Tree references expression input")
-      case _ =>
+    expr.tree.foreach { t =>
+      if(isAnnotatedWith(t.tpe.widen, inputAnnotType)) {
+        c.error(t.pos, s"Tree references expression input")
+      }
     }
 
     expr

@@ -1,8 +1,8 @@
 package com.avsystem.scex
 package validation
 
-import com.avsystem.scex.ExpressionContext
 import com.avsystem.scex.util.MacroUtils
+
 import scala.reflect.macros.Universe
 
 abstract class ValidationContext protected extends MacroUtils {
@@ -72,7 +72,7 @@ abstract class ValidationContext protected extends MacroUtils {
       case (_: Select | _: Ident) if tree.symbol.annotations.exists(_.tree.tpe <:< notValidatedAnnotType) =>
         NoMemberAccess
 
-      case Select(rootAdapter: Ident, _) if isRootAdapter(rootAdapter.symbol) && !isAdapterWrappedMember(tree.symbol) =>
+      case Select(rootAdapter: Ident, _) if isRootAdapter(rootAdapter.tpe.widen) && !isAdapterWrappedMember(tree.symbol) =>
         val symbol = getJavaGetter(tree.symbol, rootTpe)
 
         SimpleMemberAccess(rootTpe, symbol, None, allowedByDefault = false, tree.pos)

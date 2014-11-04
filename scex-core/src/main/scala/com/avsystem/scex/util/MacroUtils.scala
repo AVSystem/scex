@@ -20,6 +20,7 @@ trait MacroUtils {
 
   lazy val rootAdapterAnnotType = typeOf[RootAdapter]
   lazy val notValidatedAnnotType = typeOf[NotValidated]
+  lazy val inputAnnotType = typeOf[Input]
 
   lazy val any2stringadd = typeOf[Predef.type].member(TermName("any2stringadd"))
   lazy val stringAddPlus = typeOf[any2stringadd[_]].member(TermName("+").encodedName)
@@ -301,8 +302,16 @@ trait MacroUtils {
         || ts.isVal && isAdapterWrappedMember(ts.getter))
     } else false
 
-  def isRootAdapter(symbol: Symbol) =
-    symbol != null && symbol.annotations.exists(_.tree.tpe =:= rootAdapterAnnotType)
+  def isRootAdapter(tpe: Type) =
+    isAnnotatedWith(tpe, rootAdapterAnnotType)
+
+  def isAnnotatedWith(tpe: Type, annotTpe: Type): Boolean = tpe match {
+    case AnnotatedType(annots, underlying) =>
+      annots.exists(_.tree.tpe <:< annotTpe) || isAnnotatedWith(underlying, annotTpe)
+    case ExistentialType(_, underlying) =>
+      isAnnotatedWith(underlying, annotTpe)
+    case _ => false
+  }
 
   // gets Java getter called by implicit wrapper
   def getJavaGetter(symbol: Symbol, javaTpe: Type): Symbol = {
