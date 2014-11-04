@@ -47,12 +47,16 @@ trait TemplateOptimizingScexCompiler extends ScexPresentationCompiler {
   private class OptimizedTemplateExpression(parts: List[String], args: List[RawExpression], val debugInfo: ExpressionDebugInfo)
     extends RawExpression {
 
-    def apply(c: ExpressionContext[_, _]) = {
-      val firstPart :: partsRest = parts
-      firstPart + (args.iterator zip partsRest.iterator).map {
-        case (argExpr, part) => argExpr.apply(c).toString + part
-      }.mkString
-    }
+    def apply(c: ExpressionContext[_, _]) =
+      TemplateInterpolations.concatIterator(parts: _*)(args.iterator.map { arg =>
+        val value = arg.apply(c)
+        if (value != null)
+          value.toString
+        else {
+          val errorMsg = s"Template argument ${arg.debugInfo.definition.originalExpression} evaluated to null"
+          throw new EvaluationException(None, new NullPointerException(errorMsg))
+        }
+      })
   }
 
   import com.avsystem.scex.parsing.TemplateParser.{parseTemplate, Success => ParsingSuccess}

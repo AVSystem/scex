@@ -103,4 +103,10 @@ class TemplateExpressionsTest extends ScexFunSuite with CompilationTest {
     exception.printStackTrace()
     assert(exception.errors.size === 2)
   }
+
+  test("evaluation exception on null argument test") {
+    intercept[EvaluationException] {
+      evaluateTemplate[String]("stuff${null}more")
+    }
+  }
 }

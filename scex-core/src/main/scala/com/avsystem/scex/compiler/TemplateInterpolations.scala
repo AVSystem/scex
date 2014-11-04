@@ -59,10 +59,14 @@ object TemplateInterpolations {
   }
 
   @NotValidated
-  def concat(parts: String*)(args: Any*) = {
+  def concat(parts: String*)(args: Any*): String = {
     require(parts.size == args.size + 1)
+    concatIterator(parts: _*)(args.iterator)
+  }
+
+  def concatIterator(parts: String*)(args: Iterator[Any]): String = {
     val sb = new StringBuilder(parts.head)
-    (args zip parts.tail).foreach {
+    (args zip parts.tail.iterator).foreach {
       case (arg, part) => sb.append(arg.toString).append(part)
     }
     sb.result()
