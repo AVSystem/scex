@@ -23,10 +23,13 @@ object TemplateOptimizingPerformanceTest {
       "", NamedSource("empty", ""))
 
     val ctx = SimpleContext(())
+    compiler.getCompiledExpression[SimpleContext[Unit], String](profile, "${1+2}abc").apply(ctx)
+
+    Thread.sleep(5000)
 
     val start = System.nanoTime()
     var i = 0
-    while (i < 1000) {
+    while (i < 200000) {
       val expr = "${1+2+3+4}" + i
       compiler.getCompiledExpression[SimpleContext[Unit], String](profile, expr).apply(ctx)
       i += 1
