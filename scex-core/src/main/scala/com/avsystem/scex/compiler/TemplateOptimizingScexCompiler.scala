@@ -126,7 +126,7 @@ trait TemplateOptimizingScexCompiler extends ScexPresentationCompiler {
           val originalArg = exprDef.originalExpression.substring(reverseMapping(arg.beg), reverseMapping(arg.end - 1) + 1)
           val shiftedMapping = shift andThen exprDef.positionMapping andThen shift.reverse
 
-          super.compileExpression(
+          compileExpression(
             ExpressionDef(exprDef.profile, template = true, setter = false, arg.result, exprDef.header,
               exprDef.contextType, "String")(originalArg, shiftedMapping, exprDef.rootObjectClass))
         }
