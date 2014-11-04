@@ -63,7 +63,7 @@ object TemplateInterpolations {
     require(parts.size == args.size + 1)
     val sb = new StringBuilder(parts.head)
     (args zip parts.tail).foreach {
-      case (arg, part) => sb.append(arg).append(part)
+      case (arg, part) => sb.append(arg.toString).append(part)
     }
     sb.result()
   }
