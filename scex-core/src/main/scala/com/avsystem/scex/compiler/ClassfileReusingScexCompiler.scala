@@ -70,7 +70,7 @@ trait ClassfileReusingScexCompiler extends ScexCompiler {
     new Run
 
     def isValid(signature: String): Boolean =
-      signature.split("\\n{2,}").forall { sig =>
+      signature.split("\\n{2,}").iterator.map(_.trim).filter(!_.isEmpty).forall { sig =>
         val Array(typedSig, erasedSig) = sig.split("\n")
         val Array(fullName, _) = typedSig.split(":")
 
