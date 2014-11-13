@@ -2,7 +2,7 @@ package com.avsystem.scex.compiler
 
 import java.{lang => jl, util => ju}
 
-import com.avsystem.scex.{NamedSource, ExpressionProfile}
+import com.avsystem.scex.{PredefinedAccessSpecs, NamedSource, ExpressionProfile}
 import com.avsystem.scex.compiler.presentation.ScexPresentationCompiler
 import com.avsystem.scex.util.SimpleContext
 import com.avsystem.scex.validation.{SymbolValidator, SyntaxValidator}
@@ -46,10 +46,11 @@ class ClassfileReusingTest extends ScexFunSuite with BeforeAndAfter {
     settings.classfileDirectory.value = "testClassfileCache"
   }
 
-  val emptyProfile = new ExpressionProfile("test", SyntaxValidator.SimpleExpressions, SymbolValidator(Nil), "", null)
+  val testProfile = new ExpressionProfile("test", SyntaxValidator.SimpleExpressions,
+    SymbolValidator(PredefinedAccessSpecs.basicOperations), "", NamedSource("<empty>", ""))
 
   def applyIntExpr(expr: String) =
-    compiler.getCompiledExpression[SimpleContext[Unit], Int](emptyProfile, expr, template = false).apply(SimpleContext(()))
+    compiler.getCompiledExpression[SimpleContext[Unit], Int](testProfile, expr, template = false).apply(SimpleContext(()))
 
   def compiledSourceNames = compiler.sourcesCompiled.map(_.file.name)
 
@@ -61,20 +62,16 @@ class ClassfileReusingTest extends ScexFunSuite with BeforeAndAfter {
     compiler.reset()
   }
 
-  test("non-shared classfile reusing test") {
-    val c1 = compiler.compileClass("class Stuff", "Stuff")
-    assert(compiler.sourcesCompiled.size === 1)
-
-    val c2 = compiler.compileClass("class Stuff", "Stuff")
-    assert(compiler.sourcesCompiled.size === 1)
-
-    assert(c1 === c2) // both compilations should use the same class loader
+  test("expression classfile reusing test") {
+    val expr = "1.toDouble + 4.5.toInt + \"shiet\".toFloat"
+    compiler.getCompiledExpression[SimpleContext[Unit], Any](testProfile, expr, template = false)
+    val sourcesCompiled = compiler.sourcesCompiled.size
+    assert(sourcesCompiled > 0)
 
     compiler.reset()
 
-    val c3 = compiler.compileClass("class Stuff", "Stuff")
-    assert(compiler.sourcesCompiled.size === 0)
-    assert(c1 !== c3) // there will be new class loader after reset
+    compiler.getCompiledExpression[SimpleContext[Unit], Any](testProfile, expr, template = false)
+    assert(compiler.sourcesCompiled.size === sourcesCompiled - 1)
   }
 
   test("recompilation on binary compatibility breach test") {
@@ -105,6 +102,33 @@ class ClassfileReusingTest extends ScexFunSuite with BeforeAndAfter {
     val cexpr2 = compiler.getCompiledExpression[SimpleContext[Unit], String](profile2, expr, template = false)
 
     assert(cexpr2(SimpleContext(())) === "implicitString2")
+  }
+
+  ignore("recompilation on overloaded method addition") {
+    val symbolValidator = SymbolValidator(PredefinedAccessSpecs.basicOperations)
+    val expr = "utilMethod(42)"
+
+    val utils1 =
+      """
+        |def utilMethod(any: Any): Any = any
+      """.stripMargin
+    val profile1 = new ExpressionProfile("test", SyntaxValidator.SimpleExpressions, symbolValidator, "", NamedSource("test", utils1))
+    val cexpr1 = compiler.getCompiledExpression[SimpleContext[Unit], Any](profile1, expr, template = false)
+
+    assert(cexpr1(SimpleContext(())) === 42)
+
+    compiler.reset()
+
+    val utils2 =
+      """
+        |def utilMethod(any: Any): Any = any
+        |def utilMethod(int: Int): Any = int*2
+      """.stripMargin
+    val profile2 = new ExpressionProfile("test", SyntaxValidator.SimpleExpressions, symbolValidator, "", NamedSource("test", utils2))
+    val cexpr2 = compiler.getCompiledExpression[SimpleContext[Unit], Any](profile2, expr, template = false)
+
+    assert(cexpr2(SimpleContext(())) === 84)
+
   }
 
 }

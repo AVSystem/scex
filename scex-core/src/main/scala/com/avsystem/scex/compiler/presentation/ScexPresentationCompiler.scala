@@ -36,7 +36,7 @@ trait ScexPresentationCompiler extends ScexCompiler {
     lock.synchronized {
       logger.info("Initializing Scala presentation compiler")
       reporter = new Reporter(settings)
-      global = new IGlobal(settings, reporter)
+      global = new IGlobal(settings, reporter, getSharedClassLoader)
     }
   }
 

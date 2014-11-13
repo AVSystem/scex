@@ -17,7 +17,8 @@ import scala.tools.nsc.symtab.Flags.{ACCESSOR, PARAMACCESSOR}
  *
  * I needed to hack a custom implementation of type completion, hence this class.
  */
-class IGlobal(settings: Settings, reporter: Reporter) extends Global(settings, reporter) with ScexGlobal {
+class IGlobal(settings: Settings, reporter: Reporter, val classLoader: ClassLoader)
+  extends Global(settings, reporter) with ScexGlobal {
 
   import definitions._
 

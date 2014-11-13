@@ -1,5 +1,6 @@
 package com.avsystem.scex.compiler
 
+import java.lang.reflect.{Constructor, Method, Field}
 import java.security.MessageDigest
 import java.{lang => jl, util => ju}
 
@@ -7,13 +8,16 @@ import scala.io.Codec
 import scala.tools.nsc.Global
 
 /**
- * Stuff to translate types into java classes - code copied from scala.reflect.runtime.JavaMirrors
+ * Stuff to translate Symbols into their corresponding Java reflection artifacts. Code copied from
+ * scala.reflect.runtime.JavaMirrors
  *
  * Created: 27-10-2014
  * Author: ghik
  */
-trait JavaClassComputation {
+trait SymbolErasures {
   this: Global =>
+
+  def classLoader: ClassLoader
 
   import definitions._
 
@@ -88,7 +92,7 @@ trait JavaClassComputation {
   }
 
   private def javaClass(path: String): Class[_] =
-    Class.forName(path)
+    Class.forName(path, false, classLoader)
 
   private object compactifier extends (String => String) {
     val md5 = MessageDigest.getInstance("MD5")
@@ -128,6 +132,48 @@ trait JavaClassComputation {
     def apply(s: String): String =
       if (s.length <= MaxNameLength) s
       else toMD5(s, MaxNameLength / 4)
+  }
+
+  private def expandedName(sym: Symbol): String =
+    if (sym.isPrivate) nme.expandedName(sym.name.toTermName, sym.owner).toString
+    else sym.name.toString
+
+  /** The Java field corresponding to a given Scala field.
+    *  @param   fld The Scala field.
+    */
+  def fieldToJava(fld: TermSymbol): Field = {
+    val jclazz = classToJava(fld.owner.asClass)
+    val jname = fld.name.dropLocal.toString
+    try jclazz getDeclaredField jname
+    catch {
+      case ex: NoSuchFieldException => jclazz getDeclaredField expandedName(fld)
+    }
+  }
+
+  /** The Java method corresponding to a given Scala method.
+    *  @param   meth The Scala method
+    */
+  def methodToJava(meth: MethodSymbol): Method = {
+    val jclazz = classToJava(meth.owner.asClass)
+    val paramClasses = transformedType(meth).paramTypes map typeToJavaClass
+    val jname = meth.name.dropLocal.toString
+    try jclazz getDeclaredMethod (jname, paramClasses: _*)
+    catch {
+      case ex: NoSuchMethodException =>
+        jclazz getDeclaredMethod (expandedName(meth), paramClasses: _*)
+    }
+  }
+
+  /** The Java constructor corresponding to a given Scala constructor.
+    *  @param   constr The Scala constructor
+    */
+  def constructorToJava(constr: MethodSymbol): Constructor[_] = {
+    val jclazz = classToJava(constr.owner.asClass)
+    val paramClasses = transformedType(constr).paramTypes map typeToJavaClass
+    val effectiveParamClasses =
+      if (!constr.owner.owner.isStaticOwner) jclazz.getEnclosingClass +: paramClasses
+      else paramClasses
+    jclazz getDeclaredConstructor (effectiveParamClasses: _*)
   }
 
 }

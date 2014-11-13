@@ -111,6 +111,7 @@ trait ScexCompiler extends LoggingUtils {
     compilationCount = 0
     global = new Global(settings, reporter) with ScexGlobal {
       override def loadAdditionalPlugins() = loadCompilerPlugins(this)
+      def classLoader = getSharedClassLoader
     }
     sharedClassLoader = new ScexClassLoader(new VirtualDirectory("(scex_shared)", None), getClass.getClassLoader)
   }
@@ -232,11 +233,7 @@ trait ScexCompiler extends LoggingUtils {
     // There should not be deadlocks, because nobody locks first over classfileDirectory and then over ScexCompiler.
     classfileDirectory.synchronized {
       val global = this.global
-      val run = new global.Run
-      run.compileSources(List(sourceFile))
-      if (!sourceFile.shared) {
-        global.forgetSymbolsFromSource(sourceFile.file)
-      }
+      runCompiler(global, sourceFile)
     }
 
     val duration = System.nanoTime - startTime
@@ -249,6 +246,14 @@ trait ScexCompiler extends LoggingUtils {
     }
 
     if (errors.isEmpty) Left(classLoader) else Right(errors)
+  }
+
+  protected def runCompiler(global: ScexGlobal, sourceFile: ScexSourceFile): Unit = {
+    val run = new global.Run
+    run.compileSources(List(sourceFile))
+    if (!sourceFile.shared) {
+      global.forgetSymbolsFromSource(sourceFile.file)
+    }
   }
 
   protected def preprocess(expression: String, template: Boolean): (String, PositionMapping) =

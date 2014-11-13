@@ -17,7 +17,7 @@ import scala.tools.nsc.plugins.Plugin
  * Created: 01-04-2014
  * Author: ghik
  */
-trait ScexGlobal extends Global with MacroUtils with JavaClassComputation {
+trait ScexGlobal extends Global with MacroUtils with SymbolErasures {
   val universe: this.type = this
 
   def loadAdditionalPlugins(): List[Plugin] = Nil

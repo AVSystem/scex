@@ -134,12 +134,13 @@ object CodeGeneration {
     val processingPrefix = if (noMacroProcessing) ""
     else
       s"""
+        |      $MacroProcessor.markExpression(
         |      $setterConversion(
         |      $MacroProcessor.processExpression[$contextType, $resultType](
         |      $MacroProcessor.applyTypesafeEquals(
       """.stripMargin
 
-    val processingPostfix = if (noMacroProcessing) "" else ")))"
+    val processingPostfix = if (noMacroProcessing) "" else "))))"
 
     //_result is needed because: https://groups.google.com/forum/#!topic/scala-user/BAK-mU7o6nM
     val prefix =

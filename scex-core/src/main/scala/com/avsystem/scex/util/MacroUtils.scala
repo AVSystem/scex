@@ -104,7 +104,13 @@ trait MacroUtils {
     s.isMethod && s.asMethod.isConstructor
 
   def memberSignature(s: Symbol) =
-    if (s != null) s"${s.fullName}${show(s.info.paramLists.map(_.map(_.typeSignature.toString).mkString("(", ",", ")")).mkString)}" else null
+    if (s != null) s"${s.fullName}${paramsSignature(s)}" else null
+
+  def paramsSignature(s: Symbol) =
+    s.info.paramLists.map(_.map(_.typeSignature.toString).mkString("(", ",", ")")).mkString
+
+  def erasureFullName(tpe: Type) =
+    tpe.erasure.typeSymbol.fullName
 
   def isStableTerm(s: Symbol) =
     s.isTerm && s.asTerm.isStable
