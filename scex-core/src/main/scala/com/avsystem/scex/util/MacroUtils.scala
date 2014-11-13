@@ -309,7 +309,7 @@ trait MacroUtils {
     } else false
 
   def isRootAdapter(tpe: Type) =
-    isAnnotatedWith(tpe, rootAdapterAnnotType)
+    tpe != null && isAnnotatedWith(tpe.widen, rootAdapterAnnotType)
 
   def isAnnotatedWith(tpe: Type, annotTpe: Type): Boolean = tpe match {
     case AnnotatedType(annots, underlying) =>

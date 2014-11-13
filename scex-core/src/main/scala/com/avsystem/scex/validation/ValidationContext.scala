@@ -72,7 +72,7 @@ abstract class ValidationContext protected extends MacroUtils {
       case (_: Select | _: Ident) if tree.symbol.annotations.exists(_.tree.tpe <:< notValidatedAnnotType) =>
         NoMemberAccess
 
-      case Select(rootAdapter: Ident, _) if isRootAdapter(rootAdapter.tpe.widen) && !isAdapterWrappedMember(tree.symbol) =>
+      case Select(rootAdapter: Ident, _) if isRootAdapter(rootAdapter.tpe) && !isAdapterWrappedMember(tree.symbol) =>
         val symbol = getJavaGetter(tree.symbol, rootTpe)
 
         SimpleMemberAccess(rootTpe, symbol, None, allowedByDefault = false, tree.pos)

@@ -131,7 +131,7 @@ object ExpressionMacroProcessor extends LoggingUtils {
         bodyGen(Ident(TermName("value"))))
 
     def translate(tree: Tree): Tree = tree match {
-      case Select(prefix@Ident(_), TermName(propertyName)) if isRootAdapter(prefix.tpe.widen) =>
+      case Select(prefix@Ident(_), TermName(propertyName)) if isRootAdapter(prefix.tpe) =>
         reifySetterFunction(Select(Ident(TermName(CodeGeneration.RootSymbol)), TermName("set" + propertyName.capitalize)))
 
       case Select(ImplicitlyConverted(prefix, fun), TermName(propertyName)) if isAdapterConversion(fun.symbol) =>
