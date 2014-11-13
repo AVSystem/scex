@@ -27,6 +27,7 @@ trait ClassfileReusingScexCompiler extends ScexCompiler {
 
   import com.avsystem.scex.util.CommonUtils._
 
+  private val sigHeader = "SIGNATURES:\n"
   private val logger = createLogger[ClassfileReusingScexCompiler]
 
   private class State(val classfileDir: AbstractFile) {
@@ -69,8 +70,8 @@ trait ClassfileReusingScexCompiler extends ScexCompiler {
     import global._
     new Run
 
-    def isValid(signature: String): Boolean =
-      signature.split("\\n{2,}").iterator.map(_.trim).filter(!_.isEmpty).forall { sig =>
+    def isValid(signature: String): Boolean = signature.startsWith(sigHeader) &&
+      signature.stripPrefix(sigHeader).split("\\n{2,}").iterator.map(_.trim).filter(!_.isEmpty).forall { sig =>
         val Array(typedSig, erasedSig) = sig.split("\n")
         val Array(fullName, _) = typedSig.split(":")
 
@@ -164,7 +165,7 @@ trait ClassfileReusingScexCompiler extends ScexCompiler {
             }
           }
 
-          sigs(unit) = signatures.toList.sorted.mkString("\n\n")
+          sigs(unit) = signatures.toList.sorted.mkString(sigHeader, "\n\n", "\n")
         }
       }
     }
