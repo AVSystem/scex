@@ -3,41 +3,28 @@ package validation
 
 import java.{lang => jl, util => ju}
 
-import com.avsystem.scex.symboldsl.{SymbolDsl, SymbolInfo}
+import com.avsystem.scex.symboldsl.{SymbolDsl, SymbolInfo, SymbolInfoList}
 import com.avsystem.scex.util.CommonUtils._
 import com.avsystem.scex.util.LoggingUtils
-import com.avsystem.scex.validation.SymbolValidator.MemberAccessSpec
 
-import scala.collection.immutable.{SortedSet, TreeSet}
 import scala.language.experimental.macros
 import scala.language.{dynamics, implicitConversions}
 
-trait SymbolValidator extends LoggingUtils {
+trait SymbolValidator extends SymbolInfoList[Boolean] with LoggingUtils {
   private val logger = createLogger[SymbolValidator]
 
-  val accessSpecs: List[MemberAccessSpec]
-
   def combine(otherValidator: SymbolValidator) =
-    SymbolValidator(accessSpecs ++ otherValidator.accessSpecs)
+    SymbolValidator(infoList ++ otherValidator.infoList)
 
-  lazy val referencedJavaClasses = accessSpecs.collect({
+  lazy val referencedJavaClasses = infoList.collect({
     case SymbolInfo(typeInfo, _, _, true) if typeInfo.clazz.isDefined && typeInfo.isJava =>
       hierarchy(typeInfo.clazz.get)
   }).flatten.toSet
 
-  private lazy val specsLength = accessSpecs.length
+  private lazy val specsLength = infoList.length
 
   private def lowestPriority(allowedByDefault: Boolean) =
     if (allowedByDefault) specsLength else specsLength + 1
-
-  // SymbolInfo with its index in ACL (accessSpecs)
-  private type SpecWithIndex = (MemberAccessSpec, Int)
-
-  private lazy val bySignaturesMap: Map[String, List[SpecWithIndex]] =
-    accessSpecs.zipWithIndex.groupBy(_._1.memberSignature).withDefaultValue(Nil)
-
-  private lazy val memberSignatures: SortedSet[String] =
-    bySignaturesMap.keys.to[TreeSet]
 
   def referencesModuleMember(moduleSymbolFullName: String) = {
     val prefix = moduleSymbolFullName + "."
@@ -47,31 +34,13 @@ trait SymbolValidator extends LoggingUtils {
 
   def validateMemberAccess(vc: ValidationContext)(access: vc.MemberAccess): vc.ValidationResult = {
     import vc._
-    import vc.universe._
-
-    def implicitConversionsMatch(actual: Option[Tree], fromSpec: Option[String]) =
-      (actual, fromSpec) match {
-        case (Some(actualPathTree), Some(specPath)) =>
-          path(actualPathTree) == specPath
-        case (None, None) => true
-        case _ => false
-      }
 
     access match {
       case access@SimpleMemberAccess(tpe, symbol, implicitConv, allowedByDefault, position) =>
         logger.trace(s"Validating access: $access")
 
-        val signatures: List[String] =
-          (symbol :: symbol.overrides).map(memberSignature)
-
         // SymbolInfos that match this invocation
-        val matchingSpecs: List[SpecWithIndex] = signatures.flatMap { signature =>
-          bySignaturesMap(signature).filter { case (accessSpec, _) =>
-            signature == accessSpec.memberSignature &&
-              tpe <:< accessSpec.typeInfo.typeIn(vc.universe) &&
-              implicitConversionsMatch(implicitConv, accessSpec.implicitConv)
-          }
-        }
+        val matchingSpecs = matchingInfos(vc.universe)(tpe, symbol, implicitConv)
 
         def specsRepr = matchingSpecs.map({ case (spec, idx) => s"$idx: $spec"}).mkString("\n")
         logger.trace(s"Matching signatures:\n$specsRepr")
@@ -113,7 +82,7 @@ object SymbolValidator extends SymbolDsl {
 
   def apply(acl: List[MemberAccessSpec]): SymbolValidator =
     new SymbolValidator {
-      val accessSpecs = acl
+      val infoList = acl
     }
 
   val empty: SymbolValidator = apply(Nil)

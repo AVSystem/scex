@@ -7,7 +7,7 @@ import com.avsystem.scex.compiler.Markers.{ExpressionUtil, JavaGetterAdapter, Pr
 import com.avsystem.scex.compiler.annotation._
 import com.avsystem.scex.util.CommonUtils._
 
-import scala.reflect.macros.Universe
+import scala.reflect.api.Universe
 
 trait MacroUtils {
   val universe: Universe
