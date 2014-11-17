@@ -14,7 +14,7 @@ import scala.collection.immutable.SortedMap
  */
 class PStringTest extends ScexFunSuite {
   def test(name: String)(modifications: Modification*)
-    (shiftMapping: (Int, ShiftInfo)*)(reverseShiftMapping: (Int, ShiftInfo)*): Unit = super.test(name) {
+          (shiftMapping: (Int, ShiftInfo)*)(reverseShiftMapping: (Int, ShiftInfo)*): Unit = super.test(name) {
     val (actualShiftMapping, actualReverseShiftMapping) =
       PString.computeMapping(modifications.toList, Nil, Nil)
 

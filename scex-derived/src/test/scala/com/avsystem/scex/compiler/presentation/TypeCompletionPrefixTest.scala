@@ -2,9 +2,9 @@ package com.avsystem.scex.compiler.presentation
 
 import java.{lang => jl, util => ju}
 
+import com.avsystem.scex.compiler.presentation.TypeCompletionPrefixTest._
 import com.avsystem.scex.compiler.{CompilationTest, ScexFunSuite}
 import com.avsystem.scex.util.SimpleContext
-import TypeCompletionPrefixTest._
 
 import scala.reflect.runtime.{universe => ru}
 

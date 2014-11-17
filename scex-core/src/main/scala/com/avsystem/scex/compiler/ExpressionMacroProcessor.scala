@@ -17,9 +17,9 @@ import scala.reflect.macros.whitebox
 object ExpressionMacroProcessor extends LoggingUtils {
 
   private val logger = createLogger[ExpressionMacroProcessor.type]
-  
+
   def markExpression[T](expr: T): T = macro markExpression_impl[T]
-  
+
   def markExpression_impl[T](c: whitebox.Context)(expr: c.Expr[T]): c.Expr[T] = {
     c.internal.updateAttachment(expr.tree, ExpressionTreeAttachment)
     expr

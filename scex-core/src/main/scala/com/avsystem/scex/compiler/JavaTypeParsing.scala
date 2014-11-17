@@ -3,9 +3,9 @@ package compiler
 
 import java.lang.reflect._
 import java.lang.{reflect => jlr}
-import java.{util => ju, lang => jl}
+import java.{lang => jl, util => ju}
+
 import scala.Array
-import scala.Some
 import scala.collection.mutable.ListBuffer
 import scala.language.existentials
 

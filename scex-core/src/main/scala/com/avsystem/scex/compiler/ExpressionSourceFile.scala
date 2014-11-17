@@ -1,8 +1,9 @@
 package com.avsystem.scex
 package compiler
 
-import java.{util => ju, lang => jl}
-import scala.reflect.internal.util.{Position, BatchSourceFile}
+import java.{lang => jl, util => ju}
+
+import scala.reflect.internal.util.Position
 
 /**
  * Created: 13-12-2013

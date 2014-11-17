@@ -1,5 +1,6 @@
-import com.avsystem.scex.validation.SymbolValidator._
 import java.{lang => jl, util => ju}
+
+import com.avsystem.scex.validation.SymbolValidator._
 
 allow {
   StringContext.apply _

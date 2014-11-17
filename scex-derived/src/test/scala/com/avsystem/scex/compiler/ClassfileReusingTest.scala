@@ -2,10 +2,10 @@ package com.avsystem.scex.compiler
 
 import java.{lang => jl, util => ju}
 
-import com.avsystem.scex.{PredefinedAccessSpecs, NamedSource, ExpressionProfile}
 import com.avsystem.scex.compiler.presentation.ScexPresentationCompiler
 import com.avsystem.scex.util.SimpleContext
 import com.avsystem.scex.validation.{SymbolValidator, SyntaxValidator}
+import com.avsystem.scex.{ExpressionProfile, NamedSource, PredefinedAccessSpecs}
 import org.scalatest.BeforeAndAfter
 
 import scala.collection.mutable.ArrayBuffer

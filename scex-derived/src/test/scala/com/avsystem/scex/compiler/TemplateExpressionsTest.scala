@@ -6,7 +6,6 @@ import java.{lang => jl, util => ju}
 
 import com.avsystem.scex.compiler.ScexCompiler.CompilationFailedException
 import com.avsystem.scex.util.SimpleContext
-import org.scalatest.FunSuite
 
 /**
  * Created: 18-11-2013

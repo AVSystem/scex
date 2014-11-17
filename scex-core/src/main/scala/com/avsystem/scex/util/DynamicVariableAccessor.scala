@@ -1,9 +1,10 @@
 package com.avsystem.scex
 package util
 
-import com.avsystem.scex.ExpressionContext
+import java.{lang => jl, util => ju}
+
 import com.avsystem.scex.compiler.annotation.NotValidated
-import java.{util => ju, lang => jl}
+
 import scala.language.dynamics
 
 /**

@@ -6,7 +6,6 @@ import java.{lang => jl, util => ju}
 import com.avsystem.scex.compiler.ScexCompiler.CompilationFailedException
 import com.avsystem.scex.util.SimpleContext
 import com.avsystem.scex.validation.{SymbolValidator, SyntaxValidator}
-import org.scalatest.FunSuite
 
 import scala.reflect.runtime.universe.TypeTag
 

@@ -1,11 +1,10 @@
 package com.avsystem.scex
 package compiler
 
-import java.{util => ju, lang => jl}
-import com.avsystem.scex.parsing.{ShiftInfoPositionMapping, ShiftInfo, PositionMapping}
-import org.junit.runner.RunWith
-import org.scalatest.FunSuite
-import org.scalatest.junit.JUnitRunner
+import java.{lang => jl, util => ju}
+
+import com.avsystem.scex.parsing.{ShiftInfo, ShiftInfoPositionMapping}
+
 import scala.collection.immutable.SortedMap
 
 /**

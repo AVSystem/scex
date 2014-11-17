@@ -2,7 +2,6 @@ package com.avsystem.scex.compiler
 
 import java.{lang => jl, util => ju}
 
-import scala.reflect.io.AbstractFile
 import scala.tools.nsc.Settings
 
 /**

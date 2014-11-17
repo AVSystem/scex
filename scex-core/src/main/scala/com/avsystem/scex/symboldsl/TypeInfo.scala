@@ -1,8 +1,9 @@
 package com.avsystem.scex
-package validation
+package symboldsl
 
-import java.{util => ju, lang => jl}
-import reflect.api.{Universe, TypeCreator}
+import java.{lang => jl, util => ju}
+
+import scala.reflect.api.{TypeCreator, Universe}
 
 class TypeInfo(typeCreator: TypeCreator, val clazz: Option[Class[_]], val isJava: Boolean, typeRepr: String) {
 

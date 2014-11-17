@@ -2,7 +2,8 @@ package com.avsystem.scex
 package compiler.presentation
 
 import java.util.Objects
-import java.{util => ju, lang => jl}
+import java.{lang => jl, util => ju}
+
 import scala.collection.mutable.ListBuffer
 import scala.reflect.api.Universe
 

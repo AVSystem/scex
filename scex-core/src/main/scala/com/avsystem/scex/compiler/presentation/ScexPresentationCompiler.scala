@@ -9,7 +9,6 @@ import com.avsystem.scex.parsing.EmptyPositionMapping
 import com.avsystem.scex.util.CommonUtils._
 import com.avsystem.scex.validation.ValidationContext
 
-import scala.reflect.internal.util.SourceFile
 import scala.reflect.runtime.universe.TypeTag
 
 trait ScexPresentationCompiler extends ScexCompiler {
@@ -74,7 +73,7 @@ trait ScexPresentationCompiler extends ScexCompiler {
 
     private def exprDef(expression: String, bare: Boolean) = {
       val (actualExpression, positionMapping) =
-        if(bare) (expression, EmptyPositionMapping) else preprocess(expression, template)
+        if (bare) (expression, EmptyPositionMapping) else preprocess(expression, template)
 
       ExpressionDef(profile, template && !bare, setter && !bare, actualExpression, header, contextType,
         if (bare) "Any" else resultType)(expression, positionMapping, rootObjectClass)

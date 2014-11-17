@@ -1,4 +1,5 @@
-import java.{util => ju, lang => jl}
+import java.{lang => jl, util => ju}
+
 import scala.reflect.runtime.universe._
 
 object MethodTypes {

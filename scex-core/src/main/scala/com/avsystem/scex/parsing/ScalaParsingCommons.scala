@@ -91,13 +91,13 @@ trait ScalaParsingCommons extends RegexParsers {
     """([^"\p{Cntrl}\\])+""".r
 
   val quotedInterpolationChars: Parser[String] =
-    repjoin("""([^"\p{Cntrl}\$])+|\$\$""".r)
+    repjoin( """([^"\p{Cntrl}\$])+|\$\$""".r)
 
   val multilineChars: Parser[String] =
     """([^"\p{Cntrl}])+|"{1,2}(?!")""".r
 
   val multilineInterpolationChars: Parser[String] =
-    repjoin("""([^"\p{Cntrl}\$])+|"{1,2}(?!")|\$\$""".r)
+    repjoin( """([^"\p{Cntrl}\$])+|"{1,2}(?!")|\$\$""".r)
 
   val interpolationArg: Parser[String] =
     "$" ~~ (plainIdent | block)

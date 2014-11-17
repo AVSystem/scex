@@ -1,18 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration debug="true" scan="true" scanPeriod="5 seconds">
-  <property name="PATTERN" value="%date{HH:mm:ss.SSS} %-5level [%thread][%logger{55}] %message%n"/>
+    <property name="PATTERN" value="%date{HH:mm:ss.SSS} %-5level [%thread][%logger{55}] %message%n"/>
 
-  <!-- ############################### APPENDERS ################################# -->
-  <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
-    <encoder>
-      <pattern>${PATTERN}</pattern>
-    </encoder>
-  </appender>
+    <!-- ############################### APPENDERS ################################# -->
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>${PATTERN}</pattern>
+        </encoder>
+    </appender>
 
-  <logger name="org.eclipse.jetty" level="ERROR"/>
+    <logger name="org.eclipse.jetty" level="ERROR"/>
 
-  <root level="DEBUG">
-    <appender-ref ref="STDOUT"/>
-  </root>
+    <root level="DEBUG">
+        <appender-ref ref="STDOUT"/>
+    </root>
 
 </configuration>

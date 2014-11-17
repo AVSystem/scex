@@ -1,9 +1,11 @@
 package com.avsystem.scex
 package compiler.presentation.ast
 
-import java.{util => ju, lang => jl}
+import java.{lang => jl, util => ju}
+
+import com.avsystem.scex.compiler.presentation.ScexPresentationCompiler.Type
+
 import scala.collection.JavaConverters._
-import compiler.presentation.ScexPresentationCompiler.Type
 
 /**
  * Created: 12-03-2014

@@ -1,7 +1,7 @@
 package vaadin
 
-import java.{util => ju, lang => jl}
-import scala.reflect.classTag
+import java.{lang => jl, util => ju}
+
 import scala.language.dynamics
 
 /**

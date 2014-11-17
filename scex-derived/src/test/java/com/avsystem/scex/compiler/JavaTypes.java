@@ -1,8 +1,8 @@
 package com.avsystem.scex.compiler;
 
-import java.lang.reflect.Type;
-
 import com.google.common.reflect.TypeToken;
+
+import java.lang.reflect.Type;
 
 public class JavaTypes {
     public static Type comparableOfString() {

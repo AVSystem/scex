@@ -1,13 +1,14 @@
 package com.avsystem.scex
 
+import java.{lang => jl, util => ju}
+
 import com.avsystem.scex.util.Literal
-import com.avsystem.scex.validation.SymbolValidator
-import java.{util => ju, lang => jl}
+
 import scala.runtime._
 
 object PredefinedAccessSpecs {
 
-  import SymbolValidator._
+  import com.avsystem.scex.validation.SymbolValidator._
 
   val basicOperations = deny {
     // Methods on toplevel types

@@ -1,8 +1,10 @@
 package com.avsystem.scex
 package compiler
 
+import java.{lang => jl, util => ju}
+
 import com.avsystem.scex.util.DynamicAdapters.DynamicVariableSupport
-import java.{util => ju, lang => jl}
+
 import scala.collection.mutable
 
 /**

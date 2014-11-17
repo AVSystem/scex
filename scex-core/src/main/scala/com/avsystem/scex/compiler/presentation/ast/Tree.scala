@@ -2,11 +2,10 @@ package com.avsystem.scex
 package compiler.presentation.ast
 
 import scala.collection.JavaConverters._
-import com.avsystem.scex.util.CommonUtils
 
 sealed trait Tree extends PrettyPrint {
 
-  import CommonUtils._
+  import com.avsystem.scex.util.CommonUtils._
 
   def attachments: Attachments
 

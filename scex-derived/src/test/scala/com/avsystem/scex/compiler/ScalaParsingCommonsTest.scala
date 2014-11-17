@@ -10,7 +10,7 @@ import com.avsystem.scex.parsing.ScalaParsingCommons
  */
 class ScalaParsingCommonsTest extends ScexFunSuite {
 
-  import ScalaParsingCommons._
+  import com.avsystem.scex.parsing.ScalaParsingCommons._
 
   def success(parser: Parser[String], input: String) =
     parseAll(parser, input) match {

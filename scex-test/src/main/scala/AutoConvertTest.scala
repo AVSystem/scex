@@ -1,6 +1,6 @@
+import java.{lang => jl, util => ju}
+
 import com.avsystem.scex.util.Literal
-import java.{util => ju, lang => jl}
-import scala.reflect.classTag
 
 /**
  * Created: 30-05-2014

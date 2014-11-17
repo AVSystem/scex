@@ -1,6 +1,6 @@
 package com.avsystem.scex.compiler
 
-import java.lang.reflect.{Constructor, Method, Field}
+import java.lang.reflect.{Constructor, Field, Method}
 import java.security.MessageDigest
 import java.{lang => jl, util => ju}
 
@@ -139,7 +139,7 @@ trait SymbolErasures {
     else sym.name.toString
 
   /** The Java field corresponding to a given Scala field.
-    *  @param   fld The Scala field.
+    * @param   fld The Scala field.
     */
   def fieldToJava(fld: TermSymbol): Field = {
     val jclazz = classToJava(fld.owner.asClass)
@@ -151,21 +151,21 @@ trait SymbolErasures {
   }
 
   /** The Java method corresponding to a given Scala method.
-    *  @param   meth The Scala method
+    * @param   meth The Scala method
     */
   def methodToJava(meth: MethodSymbol): Method = {
     val jclazz = classToJava(meth.owner.asClass)
     val paramClasses = transformedType(meth).paramTypes map typeToJavaClass
     val jname = meth.name.dropLocal.toString
-    try jclazz getDeclaredMethod (jname, paramClasses: _*)
+    try jclazz getDeclaredMethod(jname, paramClasses: _*)
     catch {
       case ex: NoSuchMethodException =>
-        jclazz getDeclaredMethod (expandedName(meth), paramClasses: _*)
+        jclazz getDeclaredMethod(expandedName(meth), paramClasses: _*)
     }
   }
 
   /** The Java constructor corresponding to a given Scala constructor.
-    *  @param   constr The Scala constructor
+    * @param   constr The Scala constructor
     */
   def constructorToJava(constr: MethodSymbol): Constructor[_] = {
     val jclazz = classToJava(constr.owner.asClass)

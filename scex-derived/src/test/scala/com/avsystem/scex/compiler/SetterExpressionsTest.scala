@@ -4,7 +4,6 @@ package compiler
 import java.{lang => jl, util => ju}
 
 import com.avsystem.scex.util.SimpleContext
-import org.scalatest.FunSuite
 
 import scala.reflect.runtime.universe.TypeTag
 
@@ -30,7 +29,7 @@ class SetterExpressionsTest extends ScexFunSuite with CompilationTest {
   import com.avsystem.scex.validation.SymbolValidator._
 
   def applySetter[R: TypeTag, T: TypeTag](expr: String, root: R, value: T,
-    acl: List[MemberAccessSpec] = PredefinedAccessSpecs.basicOperations) = {
+                                          acl: List[MemberAccessSpec] = PredefinedAccessSpecs.basicOperations) = {
 
     val setterExpression = compiler.getCompiledSetterExpression[SimpleContext[R], T](createProfile(acl), expr, template = false)
     setterExpression.apply(SimpleContext(root)).apply(value)

@@ -1,12 +1,13 @@
 package com.avsystem.scex
 package util
 
+import java.{lang => jl, util => ju}
+
+import com.avsystem.scex.compiler.Markers.{ExpressionUtil, JavaGetterAdapter, ProfileObject, Synthetic}
 import com.avsystem.scex.compiler.annotation._
 import com.avsystem.scex.util.CommonUtils._
-import com.avsystem.scex.validation.FakeImplicitConversion
-import java.{util => ju, lang => jl}
+
 import scala.reflect.macros.Universe
-import com.avsystem.scex.compiler.Markers.{Synthetic, ProfileObject, ExpressionUtil, JavaGetterAdapter}
 
 trait MacroUtils {
   val universe: Universe
@@ -29,6 +30,16 @@ trait MacroUtils {
   lazy val booleanTpe = typeOf[Boolean]
   lazy val jBooleanTpe = typeOf[jl.Boolean]
   lazy val dynamicTpe = typeOf[Dynamic]
+
+  object DecodedTermName {
+    def unapply(name: TermName) =
+      Some(name.decodedName.toString)
+  }
+
+  object DecodedTypeName {
+    def unapply(name: TermName) =
+      Some(name.decodedName.toString)
+  }
 
   object LiteralString {
     def unapply(tree: Tree) = tree match {
@@ -132,15 +143,7 @@ trait MacroUtils {
     case _ => tpe
   }
 
-  private object FakeImplicitConversionTree {
-    def unapply(tree: Tree) = internal.attachments(tree).get[FakeImplicitConversion] match {
-      case Some(FakeImplicitConversion(fakePath)) => Some(fakePath)
-      case None => None
-    }
-  }
-
   def path(tree: Tree): String = tree match {
-    case FakeImplicitConversionTree(fakePath) => fakePath
     case Select(prefix, name) => s"${path(prefix)}.${name.decodedName.toString}"
     case Ident(name) => name.decodedName.toString
     case This(name) => name.decodedName.toString
@@ -161,7 +164,6 @@ trait MacroUtils {
   }
 
   def isGlobalImplicitConversion(tree: Tree): Boolean = tree match {
-    case FakeImplicitConversionTree(_) => true
     case TypeApply(prefix, _) => isGlobalImplicitConversion(prefix)
     //TODO handle apply method on implicit function values
     case Select(prefix, name) =>

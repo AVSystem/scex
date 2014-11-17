@@ -1,4 +1,4 @@
-import java.{util => ju, lang => jl}
+import java.{lang => jl, util => ju}
 
 class ScalaClass(costam: Int) extends JavaClass(costam) {
   def this(s: String) = this(s.length)

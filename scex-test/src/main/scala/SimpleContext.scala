@@ -1,5 +1,7 @@
+import java.{lang => jl, util => ju}
+
 import com.avsystem.scex.ExpressionContext
-import java.{util => ju, lang => jl}
+
 import scala.collection.mutable
 
 /**

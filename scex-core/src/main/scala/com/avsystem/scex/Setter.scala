@@ -1,6 +1,6 @@
 package com.avsystem.scex
 
-import java.{util => ju, lang => jl}
+import java.{lang => jl, util => ju}
 
 /**
  * Created: 28-11-2013

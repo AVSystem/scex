@@ -1,7 +1,8 @@
 package com.avsystem.scex
 package compiler
 
-import java.{util => ju, lang => jl}
+import java.{lang => jl, util => ju}
+
 import scala.language.dynamics
 
 /**

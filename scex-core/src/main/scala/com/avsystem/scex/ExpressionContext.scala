@@ -1,7 +1,8 @@
 package com.avsystem.scex
 
+import java.{lang => jl, util => ju}
+
 import com.avsystem.scex.compiler.annotation.NotValidated
-import java.{util => ju, lang => jl}
 
 /**
  * Created: 23-09-2013

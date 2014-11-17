@@ -1,9 +1,10 @@
 package com.avsystem.scex
 package util
 
+import java.lang.reflect.{Method, Modifier}
 import java.util.concurrent.Callable
+
 import scala.collection.mutable
-import java.lang.reflect.{Modifier, Method}
 
 
 /**

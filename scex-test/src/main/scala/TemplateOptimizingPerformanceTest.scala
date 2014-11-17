@@ -1,11 +1,9 @@
-import java.{util => ju, lang => jl}
-import com.avsystem.scex.{NamedSource, PredefinedAccessSpecs, ExpressionProfile}
+import java.{lang => jl, util => ju}
+
 import com.avsystem.scex.compiler.ScexSettings
 import com.avsystem.scex.japi.XmlFriendlyJavaScexCompiler
 import com.avsystem.scex.validation.{SymbolValidator, SyntaxValidator}
-
-import scala.collection.JavaConverters._
-import scala.reflect.{ClassTag, classTag}
+import com.avsystem.scex.{ExpressionProfile, NamedSource, PredefinedAccessSpecs}
 
 /**
  * Created: 04-11-2014

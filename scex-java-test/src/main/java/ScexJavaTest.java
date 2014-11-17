@@ -1,7 +1,3 @@
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-
 import com.avsystem.scex.ExpressionContext;
 import com.avsystem.scex.ExpressionProfile;
 import com.avsystem.scex.NamedSource;
@@ -10,6 +6,10 @@ import com.avsystem.scex.japi.DefaultJavaScexCompiler;
 import com.avsystem.scex.japi.JavaScexCompiler;
 import com.avsystem.scex.validation.SymbolValidator;
 import com.avsystem.scex.validation.SyntaxValidator;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
 
 public class ScexJavaTest {
     public static void main(String[] args) throws Exception {

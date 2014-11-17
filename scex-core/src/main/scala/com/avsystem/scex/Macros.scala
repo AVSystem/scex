@@ -4,7 +4,7 @@ import java.{lang => jl, util => ju}
 
 import com.avsystem.scex.compiler.TemplateInterpolations
 import com.avsystem.scex.compiler.TemplateInterpolations.Splicer
-import com.avsystem.scex.util.{Literal => ScexLiteral, MacroUtils}
+import com.avsystem.scex.util.{MacroUtils, Literal => ScexLiteral}
 
 import scala.reflect.macros.whitebox
 
@@ -34,7 +34,8 @@ object Macros {
 
     def reifyConcatenation(parts: List[Tree], args: List[Tree]) = {
       val convertedArgs = args.map { arg =>
-        c.inferImplicitValue(internal.reificationSupport.TypeRef(templateInterpolationsObjectTpe, splicerSymbol, List(arg.tpe))) match {
+        val splicerTpe = internal.reificationSupport.TypeRef(templateInterpolationsObjectTpe, splicerSymbol, List(arg.tpe))
+        c.inferImplicitValue(splicerTpe) match {
           case EmptyTree => Select(arg, TermName("toString"))
           case tree => Apply(Select(tree, TermName("toString")), List(arg))
         }
@@ -113,7 +114,7 @@ object Macros {
     import utils._
 
     expr.tree.foreach { t =>
-      if(isAnnotatedWith(t.tpe.widen, inputAnnotType)) {
+      if (isAnnotatedWith(t.tpe.widen, inputAnnotType)) {
         c.error(t.pos, s"Tree references expression input")
       }
     }

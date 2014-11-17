@@ -5,7 +5,6 @@ import java.{lang => jl, util => ju}
 
 import com.avsystem.scex.compiler.CodeGeneration._
 import com.avsystem.scex.compiler.ScexCompiler._
-import com.avsystem.scex.compiler.presentation.IGlobal
 import com.avsystem.scex.parsing.{EmptyPositionMapping, PositionMapping}
 import com.avsystem.scex.util.CommonUtils._
 import com.avsystem.scex.util.LoggingUtils
@@ -111,6 +110,7 @@ trait ScexCompiler extends LoggingUtils {
     compilationCount = 0
     global = new Global(settings, reporter) with ScexGlobal {
       override def loadAdditionalPlugins() = loadCompilerPlugins(this)
+
       def classLoader = getSharedClassLoader
     }
     sharedClassLoader = new ScexClassLoader(new VirtualDirectory("(scex_shared)", None), getClass.getClassLoader)

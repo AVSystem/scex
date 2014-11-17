@@ -7,8 +7,6 @@ import java.{lang => jl, util => ju}
 import com.avsystem.scex.compiler.ScexCompiler.CompilationFailedException
 import com.avsystem.scex.compiler.TestUtils.CustomBooleanConversionRoot
 import com.avsystem.scex.util.SimpleContext
-import com.avsystem.scex.validation.SymbolValidator
-import org.scalatest.FunSuite
 
 /**
  * Created: 04-04-2014

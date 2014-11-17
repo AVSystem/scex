@@ -1,14 +1,11 @@
 package com.avsystem.scex
 package compiler
 
-import java.{util => ju, lang => jl}
-import org.scalatest._
-import org.scalatest.junit.JUnitRunner
-import org.junit.runner.RunWith
+import java.{lang => jl, util => ju}
 
 class JavaTypeParsingTest extends ScexFunSuite {
 
-  import JavaTypeParsing._
+  import com.avsystem.scex.compiler.JavaTypeParsing._
 
   test("toplevel non-parameterized classes") {
     assertResult("java.lang.Object") {

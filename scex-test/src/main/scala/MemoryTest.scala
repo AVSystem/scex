@@ -3,7 +3,7 @@ import java.{lang => jl, util => ju}
 import com.avsystem.scex.compiler.ScexSettings
 import com.avsystem.scex.japi.DefaultJavaScexCompiler
 import com.avsystem.scex.validation.{SymbolValidator, SyntaxValidator}
-import com.avsystem.scex.{NamedSource, ExpressionContext, ExpressionProfile, PredefinedAccessSpecs}
+import com.avsystem.scex.{ExpressionContext, ExpressionProfile, NamedSource, PredefinedAccessSpecs}
 
 
 object MemoryTest {

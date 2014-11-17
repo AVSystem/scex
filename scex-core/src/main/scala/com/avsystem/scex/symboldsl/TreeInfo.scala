@@ -1,10 +1,11 @@
 package com.avsystem.scex
-package validation
+package symboldsl
 
-import com.avsystem.scex.util.CommonUtils
+import java.{lang => jl, util => ju}
+
 import com.google.common.cache.CacheBuilder
-import java.{util => ju, lang => jl}
-import scala.reflect.api.{TypeCreator, Universe, TreeCreator}
+
+import scala.reflect.api.{TreeCreator, TypeCreator, Universe}
 
 /**
  * Created: 10-12-2013
@@ -12,7 +13,7 @@ import scala.reflect.api.{TypeCreator, Universe, TreeCreator}
  */
 class TreeInfo(treeCreator: TreeCreator, typeCreator: TypeCreator, val path: String) {
 
-  import CommonUtils._
+  import com.avsystem.scex.util.CommonUtils._
 
   // a double-entry cache (universe passed to treeIn will probably always be the compiler or presentation compiler)
   private val cache = CacheBuilder.newBuilder.weakKeys.maximumSize(2).build[Universe, Universe#Tree]

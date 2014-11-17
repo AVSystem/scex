@@ -1,10 +1,10 @@
 package com.avsystem.scex
 package util
 
-import collection.JavaConversions
-import collection.mutable
 import java.util.Collections
-import java.{util => ju, lang => jl}
+import java.{lang => jl, util => ju}
+
+import scala.collection.{JavaConversions, mutable}
 import scala.language.dynamics
 
 

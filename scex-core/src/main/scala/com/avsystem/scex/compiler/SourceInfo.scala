@@ -1,8 +1,6 @@
 package com.avsystem.scex.compiler
 
-import java.{util => ju, lang => jl}
-import scala.collection.JavaConverters._
-import scala.reflect.{ClassTag, classTag}
+import java.{lang => jl, util => ju}
 
 /**
  * Created: 03-11-2014

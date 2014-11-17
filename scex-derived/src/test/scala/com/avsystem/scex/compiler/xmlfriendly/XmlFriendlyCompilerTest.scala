@@ -3,8 +3,8 @@ package compiler.xmlfriendly
 
 import java.{lang => jl, util => ju}
 
-import com.avsystem.scex.compiler.ScexCompiler.{CompileError, CompilationFailedException}
-import com.avsystem.scex.compiler.{ScexSettings, ScexFunSuite}
+import com.avsystem.scex.compiler.ScexCompiler.{CompilationFailedException, CompileError}
+import com.avsystem.scex.compiler.{ScexFunSuite, ScexSettings}
 import com.avsystem.scex.japi.XmlFriendlyJavaScexCompiler
 import com.avsystem.scex.util.SimpleContext
 import com.avsystem.scex.validation.SymbolValidator._

@@ -1,6 +1,6 @@
 package vaadin
 
-import java.{util => ju, lang => jl}
+import java.{lang => jl, util => ju}
 
 /**
  * Created: 11-12-2013

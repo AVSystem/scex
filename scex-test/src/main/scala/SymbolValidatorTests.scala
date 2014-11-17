@@ -1,5 +1,6 @@
+import java.{lang => jl, util => ju}
+
 import com.avsystem.scex.validation.SymbolValidator._
-import java.{util => ju, lang => jl}
 
 
 object SymbolValidatorTests {
