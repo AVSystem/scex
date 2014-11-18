@@ -1,9 +1,16 @@
 package com.avsystem.scex.presentation.annotation;
 
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+
 /**
  * Author: ghik
  * Created: 11/17/14.
  */
+@Retention(RetentionPolicy.RUNTIME)
+@Target({ElementType.METHOD, ElementType.CONSTRUCTOR, ElementType.FIELD})
 public @interface Documentation {
     String value();
 }
