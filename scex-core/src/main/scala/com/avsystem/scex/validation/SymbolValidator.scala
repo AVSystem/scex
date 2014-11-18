@@ -3,7 +3,7 @@ package validation
 
 import java.{lang => jl, util => ju}
 
-import com.avsystem.scex.symboldsl.{SymbolDsl, SymbolInfo, SymbolInfoList}
+import com.avsystem.scex.symboldsl.{SymbolDslMacros, SymbolDsl, SymbolInfo, SymbolInfoList}
 import com.avsystem.scex.util.CommonUtils._
 import com.avsystem.scex.util.LoggingUtils
 
@@ -42,14 +42,13 @@ trait SymbolValidator extends SymbolInfoList[Boolean] with LoggingUtils {
         // SymbolInfos that match this invocation
         val matchingSpecs = matchingInfos(vc.universe)(tpe, symbol, implicitConv)
 
-        def specsRepr = matchingSpecs.map({ case (spec, idx) => s"$idx: $spec"}).mkString("\n")
+        def specsRepr = matchingSpecs.map({ case InfoWithIndex(spec, idx) => s"$idx: $spec"}).mkString("\n")
         logger.trace(s"Matching signatures:\n$specsRepr")
 
         // get 'allow' field from matching spec that appeared first in ACL or false if there was no matching spec
-        val (allow, index) = if (matchingSpecs.nonEmpty) {
-          val (spec, index) = matchingSpecs.minBy(_._2)
-          (spec.payload, index)
-        } else (allowedByDefault, lowestPriority(allowedByDefault))
+        val (allow, index) = matchingSpecs.headOption.map {
+          case InfoWithIndex(info, idx) => (info.payload, idx)
+        } getOrElse (allowedByDefault, lowestPriority(allowedByDefault))
 
         ValidationResult(index, if (allow) Nil else List(access))
 
@@ -94,7 +93,7 @@ object SymbolValidator extends SymbolDsl {
    * @param expr
    * @return
    */
-  def allow(expr: Any): List[MemberAccessSpec] = macro SymbolValidatorMacros.allow_impl
+  def allow(expr: Any): List[MemberAccessSpec] = macro SymbolDslMacros.allow_impl
 
   /**
    * Encloses block of statements that specify methods that are not allowed to be called in expressions.
@@ -103,6 +102,6 @@ object SymbolValidator extends SymbolDsl {
    * @param expr
    * @return
    */
-  def deny(expr: Any): List[MemberAccessSpec] = macro SymbolValidatorMacros.deny_impl
+  def deny(expr: Any): List[MemberAccessSpec] = macro SymbolDslMacros.deny_impl
 
 }

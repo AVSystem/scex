@@ -12,7 +12,7 @@ import scala.reflect.runtime.{universe => ru}
  * Created: 07-10-2014
  * Author: ghik
  */
-class TypeCompletionPrefixTest extends ScexFunSuite with CompilationTest {
+class TypeCompletionPrefixTest extends ScexFunSuite with CompilationTest with CompletionTest {
 
   import com.avsystem.scex.compiler.presentation.ScexPresentationCompiler._
   import com.avsystem.scex.validation.SymbolValidator._
@@ -42,11 +42,6 @@ class TypeCompletionPrefixTest extends ScexFunSuite with CompilationTest {
 
   private def createCompleter(acl: List[MemberAccessSpec]) =
     compiler.getCompleter[SimpleContext[Root], Any](createProfile(acl), template = false, header = header)
-
-  private def scexType[T: ru.TypeTag] = {
-    val tag = ru.typeTag[T]
-    Type(tag.tpe.toString, tag.mirror.runtimeClass(tag.tpe))
-  }
 
   private def assertPrefix(exprWithCaret: String, expectedPrefix: String, expectedType: Type): Unit = {
     val completer = createCompleter(acl)

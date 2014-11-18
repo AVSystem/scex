@@ -22,14 +22,30 @@ class IGlobal(settings: Settings, reporter: Reporter, val classLoader: ClassLoad
 
   import definitions._
 
+  abstract class ScexMember extends Member {
+    def ownerTpe: Type
+    def implicitTree: Tree
+    def implicitType: Type
+    override def implicitlyAdded = implicitTree != EmptyTree
+  }
+
   case class ScexTypeMember(
+    ownerTpe: Type,
     sym: Symbol,
     tpe: Type,
     accessible: Boolean,
     inherited: Boolean,
     implicitTree: Tree,
-    implicitType: Type) extends Member {
-    override def implicitlyAdded = implicitTree != EmptyTree
+    implicitType: Type) extends ScexMember
+
+  case class ScexScopeMember(
+    sym: Symbol,
+    tpe: Type,
+    accessible: Boolean,
+    viaImport: Tree) extends ScexMember {
+    def ownerTpe = viaImport.tpe
+    def implicitTree = EmptyTree
+    def implicitType = NoType
   }
 
   private class Members extends mutable.LinkedHashMap[Name, Set[ScexTypeMember]] {
@@ -150,7 +166,7 @@ class IGlobal(settings: Settings, reporter: Reporter, val classLoader: ClassLoad
     def addTypeMember(sym: Symbol, pre: Type, inherited: Boolean, implicitTree: Tree, implicitType: Type) = {
       val implicitlyAdded = implicitTree != EmptyTree
       members.add(sym, pre, implicitTree) { (s, st) =>
-        new ScexTypeMember(s, st,
+        new ScexTypeMember(ownerTpe, s, st,
           context.isAccessible(if (s.hasGetter) s.getterIn(s.owner) else s, pre, superAccess && !implicitlyAdded),
           inherited, implicitTree, implicitType)
       }

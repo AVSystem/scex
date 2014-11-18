@@ -6,6 +6,8 @@ import java.{lang => jl, util => ju}
 import com.avsystem.scex.compiler.ScexCompiler.CompileError
 import com.avsystem.scex.compiler.{ExpressionDef, _}
 import com.avsystem.scex.parsing.EmptyPositionMapping
+import com.avsystem.scex.presentation.annotation.{Documentation, ParameterNames}
+import com.avsystem.scex.presentation.{Attributes, SymbolAttributes}
 import com.avsystem.scex.util.CommonUtils._
 import com.avsystem.scex.validation.ValidationContext
 
@@ -132,7 +134,70 @@ trait ScexPresentationCompiler extends ScexCompiler {
     }
   }
 
-  private def translateMember(global: IGlobal)(member: global.Member) = {
+  private def getAttributes(global: IGlobal, attrs: SymbolAttributes)(member: global.ScexMember) = {
+
+    import global._
+
+    def merge(left: Stream[attrs.InfoWithIndex], right: Stream[attrs.InfoWithIndex]): Stream[attrs.InfoWithIndex] =
+      (left, right) match {
+        case (lh #:: lt, rh #:: rt) =>
+          if (lh.index < rh.index)
+            lh #:: merge(lt, right)
+          else
+            rh #:: merge(left, rt)
+        case (_, Stream.Empty) =>
+          left
+        case (Stream.Empty, _) =>
+          right
+      }
+
+    def implicitConv =
+      if (member.implicitlyAdded) Some(member.implicitTree) else None
+
+    def normalInfos =
+      attrs.matchingInfos(global)(member.ownerTpe, member.sym, implicitConv)
+
+    def implicitInfos =
+      if (member.implicitlyAdded)
+        attrs.matchingInfos(global)(member.implicitType, member.sym, None)
+      else Nil
+
+    def attributesFromInfos =
+      merge(normalInfos.toStream, implicitInfos.toStream).map(_.info.payload)
+
+    def annotValue(annotTree: Tree) = annotTree.children.tail.collectFirst {
+      case AssignOrNamedArg(Ident(TermName("value")), value) => value
+      case _ => None
+    }
+
+    def parseAnnotation(ann: Annotation): Attributes = {
+      if (ann.tree.tpe <:< typeOf[ParameterNames]) {
+        val paramNames = annotValue(ann.tree).map {
+          case Apply(_, paramNameLiterals) => paramNameLiterals.map {
+            case Literal(Constant(name: String)) => name
+          }
+        }
+        new Attributes(paramNames, None)
+      } else if (ann.tree.tpe <:< typeOf[Documentation]) {
+        val documentation = annotValue(ann.tree).map {
+          case Literal(Constant(doc: String)) => doc
+        }
+        new Attributes(None, documentation)
+      } else Attributes.empty
+    }
+
+    def attributesFromAnnotations =
+      (member.sym :: member.sym.overrides).iterator.flatMap(_.annotations).map(parseAnnotation).toStream
+
+    def foldAttributes(str: Stream[Attributes]): Attributes = str match {
+      case head #:: tail => head orElse foldAttributes(tail)
+      case Stream.Empty => Attributes.empty
+    }
+
+    foldAttributes(attributesFromInfos #::: attributesFromAnnotations)
+  }
+
+  private def translateMember(global: IGlobal, attrs: SymbolAttributes)(member: global.ScexMember) = {
     import global._
 
     def translateType(tpe: Type) =
@@ -140,13 +205,18 @@ trait ScexPresentationCompiler extends ScexCompiler {
         SType(tpe.widen.toString(), erasureClass(tpe))
       }.orNull
 
+    val attributes = getAttributes(global, attrs)(member)
+    val params = paramsOf(member.tpe)
+    val nameOverrides = (params.flatten zip attributes.paramNames.getOrElse(Nil)).toMap
+
     def symbolToParam(sym: Symbol) =
-      Param(sym.decodedName, translateType(sym.typeSignature))
+      Param(nameOverrides.getOrElse(sym, sym.decodedName), translateType(sym.typeSignature))
 
     SMember(member.sym.decodedName,
-      paramsOf(member.tpe).map(_.map(symbolToParam)),
+      params.map(_.map(symbolToParam)),
       translateType(resultTypeOf(member.tpe)),
-      member.sym.isImplicit)
+      member.sym.isImplicit,
+      attributes.documentation)
   }
 
   protected def getErrors(exprDef: ExpressionDef) = {
@@ -166,6 +236,7 @@ trait ScexPresentationCompiler extends ScexCompiler {
 
   protected def getScopeCompletion(exprDef: ExpressionDef): Completion = {
     val symbolValidator = exprDef.profile.symbolValidator
+    val symbolAttributes = exprDef.profile.symbolAttributes
 
     val (pkgName, code, offset) = expressionCode(exprDef, noMacroProcessing = true)
     val sourceFile = new ExpressionSourceFile(exprDef, pkgName, code, offset)
@@ -183,7 +254,7 @@ trait ScexPresentationCompiler extends ScexCompiler {
         val vc = ValidationContext(global)(getContextTpe(global)(sourceTree))
         import vc._
 
-        def accessFromScopeMember(m: ScopeMember) = {
+        def accessFromScopeMember(m: ScexScopeMember) = {
           // static module will be allowed by default only when at least one of its members is allowed
           val staticAccessAllowedByDefault = isStaticModule(m.sym) && symbolValidator.referencesModuleMember(m.sym.fullName)
           extractAccess(Select(m.viaImport, m.sym), staticAccessAllowedByDefault)
@@ -195,13 +266,14 @@ trait ScexPresentationCompiler extends ScexCompiler {
 
         inCompilerThread {
           val membersIterator = scope.iterator.collect {
-            case member@ScopeMember(sym, _, _, viaImport)
+            case member@ScopeMember(sym, tpe, accessible, viaImport)
               if viaImport != EmptyTree && sym.isTerm && !sym.hasPackageFlag &&
                 !isAdapterWrappedMember(sym) && (!isScexSynthetic(sym) || (isExpressionUtil(sym) && !isExpressionUtilObject(sym))) =>
-              if (sym.hasGetter) member.copy(sym = sym.getterIn(sym.owner)) else member
+              val actualSym = if (sym.hasGetter) sym.getterIn(sym.owner) else sym
+              ScexScopeMember(actualSym, tpe, accessible, viaImport)
           } filter { m =>
             symbolValidator.validateMemberAccess(vc)(accessFromScopeMember(m)).deniedAccesses.isEmpty
-          } map translateMember(global)
+          } map translateMember(global, symbolAttributes)
 
           Completion(ast.EmptyTree, membersIterator.toVector)
         }
@@ -214,6 +286,7 @@ trait ScexPresentationCompiler extends ScexCompiler {
 
   protected def getTypeCompletion(exprDef: ExpressionDef, position: Int) = {
     val symbolValidator = exprDef.profile.symbolValidator
+    val symbolAttributes = exprDef.profile.symbolAttributes
 
     val (pkgName, code, offset) = expressionCode(exprDef, noMacroProcessing = true)
     val sourceFile = new ExpressionSourceFile(exprDef, pkgName, code, offset)
@@ -295,7 +368,7 @@ trait ScexPresentationCompiler extends ScexCompiler {
 
           val members = typeMembers.collect {
             case m if m.sym.isTerm && m.sym.isPublic && !m.sym.isConstructor
-              && !isAdapterWrappedMember(m.sym) && isAllowed(fakeSelect(m)) => translateMember(global)(m)
+              && !isAdapterWrappedMember(m.sym) && isAllowed(fakeSelect(m)) => translateMember(global, symbolAttributes)(m)
           }
 
           val translator = new ast.Translator(global, offset, exprDef)
@@ -350,7 +423,7 @@ object ScexPresentationCompiler {
 
   case class Param(name: String, tpe: Type)
 
-  case class Member(name: String, params: List[List[Param]], tpe: Type, iimplicit: Boolean)
+  case class Member(name: String, params: List[List[Param]], tpe: Type, iimplicit: Boolean, documentation: Option[String])
 
   case class Completion(typedPrefixTree: ast.Tree, members: Vector[Member])
 

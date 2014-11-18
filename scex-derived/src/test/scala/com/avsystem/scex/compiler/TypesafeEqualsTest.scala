@@ -4,6 +4,7 @@ package compiler
 import java.{lang => jl, util => ju}
 
 import com.avsystem.scex.compiler.ScexCompiler.CompilationFailedException
+import com.avsystem.scex.presentation.SymbolAttributes
 import com.avsystem.scex.util.SimpleContext
 import com.avsystem.scex.validation.{SymbolValidator, SyntaxValidator}
 
@@ -19,7 +20,7 @@ class TypesafeEqualsTest extends ScexFunSuite with CompilationTest {
 
   override def evaluate[T: TypeTag](expr: String, acl: List[MemberAccessSpec] = PredefinedAccessSpecs.basicOperations) = {
     val profile = new ExpressionProfile(newProfileName(), SyntaxValidator.SimpleExpressions, SymbolValidator(acl),
-      "import com.avsystem.scex.util.TypesafeEquals._", NamedSource("test", ""))
+      SymbolAttributes(Nil), "import com.avsystem.scex.util.TypesafeEquals._", NamedSource("test", ""))
 
     compiler.getCompiledExpression[SimpleContext[Unit], T](profile, expr, template = false).apply(SimpleContext(()))
   }

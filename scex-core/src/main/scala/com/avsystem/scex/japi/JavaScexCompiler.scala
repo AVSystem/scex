@@ -111,8 +111,8 @@ trait JavaScexCompiler extends ScexCompiler {
     import scala.collection.JavaConverters._
 
     private def memberToJava(scalaMember: ScexPresentationCompiler.Member) = scalaMember match {
-      case ScexPresentationCompiler.Member(name, params, tpe, implicitlyAdded) =>
-        JavaScexCompiler.Member(name, params.map(_.asJavaCollection).asJavaCollection, tpe, implicitlyAdded)
+      case ScexPresentationCompiler.Member(name, params, tpe, implicitlyAdded, doc) =>
+        JavaScexCompiler.Member(name, params.map(_.asJavaCollection).asJavaCollection, tpe, implicitlyAdded, doc.orNull)
     }
 
     private def completionToJava(scalaCompletion: ScexPresentationCompiler.Completion) = scalaCompletion match {
@@ -204,7 +204,7 @@ trait JavaScexCompiler extends ScexCompiler {
 object JavaScexCompiler {
 
   case class Member(getName: String, getParams: ju.Collection[ju.Collection[Param]],
-    getType: SType, isImplicit: Boolean)
+    getType: SType, isImplicit: Boolean, getDocumentation: String)
 
   case class Completion(getTypedPrefixTree: Tree, getMembers: ju.Collection[Member])
 

@@ -2,6 +2,7 @@ import java.{lang => jl, util => ju}
 
 import com.avsystem.scex.compiler.ScexSettings
 import com.avsystem.scex.japi.XmlFriendlyJavaScexCompiler
+import com.avsystem.scex.presentation.SymbolAttributes
 import com.avsystem.scex.validation.{SymbolValidator, SyntaxValidator}
 import com.avsystem.scex.{ExpressionProfile, NamedSource, PredefinedAccessSpecs}
 
@@ -15,8 +16,9 @@ object ExistentialCase {
 
     val symbolValidator = SymbolValidator(PredefinedAccessSpecs.basicOperations)
     val syntaxValidator = SyntaxValidator.SimpleExpressions
+    val symbolAttributes = SymbolAttributes(Nil)
 
-    val profile = new ExpressionProfile("test", syntaxValidator, symbolValidator, "", NamedSource("test", ""))
+    val profile = new ExpressionProfile("test", syntaxValidator, symbolValidator, symbolAttributes, "", NamedSource("test", ""))
 
     val completion = compiler.getCompleter[SimpleContext[Unit], Int](profile, template = true)
       .getTypeCompletion("${'dafuq'.toInt}", 14)

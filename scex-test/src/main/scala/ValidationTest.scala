@@ -4,6 +4,7 @@ import java.{lang => jl, util => ju}
 import com.avsystem.scex._
 import com.avsystem.scex.compiler.ScexSettings
 import com.avsystem.scex.japi.DefaultJavaScexCompiler
+import com.avsystem.scex.presentation.SymbolAttributes
 import com.avsystem.scex.validation._
 
 import scala.language.{dynamics, existentials}
@@ -161,9 +162,10 @@ object ValidationTest {
     }
 
     val symbolValidator = SymbolValidator(PredefinedAccessSpecs.basicOperations)
+    val symbolAttributes = SymbolAttributes(Nil)
 
     val utils = NamedSource("test", "val lol = \"dafuq\"; def immaUtil = \"util, lol\"")
-    val profile = new ExpressionProfile("test", syntaxValidator, symbolValidator, "", utils)
+    val profile = new ExpressionProfile("test", syntaxValidator, symbolValidator, symbolAttributes, "", utils)
     val compiler = new DefaultJavaScexCompiler(new ScexSettings)
 
     val myexpr = "(null: A[_])"

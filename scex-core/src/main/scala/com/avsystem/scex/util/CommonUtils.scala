@@ -103,8 +103,10 @@ object CommonUtils {
       def call() = expr
     }
 
-  implicit class any2toOpt[A](val a: A) {
+  implicit class universalOps[A](val a: A) {
     def toOpt = Option(a)
+
+    def passTo[B](f: A => B): B = f(a)
   }
 
 }

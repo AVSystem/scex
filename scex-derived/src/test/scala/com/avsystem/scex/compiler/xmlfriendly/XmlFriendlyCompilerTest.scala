@@ -6,6 +6,7 @@ import java.{lang => jl, util => ju}
 import com.avsystem.scex.compiler.ScexCompiler.{CompilationFailedException, CompileError}
 import com.avsystem.scex.compiler.{ScexFunSuite, ScexSettings}
 import com.avsystem.scex.japi.XmlFriendlyJavaScexCompiler
+import com.avsystem.scex.presentation.SymbolAttributes
 import com.avsystem.scex.util.SimpleContext
 import com.avsystem.scex.validation.SymbolValidator._
 import com.avsystem.scex.validation.{SymbolValidator, SyntaxValidator}
@@ -19,7 +20,8 @@ class XmlFriendlyCompilerTest extends ScexFunSuite {
   val compiler = new XmlFriendlyJavaScexCompiler(new ScexSettings)
 
   def createProfile(acl: List[MemberAccessSpec], header: String = "import com.avsystem.scex.compiler._", utils: String = "") =
-    new ExpressionProfile("test", SyntaxValidator.SimpleExpressions, SymbolValidator(acl), header, NamedSource("test", utils))
+    new ExpressionProfile("test", SyntaxValidator.SimpleExpressions, SymbolValidator(acl),
+      SymbolAttributes(Nil), header, NamedSource("test", utils))
 
   test("single quotes test") {
     val profile = createProfile(Nil)

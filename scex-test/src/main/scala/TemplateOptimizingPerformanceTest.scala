@@ -2,6 +2,7 @@ import java.{lang => jl, util => ju}
 
 import com.avsystem.scex.compiler.ScexSettings
 import com.avsystem.scex.japi.XmlFriendlyJavaScexCompiler
+import com.avsystem.scex.presentation.SymbolAttributes
 import com.avsystem.scex.validation.{SymbolValidator, SyntaxValidator}
 import com.avsystem.scex.{ExpressionProfile, NamedSource, PredefinedAccessSpecs}
 
@@ -18,6 +19,7 @@ object TemplateOptimizingPerformanceTest {
     val profile = new ExpressionProfile("test",
       SyntaxValidator.SimpleExpressions,
       SymbolValidator(PredefinedAccessSpecs.basicOperations),
+      SymbolAttributes(Nil),
       "", NamedSource("empty", ""))
 
     val ctx = SimpleContext(())

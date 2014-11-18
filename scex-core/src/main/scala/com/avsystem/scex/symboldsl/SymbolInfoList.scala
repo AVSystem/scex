@@ -10,14 +10,18 @@ import scala.reflect.api.Universe
  * Created: 11/17/14.
  */
 trait SymbolInfoList[T] {
-  type InfoWithIndex = (SymbolInfo[T], Int)
+  case class InfoWithIndex(info: SymbolInfo[T], index: Int)
 
   val infoList: List[SymbolInfo[T]]
 
   lazy val size = infoList.length
 
   lazy val bySignaturesMap: Map[String, List[InfoWithIndex]] =
-    infoList.zipWithIndex.groupBy(_._1.memberSignature).withDefaultValue(Nil)
+    infoList.zipWithIndex.map {
+      case (info, index) => InfoWithIndex(info, index)
+    }.groupBy(_.info.memberSignature).map {
+      case (signature, infos) => (signature, infos.sortBy(_.index))
+    }.withDefaultValue(Nil)
 
   lazy val memberSignatures: SortedSet[String] =
     bySignaturesMap.keys.to[TreeSet]
@@ -32,7 +36,7 @@ trait SymbolInfoList[T] {
     val implicitConvPath = implicitConv.map(path)
 
     signatures.flatMap { signature =>
-      bySignaturesMap(signature).filter { case (symbolInfo, _) =>
+      bySignaturesMap(signature).filter { case InfoWithIndex(symbolInfo, _) =>
         signature == symbolInfo.memberSignature &&
           prefixTpe <:< symbolInfo.typeInfo.typeIn(u) &&
           implicitConvPath == symbolInfo.implicitConv

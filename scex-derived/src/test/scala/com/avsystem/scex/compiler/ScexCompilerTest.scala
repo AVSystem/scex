@@ -153,14 +153,14 @@ class ScexCompilerTest extends ScexFunSuite with CompilationTest {
     }
     val expr = "new ArrayList[String]"
     val cexpr = compiler.getCompiledExpression[SimpleContext[Unit], ju.List[_]](
-      createProfile(acl, "import java.util.ArrayList"), expr, template = false)
+      createProfile(acl, header = "import java.util.ArrayList"), expr, template = false)
     assert(new ju.ArrayList[String] === cexpr(SimpleContext(())))
   }
 
   test("utils test") {
     val expr = "utilValue"
     val cexpr = compiler.getCompiledExpression[SimpleContext[Unit], Int](
-      createProfile(Nil, "", "val utilValue = 42"), expr, template = false)
+      createProfile(Nil, header = "", utils = "val utilValue = 42"), expr, template = false)
     assert(42 === cexpr(SimpleContext(())))
   }
 
@@ -286,7 +286,7 @@ class ScexCompilerTest extends ScexFunSuite with CompilationTest {
     }
     val header = "import scala.collection.JavaConversions._"
     val expr = "_root(0)"
-    val cexpr = compiler.getCompiledExpression[SimpleContext[ju.List[String]], Any](createProfile(acl, header), expr, template = false)
+    val cexpr = compiler.getCompiledExpression[SimpleContext[ju.List[String]], Any](createProfile(acl, header = header), expr, template = false)
     val list = ju.Arrays.asList("0", "1", "2")
     assert("0" === cexpr(SimpleContext(list)))
   }

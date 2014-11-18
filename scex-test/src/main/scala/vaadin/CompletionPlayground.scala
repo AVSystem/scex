@@ -6,6 +6,7 @@ import javax.servlet.http.HttpServletRequest
 import com.avsystem.scex.compiler.ScexSettings
 import com.avsystem.scex.compiler.presentation.ScexPresentationCompiler.Member
 import com.avsystem.scex.japi.XmlFriendlyJavaScexCompiler
+import com.avsystem.scex.presentation.{Attributes, SymbolAttributes}
 import com.avsystem.scex.util.SimpleContext
 import com.avsystem.scex.validation.{SymbolValidator, SyntaxValidator}
 import com.avsystem.scex.{ExpressionProfile, NamedSource, PredefinedAccessSpecs}
@@ -34,26 +35,36 @@ object CompletionPlayground {
       val window = new Window
       setMainWindow(window)
 
-      import com.avsystem.scex.validation.SymbolValidator._
-      val acl = PredefinedAccessSpecs.basicOperations ++ allow {
-        Dyn.selectDynamic _
+      val acl = {
+        import com.avsystem.scex.validation.SymbolValidator._
+        PredefinedAccessSpecs.basicOperations ++ allow {
+          Dyn.selectDynamic _
 
-        on { jl: JavaLol =>
-          jl.all.members
+          on { jl: JavaLol =>
+            jl.all.members
+          }
+
+          on { l: List[Int] =>
+            l.filter _
+            l.all.membersNamed.map
+          }
+
+          on { a: Array[_] =>
+            a.as[Array[Any]].exists(_: Any => Boolean)
+          }
+
+          on { r: Root =>
+            r.all.members
+            r.dyn
+          }
         }
-
-        on { l: List[Int] =>
-          l.filter _
-          l.all.membersNamed.map
-        }
-
-        on { a: Array[_] =>
-          a.as[Array[Any]].exists(_: Any => Boolean)
-        }
-
-        on { r: Root =>
-          r.all.members
-          r.dyn
+      }
+      val attrList = {
+        import com.avsystem.scex.presentation.SymbolAttributes._
+        attributes {
+          on { s: String =>
+            s.toInt --> Attributes(documentation = "handles stuff")
+          }
         }
       }
 
@@ -64,10 +75,11 @@ object CompletionPlayground {
           |val utilStuff = "dafuq"
         """.stripMargin
 
-      val profile = new ExpressionProfile("test", SyntaxValidator.SimpleExpressions, SymbolValidator(acl), header, NamedSource("test", utils))
+      val profile = new ExpressionProfile("test", SyntaxValidator.SimpleExpressions, SymbolValidator(acl),
+        SymbolAttributes(attrList), header, NamedSource("test", utils))
 
       def memberRepr(member: Member) =
-        s"${member.name}${member.params.map(_.map(p => s"${p.name}: ${p.tpe}-${p.tpe.erasure}").mkString("(", ", ", ")")).mkString}: ${member.tpe}-${member.tpe.erasure}"
+        s"${member.name}${member.params.map(_.map(p => s"${p.name}: ${p.tpe}-${p.tpe.erasure}").mkString("(", ", ", ")")).mkString}: ${member.tpe}-${member.tpe.erasure} - ${member.documentation}"
 
       val completer = compiler.getCompleter[SimpleContext[Root], String](profile)
       val scopeMembers = completer.getScopeCompletion.members.filterNot(_.iimplicit).map(memberRepr).mkString("\n")

@@ -5,6 +5,8 @@ import java.{lang => jl, util => ju}
 
 import com.avsystem.scex.compiler.ScexCompiler.CompilationFailedException
 import com.avsystem.scex.japi.DefaultJavaScexCompiler
+import com.avsystem.scex.presentation.{Attributes, SymbolAttributes}
+import com.avsystem.scex.symboldsl.SymbolInfo
 import com.avsystem.scex.util.SimpleContext
 import com.avsystem.scex.validation.SymbolValidator.MemberAccessSpec
 import com.avsystem.scex.validation.{SymbolValidator, SyntaxValidator}
@@ -43,10 +45,13 @@ trait CompilationTest extends BeforeAndAfterAll {
     "test" + profileId
   }
 
-  def createProfile(acl: List[MemberAccessSpec], header: String = "import com.avsystem.scex.compiler._", utils: String = "") = {
+  def createProfile(acl: List[MemberAccessSpec] = Nil, attributes: List[SymbolInfo[Attributes]] = Nil,
+    header: String = "import com.avsystem.scex.compiler._", utils: String = "") = {
+
     val profileName = newProfileName()
     val expressionUtils = NamedSource(profileName, utils)
-    new ExpressionProfile(profileName, SyntaxValidator.SimpleExpressions, SymbolValidator(acl), header, expressionUtils)
+    new ExpressionProfile(profileName, SyntaxValidator.SimpleExpressions, SymbolValidator(acl),
+      SymbolAttributes(attributes), header, expressionUtils)
   }
 
   def assertMemberAccessForbidden(expr: => Any) {
