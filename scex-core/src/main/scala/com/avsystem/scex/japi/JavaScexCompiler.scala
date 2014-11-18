@@ -13,9 +13,7 @@ import com.avsystem.scex.util.Fluent
 import com.google.common.cache.CacheBuilder
 import com.google.common.reflect.TypeToken
 
-trait JavaScexCompiler extends ScexCompiler {
-  this: ScexPresentationCompiler =>
-
+trait JavaScexCompiler extends ScexCompiler with ScexPresentationCompiler {
   import com.avsystem.scex.util.CacheImplicits._
 
   private val typesCache = CacheBuilder.newBuilder.weakKeys

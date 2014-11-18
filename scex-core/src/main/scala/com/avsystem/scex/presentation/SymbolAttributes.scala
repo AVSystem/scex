@@ -8,7 +8,10 @@ import scala.language.experimental.macros
  * Author: ghik
  * Created: 11/17/14.
  */
-class SymbolAttributes(val infoList: List[SymbolInfo[Attributes]]) extends SymbolInfoList[Attributes]
+class SymbolAttributes(val infoList: List[SymbolInfo[Attributes]]) extends SymbolInfoList[Attributes] {
+  def combine(other: SymbolAttributes) =
+    SymbolAttributes(infoList ++ other.infoList)
+}
 
 object SymbolAttributes extends SymbolDsl {
   type Payload = Attributes
