@@ -154,7 +154,7 @@ trait ScexPresentationCompiler extends ScexCompiler {
       }
 
     def implicitConv =
-      if (member.implicitlyAdded) Some(member.implicitTree) else None
+      if (member.implicitlyAdded) Some(stripTypeApply(member.implicitTree)) else None
 
     def normalInfos =
       attrs.matchingInfos(global)(member.ownerTpe, member.sym, implicitConv)
