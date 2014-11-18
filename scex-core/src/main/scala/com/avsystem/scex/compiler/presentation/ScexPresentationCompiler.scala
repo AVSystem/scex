@@ -3,14 +3,16 @@ package compiler.presentation
 
 import java.{lang => jl, util => ju}
 
-import com.avsystem.scex.compiler.ScexCompiler.CompileError
+import com.avsystem.scex.compiler.CodeGeneration._
+import com.avsystem.scex.compiler.ScexCompiler.{CompilationFailedException, CompileError}
 import com.avsystem.scex.compiler.{ExpressionDef, _}
 import com.avsystem.scex.parsing.EmptyPositionMapping
 import com.avsystem.scex.presentation.annotation.{Documentation, ParameterNames}
 import com.avsystem.scex.presentation.{Attributes, SymbolAttributes}
 import com.avsystem.scex.util.CommonUtils._
-import com.avsystem.scex.validation.ValidationContext
+import com.avsystem.scex.validation.{SymbolValidator, ValidationContext}
 
+import scala.reflect.NameTransformer
 import scala.reflect.runtime.universe.TypeTag
 
 trait ScexPresentationCompiler extends ScexCompiler {
@@ -389,6 +391,20 @@ trait ScexPresentationCompiler extends ScexCompiler {
     inCompilerThread {
       val translator = new ast.Translator(global, 0, exprDef)
       translator.translateTree(parsedTree.asInstanceOf[translator.u.Tree])
+    }
+  }
+
+  @throws[CompilationFailedException]
+  def compileSymbolAttributes(source: NamedSource): SymbolAttributes = underLock {
+    val pkgName = SymbolValidatorPkgPrefix + NameTransformer.encode(source.name)
+    val codeToCompile = wrapInSource(generateSymbolAttributes(source.code), pkgName)
+    val sourceFile = new ScexSourceFile(pkgName, codeToCompile, shared = true)
+
+    compile(sourceFile) match {
+      case Left(classLoader) =>
+        instantiate[SymbolAttributes](classLoader, s"$pkgName.$SymbolAttributesClassName")
+      case Right(errors) =>
+        throw new CompilationFailedException(codeToCompile, errors)
     }
   }
 

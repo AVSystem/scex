@@ -39,6 +39,7 @@ object CodeGeneration {
   val ExpressionPkgPrefix = "_scex_expr_"
   val SyntaxValidatorPkgPrefix = "_syntax_validator_"
   val SymbolValidatorPkgPrefix = "_symbol_validator_"
+  val SymbolAttributesPkgPrefix = "_symbol_attributes_"
   val ConversionSupplierPkgPrefix = "_conversion_supplier_"
   val ArbitraryClassSourceNamePrefix = "_scex_class_"
 
@@ -47,6 +48,7 @@ object CodeGeneration {
   val UtilsObjectName = "Utils"
   val SyntaxValidatorClassName = "SyntaxValidator"
   val SymbolValidatorClassName = "SymbolValidator"
+  val SymbolAttributesClassName = "SymbolAttributes"
   val ConversionSupplierClassName = "ConversionSupplier"
   val ContextSymbol = "_ctx"
   val VariablesSymbol = "_vars"
@@ -228,8 +230,14 @@ object CodeGeneration {
   def generateSymbolValidator(accessSpecs: String) = {
     s"""
       |final class $SymbolValidatorClassName extends $ScexPkg.validation.SymbolValidator {
-      |  val accessSpecs = {$accessSpecs}
+      |  val infoList = {$accessSpecs}
       |}
+    """.stripMargin
+  }
+
+  def generateSymbolAttributes(attributes: String) = {
+    s"""
+      |final class $SymbolAttributesClassName extends $ScexPkg.presentation.SymbolAttributes({$attributes})
     """.stripMargin
   }
 

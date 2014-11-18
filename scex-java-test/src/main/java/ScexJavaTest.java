@@ -4,10 +4,12 @@ import com.avsystem.scex.NamedSource;
 import com.avsystem.scex.compiler.ScexSettings;
 import com.avsystem.scex.japi.DefaultJavaScexCompiler;
 import com.avsystem.scex.japi.JavaScexCompiler;
+import com.avsystem.scex.presentation.Attributes;
 import com.avsystem.scex.presentation.SymbolAttributes;
-import com.avsystem.scex.presentation.SymbolAttributes$;
+import com.avsystem.scex.symboldsl.SymbolInfo;
 import com.avsystem.scex.validation.SymbolValidator;
 import com.avsystem.scex.validation.SyntaxValidator;
+import scala.collection.JavaConversions;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -19,20 +21,24 @@ public class ScexJavaTest {
 
         SyntaxValidator syntaxValidator = compiler.compileSyntaxValidator(NamedSource.apply("test", readResource("/syntaxValidator.scala")));
         SymbolValidator symbolValidator = compiler.compileSymbolValidator(NamedSource.apply("test", readResource("/symbolValidator.scala")));
-        SymbolAttributes symbolAttributes = SymbolAttributes$.MODULE$.empty();
+        SymbolAttributes symbolAttributes = compiler.compileSymbolAttributes(NamedSource.apply("test", readResource("/symbolAttributes.scala")));
+
+        for (SymbolInfo<Attributes> info : JavaConversions.seqAsJavaList(symbolAttributes.infoList())) {
+            System.out.println(info);
+        }
 
         ExpressionProfile profile = new ExpressionProfile("test", syntaxValidator, symbolValidator,
                 symbolAttributes, "", NamedSource.apply("test", ""));
 
         Class<ExpressionContext<?, ?>> aecClass = (Class) ExpressionContext.class;
         JavaScexCompiler.JavaCompleter ctx = compiler.buildCompleter().contextType(aecClass)
-                .resultType(String.class).profile(profile).get();
+                .resultType(String.class).profile(profile).template(false).get();
 
         System.out.println("FUUUUUUU");
 
         long start = System.currentTimeMillis();
         for (int i = 0; i < 3000; i++) {
-            ctx.getTypeCompletion("new JavaCostam(\"asdfasdaasd\").toSrslyWtf {{", 1);
+            ctx.getTypeCompletion("new JavaCostam(\"asdfasdaasd\").toSrslyWtf", 10);
             if (i % 100 == 0) {
                 System.out.println(i);
             }

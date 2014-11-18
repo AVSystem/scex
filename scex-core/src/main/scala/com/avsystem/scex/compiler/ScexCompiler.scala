@@ -6,6 +6,7 @@ import java.{lang => jl, util => ju}
 import com.avsystem.scex.compiler.CodeGeneration._
 import com.avsystem.scex.compiler.ScexCompiler._
 import com.avsystem.scex.parsing.{EmptyPositionMapping, PositionMapping}
+import com.avsystem.scex.presentation.SymbolAttributes
 import com.avsystem.scex.util.CommonUtils._
 import com.avsystem.scex.util.LoggingUtils
 import com.avsystem.scex.validation.{SymbolValidator, SyntaxValidator}
@@ -125,7 +126,7 @@ trait ScexCompiler extends LoggingUtils {
 
   protected def loadCompilerPlugins(global: ScexGlobal): List[Plugin] = Nil
 
-  private def instantiate[T](classLoader: ClassLoader, className: String) =
+  protected def instantiate[T](classLoader: ClassLoader, className: String) =
     Class.forName(className, true, classLoader).newInstance.asInstanceOf[T]
 
   protected def compileJavaGetterAdapter(clazz: Class[_], full: Boolean): Try[Option[String]] =
@@ -340,7 +341,7 @@ trait ScexCompiler extends LoggingUtils {
   def compileSyntaxValidator(source: NamedSource): SyntaxValidator = underLock {
     val pkgName = SyntaxValidatorPkgPrefix + NameTransformer.encode(source.name)
     val codeToCompile = wrapInSource(generateSyntaxValidator(source.code), pkgName)
-    val sourceFile = new ScexSourceFile(pkgName, codeToCompile, shared = false)
+    val sourceFile = new ScexSourceFile(pkgName, codeToCompile, shared = true)
 
     compile(sourceFile) match {
       case Left(classLoader) =>
@@ -354,7 +355,7 @@ trait ScexCompiler extends LoggingUtils {
   def compileSymbolValidator(source: NamedSource): SymbolValidator = underLock {
     val pkgName = SymbolValidatorPkgPrefix + NameTransformer.encode(source.name)
     val codeToCompile = wrapInSource(generateSymbolValidator(source.code), pkgName)
-    val sourceFile = new ScexSourceFile(pkgName, codeToCompile, shared = false)
+    val sourceFile = new ScexSourceFile(pkgName, codeToCompile, shared = true)
 
     compile(sourceFile) match {
       case Left(classLoader) =>
