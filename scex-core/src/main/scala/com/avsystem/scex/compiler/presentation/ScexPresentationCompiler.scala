@@ -10,7 +10,7 @@ import com.avsystem.scex.parsing.EmptyPositionMapping
 import com.avsystem.scex.presentation.annotation.{Documentation, ParameterNames}
 import com.avsystem.scex.presentation.{Attributes, SymbolAttributes}
 import com.avsystem.scex.util.CommonUtils._
-import com.avsystem.scex.validation.{SymbolValidator, ValidationContext}
+import com.avsystem.scex.validation.ValidationContext
 
 import scala.reflect.NameTransformer
 import scala.reflect.runtime.universe.TypeTag
@@ -287,6 +287,9 @@ trait ScexPresentationCompiler extends ScexCompiler {
   }
 
   protected def getTypeCompletion(exprDef: ExpressionDef, position: Int) = {
+    logger.debug(s"Computing type completion for $exprDef at position $position")
+    val startTime = System.nanoTime()
+
     val symbolValidator = exprDef.profile.symbolValidator
     val symbolAttributes = exprDef.profile.symbolAttributes
 
@@ -297,8 +300,6 @@ trait ScexPresentationCompiler extends ScexCompiler {
       import global.{position => _, sourceFile => _, _}
       try {
         val sourcePosition = sourceFile.position(offset + exprDef.positionMapping(position))
-
-        logger.debug(s"Computing type completion for $exprDef at position $position")
 
         val treeResponse = new Response[Tree]
         askLoadedTyped(sourceFile, keepLoaded = true, treeResponse)
@@ -383,6 +384,9 @@ trait ScexPresentationCompiler extends ScexCompiler {
         removeUnitOf(sourceFile)
       }
     }
+
+    val duration = System.nanoTime() - startTime
+    logger.debug(s"Completion took ${duration / 1000000}ms")
   }
 
   protected def parse(exprDef: ExpressionDef) = withIGlobal { global =>
@@ -396,7 +400,7 @@ trait ScexPresentationCompiler extends ScexCompiler {
 
   @throws[CompilationFailedException]
   def compileSymbolAttributes(source: NamedSource): SymbolAttributes = underLock {
-    val pkgName = SymbolValidatorPkgPrefix + NameTransformer.encode(source.name)
+    val pkgName = SymbolAttributesPkgPrefix + NameTransformer.encode(source.name)
     val codeToCompile = wrapInSource(generateSymbolAttributes(source.code), pkgName)
     val sourceFile = new ScexSourceFile(pkgName, codeToCompile, shared = true)
 
