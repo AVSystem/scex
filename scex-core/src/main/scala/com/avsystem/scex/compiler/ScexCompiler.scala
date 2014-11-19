@@ -6,7 +6,6 @@ import java.{lang => jl, util => ju}
 import com.avsystem.scex.compiler.CodeGeneration._
 import com.avsystem.scex.compiler.ScexCompiler._
 import com.avsystem.scex.parsing.{EmptyPositionMapping, PositionMapping}
-import com.avsystem.scex.presentation.SymbolAttributes
 import com.avsystem.scex.util.CommonUtils._
 import com.avsystem.scex.util.LoggingUtils
 import com.avsystem.scex.validation.{SymbolValidator, SyntaxValidator}
@@ -79,11 +78,7 @@ trait ScexCompiler extends LoggingUtils {
   }
 
   protected class ScexClassLoader(val classfileDirectory: AbstractFile, parent: ClassLoader)
-    extends AbstractFileClassLoader(classfileDirectory, parent) {
-
-    // locking on classfile directory which otherwise could be modified by compiler during class loading
-    override def getClassLoadingLock(className: String) = classfileDirectory
-  }
+    extends AbstractFileClassLoader(classfileDirectory, parent)
 
   protected type RawExpression = Expression[ExpressionContext[_, _], Any]
 
@@ -228,11 +223,11 @@ trait ScexCompiler extends LoggingUtils {
 
     val startTime = System.nanoTime
 
-    // ScexClassLoader loads classes while being locked on classfileDirectory.
+    // ScexClassLoader loads classes while being locked on itself.
     // Compiler writes classes to this directory, so synchronization over it is needed during compilation.
-    // So, compilation is effectively under two locks: ScexCompiler's internal lock and classfileDirectory, in that order.
-    // There should not be deadlocks, because nobody locks first over classfileDirectory and then over ScexCompiler.
-    classfileDirectory.synchronized {
+    // So, compilation is effectively under two locks: ScexCompiler's internal lock and ScexClassLoader, in that order.
+    // There should not be deadlocks, because nobody locks first over ScexClassLoader and then over ScexCompiler.
+    classLoader.synchronized {
       val global = this.global
       runCompiler(global, sourceFile)
     }
