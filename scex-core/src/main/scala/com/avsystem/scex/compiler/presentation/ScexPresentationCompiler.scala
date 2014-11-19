@@ -296,7 +296,7 @@ trait ScexPresentationCompiler extends ScexCompiler {
     val (pkgName, code, offset) = expressionCode(exprDef, noMacroProcessing = true)
     val sourceFile = new ExpressionSourceFile(exprDef, pkgName, code, offset)
 
-    withIGlobal { global =>
+    val result = withIGlobal { global =>
       import global.{position => _, sourceFile => _, _}
       try {
         val sourcePosition = sourceFile.position(offset + exprDef.positionMapping(position))
@@ -387,6 +387,8 @@ trait ScexPresentationCompiler extends ScexCompiler {
 
     val duration = System.nanoTime() - startTime
     logger.debug(s"Completion took ${duration / 1000000}ms")
+
+    result
   }
 
   protected def parse(exprDef: ExpressionDef) = withIGlobal { global =>
