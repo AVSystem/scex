@@ -6,7 +6,7 @@ import java.{lang => jl, util => ju}
 
 import com.avsystem.scex.compiler.ExpressionDef
 import com.avsystem.scex.compiler.ScexCompiler.CompileError
-import com.avsystem.scex.compiler.presentation.ScexPresentationCompiler.Completion
+import com.avsystem.scex.compiler.presentation.ScexPresentationCompiler.{Member, Completion}
 import com.google.common.cache.CacheBuilder
 
 /**
@@ -25,15 +25,29 @@ trait CachingScexPresentationCompiler extends ScexPresentationCompiler {
     .expireAfterAccess(settings.completionExpirationTime.value, TimeUnit.SECONDS)
     .build[ExpressionDef, Completion]
 
+  case class TypeMembersCacheKey(profile: ExpressionProfile, contextType: String, ownerType: TypeWrapper)
+
+  private val typeMembersCache = CacheBuilder.newBuilder
+    .expireAfterAccess(settings.completionExpirationTime.value, TimeUnit.SECONDS)
+    .build[TypeMembersCacheKey, Vector[Member]]
+
   override protected def getErrors(exprDef: ExpressionDef) =
     errorsCache.get(exprDef, callable(super.getErrors(exprDef)))
 
   override protected def getScopeCompletion(exprDef: ExpressionDef) =
     scopeCompletionCache.get(exprDef, callable(super.getScopeCompletion(exprDef)))
 
+  override protected def getTypeMembers(global: IGlobal)(exprDef: ExpressionDef, ownerTpe: global.Type)
+    (computeMembers: => Vector[Member]): Vector[Member] = {
+
+    val key = TypeMembersCacheKey(exprDef.profile, exprDef.contextType, TypeWrapper(global)(ownerTpe.map(_.widen)))
+    typeMembersCache.get(key, callable(computeMembers))
+  }
+
   override def reset() = synchronized {
     super.reset()
     errorsCache.invalidateAll()
     scopeCompletionCache.invalidateAll()
+    typeMembersCache.invalidateAll()
   }
 }

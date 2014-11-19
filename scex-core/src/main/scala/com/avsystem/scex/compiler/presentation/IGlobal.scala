@@ -93,16 +93,10 @@ class IGlobal(settings: Settings, reporter: Reporter, val classLoader: ClassLoad
 
     def allMembers: Vector[ScexTypeMember] = values.toVector.flatten
   }
-
-  /**
-   * Reimplementation of `scala.tools.interactive.Global.typeMembers` method, adjusted to SCEX needs:
-   * <ul>
-   * <li>returned completion members contain more information (e.g. implicit view tree instead of just symbol)</li>
-   * <li>there is a number of hacks and workarounds for scalac inability to properly handle dynamic invocations</li>
-   * <li>all members are returned at once, instead of returning a stream</li>
-   * </ul>
-   */
-  def typeMembers(typedTree: Tree, pos: Position) = {
+  
+  case class TypeCompletionContext(context: Context, prefixTree: Tree, pre: Type, ownerTpe: Type)
+  
+  def typeCompletionContext(typedTree: Tree, pos: Position) = {
     val context = doLocateContext(pos)
     var tree = typedTree
 
@@ -159,7 +153,21 @@ class IGlobal(settings: Settings, reporter: Reporter, val classLoader: ClassLoad
       case MethodType(List(), rtpe) => rtpe
       case _ => tree.tpe
     }
+    
+    TypeCompletionContext(context, tree, pre, ownerTpe)
+  }
 
+  /**
+   * Reimplementation of `scala.tools.interactive.Global.typeMembers` method, adjusted to SCEX needs:
+   * <ul>
+   * <li>returned completion members contain more information (e.g. implicit view tree instead of just symbol)</li>
+   * <li>there is a number of hacks and workarounds for scalac inability to properly handle dynamic invocations</li>
+   * <li>all members are returned at once, instead of returning a stream</li>
+   * </ul>
+   */
+  def typeMembers(completionContext: TypeCompletionContext) = {
+    val TypeCompletionContext(context, tree, pre, ownerTpe) = completionContext
+ 
     val superAccess = tree.isInstanceOf[Super]
     val members = new Members
 
@@ -198,7 +206,7 @@ class IGlobal(settings: Settings, reporter: Reporter, val classLoader: ClassLoad
       }
     }
 
-    (tree, ownerTpe, members.allMembers)
+    members.allMembers
   }
 
   // workaround for Scala parser bug that is a root cause of SI-8459 (should be fixed in Scala 2.11.3)

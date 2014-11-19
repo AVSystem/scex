@@ -356,26 +356,29 @@ trait ScexPresentationCompiler extends ScexCompiler {
             tree.setType(ErrorType)
           }
 
-          val (typedTree, ownerTpe, typeMembers) = global.typeMembers(tree, sourcePosition)
+          val completionCtx = global.typeCompletionContext(tree, sourcePosition)
+          logger.debug("Prefix tree for type completion:\n" + show(completionCtx.prefixTree, printTypes = true, printPositions = true))
 
-          logger.debug("Prefix tree for type completion:\n" + show(typedTree, printTypes = true, printPositions = true))
+          val members = getTypeMembers(global)(exprDef, completionCtx.ownerTpe) {
+            val typeMembers = global.typeMembers(completionCtx)
 
-          val fakeDirectPrefix = fakeIdent(ownerTpe, tree.symbol)
-          def fakeSelect(member: ScexTypeMember) = {
-            val fakePrefix =
-              if (!member.implicitlyAdded) fakeDirectPrefix
-              else Apply(member.implicitTree, List(fakeDirectPrefix))
-                .setSymbol(member.implicitTree.symbol).setType(member.implicitType)
-            Select(fakePrefix, member.sym)
-          }
+            val fakeDirectPrefix = fakeIdent(completionCtx.ownerTpe, tree.symbol)
+            def fakeSelect(member: ScexTypeMember) = {
+              val fakePrefix =
+                if (!member.implicitlyAdded) fakeDirectPrefix
+                else Apply(member.implicitTree, List(fakeDirectPrefix))
+                  .setSymbol(member.implicitTree.symbol).setType(member.implicitType)
+              Select(fakePrefix, member.sym)
+            }
 
-          val members = typeMembers.collect {
-            case m if m.sym.isTerm && m.sym.isPublic && !m.sym.isConstructor
-              && !isAdapterWrappedMember(m.sym) && isAllowed(fakeSelect(m)) => translateMember(global, symbolAttributes)(m)
+            typeMembers.collect {
+              case m if m.sym.isTerm && m.sym.isPublic && !m.sym.isConstructor
+                && !isAdapterWrappedMember(m.sym) && isAllowed(fakeSelect(m)) => translateMember(global, symbolAttributes)(m)
+            }
           }
 
           val translator = new ast.Translator(global, offset, exprDef)
-          val translatedTree = translator.translateTree(typedTree.asInstanceOf[translator.u.Tree])
+          val translatedTree = translator.translateTree(completionCtx.prefixTree.asInstanceOf[translator.u.Tree])
 
           Completion(translatedTree, members)
         }
@@ -390,6 +393,10 @@ trait ScexPresentationCompiler extends ScexCompiler {
 
     result
   }
+
+  // method extracted in order to make it possible to cache results by some other trait
+  protected def getTypeMembers(global: IGlobal)(exprDef: ExpressionDef, ownerTpe: global.Type)
+    (computeMembers: => Vector[SMember]): Vector[SMember] = computeMembers
 
   protected def parse(exprDef: ExpressionDef) = withIGlobal { global =>
     val (parsedTree, _) = global.parseExpression(exprDef.expression, exprDef.template)
