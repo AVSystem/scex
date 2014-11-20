@@ -112,10 +112,14 @@ trait ScexCompiler extends LoggingUtils {
     sharedClassLoader = new ScexClassLoader(new VirtualDirectory("(scex_shared)", None), getClass.getClassLoader)
   }
 
-  protected final def ensureSetup(): Unit = lock.synchronized {
+  protected final def ensureSetup(): Unit = {
     if (!initialized) {
-      setup()
-      initialized = true
+      lock.synchronized {
+        if (!initialized) {
+          setup()
+          initialized = true
+        }
+      }
     }
   }
 

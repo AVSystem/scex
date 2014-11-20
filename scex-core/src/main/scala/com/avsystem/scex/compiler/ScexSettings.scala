@@ -1,7 +1,9 @@
 package com.avsystem.scex.compiler
 
+import java.io.File
 import java.{lang => jl, util => ju}
 
+import scala.reflect.io.{Directory, PlainDirectory}
 import scala.tools.nsc.Settings
 
 /**
@@ -43,4 +45,6 @@ class ScexSettings extends Settings {
   val classfileDirectory = StringSetting("-SCEXclassfile-directory", "directory",
     "Directory for classfile cache", "")
 
+  def resolvedClassfileDir = Option(classfileDirectory.value)
+    .filter(_.trim.nonEmpty).map(path => new PlainDirectory(new Directory(new File(path))))
 }

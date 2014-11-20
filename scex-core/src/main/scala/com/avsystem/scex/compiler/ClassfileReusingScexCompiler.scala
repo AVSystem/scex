@@ -1,12 +1,11 @@
 package com.avsystem.scex.compiler
 
-import java.io.File
 import java.{lang => jl, util => ju}
 
 import com.google.common.cache.CacheBuilder
 
 import scala.collection.mutable
-import scala.reflect.io.{AbstractFile, Directory, PlainDirectory}
+import scala.reflect.io.AbstractFile
 import scala.tools.nsc.Phase
 import scala.tools.nsc.plugins.{Plugin, PluginComponent}
 import scala.tools.nsc.util.ClassPath
@@ -16,9 +15,18 @@ import scala.tools.nsc.util.ClassPath
  * directory is configured). Class files are never being deleted automatically and thus are reused even if the entire
  * process is restarted.
  *
- * The decision about need for recompilation is made based on fully typechecked tree of source file being compiled.
- * This is handled by a compiler plugin which halts compilation after typer phase if it detects no changes.
- * So essentially, this extension of ScexCompiler provides a very simple incremental compilation like strategy.
+ * The decision about need for recompilation is made based on signature file generated every time an expression is compiled
+ * Signature file contains typed and erased (bytecode) signatures of all symbols (methods, fields, etc.) used by
+ * the expression. In order to reuse previously compiled classfiles, all symbols listed in the signature file must
+ * exist and have the same signature they had at the time the expression was originally compiled.
+ *
+ * This strategy is unfortunately unable to detect some binary compatibility breaches which are source compatible:
+ * <ul>
+ * <li>Changes to any implicit symbols visible inside expressions (e.g. adding new implicit) that could
+ * change the way some implicit parameter or conversion is resolved.</li>
+ * <li>Adding or removing overloaded variants to methods used in expressions which could cause the overloaded
+ * variant used by expression to change.</li>
+ * </ul>
  *
  * Created: 21-10-2014
  * Author: ghik
@@ -61,8 +69,7 @@ trait ClassfileReusingScexCompiler extends ScexCompiler {
     } getOrElse super.createNonSharedClassLoader(sourceFile)
 
   override protected def setup(): Unit = {
-    _stateOpt = Option(settings.classfileDirectory.value)
-      .map(_.trim).filter(_.nonEmpty).map(path => new State(new PlainDirectory(new Directory(new File(path)))))
+    _stateOpt = settings.resolvedClassfileDir.map(new State(_))
     super.setup()
   }
 
