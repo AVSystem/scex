@@ -82,16 +82,18 @@ trait ScexCompiler extends LoggingUtils {
 
   protected type RawExpression = Expression[ExpressionContext[_, _], Any]
 
-  protected def underLock[T](code: => T) = lock.synchronized {
+  protected def underLock[T](code: => T) = {
     ensureSetup()
-    code
+    lock.synchronized {
+      code
+    }
   }
 
   val settings: ScexSettings
-  private lazy val reporter = new Reporter(settings)
 
-  private var initialized = false
+  @volatile private var initialized = false
   private var global: ScexGlobal = _
+  private var reporter: Reporter = _
 
   /**
    * Classloader for stuff that will be never reclaimed after compilation -
@@ -104,6 +106,7 @@ trait ScexCompiler extends LoggingUtils {
   protected def setup(): Unit = {
     logger.info("Initializing Scala compiler")
     compilationCount = 0
+    reporter = new Reporter(settings)
     global = new Global(settings, reporter) with ScexGlobal {
       override def loadAdditionalPlugins() = loadCompilerPlugins(this)
 
