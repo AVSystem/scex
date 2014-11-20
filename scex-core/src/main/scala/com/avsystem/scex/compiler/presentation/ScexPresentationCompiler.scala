@@ -176,13 +176,13 @@ trait ScexPresentationCompiler extends ScexCompiler {
       if (ann.tree.tpe <:< typeOf[ParameterNames]) {
         val paramNames = annotValue(ann.tree).map {
           case Apply(_, paramNameLiterals) => paramNameLiterals.map {
-            case Literal(Constant(name: String)) => name
+            case LiteralString(name) => name
           }
         }
         new Attributes(paramNames, None)
       } else if (ann.tree.tpe <:< typeOf[Documentation]) {
         val documentation = annotValue(ann.tree).map {
-          case Literal(Constant(doc: String)) => doc
+          case LiteralString(doc) => doc
         }
         new Attributes(None, documentation)
       } else Attributes.empty

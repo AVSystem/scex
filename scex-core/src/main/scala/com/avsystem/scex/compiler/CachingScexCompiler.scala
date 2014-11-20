@@ -15,6 +15,7 @@ trait CachingScexCompiler extends ScexCompiler {
 
   private val expressionCache = CacheBuilder.newBuilder
     .expireAfterAccess(settings.expressionExpirationTime.value, TimeUnit.SECONDS)
+    .maximumSize(settings.expressionCacheSize.value)
     .build[ExpressionDef, Try[RawExpression]]
 
   // holds names of packages to which profiles are compiled

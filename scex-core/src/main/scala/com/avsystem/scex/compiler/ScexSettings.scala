@@ -22,8 +22,20 @@ class ScexSettings extends Settings {
   val expressionExpirationTime = IntSetting("-SCEXexpression-expiration-time",
     "Expiration time for expression cache, in seconds", 3600, Positive, _ => None)
 
+  val expressionCacheSize = IntSetting("-SCEXexpression-cache-size",
+    "Maximum size of expression cache", 5000, Positive, _ => None)
+
   val completionExpirationTime = IntSetting("-SCEXerrors-expiration-time",
     "Expiration time for completion caches, in seconds", 600, Positive, _ => None)
+
+  val errorsCacheSize = IntSetting("-SCEXerrors-cache-size",
+    "Maximum size of errors cache", 10000, Positive, _ => None)
+
+  val scopeCompletionCacheSize = IntSetting("-SCEXscope-completion-cache-size",
+    "Maximum size of scope completion cache", 3000, Positive, _ => None)
+
+  val typeMembersCacheSize = IntSetting("-SCEXtype-members-cache-size",
+    "Maximum size of type members cache", 10000, Positive, _ => None)
 
   val resetAfterCount = IntSetting("-SCEXreset-after-count",
     "Number of compilations after which the compiler will be reset", 2000, Positive, _ => None)
