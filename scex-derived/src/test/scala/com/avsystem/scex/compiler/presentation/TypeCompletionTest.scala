@@ -44,8 +44,8 @@ class TypeCompletionTest extends ScexFunSuite with CompilationTest with Completi
     val completion = completer.getTypeCompletion("\"\"", 1).passTo(c => c.copy(members = c.members.sortBy(_.name)))
 
     assert(completion.members === Vector(
-      Member("charAt", List(List(Param("index", scexType[Int]))), scexType[Char], iimplicit = false, Some("doc of charAt")),
-      Member("toInt", Nil, scexType[Int], iimplicit = false, None)
+      Member("charAt", List(List(Param("index", scexType[Int]))), Nil, scexType[Char], iimplicit = false, Some("doc of charAt")),
+      Member("toInt", Nil, Nil, scexType[Int], iimplicit = false, None)
     ))
   }
 
@@ -57,7 +57,7 @@ class TypeCompletionTest extends ScexFunSuite with CompilationTest with Completi
       Member("method", List(List(
         Param("annotArg", scexType[Any]),
         Param("moar", scexType[Any])
-      )), scexType[Any], iimplicit = false, Some("handles stuff"))
+      )), Nil, scexType[Any], iimplicit = false, Some("handles stuff"))
     ))
   }
 

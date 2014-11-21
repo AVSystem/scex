@@ -208,7 +208,7 @@ trait ScexPresentationCompiler extends ScexCompiler {
       }.orNull
 
     val attributes = getAttributes(global, attrs)(member)
-    val params = paramsOf(member.tpe)
+    val (params, implParams) = paramsOf(member.tpe)
     val nameOverrides = (params.flatten zip attributes.paramNames.getOrElse(Nil)).toMap
 
     def symbolToParam(sym: Symbol) =
@@ -216,7 +216,8 @@ trait ScexPresentationCompiler extends ScexCompiler {
 
     SMember(member.sym.decodedName,
       params.map(_.map(symbolToParam)),
-      translateType(resultTypeOf(member.tpe)),
+      implParams.map(symbolToParam),
+      translateType(member.tpe.finalResultType),
       member.sym.isImplicit,
       attributes.documentation)
   }
@@ -452,7 +453,8 @@ object ScexPresentationCompiler {
 
   case class Param(name: String, tpe: Type)
 
-  case class Member(name: String, params: List[List[Param]], tpe: Type, iimplicit: Boolean, documentation: Option[String])
+  case class Member(name: String, params: List[List[Param]], implicitParams: List[Param],
+    tpe: Type, iimplicit: Boolean, documentation: Option[String])
 
   case class Completion(typedPrefixTree: ast.Tree, members: Vector[Member])
 

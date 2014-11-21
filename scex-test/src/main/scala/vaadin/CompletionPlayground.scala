@@ -7,6 +7,7 @@ import com.avsystem.scex.compiler.ScexSettings
 import com.avsystem.scex.compiler.presentation.ScexPresentationCompiler.Member
 import com.avsystem.scex.japi.XmlFriendlyJavaScexCompiler
 import com.avsystem.scex.presentation.{Attributes, SymbolAttributes}
+import com.avsystem.scex.util.JavaCollectionExtensions._
 import com.avsystem.scex.util.SimpleContext
 import com.avsystem.scex.validation.{SymbolValidator, SyntaxValidator}
 import com.avsystem.scex.{ExpressionProfile, NamedSource, PredefinedAccessSpecs}
@@ -57,6 +58,27 @@ object CompletionPlayground {
             r.all.members
             r.dyn
           }
+
+          // Collections
+          on { c: ju.Collection[Any@plus] =>
+            c.size
+            c.contains _
+            c.containsAll _
+            c.isEmpty
+            c.implicitlyAs[CollectionOps[Any]].all.members
+          }
+          on { sc: ju.Collection[String] =>
+            sc.implicitlyAs[StringCollectionOps].all.members
+          }
+          list _
+          on { l: ju.List[Any@plus] =>
+            l.get _
+            l.implicitlyAs[ListOps[Any]].all.members
+          }
+          set _
+          on { s: ju.Set[Any@plus] =>
+            s.implicitlyAs[SetOps[Any]].all.members
+          }
         }
       }
       val attrList = {
@@ -68,7 +90,11 @@ object CompletionPlayground {
         }
       }
 
-      val header = "import com.avsystem.scex.util.TypesafeEquals._"
+      val header =
+        """
+          |import com.avsystem.scex.util.TypesafeEquals._
+          |import com.avsystem.scex.util.JavaCollectionExtensions._
+        """.stripMargin
 
       val utils =
         """

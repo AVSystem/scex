@@ -24,8 +24,11 @@ class IGlobal(settings: Settings, reporter: Reporter, val classLoader: ClassLoad
 
   abstract class ScexMember extends Member {
     def ownerTpe: Type
+
     def implicitTree: Tree
+
     def implicitType: Type
+
     override def implicitlyAdded = implicitTree != EmptyTree
   }
 
@@ -44,7 +47,9 @@ class IGlobal(settings: Settings, reporter: Reporter, val classLoader: ClassLoad
     accessible: Boolean,
     viaImport: Tree) extends ScexMember {
     def ownerTpe = viaImport.tpe
+
     def implicitTree = EmptyTree
+
     def implicitType = NoType
   }
 
@@ -63,8 +68,19 @@ class IGlobal(settings: Settings, reporter: Reporter, val classLoader: ClassLoad
           case Nil => Set.empty
         } else Set.empty
 
-      lazy val higherPriorityImplicit = m.implicitlyAdded && implicitlyAdded &&
-        superclasses(implicitTree.symbol.owner).contains(m.implicitTree.symbol.owner)
+      def argumentType(tpe: Type) = tpe match {
+        case MethodType(List(param), _) => param.typeSignature
+        case _ => NoType
+      }
+
+      def compare[A](a1: A, a2: A)(f: (A, A) => Boolean) =
+        (if (f(a1, a2)) 1 else 0) + (if (f(a2, a1)) -1 else 0)
+
+      lazy val higherPriorityImplicit = m.implicitlyAdded && implicitlyAdded && {
+        val specificityPoints = compare(argumentType(implicitTree.tpe), argumentType(m.implicitTree.tpe))(_ <:< _)
+        val priorityPoints = compare(implicitTree.symbol.owner, m.implicitTree.symbol.owner)((s1, s2) => superclasses(s1).contains(s2))
+        specificityPoints + priorityPoints > 0
+      }
 
       (m.sym.hasFlag(ACCESSOR | PARAMACCESSOR) && !sym.hasFlag(ACCESSOR | PARAMACCESSOR) &&
         (!implicitlyAdded || m.implicitlyAdded)) || higherPriorityImplicit
@@ -93,9 +109,9 @@ class IGlobal(settings: Settings, reporter: Reporter, val classLoader: ClassLoad
 
     def allMembers: Vector[ScexTypeMember] = values.toVector.flatten
   }
-  
+
   case class TypeCompletionContext(context: Context, prefixTree: Tree, pre: Type, ownerTpe: Type)
-  
+
   def typeCompletionContext(typedTree: Tree, pos: Position) = {
     val context = doLocateContext(pos)
     var tree = typedTree
@@ -153,7 +169,7 @@ class IGlobal(settings: Settings, reporter: Reporter, val classLoader: ClassLoad
       case MethodType(List(), rtpe) => rtpe
       case _ => tree.tpe
     }
-    
+
     TypeCompletionContext(context, tree, pre, ownerTpe)
   }
 
@@ -167,7 +183,7 @@ class IGlobal(settings: Settings, reporter: Reporter, val classLoader: ClassLoad
    */
   def typeMembers(completionContext: TypeCompletionContext) = {
     val TypeCompletionContext(context, tree, pre, ownerTpe) = completionContext
- 
+
     val superAccess = tree.isInstanceOf[Super]
     val members = new Members
 

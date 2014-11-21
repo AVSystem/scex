@@ -131,16 +131,16 @@ trait MacroUtils {
     case _ => tree
   }
 
-  def paramsOf(tpe: Type): List[List[Symbol]] = tpe match {
+  def paramsOf(tpe: Type): (List[List[Symbol]], List[Symbol]) = tpe match {
+    case PolyType(tp, resultType) =>
+      paramsOf(resultType)
     case MethodType(params, resultType) =>
-      params :: paramsOf(resultType)
-    case _ => Nil
-  }
-
-  def resultTypeOf(tpe: Type): Type = tpe match {
-    case tpe: MethodType => resultTypeOf(tpe.resultType)
-    case tpe: NullaryMethodType => tpe.resultType
-    case _ => tpe
+      val (moreParams, implParams) = paramsOf(resultType)
+      if (params.nonEmpty && params.head.isImplicit)
+        (moreParams, params ::: implParams)
+      else
+        (params :: moreParams, implParams)
+    case _ => (Nil, Nil)
   }
 
   def path(tree: Tree): String = tree match {
