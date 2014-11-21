@@ -2,6 +2,7 @@ package com.avsystem.scex
 
 import java.{lang => jl, util => ju}
 
+import com.avsystem.scex.util.JavaCollectionExtensions._
 import com.avsystem.scex.util.Literal
 
 import scala.runtime._
@@ -270,5 +271,43 @@ object PredefinedAccessSpecs {
       l.all.introduced.members
     }
     Literal.all.introduced.members
+  }
+
+  val javaCollectionExtensions = allow {
+    on { c: ju.Collection[Any@plus] =>
+      c.size
+      c.contains _
+      c.containsAll _
+      c.isEmpty
+      c.implicitlyAs[CollectionOps[Any]].all.members
+    }
+    on { sc: ju.Collection[String] =>
+      sc.implicitlyAs[StringCollectionOps].all.members
+    }
+    list _
+    on { l: ju.List[Any@plus] =>
+      l.get _
+      l.implicitlyAs[ListOps[Any]].all.members
+    }
+    set _
+    on { s: ju.Set[Any@plus] =>
+      s.implicitlyAs[SetOps[Any]].all.members
+    }
+
+    on { o: Ordering.type =>
+      o.BigDecimal
+      o.BigInt
+      o.Boolean
+      o.Byte
+      o.Char
+      o.Double
+      o.Float
+      o.Int
+      o.Long
+      o.Short
+      o.String
+      o.Unit
+      o.ordered(_: Nothing)
+    }
   }
 }
