@@ -4,6 +4,8 @@ package util
 import java.lang.reflect.{Method, Modifier}
 import java.util.concurrent.Callable
 
+import com.google.common.base.Predicate
+
 import scala.collection.mutable
 
 
@@ -101,6 +103,18 @@ object CommonUtils {
   def callable[T](expr: => T) =
     new Callable[T] {
       def call() = expr
+    }
+
+  type GFunction[F, T] = com.google.common.base.Function[F, T]
+
+  def guavaFun[A, B](f: A => B): GFunction[A, B] =
+    new GFunction[A, B] {
+      def apply(input: A): B = f(input)
+    }
+
+  def guavaPred[A](p: A => Boolean): Predicate[A] =
+    new Predicate[A] {
+      def apply(input: A): Boolean = p(input)
     }
 
   implicit class universalOps[A](val a: A) {
