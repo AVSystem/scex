@@ -181,9 +181,9 @@ object JavaCollectionExtensions {
       !map.isEmpty
   }
 
-  implicit class EntryCollectionOps[K, V](private val set: ju.Collection[Entry[K, V]]) extends AnyVal {
+  implicit class EntryCollectionOps[K, V](private val entries: ju.Collection[Entry[K, V]]) extends AnyVal {
     def toMap: ju.Map[K, V] =
-      set.iterator.asScala.map(e => (e.key, e.value)).toMap.asJava
+      entries.iterator.asScala.map(e => (e.key, e.value)).toMap.asJava
   }
 
   def list[A](elements: A*): ju.List[A] =

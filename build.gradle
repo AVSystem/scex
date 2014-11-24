@@ -9,7 +9,7 @@ allprojects {
     apply plugin: 'idea'
 
     group = "com.avsystem"
-    version = '1.12.12'
+    version = '1.12.13'
 
     repositories {
         mavenCentral()

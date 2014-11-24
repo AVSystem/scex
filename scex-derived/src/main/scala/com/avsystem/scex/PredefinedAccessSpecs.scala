@@ -304,11 +304,14 @@ object PredefinedAccessSpecs {
       m.containsValue _
       m.implicitlyAs[MapOps[Any, Any]].all.members
     }
-    on { e: Entry[Any@plus,Any@plus] =>
+    on { e: Entry[Any@plus, Any@plus] =>
       e.key
       e.value
       e.withKey _
       e.withValue _
+    }
+    on { c: ju.Collection[Entry[Any@plus, Any@plus]] =>
+      c.implicitlyAs[EntryCollectionOps[Any, Any]].all.members
     }
 
     on { o: Ordering.type =>
