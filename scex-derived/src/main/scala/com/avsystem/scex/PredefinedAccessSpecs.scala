@@ -293,6 +293,23 @@ object PredefinedAccessSpecs {
     on { s: ju.Set[Any@plus] =>
       s.implicitlyAs[SetOps[Any]].all.members
     }
+    map _
+    on { m: ju.Map[Any@plus, Any@plus] =>
+      m.isEmpty
+      m.size
+      m.get _
+      m.keySet
+      m.values
+      m.containsKey _
+      m.containsValue _
+      m.implicitlyAs[MapOps[Any, Any]].all.members
+    }
+    on { e: Entry[Any@plus,Any@plus] =>
+      e.key
+      e.value
+      e.withKey _
+      e.withValue _
+    }
 
     on { o: Ordering.type =>
       o.BigDecimal

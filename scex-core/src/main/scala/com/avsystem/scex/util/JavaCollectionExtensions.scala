@@ -2,7 +2,7 @@ package com.avsystem.scex.util
 
 import java.{lang => jl, util => ju}
 
-import com.google.common.collect.{Lists, Sets}
+import com.google.common.collect.{Collections2, Lists, Sets}
 
 import scala.collection.JavaConverters._
 
@@ -12,6 +12,8 @@ import scala.collection.JavaConverters._
  */
 object JavaCollectionExtensions {
 
+  import com.avsystem.scex.util.CommonUtils._
+
   implicit class CollectionOps[A](private val coll: ju.Collection[A]) extends AnyVal {
     def ++(other: ju.Collection[A]): ju.Collection[A] =
       (coll.asScala ++ other.asScala).asJavaCollection
@@ -20,7 +22,7 @@ object JavaCollectionExtensions {
       coll.asScala.filter(p).asJavaCollection
 
     def map[B](f: A => B): ju.Collection[B] =
-      coll.asScala.map(f).asJavaCollection
+      coll.iterator.asScala.map(f).toBuffer.asJava
 
     def flatMap[B](f: A => ju.Collection[B]): ju.Collection[B] =
       coll.asScala.flatMap(a => f(a).asScala).asJavaCollection
@@ -64,6 +66,12 @@ object JavaCollectionExtensions {
       case set: ju.Set[A] => set
       case _ => Sets.newHashSet[A](coll)
     }
+
+    def nonEmpty: Boolean =
+      !coll.isEmpty
+
+    def anyElement: A =
+      coll.iterator.next
   }
 
   implicit class StringCollectionOps(private val coll: ju.Collection[String]) extends AnyVal {
@@ -142,10 +150,54 @@ object JavaCollectionExtensions {
       coll.asScala.exists(set.contains)
   }
 
+  case class Entry[K, V](key: K, value: V) {
+    def withKey[NK](newKey: NK): Entry[NK, V] =
+      copy(key = newKey)
+
+    def withValue[NV](newValue: NV): Entry[K, NV] =
+      copy(value = newValue)
+  }
+
+  implicit class MapOps[K, V](private val map: ju.Map[K, V]) extends AnyVal {
+    def ++(other: ju.Map[K, V]): ju.Map[K, V] =
+      (map.asScala ++ other.asScala).asJava
+
+    def apply(key: K): V =
+      map.get(key)
+
+    def entries: ju.Collection[Entry[K, V]] =
+      Collections2.transform(map.entrySet, guavaFun((e: ju.Map.Entry[K, V]) => Entry(e.getKey, e.getValue)))
+
+    def filter(p: Entry[K, V] => Boolean): ju.Map[K, V] =
+      map.asScala.iterator.filter(e => p(Entry(e._1, e._2))).toMap.asJava
+
+    def map[NK, NV](f: Entry[K, V] => Entry[NK, NV]): ju.Map[NK, NV] =
+      map.asScala.iterator.map { e =>
+        val ne = f(Entry(e._1, e._2))
+        (ne.key, ne.value)
+      }.toMap.asJava
+
+    def nonEmpty =
+      !map.isEmpty
+  }
+
+  implicit class EntryCollectionOps[K, V](private val set: ju.Collection[Entry[K, V]]) extends AnyVal {
+    def toMap: ju.Map[K, V] =
+      set.iterator.asScala.map(e => (e.key, e.value)).toMap.asJava
+  }
+
   def list[A](elements: A*): ju.List[A] =
     elements.asJava
 
   def set[A](elements: A*): ju.Set[A] =
     Sets.newHashSet[A](elements.asJava)
+
+  def map[K, V](elements: (K, V)*): ju.Map[K, V] = {
+    val result = new ju.HashMap[K, V]
+    for ((k, v) <- elements) {
+      result.put(k, v)
+    }
+    result
+  }
 
 }
