@@ -258,9 +258,7 @@ trait ScexPresentationCompiler extends ScexCompiler {
         import vc._
 
         def accessFromScopeMember(m: ScexScopeMember) = {
-          // static module will be allowed by default only when at least one of its members is allowed
-          val staticAccessAllowedByDefault = isStaticModule(m.sym) && symbolValidator.referencesModuleMember(m.sym.fullName)
-          extractAccess(Select(m.viaImport, m.sym), staticAccessAllowedByDefault)
+          extractAccess(Select(m.viaImport, m.sym))
         }
 
         val response = new Response[List[Member]]

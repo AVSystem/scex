@@ -23,9 +23,6 @@ trait SymbolInfoList[T] {
       case (signature, infos) => (signature, infos.sortBy(_.index))
     }.withDefaultValue(Nil)
 
-  lazy val memberSignatures: SortedSet[String] =
-    bySignaturesMap.keys.to[TreeSet]
-
   def matchingInfos(u: Universe)(prefixTpe: u.Type, symbol: u.Symbol, implicitConv: Option[u.Tree]): List[InfoWithIndex] = {
     val macroUtils = MacroUtils(u)
     import macroUtils._

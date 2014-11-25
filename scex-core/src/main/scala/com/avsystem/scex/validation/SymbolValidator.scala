@@ -16,21 +16,16 @@ trait SymbolValidator extends SymbolInfoList[Boolean] with LoggingUtils {
   def combine(otherValidator: SymbolValidator) =
     SymbolValidator(infoList ++ otherValidator.infoList)
 
-  lazy val referencedJavaClasses = infoList.collect({
-    case SymbolInfo(typeInfo, _, _, true) if typeInfo.clazz.isDefined && typeInfo.isJava =>
-      hierarchy(typeInfo.clazz.get)
-  }).flatten.toSet
+  lazy val referencedJavaClasses = infoList.iterator.flatMap({
+    case SymbolInfo(typeInfo, _, _, true) if typeInfo.isJava =>
+      typeInfo.clazz.toList.flatMap(hierarchy)
+    case _ => Nil
+  }).toSet
 
   private lazy val specsLength = infoList.length
 
   private def lowestPriority(allowedByDefault: Boolean) =
     if (allowedByDefault) specsLength else specsLength + 1
-
-  def referencesModuleMember(moduleSymbolFullName: String) = {
-    val prefix = moduleSymbolFullName + "."
-    val projection = memberSignatures.from(prefix)
-    projection.nonEmpty && projection.firstKey.startsWith(prefix)
-  }
 
   def validateMemberAccess(vc: ValidationContext)(access: vc.MemberAccess): vc.ValidationResult = {
     import vc._

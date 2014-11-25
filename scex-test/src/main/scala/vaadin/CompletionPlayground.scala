@@ -3,13 +3,14 @@ package vaadin
 import java.{lang => jl, util => ju}
 import javax.servlet.http.HttpServletRequest
 
+import com.avsystem.scex.PredefinedAccessSpecs.{basicOperations, javaCollectionExtensions}
 import com.avsystem.scex.compiler.ScexSettings
 import com.avsystem.scex.compiler.presentation.ScexPresentationCompiler.Member
 import com.avsystem.scex.japi.XmlFriendlyJavaScexCompiler
 import com.avsystem.scex.presentation.{Attributes, SymbolAttributes}
 import com.avsystem.scex.util.SimpleContext
 import com.avsystem.scex.validation.{SymbolValidator, SyntaxValidator}
-import com.avsystem.scex.{ExpressionProfile, NamedSource, PredefinedAccessSpecs}
+import com.avsystem.scex.{ExpressionProfile, NamedSource}
 import com.vaadin.event.FieldEvents.{TextChangeEvent, TextChangeListener}
 import com.vaadin.terminal.gwt.server.AbstractApplicationServlet
 import com.vaadin.ui.{Label, TextField, Window}
@@ -37,7 +38,7 @@ object CompletionPlayground {
 
       val acl = {
         import com.avsystem.scex.validation.SymbolValidator._
-        PredefinedAccessSpecs.basicOperations ++ PredefinedAccessSpecs.javaCollectionExtensions ++ allow {
+        basicOperations ++ javaCollectionExtensions ++ allow {
           Dyn.selectDynamic _
 
           on { jl: JavaLol =>

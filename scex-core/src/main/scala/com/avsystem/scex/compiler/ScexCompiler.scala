@@ -273,8 +273,9 @@ trait ScexCompiler extends LoggingUtils {
     def result =
       compile(sourceFile) match {
         case Left(classLoader) =>
-          Class.forName(s"$pkgName.$ExpressionClassName", true, classLoader)
-            .getConstructor(classOf[ExpressionDebugInfo], classOf[SourceInfo])
+          val clazz = Class.forName(s"$pkgName.$ExpressionClassName", true, classLoader)
+          clazz.getDeclaredClasses // force loading of inner classes
+          clazz.getConstructor(classOf[ExpressionDebugInfo], classOf[SourceInfo])
             .newInstance(debugInfo, sourceInfo)
             .asInstanceOf[RawExpression]
 
