@@ -136,7 +136,8 @@ class IGlobal(settings: Settings, reporter: Reporter, val classLoader: ClassLoad
 
     tree match {
       case Select(qual, name) if tree.tpe == ErrorType && (qual.tpe != ErrorType && qual.tpe <:< dynamicTpe) =>
-        val literal = Literal(Constant(name.decoded)).setPos(tree.pos.withStart(qual.pos.end + 1).makeTransparent)
+        val literalPos = tree.pos.withStart(tree.pos.end min (qual.pos.end + 1)).makeTransparent
+        val literal = Literal(Constant(name.decoded)).setPos(literalPos)
         tree = Apply(Select(qual, TermName("selectDynamic")).setPos(qual.pos), List(literal)).setPos(tree.pos)
       case _ =>
     }
