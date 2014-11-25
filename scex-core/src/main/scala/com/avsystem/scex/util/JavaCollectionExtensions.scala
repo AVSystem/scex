@@ -27,8 +27,11 @@ object JavaCollectionExtensions {
     def flatMap[B](f: A => ju.Collection[B]): ju.Collection[B] =
       coll.asScala.flatMap(a => f(a).asScala).asJavaCollection
 
+    def containsAny(other: ju.Collection[_]): Boolean =
+      other.exists(coll.contains)
+
     def find(p: A => Boolean): A =
-      coll.asScala.find(p).get
+      coll.asScala.find(p).getOrElse(throw new NoSuchElementException("No element conforming to predicate found"))
 
     def count(p: A => Boolean): Int =
       coll.asScala.count(p)
@@ -71,7 +74,7 @@ object JavaCollectionExtensions {
       !coll.isEmpty
 
     def anyElement: A =
-      coll.iterator.next
+      coll.asScala.headOption.getOrElse(throw new NoSuchElementException("Collection is empty"))
   }
 
   implicit class StringCollectionOps(private val coll: ju.Collection[String]) extends AnyVal {
