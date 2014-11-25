@@ -198,6 +198,9 @@ object PredefinedAccessSpecs {
     Predef.float2Float _
     Predef.Double2double _
     Predef.double2Double _
+    Predef.$conforms
+    Predef.=:=.tpEquals
+    Predef.DummyImplicit.dummyImplicit
 
     // Array operations
     on { a: Array[_] =>
@@ -214,14 +217,10 @@ object PredefinedAccessSpecs {
     on { s: String =>
       s + (_: Any)
       s.charAt _
-      s.codePointAt _
-      s.codePointBefore _
-      s.codePointCount _
       s.compareTo _
       s.compareToIgnoreCase _
       s.concat _
       s.contains _
-      s.all.membersNamed.contentEquals
       s.endsWith _
       s.equalsIgnoreCase _
       s.all.membersNamed.indexOf
@@ -229,8 +228,6 @@ object PredefinedAccessSpecs {
       s.all.membersNamed.lastIndexOf
       s.length
       s.matches _
-      s.offsetByCodePoints _
-      s.all.membersNamed.regionMatches
       s.all.membersNamed.replace
       s.replaceAll _
       s.replaceAllLiterally(_: String, _: String)
@@ -241,15 +238,12 @@ object PredefinedAccessSpecs {
       s.toLowerCase
       s.toUpperCase
       s.toString
-      s.subSequence _
       s.trim
       s.implicitlyAs[Ordered[String]].all.members
       s.capitalize
       s.nonEmpty
       s.reverse
       s.stripLineEnd
-      s.stripMargin
-      s.stripMargin(_: Char)
       s.stripPrefix(_: String)
       s.stripSuffix(_: String)
       s.toBoolean
