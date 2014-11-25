@@ -1,7 +1,7 @@
 package com.avsystem.scex.compiler.presentation
 
 import com.avsystem.scex.compiler.presentation.ScexPresentationCompiler.{Member, Param}
-import com.avsystem.scex.compiler.presentation.TypeCompletionTest.Root
+import com.avsystem.scex.compiler.presentation.ScopeAndTypeCompletionTest.Root
 import com.avsystem.scex.compiler.{CompilationTest, ScexFunSuite}
 import com.avsystem.scex.presentation.Attributes
 import com.avsystem.scex.presentation.annotation.{Documentation, ParameterNames}
@@ -11,7 +11,7 @@ import com.avsystem.scex.util.SimpleContext
  * Author: ghik
  * Created: 11/18/14.
  */
-class TypeCompletionTest extends ScexFunSuite with CompilationTest with CompletionTest {
+class ScopeAndTypeCompletionTest extends ScexFunSuite with CompilationTest with CompletionTest {
 
   import com.avsystem.scex.util.CommonUtils._
 
@@ -37,7 +37,22 @@ class TypeCompletionTest extends ScexFunSuite with CompilationTest with Completi
     }
   }
 
-  val profile = createProfile(acl, attrs)
+  val utils =
+    """
+      |import com.avsystem.scex.compiler.presentation._
+      |import com.avsystem.scex.presentation.annotation._
+      |
+      |implicit class rootOps(root: ScopeAndTypeCompletionTest.Root) {
+      |  @Documentation("implicit method doc")
+      |  def implicitMethod: Int = 42
+      |}
+      |
+      |@Documentation("util stuff")
+      |val utilStuff = 5
+      |
+    """.stripMargin
+
+  val profile = createProfile(acl, attrs, utils = utils)
 
   test("simple type completion test") {
     val completer = compiler.getCompleter[SimpleContext[Unit], Any](profile, template = false)
@@ -57,13 +72,27 @@ class TypeCompletionTest extends ScexFunSuite with CompilationTest with Completi
       Member("method", List(List(
         Param("annotArg", scexType[Any]),
         Param("moar", scexType[Any])
-      )), Nil, scexType[Any], iimplicit = false, Some("handles stuff"))
+      )), Nil, scexType[Any], iimplicit = false, Some("handles stuff")),
+      Member("implicitMethod", Nil, Nil, scexType[Int], iimplicit = false, Some("implicit method doc"))
+    ))
+  }
+
+  test("simple scope completion test") {
+    val completer = compiler.getCompleter[SimpleContext[Root], Any](profile, template = false)
+    val completion = completer.getScopeCompletion
+
+    assert(completion.members === Vector(
+      Member("method", List(List(
+        Param("annotArg", scexType[Any]),
+        Param("moar", scexType[Any])
+      )), Nil, scexType[Any], iimplicit = false, Some("handles stuff")),
+      Member("utilStuff", Nil, Nil, scexType[Int], iimplicit = false, Some("util stuff"))
     ))
   }
 
 }
 
-object TypeCompletionTest {
+object ScopeAndTypeCompletionTest {
 
   trait Root {
     @ParameterNames(Array("annotArg"))

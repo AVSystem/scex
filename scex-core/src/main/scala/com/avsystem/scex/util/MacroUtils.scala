@@ -350,6 +350,12 @@ trait MacroUtils {
   def isAdapterConversion(symbol: Symbol) =
     isProfileObject(symbol.owner) && symbol.isImplicit && symbol.isMethod && isAdapter(symbol.asMethod.returnType)
 
+  def annotations(sym: Symbol) =
+    sym.annotations ++ (if (sym.isTerm) {
+      val tsym = sym.asTerm
+      if (tsym.isGetter) tsym.accessed.annotations else Nil
+    } else Nil)
+
   def debugTree(pref: String, tree: Tree): Unit = {
     println(pref)
     tree.foreach { t =>

@@ -223,9 +223,11 @@ object PredefinedAccessSpecs {
       s.contains _
       s.endsWith _
       s.equalsIgnoreCase _
-      s.all.membersNamed.indexOf
+      s.indexOf(_: String)
+      s.indexOf(_: String, _: Int)
       s.isEmpty
-      s.all.membersNamed.lastIndexOf
+      s.lastIndexOf(_: String)
+      s.lastIndexOf(_: String, _: Int)
       s.length
       s.matches _
       s.all.membersNamed.replace
