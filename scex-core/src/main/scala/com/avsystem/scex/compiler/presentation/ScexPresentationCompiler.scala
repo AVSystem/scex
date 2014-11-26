@@ -140,6 +140,12 @@ trait ScexPresentationCompiler extends ScexCompiler {
 
     import global._
 
+    val m = member match {
+      case tm: ScexTypeMember if tm.implicitlyAdded && isAdapter(tm.implicitType) =>
+        tm.copy(sym = getJavaGetter(tm.sym, tm.ownerTpe), implicitTree = EmptyTree, implicitType = NoType)
+      case _ => member
+    }
+
     def merge(left: Stream[attrs.InfoWithIndex], right: Stream[attrs.InfoWithIndex]): Stream[attrs.InfoWithIndex] =
       (left, right) match {
         case (lh #:: lt, rh #:: rt) =>
@@ -154,14 +160,14 @@ trait ScexPresentationCompiler extends ScexCompiler {
       }
 
     def implicitConv =
-      if (member.implicitlyAdded) Some(stripTypeApply(member.implicitTree)) else None
+      if (m.implicitlyAdded) Some(stripTypeApply(m.implicitTree)) else None
 
     def normalInfos =
-      attrs.matchingInfos(global)(member.ownerTpe, member.sym, implicitConv)
+      attrs.matchingInfos(global)(m.ownerTpe, m.sym, implicitConv)
 
     def implicitInfos =
-      if (member.implicitlyAdded)
-        attrs.matchingInfos(global)(member.implicitType, member.sym, None)
+      if (m.implicitlyAdded)
+        attrs.matchingInfos(global)(m.implicitType, m.sym, None)
       else Nil
 
     def attributesFromInfos =
@@ -189,7 +195,7 @@ trait ScexPresentationCompiler extends ScexCompiler {
     }
 
     def attributesFromAnnotations =
-      (member.sym :: member.sym.overrides).iterator.flatMap(s => annotations(s)).map(parseAnnotation).toStream
+      (m.sym :: m.sym.overrides).iterator.flatMap(s => annotations(s)).map(parseAnnotation).toStream
 
     def foldAttributes(str: Stream[Attributes]): Attributes = str match {
       case head #:: tail => head orElse foldAttributes(tail)

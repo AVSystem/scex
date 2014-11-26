@@ -37,7 +37,6 @@ class IGlobal(settings: Settings, reporter: Reporter, val classLoader: ClassLoad
     sym: Symbol,
     tpe: Type,
     accessible: Boolean,
-    inherited: Boolean,
     implicitTree: Tree,
     implicitType: Type) extends ScexMember
 
@@ -188,12 +187,12 @@ class IGlobal(settings: Settings, reporter: Reporter, val classLoader: ClassLoad
     val superAccess = tree.isInstanceOf[Super]
     val members = new Members
 
-    def addTypeMember(sym: Symbol, pre: Type, inherited: Boolean, implicitTree: Tree, implicitType: Type) = {
+    def addTypeMember(sym: Symbol, pre: Type, implicitTree: Tree, implicitType: Type) = {
       val implicitlyAdded = implicitTree != EmptyTree
       members.add(sym, pre, implicitTree) { (s, st) =>
         new ScexTypeMember(ownerTpe, s, st,
           context.isAccessible(if (s.hasGetter) s.getterIn(s.owner) else s, pre, superAccess && !implicitlyAdded),
-          inherited, implicitTree, implicitType)
+          implicitTree, implicitType)
       }
     }
 
@@ -207,7 +206,7 @@ class IGlobal(settings: Settings, reporter: Reporter, val classLoader: ClassLoad
     }
 
     for (sym <- ownerTpe.members)
-      addTypeMember(sym, pre, sym.owner != ownerTpe.typeSymbol, EmptyTree, NoType)
+      addTypeMember(sym, pre, EmptyTree, NoType)
 
     val applicableViews: List[analyzer.SearchResult] =
       if (ownerTpe.isErroneous || ownerTpe <:< NullTpe || ownerTpe <:< NothingTpe) List()
@@ -219,7 +218,7 @@ class IGlobal(settings: Settings, reporter: Reporter, val classLoader: ClassLoad
       val vtree = viewApply(view)
       val vpre = stabilizedType(vtree)
       for (sym <- vtree.tpe.members) {
-        addTypeMember(sym, vpre, inherited = false, view.tree, vpre)
+        addTypeMember(sym, vpre, view.tree, vpre)
       }
     }
 
