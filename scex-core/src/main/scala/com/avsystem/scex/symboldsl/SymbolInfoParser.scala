@@ -1,8 +1,11 @@
 package com.avsystem.scex
 package symboldsl
 
-import com.avsystem.scex.util.MacroUtils
+import java.{lang => jl, util => ju}
 
+import com.avsystem.scex.util.{MacroUtils, TypeWrapper}
+
+import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 import scala.reflect.api.TypeCreator
 import scala.reflect.internal.Flags
@@ -29,6 +32,10 @@ trait SymbolInfoParser[D <: SymbolDsl with Singleton] {
   lazy val macroUtils = MacroUtils(c.universe)
 
   import macroUtils._
+
+  class TypeKey(val tpe: Type) extends TypeWrapper((c.universe, tpe): (c.universe.type, c.universe.Type))
+
+  private val typeInfos: mutable.Map[TypeKey, TermName] = new mutable.HashMap[TypeKey, TermName]
 
   // transforms list of expressions of type List[SymbolInfo[T]] to single expression
   // of type List[SymbolInfo[T]] that represents flattened original list of lists
@@ -131,16 +138,19 @@ trait SymbolInfoParser[D <: SymbolDsl with Singleton] {
   }
 
   def reifyTypeInfo(tpe: Type) = {
-    val typeToReify = existentialize(detachExistentials(tpe.map(_.widen)))
-
     val Block(List(_, _), Apply(_, List(_, typeCreatorTree))) =
-      c.reifyType(internal.gen.mkRuntimeUniverseRef, EmptyTree, typeToReify)
+      c.reifyType(internal.gen.mkRuntimeUniverseRef, EmptyTree, tpe)
 
     reify(new TypeInfo(
       c.Expr[TypeCreator](typeCreatorTree).splice,
       reifyRuntimeClassOpt(tpe).splice,
       c.literal(tpe.typeSymbol.isJava).splice,
-      c.literal(typeToReify.toString).splice))
+      c.literal(tpe.toString).splice)).tree
+  }
+
+  def typeInfoIdent(tpe: Type) = {
+    val typeToReify = existentialize(detachExistentials(tpe.map(_.widen)))
+    c.Expr[TypeInfo](Ident(typeInfos.getOrElseUpdate(new TypeKey(typeToReify), TermName(c.freshName()))))
   }
 
   val reifyImplicitConvSpec =
@@ -148,7 +158,7 @@ trait SymbolInfoParser[D <: SymbolDsl with Singleton] {
 
   def reifySymbolInfo(prefixTpe: Type, payloadTree: Tree, symbol: Symbol, implicitConv: Option[Tree]) = reify {
     List(SymbolInfo[D#Payload](
-      reifyTypeInfo(prefixTpe).splice,
+      typeInfoIdent(prefixTpe).splice,
       c.literal(memberSignature(symbol)).splice,
       reifyOption(implicitConv, reifyImplicitConvSpec).splice,
       c.Expr[D#Payload](payloadTree).splice))
@@ -198,7 +208,7 @@ trait SymbolInfoParser[D <: SymbolDsl with Singleton] {
     }
 
     def reifySymbolInfos = reify {
-      val prefixTypeInfo = reifyTypeInfo(prefixTpe).splice
+      val prefixTypeInfo = typeInfoIdent(prefixTpe).splice
       val implConvOpt = reifyOption(implConv.map(_._1), reifyImplicitConvSpec).splice
       val payload = c.Expr[D#Payload](payloadTree).splice
       // separate method to avoid "Code size too large" error
@@ -378,8 +388,16 @@ trait SymbolInfoParser[D <: SymbolDsl with Singleton] {
       reify(Nil)
   }
 
-  def extractSymbolInfos(tree: Tree): c.Expr[List[SymbolInfo[D#Payload]]] =
-    extractSymbols(None, defaultPayload.tree, tree)
+  def extractSymbolInfos(tree: Tree): c.Expr[List[SymbolInfo[D#Payload]]] = {
+    val symbolInfos = extractSymbols(None, defaultPayload.tree, tree).tree
+
+    val typeInfoDefs = typeInfos.iterator.map {
+      case (typeKey, termName) =>
+        ValDef(Modifiers(), termName, TypeTree(), reifyTypeInfo(typeKey.tpe))
+    }.toList
+
+    c.Expr[List[SymbolInfo[D#Payload]]](Block(typeInfoDefs, symbolInfos))
+  }
 }
 
 object SymbolInfoParser {

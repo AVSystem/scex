@@ -8,6 +8,7 @@ import com.avsystem.scex.compiler.ExpressionDef
 import com.avsystem.scex.compiler.ScexCompiler.{CompilationFailedException, CompileError}
 import com.avsystem.scex.compiler.presentation.ScexPresentationCompiler.{Member, Completion}
 import com.avsystem.scex.presentation.SymbolAttributes
+import com.avsystem.scex.util.TypeWrapper
 import com.google.common.cache.CacheBuilder
 
 /**
