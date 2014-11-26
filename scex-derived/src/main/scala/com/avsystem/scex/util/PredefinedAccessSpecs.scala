@@ -342,5 +342,15 @@ object PredefinedAccessSpecs {
       o.Unit
       o.ordered(_: Nothing)
     }
+
+    on { n: Numeric.type =>
+      n.ByteIsIntegral
+      n.CharIsIntegral
+      n.ShortIsIntegral
+      n.IntIsIntegral
+      n.LongIsIntegral
+      n.FloatIsFractional
+      n.DoubleIsFractional
+    }
   }
 }
