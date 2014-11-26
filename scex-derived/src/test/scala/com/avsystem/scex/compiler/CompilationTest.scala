@@ -7,7 +7,7 @@ import com.avsystem.scex.compiler.ScexCompiler.CompilationFailedException
 import com.avsystem.scex.japi.DefaultJavaScexCompiler
 import com.avsystem.scex.presentation.{Attributes, SymbolAttributes}
 import com.avsystem.scex.symboldsl.SymbolInfo
-import com.avsystem.scex.util.SimpleContext
+import com.avsystem.scex.util.{PredefinedAccessSpecs, SimpleContext}
 import com.avsystem.scex.validation.SymbolValidator.MemberAccessSpec
 import com.avsystem.scex.validation.{SymbolValidator, SyntaxValidator}
 import org.scalatest.{BeforeAndAfterAll, Suite}

@@ -1,10 +1,10 @@
-package com.avsystem.scex
+package com.avsystem.scex.util
 
 import java.{lang => jl, util => ju}
 
 import com.avsystem.scex.util.JavaCollectionExtensions._
-import com.avsystem.scex.util.Literal
 
+import scala.math.ScalaNumericAnyConversions
 import scala.runtime._
 
 object PredefinedAccessSpecs {
@@ -30,6 +30,18 @@ object PredefinedAccessSpecs {
       anyRef.notify()
       anyRef.notifyAll()
       anyRef.synchronized _
+    }
+    on { ip: RangedProxy[Any@plus] =>
+      ip.to(_: Any)
+      ip.to(_: Any, _: Any)
+      ip.until(_: Any)
+      ip.until(_: Any, _: Any)
+    }
+    on { p: Proxy =>
+      p.self
+    }
+    on { snac: ScalaNumericAnyConversions =>
+      snac.underlying()
     }
   } ++ allow {
     on { any: Any =>
@@ -235,7 +247,7 @@ object PredefinedAccessSpecs {
       s.replaceAllLiterally(_: String, _: String)
       s.replaceFirst _
       s.all.membersNamed.split
-      s.all.membersNamed.startsWith
+      s.startsWith(_: String)
       s.all.membersNamed.substring
       s.toLowerCase
       s.toUpperCase
@@ -255,8 +267,13 @@ object PredefinedAccessSpecs {
       s.toLong
       s.toFloat
       s.toDouble
-      s.apply(_: Int)
-      s.slice(_: Int, _: Int)
+      s.filter(_: Char => Boolean)
+      s.take(_: Int)
+      s.takeRight(_: Int)
+      s.takeWhile(_: Char => Boolean)
+      s.drop(_: Int)
+      s.dropRight(_: Int)
+      s.dropWhile(_: Char => Boolean)
     }
 
     // Math functions

@@ -7,7 +7,7 @@ import com.avsystem.scex.compiler.ScexCompiler.{CompilationFailedException, Comp
 import com.avsystem.scex.compiler.{ScexFunSuite, ScexSettings}
 import com.avsystem.scex.japi.XmlFriendlyJavaScexCompiler
 import com.avsystem.scex.presentation.SymbolAttributes
-import com.avsystem.scex.util.SimpleContext
+import com.avsystem.scex.util.{PredefinedAccessSpecs, SimpleContext}
 import com.avsystem.scex.validation.SymbolValidator._
 import com.avsystem.scex.validation.{SymbolValidator, SyntaxValidator}
 

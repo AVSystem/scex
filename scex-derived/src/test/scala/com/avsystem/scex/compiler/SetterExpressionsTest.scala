@@ -3,7 +3,7 @@ package compiler
 
 import java.{lang => jl, util => ju}
 
-import com.avsystem.scex.util.SimpleContext
+import com.avsystem.scex.util.{PredefinedAccessSpecs, SimpleContext}
 
 import scala.reflect.runtime.universe.TypeTag
 

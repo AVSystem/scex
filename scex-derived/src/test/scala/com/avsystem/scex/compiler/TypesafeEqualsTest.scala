@@ -5,7 +5,7 @@ import java.{lang => jl, util => ju}
 
 import com.avsystem.scex.compiler.ScexCompiler.CompilationFailedException
 import com.avsystem.scex.presentation.SymbolAttributes
-import com.avsystem.scex.util.SimpleContext
+import com.avsystem.scex.util.{PredefinedAccessSpecs, SimpleContext}
 import com.avsystem.scex.validation.{SymbolValidator, SyntaxValidator}
 
 import scala.reflect.runtime.universe.TypeTag

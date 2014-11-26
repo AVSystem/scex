@@ -3,12 +3,12 @@ package vaadin
 import java.{lang => jl, util => ju}
 import javax.servlet.http.HttpServletRequest
 
-import com.avsystem.scex.PredefinedAccessSpecs.{basicOperations, javaCollectionExtensions}
+import com.avsystem.scex.util.{PredefinedAttributes, PredefinedAccessSpecs, SimpleContext}
+import PredefinedAccessSpecs.{basicOperations, javaCollectionExtensions}
 import com.avsystem.scex.compiler.ScexSettings
 import com.avsystem.scex.compiler.presentation.ScexPresentationCompiler.Member
 import com.avsystem.scex.japi.XmlFriendlyJavaScexCompiler
 import com.avsystem.scex.presentation.{Attributes, SymbolAttributes}
-import com.avsystem.scex.util.SimpleContext
 import com.avsystem.scex.validation.{SymbolValidator, SyntaxValidator}
 import com.avsystem.scex.{ExpressionProfile, NamedSource}
 import com.vaadin.event.FieldEvents.{TextChangeEvent, TextChangeListener}
@@ -60,14 +60,7 @@ object CompletionPlayground {
           }
         }
       }
-      val attrList = {
-        import com.avsystem.scex.presentation.SymbolAttributes._
-        attributes {
-          on { s: String =>
-            s.toInt --> Attributes(documentation = "handles stuff")
-          }
-        }
-      }
+      val attrList = PredefinedAttributes.basicOperations ++ PredefinedAttributes.javaCollectionExtensions
 
       val header =
         """

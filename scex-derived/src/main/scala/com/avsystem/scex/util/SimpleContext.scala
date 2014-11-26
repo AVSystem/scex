@@ -1,7 +1,8 @@
-package com.avsystem.scex
-package util
+package com.avsystem.scex.util
 
 import java.{lang => jl, util => ju}
+
+import com.avsystem.scex.ExpressionContext
 
 import scala.collection.mutable
 

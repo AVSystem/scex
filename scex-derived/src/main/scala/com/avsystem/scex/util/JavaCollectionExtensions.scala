@@ -24,8 +24,8 @@ object JavaCollectionExtensions {
     def map[B](f: A => B): ju.Collection[B] =
       coll.iterator.asScala.map(f).toBuffer.asJava
 
-    def flatMap[B](f: A => ju.Collection[B]): ju.Collection[B] =
-      coll.asScala.flatMap(a => f(a).asScala).asJavaCollection
+    def fold[B](z: B)(f: (B, A) => B): B =
+      coll.asScala.foldLeft(z)(f)
 
     def containsAny(other: ju.Collection[_]): Boolean =
       other.exists(coll.contains)
@@ -42,12 +42,6 @@ object JavaCollectionExtensions {
     def forall(p: A => Boolean): Boolean =
       coll.asScala.forall(p)
 
-    def foldLeft[B](z: B)(f: (B, A) => B): B =
-      coll.asScala.foldLeft(z)(f)
-
-    def foldRight[B](z: B)(f: (A, B) => B): B =
-      coll.asScala.foldRight(z)(f)
-
     def min(implicit ord: Ordering[A]): A =
       coll.asScala.min
 
@@ -59,6 +53,9 @@ object JavaCollectionExtensions {
 
     def maxBy[B: Ordering](f: A => B): A =
       coll.asScala.maxBy(f)
+
+    def sum(implicit num: Numeric[A]): A =
+      coll.asScala.sum
 
     def toList: ju.List[A] = coll match {
       case list: ju.List[A] => list
@@ -95,11 +92,14 @@ object JavaCollectionExtensions {
     def map[B](f: A => B): ju.List[B] =
       list.asScala.map(f).asJava
 
-    def flatMap[B](f: A => ju.List[B]): ju.List[B] =
-      list.asScala.flatMap(a => f(a).asScala).asJava
-
     def apply(index: Int): A =
       list.get(index)
+
+    def foldLeft[B](z: B)(f: (B, A) => B): B =
+      list.asScala.foldLeft(z)(f)
+
+    def foldRight[B](z: B)(f: (A, B) => B): B =
+      list.asScala.foldRight(z)(f)
 
     def drop(amount: Int): ju.List[A] =
       slice(amount, list.size)
@@ -131,6 +131,9 @@ object JavaCollectionExtensions {
 
     def sortBy[B: Ordering](f: A => B): ju.List[A] =
       list.asScala.sortBy(f).asJava
+
+    def reverse: ju.List[A] =
+      Lists.reverse(list)
   }
 
   implicit class SetOps[A](private val set: ju.Set[A]) extends AnyVal {
@@ -148,9 +151,6 @@ object JavaCollectionExtensions {
 
     def diff(other: ju.Set[A]): ju.Set[A] =
       (set.asScala diff other.asScala).asJava
-
-    def containsAny(coll: ju.Collection[_]): Boolean =
-      coll.asScala.exists(set.contains)
   }
 
   case class Entry[K, V](key: K, value: V) {

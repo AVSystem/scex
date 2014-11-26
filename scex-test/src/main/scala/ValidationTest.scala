@@ -5,6 +5,7 @@ import com.avsystem.scex._
 import com.avsystem.scex.compiler.ScexSettings
 import com.avsystem.scex.japi.DefaultJavaScexCompiler
 import com.avsystem.scex.presentation.SymbolAttributes
+import com.avsystem.scex.util.PredefinedAccessSpecs
 import com.avsystem.scex.validation._
 
 import scala.language.{dynamics, existentials}
