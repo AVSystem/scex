@@ -185,6 +185,9 @@ object PredefinedAttributes {
           "<tt>emptyColl.anyElement ? 0</tt>")
       c.sum(_: Nothing) --> Attributes(documentation =
         "Computes a sum of elements of this collection. Returns zero for empty collection.")
+      c.mean(_: Nothing) --> Attributes(documentation =
+        "Computes a mean of elements of this collection. Fails for empty collection. In case of failure, you can provide " +
+          "fallback value with <tt>?</tt> operator, e.g. <tt>emptyColl.mean ? 0</tt>")
     }
 
     on { c: ju.Collection[String] =>

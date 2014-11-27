@@ -57,6 +57,12 @@ object JavaCollectionExtensions {
     def sum(implicit num: Numeric[A]): A =
       coll.asScala.sum
 
+    def mean(implicit num: Numeric[A]): Double =
+      if (!coll.isEmpty)
+        num.toDouble(sum) / coll.size
+      else
+        throw new IllegalArgumentException("mean of empty collection")
+
     def toList: ju.List[A] = coll match {
       case list: ju.List[A] => list
       case _ => Lists.newArrayList[A](coll)
