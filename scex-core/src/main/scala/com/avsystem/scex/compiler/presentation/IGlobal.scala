@@ -225,17 +225,4 @@ class IGlobal(settings: Settings, reporter: Reporter, val classLoader: ClassLoad
     members.allMembers
   }
 
-  // workaround for Scala parser bug that is a root cause of SI-8459 (should be fixed in Scala 2.11.3)
-  override def newUnitParser(unit: CompilationUnit) =
-    new syntaxAnalyzer.UnitParser(unit) {
-      override def selector(t: Tree): Tree = {
-        val point = if (isIdent) in.offset else in.lastOffset
-        //assert(t.pos.isDefined, t)
-        if (t != EmptyTree)
-          Select(t, ident(skipIt = false)) setPos r2p(t.pos.start, point, in.lastOffset)
-        else
-          errorTermTree // has already been reported
-      }
-    }
-
 }
