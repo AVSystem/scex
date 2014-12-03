@@ -3,11 +3,9 @@ package compiler
 
 import java.{lang => jl, util => ju}
 
-import com.avsystem.scex.compiler.ScexCompiler.CompileError
 import com.avsystem.scex.util.MacroUtils
 
 import scala.collection.mutable
-import scala.collection.mutable.ListBuffer
 import scala.reflect.internal.util._
 import scala.reflect.io.AbstractFile
 import scala.tools.nsc.Global
