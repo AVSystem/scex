@@ -74,7 +74,7 @@ object XmlFriendlyTranslator extends PositionTrackingParsers {
 
   def delim = "[,;.]".rp
 
-  def variable = "#".p ~> ident ^^ { id =>
+  def variable = "#".p ~> (ident | btident) ^^ { id =>
     (" " + CodeGeneration.VariablesSymbol + ".") ~+ id
   }
 

@@ -44,4 +44,8 @@ class XmlFriendlyTranslatorTest extends ScexFunSuite {
     assert(str === translate(str, template = true).result)
   }
 
+  test("backticked variable test") {
+    assert("${ _vars.`type`}" === translate("${#`type`}").result)
+  }
+
 }
