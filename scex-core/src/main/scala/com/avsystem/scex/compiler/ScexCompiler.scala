@@ -202,7 +202,7 @@ trait ScexCompiler extends LoggingUtils {
     wrapInSource(expressionCode, offset, pkgName)
   }
 
-  protected def withGlobal[T](code: ScexGlobal => T) = underLock {
+  protected final def withGlobal[T](code: ScexGlobal => T) = underLock {
     reporter.reset()
     val global = this.global
     val result = try code(global) finally {

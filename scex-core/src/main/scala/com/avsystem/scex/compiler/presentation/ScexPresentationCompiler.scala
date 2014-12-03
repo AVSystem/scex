@@ -26,9 +26,7 @@ trait ScexPresentationCompiler extends ScexCompiler {
 
   protected def underPresentationLock[T](code: => T) = {
     ensureSetup()
-    lock.synchronized {
-      code
-    }
+    lock.synchronized(code)
   }
 
   private var reporter: Reporter = _
@@ -404,9 +402,8 @@ trait ScexPresentationCompiler extends ScexCompiler {
     (computeMembers: => Vector[SMember]): Vector[SMember] = computeMembers
 
   protected def parse(exprDef: ExpressionDef) = withIGlobal { global =>
-    val (parsedTree, _) = global.parseExpression(exprDef.expression, exprDef.template)
-
     inCompilerThread {
+      val parsedTree = global.parseExpression(exprDef.expression, exprDef.template)
       val translator = new ast.Translator(global, 0, exprDef)
       translator.translateTree(parsedTree.asInstanceOf[translator.u.Tree])
     }

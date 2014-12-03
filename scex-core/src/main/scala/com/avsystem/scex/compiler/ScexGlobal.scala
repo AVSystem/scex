@@ -22,36 +22,12 @@ trait ScexGlobal extends Global with MacroUtils with SymbolErasures {
 
   def loadAdditionalPlugins(): List[Plugin] = Nil
 
-  class ParsingCompilationUnit(source: SourceFile) extends CompilationUnit(source) {
-    private val errorsBuilder = new ListBuffer[CompileError]
-
-    def errors =
-      errorsBuilder.result()
-
-    override def echo(pos: Position, msg: String) = ()
-
-    override def error(pos: Position, msg: String) =
-      errorsBuilder += CompileError(pos.lineContent, if (pos.isDefined) pos.column else 1, msg)
-
-    override def warning(pos: Position, msg: String) = ()
-
-    override def deprecationWarning(pos: Position, msg: String) = ()
-
-    override def uncheckedWarning(pos: Position, msg: String) = ()
-
-    override def inlinerWarning(pos: Position, msg: String) = ()
-
-    override def incompleteInputError(pos: Position, msg: String) = ()
-
-    override def comment(pos: Position, msg: String) = ()
-  }
-
   def parseExpression(code: String, template: Boolean) = {
     val (wrappedCode, offset) = CodeGeneration.wrapForParsing(code, template)
     val sourceFile = new BatchSourceFile("(for_parsing)", wrappedCode)
-    val unit = new ParsingCompilationUnit(sourceFile)
+    val unit = new CompilationUnit(sourceFile)
     val PackageDef(_, List(ModuleDef(_, _, Template(_, _, List(_, expressionTree))))) = new syntaxAnalyzer.UnitParser(unit).parse()
-    (moveTree(expressionTree, -offset), unit.errors)
+    moveTree(expressionTree, -offset)
   }
 
   def movePosition(pos: Position, offset: Int) = pos match {
