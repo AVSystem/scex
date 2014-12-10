@@ -80,4 +80,13 @@ class SetterExpressionsTest extends ScexFunSuite with CompilationTest {
     assert("42" === context.getVariable("lol"))
   }
 
+  test("accepted type reporting test") {
+    val acl = allow(on { st: JavaSetterTarget => st.all.introduced.members})
+    val setterExpression = compiler.getCompiledSetterExpression[SimpleContext[JavaSetterTarget], Nothing](
+      createProfile(acl), "beanprop", template = false
+    )
+    val setter = setterExpression.apply(SimpleContext(new JavaSetterTarget))
+    assert(setter.acceptedType == Type("Int", classOf[Int]))
+  }
+
 }

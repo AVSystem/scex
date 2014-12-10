@@ -59,7 +59,7 @@ trait TemplateOptimizingScexCompiler extends ScexPresentationCompiler {
       })
   }
 
-  import com.avsystem.scex.parsing.TemplateParser.{parseTemplate, Success => ParsingSuccess}
+  import com.avsystem.scex.parsing.TemplateParser.{Success => ParsingSuccess, parseTemplate}
 
   /**
    * Compiles a dummy expression that tests if there is a valid implicit conversion from Literal to expected type
@@ -98,8 +98,8 @@ trait TemplateOptimizingScexCompiler extends ScexPresentationCompiler {
     Try(result)
   }
 
-  private def toCompileError(expr: String, throwable: Throwable) =
-    new CompileError(expr, 1, throwable.getClass.getName + ": " + throwable.getMessage)
+  private def toCompileError(expr: String, resultType: String, throwable: Throwable) =
+    new CompileError(expr, 1, s"Invalid literal value for $resultType: ${throwable.getClass.getName}: ${throwable.getMessage}")
 
   private def isStringSupertype(tpe: String) =
     JavaTypeParsing.StringSupertypes.contains(tpe)
@@ -116,7 +116,7 @@ trait TemplateOptimizingScexCompiler extends ScexPresentationCompiler {
           getLiteralConversion(exprDef).map { conversion =>
             try LiteralExpression(conversion(Literal(singlePart)))(debugInfo) catch {
               case NonFatal(throwable) =>
-                throw new CompilationFailedException(singlePart, List(toCompileError(singlePart, throwable)))
+                throw new CompilationFailedException(singlePart, List(toCompileError(singlePart, exprDef.resultType, throwable)))
             }
           }
         else super.compileExpression(exprDef)
@@ -170,7 +170,7 @@ trait TemplateOptimizingScexCompiler extends ScexPresentationCompiler {
               Nil
             } catch {
               case throwable: Throwable =>
-                List(toCompileError(singlePart, throwable))
+                List(toCompileError(singlePart, exprDef.resultType, throwable))
             }
           }.getOrElse(Nil)
 

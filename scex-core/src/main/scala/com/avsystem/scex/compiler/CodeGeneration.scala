@@ -131,14 +131,14 @@ object CodeGeneration {
 
     val interpolationPrefix = if (template) if (!noMacroProcessing) InterpolationOpen else NoMacrosInterpolationOpen else ""
     val interpolationPostfix = if (template) InterpolationClose else ""
-    val setterConversion = if (setter) s"$MacroProcessor.asSetter" else ""
+    val setterConversion = if (setter) s"$MacroProcessor.asSetter[$resultType]" else ""
 
     val processingPrefix = if (noMacroProcessing) ""
     else
       s"""
         |      $MacroProcessor.markExpression(
         |      $setterConversion(
-        |      $MacroProcessor.processExpression[$contextType, $resultType](
+        |      $MacroProcessor.processExpression[$contextType, ${if (setter) "Any" else resultType}](
         |      $MacroProcessor.applyTypesafeEquals(
       """.stripMargin
 

@@ -113,9 +113,9 @@ object ExpressionMacroProcessor extends LoggingUtils {
 
   }
 
-  def asSetter[T](expr: T): Setter[T] = macro asSetter_impl[T]
+  def asSetter[T](expr: Any): Setter[T] = macro asSetter_impl[T]
 
-  def asSetter_impl[T: c.WeakTypeTag](c: whitebox.Context)(expr: c.Expr[T]): c.Expr[Setter[T]] = {
+  def asSetter_impl[T: c.WeakTypeTag](c: whitebox.Context)(expr: c.Expr[Any]): c.Expr[Setter[T]] = {
     val macroUtils = MacroUtils(c.universe)
 
     import c.universe._
@@ -173,7 +173,12 @@ object ExpressionMacroProcessor extends LoggingUtils {
 
     reify {
       new Setter[T] {
-        def apply(value: T) = c.Expr[T => Unit](translate(expr.tree)).splice.apply(value)
+        def apply(value: T) = c.Expr[T => Unit](translated).splice.apply(value)
+
+        def acceptedType = Type(
+          c.literal(expr.actualType.map(_.widen).toString).splice,
+          c.Expr[Class[_]](c.reifyRuntimeClass(expr.actualType)).splice
+        )
       }
     }
   }
