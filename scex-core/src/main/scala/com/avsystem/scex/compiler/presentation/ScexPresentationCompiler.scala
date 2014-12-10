@@ -20,7 +20,6 @@ import scala.reflect.runtime.universe.TypeTag
 trait ScexPresentationCompiler extends ScexCompiler {
   compiler =>
 
-
   private val logger = createLogger[ScexPresentationCompiler]
 
   private object lock
