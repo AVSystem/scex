@@ -6,12 +6,13 @@ import java.{lang => jl, util => ju}
 
 import com.avsystem.scex.compiler.JavaTypeParsing._
 import com.avsystem.scex.compiler.presentation.ScexPresentationCompiler
-import com.avsystem.scex.compiler.presentation.ScexPresentationCompiler.{Param, Type => SType}
+import com.avsystem.scex.compiler.presentation.ScexPresentationCompiler.Param
 import com.avsystem.scex.compiler.presentation.ast.Tree
 import com.avsystem.scex.compiler.{ExpressionDef, ScexCompiler}
 import com.avsystem.scex.util.Fluent
 import com.google.common.cache.CacheBuilder
 import com.google.common.reflect.TypeToken
+import com.avsystem.scex.{Type => SType}
 
 trait JavaScexCompiler extends ScexCompiler with ScexPresentationCompiler {
   import com.avsystem.scex.util.CacheImplicits._

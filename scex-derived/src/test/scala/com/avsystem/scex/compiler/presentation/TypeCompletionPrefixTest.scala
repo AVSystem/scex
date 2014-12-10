@@ -2,11 +2,10 @@ package com.avsystem.scex.compiler.presentation
 
 import java.{lang => jl, util => ju}
 
+import com.avsystem.scex.Type
 import com.avsystem.scex.compiler.presentation.TypeCompletionPrefixTest._
 import com.avsystem.scex.compiler.{CompilationTest, ScexFunSuite}
 import com.avsystem.scex.util.SimpleContext
-
-import scala.reflect.runtime.{universe => ru}
 
 /**
  * Created: 07-10-2014
@@ -14,7 +13,6 @@ import scala.reflect.runtime.{universe => ru}
  */
 class TypeCompletionPrefixTest extends ScexFunSuite with CompilationTest with CompletionTest {
 
-  import com.avsystem.scex.compiler.presentation.ScexPresentationCompiler._
   import com.avsystem.scex.validation.SymbolValidator._
 
   private val header =

@@ -1,6 +1,6 @@
 package com.avsystem.scex.compiler.presentation
 
-import com.avsystem.scex.compiler.presentation.ScexPresentationCompiler.Type
+import com.avsystem.scex.Type
 
 import scala.reflect.runtime.{universe => ru}
 

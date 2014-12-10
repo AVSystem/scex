@@ -3,7 +3,6 @@ package compiler.presentation.ast
 
 import java.{lang => jl, util => ju}
 
-import com.avsystem.scex.compiler.presentation.ScexPresentationCompiler.Type
 import com.avsystem.scex.compiler.{ExpressionDef, ScexGlobal}
 import com.avsystem.scex.util.MacroUtils
 

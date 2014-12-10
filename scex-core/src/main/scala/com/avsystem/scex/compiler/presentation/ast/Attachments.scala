@@ -3,8 +3,6 @@ package compiler.presentation.ast
 
 import java.{lang => jl, util => ju}
 
-import com.avsystem.scex.compiler.presentation.ScexPresentationCompiler.Type
-
 import scala.collection.JavaConverters._
 
 /**

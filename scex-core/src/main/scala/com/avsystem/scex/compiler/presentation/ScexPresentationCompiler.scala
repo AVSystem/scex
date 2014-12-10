@@ -5,12 +5,14 @@ import java.{lang => jl, util => ju}
 
 import com.avsystem.scex.compiler.CodeGeneration._
 import com.avsystem.scex.compiler.ScexCompiler.{CompilationFailedException, CompileError}
+import com.avsystem.scex.compiler.presentation.ScexPresentationCompiler.{Completion, Member => SMember, Param}
 import com.avsystem.scex.compiler.{ExpressionDef, _}
 import com.avsystem.scex.parsing.EmptyPositionMapping
 import com.avsystem.scex.presentation.annotation.{Documentation, ParameterNames}
 import com.avsystem.scex.presentation.{Attributes, SymbolAttributes}
 import com.avsystem.scex.util.CommonUtils._
 import com.avsystem.scex.validation.ValidationContext
+import com.avsystem.scex.{Type => SType}
 
 import scala.reflect.NameTransformer
 import scala.reflect.runtime.universe.TypeTag
@@ -18,7 +20,6 @@ import scala.reflect.runtime.universe.TypeTag
 trait ScexPresentationCompiler extends ScexCompiler {
   compiler =>
 
-  import com.avsystem.scex.compiler.presentation.ScexPresentationCompiler.{Completion, Param, Member => SMember, Type => SType}
 
   private val logger = createLogger[ScexPresentationCompiler]
 
@@ -447,10 +448,6 @@ trait ScexPresentationCompiler extends ScexCompiler {
 }
 
 object ScexPresentationCompiler {
-
-  case class Type(fullRepr: String, erasure: Class[_]) {
-    override def toString = fullRepr
-  }
 
   case class Param(name: String, tpe: Type)
 
