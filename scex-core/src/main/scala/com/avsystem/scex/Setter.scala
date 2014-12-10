@@ -6,9 +6,7 @@ import java.{lang => jl, util => ju}
  * Created: 28-11-2013
  * Author: ghik
  */
-trait Setter[-T] extends (T => Unit) {
-  def tpe: Type
-}
+trait Setter[-T] extends (T => Unit)
 
 // just to look nicer in Java
 abstract class AbstractSetter[-T] extends Setter[T]
