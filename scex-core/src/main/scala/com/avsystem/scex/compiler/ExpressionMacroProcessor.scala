@@ -173,7 +173,7 @@ object ExpressionMacroProcessor extends LoggingUtils {
 
     reify {
       new Setter[T] {
-        def apply(value: T) = c.Expr[T => Unit](translated).splice.apply(value)
+        def apply(value: T) = c.Expr[T => Unit](translate(expr.tree)).splice.apply(value)
 
         def acceptedType = Type(
           c.literal(expr.actualType.map(_.widen).toString).splice,
