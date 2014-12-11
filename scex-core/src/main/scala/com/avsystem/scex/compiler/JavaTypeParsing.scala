@@ -22,15 +22,24 @@ object JavaTypeParsing {
 
   case class WrappedParameterizedType(rawType: Type, ownerType: Type, typeArgs: Array[Type]) extends Type
 
-  case object TypeAny extends Type
+  // extending ParameterizedType so that Guava's TypeToken#getRawType works properly
+  case class ScalaSpecialType(rawClass: Class[_]) extends ParameterizedType {
+    def getActualTypeArguments = Array.empty
 
-  case object TypeAnyVal extends Type
+    def getRawType = rawClass
 
-  case object TypeAnyRef extends Type
+    def getOwnerType = null
+  }
 
-  case object TypeNull extends Type
+  object TypeAny extends ScalaSpecialType(classOf[Any])
 
-  case object TypeNothing extends Type
+  object TypeAnyVal extends ScalaSpecialType(classOf[AnyVal])
+
+  object TypeAnyRef extends ScalaSpecialType(classOf[AnyRef])
+
+  object TypeNull extends ScalaSpecialType(classOf[Null])
+
+  object TypeNothing extends ScalaSpecialType(classOf[Nothing])
 
   // extractors for java.lang.reflect.Type subinterfaces
   object WildcardType {
@@ -72,6 +81,21 @@ object JavaTypeParsing {
   )
 
   def javaTypeAsScalaType(tpe: Type): String = tpe match {
+    case TypeAny =>
+      "Any"
+
+    case TypeAnyVal =>
+      "AnyVal"
+
+    case TypeAnyRef =>
+      "AnyRef"
+
+    case TypeNull =>
+      "Null"
+
+    case TypeNothing =>
+      "Nothing"
+
     case clazz: Class[_] =>
       javaTypeAsScalaType(classToExistential(clazz))
 
@@ -113,21 +137,6 @@ object JavaTypeParsing {
 
     case RawClass(clazz) if !clazz.isAnonymousClass && !clazz.isSynthetic =>
       clazz.getCanonicalName
-
-    case TypeAny =>
-      "Any"
-
-    case TypeAnyVal =>
-      "AnyVal"
-
-    case TypeAnyRef =>
-      "AnyRef"
-
-    case TypeNull =>
-      "Null"
-
-    case TypeNothing =>
-      "Nothing"
 
     case _ =>
       throw new IllegalArgumentException(s"Cannot convert $tpe into Scala type")
