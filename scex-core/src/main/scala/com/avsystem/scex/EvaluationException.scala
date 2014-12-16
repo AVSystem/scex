@@ -10,7 +10,7 @@ import java.{lang => jl, util => ju}
 import com.avsystem.scex.EvaluationException._
 
 case class EvaluationException(lineWithNumber: Option[(String, Int)], cause: Throwable)
-  extends RuntimeException(lineWithNumber.map((message _).tupled).orNull, cause) {
+  extends RuntimeException(lineWithNumber.map((message _).tupled).getOrElse(cause.getMessage), cause) {
 
   def this(line: String, number: Int, cause: Throwable) =
     this(Some((line, number)), cause)
