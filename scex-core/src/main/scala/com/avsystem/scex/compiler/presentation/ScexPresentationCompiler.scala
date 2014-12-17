@@ -25,19 +25,27 @@ trait ScexPresentationCompiler extends ScexCompiler {
   private object lock
 
   protected def underPresentationLock[T](code: => T) = {
+    checkEnabled()
     ensureSetup()
     lock.synchronized(code)
   }
+
+  protected def isEnabled = !settings.noPresentation.value
+
+  protected def checkEnabled(): Unit =
+    if (!isEnabled) throw new RuntimeException("Presentation compiler was disabled with -SCEXno-presentation.")
 
   private var reporter: Reporter = _
   private var global: IGlobal = _
 
   override protected def setup(): Unit = {
     super.setup()
-    lock.synchronized {
-      logger.info("Initializing Scala presentation compiler")
-      reporter = new Reporter(settings)
-      global = new IGlobal(settings, reporter, getSharedClassLoader)
+    if (isEnabled) {
+      lock.synchronized {
+        logger.info("Initializing Scala presentation compiler")
+        reporter = new Reporter(settings)
+        global = new IGlobal(settings, reporter, getSharedClassLoader)
+      }
     }
   }
 
@@ -426,24 +434,28 @@ trait ScexPresentationCompiler extends ScexCompiler {
   override protected def compile(sourceFile: ScexSourceFile) = {
     val result = super.compile(sourceFile)
 
-    result match {
-      case Left(_) if sourceFile.shared => underPresentationLock {
-        val global = this.global
-        val response = new global.Response[global.Tree]
-        global.askLoadedTyped(sourceFile, response)
-        getOrThrow(response)
+    if(isEnabled) {
+      result match {
+        case Left(_) if sourceFile.shared => underPresentationLock {
+          val global = this.global
+          val response = new global.Response[global.Tree]
+          global.askLoadedTyped(sourceFile, response)
+          getOrThrow(response)
+        }
+        case _ =>
       }
-      case _ =>
     }
 
     result
   }
 
   override def reset(): Unit =
-    underLock(underPresentationLock {
-      global.askShutdown()
-      super.reset()
-    })
+    if (isEnabled) {
+      underLock(underPresentationLock {
+        global.askShutdown()
+        super.reset()
+      })
+    } else super.reset()
 }
 
 object ScexPresentationCompiler {

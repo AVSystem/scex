@@ -45,6 +45,9 @@ class ScexSettings extends Settings {
   val classfileDirectory = StringSetting("-SCEXclassfile-directory", "directory",
     "Directory for classfile cache", "")
 
+  val noPresentation = BooleanSetting("-SCEXno-presentation",
+    "Turns of the 'presentation' part of the compiler")
+
   def resolvedClassfileDir = Option(classfileDirectory.value)
     .filter(_.trim.nonEmpty).map(path => new PlainDirectory(new Directory(new File(path))))
 }
