@@ -9,6 +9,8 @@ import java.{lang => jl, util => ju}
 class Root {
   def stuff = 5
 
+  def javaLol = new JavaLol
+
   val tehList = List(1, 2, 3)
 }
 

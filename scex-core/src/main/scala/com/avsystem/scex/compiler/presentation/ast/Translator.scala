@@ -130,9 +130,10 @@ class Translator(val global: ScexGlobal, offset: Int, exprDef: ExpressionDef) ex
       Constant(c.value)(c.escapedStringValue)
 
   def translateType(tpe: u.Type) =
-    tpe.toOpt.map { tpe =>
+    if(tpe == u.NoType) Type.NoType
+    else tpe.toOpt.map { tpe =>
       Type(tpe.widen.toString(), u.erasureClass(tpe))
-    }.getOrElse(null)
+    }.getOrElse(Type.NoType)
 
   def translateAttachments(tree: u.Tree) =
     new Attachments(translateType(tree.tpe), translatePosition(tree.pos))

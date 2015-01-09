@@ -5,7 +5,7 @@ import java.{lang => jl, util => ju}
 
 import com.avsystem.scex.compiler.CodeGeneration._
 import com.avsystem.scex.compiler.ScexCompiler.{CompilationFailedException, CompileError}
-import com.avsystem.scex.compiler.presentation.ScexPresentationCompiler.{Completion, Member => SMember, Param}
+import com.avsystem.scex.compiler.presentation.ScexPresentationCompiler.{Completion, Member => SMember, Param, MemberFlags}
 import com.avsystem.scex.compiler.{ExpressionDef, _}
 import com.avsystem.scex.parsing.EmptyPositionMapping
 import com.avsystem.scex.presentation.annotation.{Documentation, ParameterNames}
@@ -14,6 +14,7 @@ import com.avsystem.scex.util.CommonUtils._
 import com.avsystem.scex.validation.ValidationContext
 import com.avsystem.scex.{Type => SType}
 
+import scala.collection.JavaConversions
 import scala.reflect.NameTransformer
 import scala.reflect.runtime.universe.TypeTag
 
@@ -91,6 +92,9 @@ trait ScexPresentationCompiler extends ScexCompiler {
 
     def getErrors(expression: String): List[CompileError] =
       compiler.getErrors(exprDef(expression, bare = false))
+
+    def getErrorsAsJava(expression: String): ju.List[CompileError] =
+      JavaConversions.seqAsJavaList(getErrors(expression))
 
     def getScopeCompletion: Completion =
       compiler.getScopeCompletion(exprDef("()", bare = true))
@@ -215,9 +219,10 @@ trait ScexPresentationCompiler extends ScexCompiler {
     import global._
 
     def translateType(tpe: Type) =
-      tpe.toOpt.map { tpe =>
+      if (tpe == NoType) SType.NoType
+      else tpe.toOpt.map { tpe =>
         SType(tpe.widen.toString(), erasureClass(tpe))
-      }.orNull
+      }.getOrElse(SType.NoType)
 
     val attributes = getAttributes(global, attrs)(member)
     val (params, implParams) = paramsOf(member.tpe)
@@ -226,11 +231,16 @@ trait ScexPresentationCompiler extends ScexCompiler {
     def symbolToParam(sym: Symbol) =
       Param(nameOverrides.getOrElse(sym, sym.decodedName), translateType(sym.typeSignature))
 
+    val adapter = isAdapter(member.sym.owner.toType)
+    val javaMember = memberToJava(if(adapter) getJavaGetter(member.sym, member.ownerTpe) else member.sym)
+
     SMember(member.sym.decodedName,
       params.map(_.map(symbolToParam)),
       implParams.map(symbolToParam),
+      translateType(member.ownerTpe),
       translateType(member.tpe.finalResultType),
-      member.sym.isImplicit,
+      MemberFlags(member.sym.isImplicit, adapter),
+      javaMember,
       attributes.documentation)
   }
 
@@ -434,7 +444,7 @@ trait ScexPresentationCompiler extends ScexCompiler {
   override protected def compile(sourceFile: ScexSourceFile) = {
     val result = super.compile(sourceFile)
 
-    if(isEnabled) {
+    if (isEnabled) {
       result match {
         case Left(_) if sourceFile.shared => underPresentationLock {
           val global = this.global
@@ -462,9 +472,26 @@ object ScexPresentationCompiler {
 
   case class Param(name: String, tpe: Type)
 
-  case class Member(name: String, params: List[List[Param]], implicitParams: List[Param],
-    tpe: Type, iimplicit: Boolean, documentation: Option[String])
+  case class MemberFlags(iimplicit: Boolean, javaGetterAdapter: Boolean)
 
-  case class Completion(typedPrefixTree: ast.Tree, members: Vector[Member])
+  case class Member(name: String, params: List[List[Param]], implicitParams: List[Param], ownerType: Type, returnType: Type,
+    flags: MemberFlags, javaMember: Option[jl.reflect.Member], documentation: Option[String]) {
+
+    def paramsAsJava =
+      JavaConversions.seqAsJavaList(params.map(JavaConversions.seqAsJavaList))
+
+    def implicitParamsAsJava =
+      JavaConversions.seqAsJavaList(implicitParams)
+
+    def javaField = javaMember.filterByClass[jl.reflect.Field]
+
+    def javaMethod = javaMember.filterByClass[jl.reflect.Method]
+
+    def javaConstructor = javaMember.filterByClass[jl.reflect.Constructor[_]]
+  }
+
+  case class Completion(typedPrefixTree: ast.Tree, members: Vector[Member]) {
+    def membersAsJava = JavaConversions.seqAsJavaList(members)
+  }
 
 }

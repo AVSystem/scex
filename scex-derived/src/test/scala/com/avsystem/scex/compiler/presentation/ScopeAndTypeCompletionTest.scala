@@ -1,6 +1,6 @@
 package com.avsystem.scex.compiler.presentation
 
-import com.avsystem.scex.compiler.presentation.ScexPresentationCompiler.{Member, Param}
+import com.avsystem.scex.compiler.presentation.ScexPresentationCompiler.{MemberFlags, Member, Param}
 import com.avsystem.scex.compiler.presentation.ScopeAndTypeCompletionTest.Root
 import com.avsystem.scex.compiler.{CompilationTest, ScexFunSuite}
 import com.avsystem.scex.presentation.Attributes
@@ -58,9 +58,9 @@ class ScopeAndTypeCompletionTest extends ScexFunSuite with CompilationTest with 
     val completer = compiler.getCompleter[SimpleContext[Unit], Any](profile, template = false)
     val completion = completer.getTypeCompletion("\"\"", 1).passTo(c => c.copy(members = c.members.sortBy(_.name)))
 
-    assert(completion.members === Vector(
-      Member("charAt", List(List(Param("index", scexType[Int]))), Nil, scexType[Char], iimplicit = false, Some("doc of charAt")),
-      Member("toInt", Nil, Nil, scexType[Int], iimplicit = false, None)
+    assert(completion.members.map(asPartial) === Vector(
+      PartialMember("charAt", scexType[Char], List(List(Param("index", scexType[Int]))), doc = "doc of charAt"),
+      PartialMember("toInt", scexType[Int])
     ))
   }
 
@@ -68,12 +68,12 @@ class ScopeAndTypeCompletionTest extends ScexFunSuite with CompilationTest with 
     val completer = compiler.getCompleter[SimpleContext[Root], Any](profile, template = false)
     val completion = completer.getTypeCompletion("_root", 4).passTo(c => c.copy(members = c.members.sortBy(_.name)))
 
-    assert(completion.members === Vector(
-      Member("implicitMethod", Nil, Nil, scexType[Int], iimplicit = false, Some("implicit method doc")),
-      Member("method", List(List(
+    assert(completion.members.map(asPartial) === Vector(
+      PartialMember("implicitMethod", scexType[Int], doc = "implicit method doc"),
+      PartialMember("method", scexType[Any], List(List(
         Param("annotArg", scexType[Any]),
         Param("moar", scexType[Any])
-      )), Nil, scexType[Any], iimplicit = false, Some("handles stuff"))
+      )), doc = "handles stuff")
     ))
   }
 
@@ -81,12 +81,14 @@ class ScopeAndTypeCompletionTest extends ScexFunSuite with CompilationTest with 
     val completer = compiler.getCompleter[SimpleContext[Root], Any](profile, template = false)
     val completion = completer.getScopeCompletion.passTo(c => c.copy(members = c.members.sortBy(_.name)))
 
-    assert(completion.members === Vector(
-      Member("method", List(List(
+    completion.members.foreach(println)
+
+    assert(completion.members.map(asPartial) === Vector(
+      PartialMember("method", scexType[Any], List(List(
         Param("annotArg", scexType[Any]),
         Param("moar", scexType[Any])
-      )), Nil, scexType[Any], iimplicit = false, Some("handles stuff")),
-      Member("utilStuff", Nil, Nil, scexType[Int], iimplicit = false, Some("util stuff"))
+      )), doc = "handles stuff"),
+      PartialMember("utilStuff", scexType[Int], doc = "util stuff")
     ))
   }
 

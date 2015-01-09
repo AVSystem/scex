@@ -77,10 +77,13 @@ object CompletionPlayground {
         SymbolAttributes(attrList), header, NamedSource("test", utils))
 
       def memberRepr(member: Member) =
-        s"${member.name}${member.params.map(_.map(p => s"${p.name}: ${p.tpe}-${p.tpe.erasure}").mkString("(", ", ", ")")).mkString}: ${member.tpe}-${member.tpe.erasure} - ${member.documentation}"
+        s"${member.name}${member.params.map(_.map(p => s"${p.name}: ${p.tpe}-${p.tpe.erasure}").mkString("(", ", ", ")")).mkString}: ${member.returnType}-${member.returnType.erasure} - ${member.documentation}"
 
       val completer = compiler.getCompleter[SimpleContext[Root], String](profile)
-      val scopeMembers = completer.getScopeCompletion.members.filterNot(_.iimplicit).map(memberRepr).mkString("\n")
+      val scopeMembers = completer.getScopeCompletion.members.filterNot(_.flags.iimplicit).map(memberRepr).mkString("\n")
+
+      println("SCOPE MEMBERS:")
+      completer.getScopeCompletion.members.foreach(println)
 
       val textField = new TextField
       textField.setWidth("100%")
@@ -92,12 +95,15 @@ object CompletionPlayground {
         def textChange(event: TextChangeEvent): Unit = {
           val completion = completer.getTypeCompletion(event.getText + "}}}", event.getCursorPosition - 1)
           val errors = completer.getErrors(event.getText).mkString("\n")
-          val members = completion.members.filterNot(_.iimplicit).map(memberRepr).mkString("\n")
+          val members = completion.members.filterNot(_.flags.iimplicit).map(memberRepr).mkString("\n")
           val parsedTree = completer.parse(event.getText)
           val typedPrefix = completion.typedPrefixTree
           val parsedPrefix = parsedTree.locate(typedPrefix.attachments.position)
           label.setValue(s"PARSED:\n${parsedTree.pretty(true, true)}\nERRORS:\n$errors\nPPREFIX:\n${parsedPrefix.pretty(true, true)}\n" +
             s"TPREFIX:\n${typedPrefix.pretty(true, true)}\nCOMPLETION:\n$members\nSCOPE COMPLETION:\n$scopeMembers")
+
+          println("TYPE MEMBERS:")
+          completion.members.foreach(println)
         }
       })
 

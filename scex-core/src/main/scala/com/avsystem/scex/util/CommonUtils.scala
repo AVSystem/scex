@@ -7,6 +7,7 @@ import java.util.concurrent.Callable
 import com.google.common.base.Predicate
 
 import scala.collection.mutable
+import scala.reflect.ClassTag
 
 
 /**
@@ -121,6 +122,14 @@ object CommonUtils {
     def toOpt = Option(a)
 
     def passTo[B](f: A => B): B = f(a)
+  }
+
+  implicit class optionOps[A](private val opt: Option[A]) extends AnyVal {
+    def filterByClass[T: ClassTag]: Option[T] =
+      opt match {
+        case Some(t: T) => Some(t)
+        case _ => None
+      }
   }
 
 }

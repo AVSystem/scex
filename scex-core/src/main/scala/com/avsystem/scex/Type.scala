@@ -7,3 +7,7 @@ package com.avsystem.scex
 case class Type(fullRepr: String, erasure: Class[_]) {
   override def toString = fullRepr
 }
+
+object Type {
+  final val NoType = Type("NoType", null)
+}

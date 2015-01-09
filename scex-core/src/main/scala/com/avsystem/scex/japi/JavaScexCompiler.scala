@@ -105,33 +105,6 @@ trait JavaScexCompiler extends ScexCompiler with ScexPresentationCompiler {
     }
   }
 
-  class JavaCompleter(wrapped: Completer) {
-
-    import scala.collection.JavaConverters._
-
-    private def memberToJava(scalaMember: ScexPresentationCompiler.Member) = scalaMember match {
-      case ScexPresentationCompiler.Member(name, params, implParams, tpe, implicitlyAdded, doc) =>
-        JavaScexCompiler.Member(name, params.map(_.asJava).asJava, implParams.asJava, tpe, implicitlyAdded, doc.orNull)
-    }
-
-    private def completionToJava(scalaCompletion: ScexPresentationCompiler.Completion) = scalaCompletion match {
-      case ScexPresentationCompiler.Completion(typedPrefixTree, members) =>
-        JavaScexCompiler.Completion(typedPrefixTree, members.map(memberToJava).asJavaCollection)
-    }
-
-    def getErrors(expression: String) =
-      wrapped.getErrors(expression).asJavaCollection
-
-    def getScopeCompletion =
-      completionToJava(wrapped.getScopeCompletion)
-
-    def getTypeCompletion(expression: String, position: Int) =
-      completionToJava(wrapped.getTypeCompletion(expression, position))
-
-    def parse(expression: String) =
-      wrapped.parse(expression)
-  }
-
   def buildCompleter =
     new CompleterBuilder
 
@@ -153,8 +126,7 @@ trait JavaScexCompiler extends ScexCompiler with ScexPresentationCompiler {
       val scalaResultType = typesCache.get(_resultTypeToken.getType)
       val rootObjectClass = rootObjectClassCache.get(_contextTypeToken)
 
-      new JavaCompleter(getCompleter(
-        _profile, _template, _setter, _header, scalaContextType, rootObjectClass, scalaResultType))
+      getCompleter(_profile, _template, _setter, _header, scalaContextType, rootObjectClass, scalaResultType)
     }
 
     def contextType(contextTypeToken: TypeToken[_ <: ExpressionContext[_, _]]) = fluent {
@@ -197,14 +169,5 @@ trait JavaScexCompiler extends ScexCompiler with ScexPresentationCompiler {
       _header = header
     }
   }
-
-}
-
-object JavaScexCompiler {
-
-  case class Member(getName: String, getParams: ju.List[ju.List[Param]], getImplicitParams: ju.List[Param],
-    getType: SType, isImplicit: Boolean, getDocumentation: String)
-
-  case class Completion(getTypedPrefixTree: Tree, getMembers: ju.Collection[Member])
 
 }

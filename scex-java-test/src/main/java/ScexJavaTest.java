@@ -2,6 +2,7 @@ import com.avsystem.scex.ExpressionContext;
 import com.avsystem.scex.ExpressionProfile;
 import com.avsystem.scex.NamedSource;
 import com.avsystem.scex.compiler.ScexSettings;
+import com.avsystem.scex.compiler.presentation.ScexPresentationCompiler;
 import com.avsystem.scex.japi.DefaultJavaScexCompiler;
 import com.avsystem.scex.japi.JavaScexCompiler;
 import com.avsystem.scex.presentation.Attributes;
@@ -31,7 +32,7 @@ public class ScexJavaTest {
                 symbolAttributes, "", NamedSource.apply("test", ""));
 
         Class<ExpressionContext<?, ?>> aecClass = (Class) ExpressionContext.class;
-        JavaScexCompiler.JavaCompleter ctx = compiler.buildCompleter().contextType(aecClass)
+        ScexPresentationCompiler.Completer ctx = compiler.buildCompleter().contextType(aecClass)
                 .resultType(String.class).profile(profile).template(false).get();
 
         System.out.println("FUUUUUUU");

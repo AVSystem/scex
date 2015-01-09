@@ -1,6 +1,6 @@
 package com.avsystem.scex.compiler
 
-import java.lang.reflect.{Constructor, Field, Method}
+import java.lang.reflect.{Member, Constructor, Field, Method}
 import java.security.MessageDigest
 import java.{lang => jl, util => ju}
 
@@ -174,6 +174,15 @@ trait SymbolErasures {
       if (!constr.owner.owner.isStaticOwner) jclazz.getEnclosingClass +: paramClasses
       else paramClasses
     jclazz getDeclaredConstructor (effectiveParamClasses: _*)
+  }
+
+  def memberToJava(symbol: Symbol): Option[Member] = try symbol match {
+    case ms: MethodSymbol if ms.isConstructor => Some(constructorToJava(ms))
+    case ms: MethodSymbol => Some(methodToJava(ms))
+    case ts: TermSymbol if ts.isJava => Some(fieldToJava(ts))
+    case _ => None
+  } catch {
+    case _: ReflectiveOperationException => None
   }
 
 }
