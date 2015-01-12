@@ -48,4 +48,8 @@ class XmlFriendlyTranslatorTest extends ScexFunSuite {
     assert("${ _vars.`type`}" === translate("${#`type`}").result)
   }
 
+  test("keyword variable test") {
+    assert("${ _vars.`type`}" === translate("${#type}").result)
+  }
+
 }

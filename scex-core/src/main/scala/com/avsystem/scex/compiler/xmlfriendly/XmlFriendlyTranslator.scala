@@ -5,6 +5,7 @@ import java.{lang => jl, util => ju}
 
 import com.avsystem.scex.compiler.CodeGeneration
 import com.avsystem.scex.parsing.{PString, PositionTrackingParsers}
+import com.avsystem.scex.util.CommonUtils._
 
 /**
  * Parser that translates XML-friendly expressions into correct scala code.
@@ -74,7 +75,11 @@ object XmlFriendlyTranslator extends PositionTrackingParsers {
 
   def delim = "[,;.]".rp
 
-  def variable = "#".p ~> (ident | btident) ^^ { id =>
+  def identOrKeyword = ident ^^ { id =>
+    if (ScalaKeywords.contains(id.result)) "`" ~+ id + "`" else id
+  }
+
+  def variable = "#".p ~> (identOrKeyword | btident) ^^ { id =>
     (" " + CodeGeneration.VariablesSymbol + ".") ~+ id
   }
 

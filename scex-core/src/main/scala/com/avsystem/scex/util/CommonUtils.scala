@@ -17,6 +17,11 @@ import scala.reflect.ClassTag
  * Time: 21:03
  */
 object CommonUtils {
+  val ScalaKeywords = Set(
+    "abstract", "case", "catch", "class", "def", "do", "else", "extends", "false", "final", "finally", "for", "forSome",
+    "if", "implicit", "import", "lazy", "match", "new", "null", "object", "override", "package", "private", "protected",
+    "return", "sealed", "super", "this", "throw", "trait", "try", "true", "type", "val", "var", "while", "with", "yield"
+  )
 
   val BeanGetterNamePattern = "get(([A-Z][a-z0-9_]*)+)".r
   val BooleanBeanGetterNamePattern = "is(([A-Z][a-z0-9_]*)+)".r
