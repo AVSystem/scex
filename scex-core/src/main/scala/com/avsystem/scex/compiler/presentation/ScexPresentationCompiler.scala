@@ -492,6 +492,9 @@ object ScexPresentationCompiler {
 
   case class Completion(typedPrefixTree: ast.Tree, members: Vector[Member]) {
     def membersAsJava = JavaConversions.seqAsJavaList(members)
+
+    def withMembers(newMembers: ju.Collection[Member]) =
+      copy(members = JavaConversions.collectionAsScalaIterable(newMembers).toVector)
   }
 
 }
