@@ -12,7 +12,7 @@ import scala.collection.JavaConverters._
 case class Attachments(tpe: Type, position: Position)
 
 object Attachments {
-  val empty = new Attachments(null, null)
+  val empty = new Attachments(Type.NoType, null)
 }
 
 case class Symbol(names: List[Name]) {
