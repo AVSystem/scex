@@ -221,7 +221,7 @@ trait ScexPresentationCompiler extends ScexCompiler {
     def translateType(tpe: Type) =
       if (tpe == NoType) SType.NoType
       else tpe.toOpt.map { tpe =>
-        SType(tpe.widen.toString(), erasureClass(tpe))
+        SType(tpe.widen.toString, erasureClass(tpe))
       }.getOrElse(SType.NoType)
 
     val attributes = getAttributes(global, attrs)(member)
@@ -233,13 +233,14 @@ trait ScexPresentationCompiler extends ScexCompiler {
 
     val adapter = isAdapter(member.sym.owner.toType)
     val javaMember = memberToJava(if(adapter) getJavaGetter(member.sym, member.ownerTpe) else member.sym)
+    val rootMember = isAnnotatedWith(member.ownerTpe.widen, rootValueAnnotType)
 
     SMember(member.sym.decodedName,
       params.map(_.map(symbolToParam)),
       implParams.map(symbolToParam),
       translateType(member.ownerTpe),
       translateType(member.tpe.finalResultType),
-      MemberFlags(member.sym.isImplicit, adapter),
+      MemberFlags(member.sym.isImplicit, adapter, rootMember),
       javaMember,
       attributes.documentation)
   }
@@ -472,7 +473,7 @@ object ScexPresentationCompiler {
 
   case class Param(name: String, tpe: Type)
 
-  case class MemberFlags(iimplicit: Boolean, javaGetterAdapter: Boolean)
+  case class MemberFlags(iimplicit: Boolean, javaGetterAdapter: Boolean, inputMember: Boolean)
 
   case class Member(name: String, params: List[List[Param]], implicitParams: List[Param], ownerType: Type, returnType: Type,
     flags: MemberFlags, javaMember: Option[jl.reflect.Member], documentation: Option[String]) {

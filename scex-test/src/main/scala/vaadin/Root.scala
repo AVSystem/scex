@@ -6,7 +6,7 @@ import java.{lang => jl, util => ju}
  * Created: 11-12-2013
  * Author: ghik
  */
-class Root {
+class Root extends JavaRoot {
   def stuff = 5
 
   def javaLol = new JavaLol

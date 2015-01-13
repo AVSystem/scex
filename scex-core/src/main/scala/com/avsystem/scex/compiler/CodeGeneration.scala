@@ -156,7 +156,7 @@ object CodeGeneration {
         |  with $CompilerPkg.TemplateInterpolations[$resultType] {
         |
         |  def eval($ContextSymbol: $contextType @$AnnotationPkg.Input): $resultOrSetterType = {
-        |    val $RootSymbol = $ContextSymbol.root: @$AnnotationPkg.Input
+        |    val $RootSymbol = $ContextSymbol.root: @$AnnotationPkg.RootValue
         |    val $VariablesSymbol = new $ScexPkg.util.DynamicVariableAccessor($ContextSymbol): @$AnnotationPkg.Input
         |    import $profileObjectPkg.$ProfileObjectName._
         |    import $utilsObjectPkg.$UtilsObjectName._

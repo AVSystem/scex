@@ -21,7 +21,6 @@ import org.eclipse.jetty.servlet.{ServletContextHandler, ServletHolder}
 object CompletionPlayground {
 
   val settings = new ScexSettings
-  settings.classfileDirectory.value = "classfileCache"
 
   lazy val compiler = new XmlFriendlyJavaScexCompiler(settings)
 
@@ -54,6 +53,10 @@ object CompletionPlayground {
             a.as[Array[Any]].exists(_: Any => Boolean)
           }
 
+          on { r: JavaRoot =>
+            r.all.members
+          }
+
           on { r: Root =>
             r.all.members
             r.dyn
@@ -79,7 +82,7 @@ object CompletionPlayground {
       def memberRepr(member: Member) =
         s"${member.name}${member.params.map(_.map(p => s"${p.name}: ${p.tpe}-${p.tpe.erasure}").mkString("(", ", ", ")")).mkString}: ${member.returnType}-${member.returnType.erasure} - ${member.documentation}"
 
-      val completer = compiler.getCompleter[SimpleContext[Root], String](profile)
+      val completer = compiler.getCompleter[SimpleContext[JavaRoot], String](profile)
       val scopeMembers = completer.getScopeCompletion.members.filterNot(_.flags.iimplicit).map(memberRepr).mkString("\n")
 
       println("SCOPE MEMBERS:")

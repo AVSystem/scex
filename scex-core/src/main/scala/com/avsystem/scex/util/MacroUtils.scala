@@ -19,9 +19,10 @@ trait MacroUtils {
   lazy val expressionUtilType = typeOf[ExpressionUtil]
   lazy val profileObjectType = typeOf[ProfileObject]
 
+  lazy val inputAnnotType = typeOf[Input]
+  lazy val rootValueAnnotType = typeOf[RootValue]
   lazy val rootAdapterAnnotType = typeOf[RootAdapter]
   lazy val notValidatedAnnotType = typeOf[NotValidated]
-  lazy val inputAnnotType = typeOf[Input]
 
   lazy val any2stringadd = typeOf[Predef.type].member(TermName("any2stringadd"))
   lazy val stringAddPlus = typeOf[any2stringadd[_]].member(TermName("+").encodedName)
