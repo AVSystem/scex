@@ -3,12 +3,12 @@ package vaadin
 import java.{lang => jl, util => ju}
 import javax.servlet.http.HttpServletRequest
 
-import com.avsystem.scex.util.{PredefinedAttributes, PredefinedAccessSpecs, SimpleContext}
-import PredefinedAccessSpecs.{basicOperations, javaCollectionExtensions}
 import com.avsystem.scex.compiler.ScexSettings
 import com.avsystem.scex.compiler.presentation.ScexPresentationCompiler.Member
 import com.avsystem.scex.japi.XmlFriendlyJavaScexCompiler
-import com.avsystem.scex.presentation.{Attributes, SymbolAttributes}
+import com.avsystem.scex.presentation.SymbolAttributes
+import com.avsystem.scex.util.PredefinedAccessSpecs.{basicOperations, javaCollectionExtensions}
+import com.avsystem.scex.util.{PredefinedAccessSpecs, PredefinedAttributes, SimpleContext}
 import com.avsystem.scex.validation.{SymbolValidator, SyntaxValidator}
 import com.avsystem.scex.{ExpressionProfile, NamedSource}
 import com.vaadin.event.FieldEvents.{TextChangeEvent, TextChangeListener}
@@ -80,13 +80,11 @@ object CompletionPlayground {
         SymbolAttributes(attrList), header, NamedSource("test", utils))
 
       def memberRepr(member: Member) =
-        s"${member.name}${member.params.map(_.map(p => s"${p.name}: ${p.tpe}-${p.tpe.erasure}").mkString("(", ", ", ")")).mkString}: ${member.returnType}-${member.returnType.erasure} - ${member.documentation}"
+        s"${member.name}${member.params.map(_.map(p => s"${p.name}: ${p.tpe}-${p.tpe.erasure}").mkString("(", ", ", ")")).mkString}: " +
+          s"${member.returnType}-${member.returnType.erasure} - ${member.documentation}"
 
       val completer = compiler.getCompleter[SimpleContext[JavaRoot], String](profile)
       val scopeMembers = completer.getScopeCompletion.members.filterNot(_.flags.iimplicit).map(memberRepr).mkString("\n")
-
-      println("SCOPE MEMBERS:")
-      completer.getScopeCompletion.members.foreach(println)
 
       val textField = new TextField
       textField.setWidth("100%")
@@ -104,9 +102,6 @@ object CompletionPlayground {
           val parsedPrefix = parsedTree.locate(typedPrefix.attachments.position)
           label.setValue(s"PARSED:\n${parsedTree.pretty(true, true)}\nERRORS:\n$errors\nPPREFIX:\n${parsedPrefix.pretty(true, true)}\n" +
             s"TPREFIX:\n${typedPrefix.pretty(true, true)}\nCOMPLETION:\n$members\nSCOPE COMPLETION:\n$scopeMembers")
-
-          println("TYPE MEMBERS:")
-          completion.members.foreach(println)
         }
       })
 
