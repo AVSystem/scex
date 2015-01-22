@@ -5,6 +5,7 @@ import java.{lang => jl, util => ju}
 
 import com.avsystem.scex.compiler.ParameterizedClass.StaticInnerGeneric
 import com.avsystem.scex.compiler.ScexCompiler.CompilationFailedException
+import com.avsystem.scex.compiler.overriding.{Klass, Base}
 import com.avsystem.scex.util.{PredefinedAccessSpecs, SimpleContext}
 import com.google.common.reflect.TypeToken
 
@@ -335,6 +336,19 @@ class ScexCompilerTest extends ScexFunSuite with CompilationTest {
     val expr = "self.id"
     val cexpr = compiler.getCompiledExpression[SimpleContext[SubRoot], String](createProfile(acl), expr, template = false)
     assert("tehId" === cexpr(SimpleContext(new SubRoot)))
+  }
+
+  // https://groups.google.com/forum/#!topic/scala-user/IeD2siVXyss
+  test("overriding problem test") {
+    val acl = allow {
+      on { base: Base =>
+        base.get _
+      }
+    }
+    val expr = "_root.get(\"lol\")"
+    val cexpr = compiler.getCompiledExpression[SimpleContext[Klass], AnyRef](createProfile(acl), expr, template = false)
+    val root = new Klass
+    assert(root eq cexpr(SimpleContext(root)))
   }
 
 }

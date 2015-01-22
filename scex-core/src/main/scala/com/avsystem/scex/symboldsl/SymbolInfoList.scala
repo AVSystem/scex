@@ -28,7 +28,7 @@ trait SymbolInfoList[T] {
     import macroUtils._
 
     val signatures: List[String] =
-      (symbol :: symbol.overrides).map(memberSignature)
+      withOverrides(symbol).map(memberSignature)
 
     val implicitConvPath = implicitConv.map(path)
 

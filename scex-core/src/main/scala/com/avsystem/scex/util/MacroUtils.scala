@@ -172,13 +172,22 @@ trait MacroUtils {
     case _ => false
   }
 
+  // https://groups.google.com/forum/#!topic/scala-user/IeD2siVXyss
+  def fixOverride(s: Symbol) =
+    if(s.isTerm && s.asTerm.isOverloaded) {
+      s.alternatives.filterNot(_.isSynthetic).head
+    } else s
+
+  def withOverrides(s: Symbol) =
+    s :: s.overrides.map(fixOverride)
+
   lazy val toplevelSymbols = Set(typeOf[Any], typeOf[AnyRef], typeOf[AnyVal]).map(_.typeSymbol)
 
   def isStaticModule(symbol: Symbol) =
     symbol != null && symbol.isModule && symbol.isStatic
 
   def isFromToplevelType(symbol: Symbol) =
-    (symbol :: symbol.overrides).exists(toplevelSymbols contains _.owner)
+    withOverrides(symbol).exists(toplevelSymbols contains _.owner)
 
   def isJavaParameterlessMethod(symbol: Symbol) =
     symbol != null && symbol.isPublic && symbol.isJava && symbol.isMethod &&
@@ -206,7 +215,7 @@ trait MacroUtils {
   lazy val getClassSymbol = typeOf[Any].member(TermName("getClass"))
 
   def isGetClass(symbol: Symbol) =
-    symbol.name == TermName("getClass") && (symbol :: symbol.overrides).contains(getClassSymbol)
+    symbol.name == TermName("getClass") && withOverrides(symbol).contains(getClassSymbol)
 
   def isBeanGetter(symbol: Symbol) = symbol.isMethod && {
     val methodSymbol = symbol.asMethod

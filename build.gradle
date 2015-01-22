@@ -9,7 +9,7 @@ allprojects {
     apply plugin: 'idea'
 
     group = "com.avsystem"
-    version = '1.14.6'
+    version = '1.14.7'
 
     repositories {
         mavenCentral()
@@ -20,8 +20,8 @@ allprojects {
         deployerJars
     }
 
-    sourceCompatibility = 1.7
-    targetCompatibility = 1.7
+    sourceCompatibility = 1.8
+    targetCompatibility = 1.8
 
     ext.scalaVersion = '2.11.4'
 

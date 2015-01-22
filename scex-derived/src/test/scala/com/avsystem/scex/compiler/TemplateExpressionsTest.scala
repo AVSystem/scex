@@ -126,4 +126,8 @@ class TemplateExpressionsTest extends ScexFunSuite with CompilationTest {
       evaluateTemplate[Int]("")
     }
   }
+
+  test("java inner enum test") {
+    assert(EnumInside.TheEnum.THIS === evaluateTemplate[EnumInside.TheEnum]("THIS"))
+  }
 }

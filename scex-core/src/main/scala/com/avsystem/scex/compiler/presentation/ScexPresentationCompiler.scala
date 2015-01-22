@@ -205,7 +205,7 @@ trait ScexPresentationCompiler extends ScexCompiler {
     }
 
     def attributesFromAnnotations =
-      (m.sym :: m.sym.overrides).iterator.flatMap(s => annotations(s)).map(parseAnnotation).toStream
+      withOverrides(m.sym).iterator.flatMap(s => annotations(s)).map(parseAnnotation).toStream
 
     def foldAttributes(str: Stream[Attributes]): Attributes = str match {
       case head #:: tail => head orElse foldAttributes(tail)
