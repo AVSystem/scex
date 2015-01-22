@@ -35,7 +35,7 @@ trait TemplateOptimizingScexCompiler extends ScexPresentationCompiler {
 
   private val literalConversionsCache = CacheBuilder.newBuilder
     .expireAfterAccess(settings.expressionExpirationTime.value, TimeUnit.SECONDS)
-    .build[(ExpressionProfile, String, String), Try[Literal => Any]]((compileLiteralConversion _).tupled)
+    .build[(ExpressionProfile, String, String), Try[ConversionSupplier[Any]]]((compileLiteralConversion _).tupled)
 
   private def getLiteralConversion(exprDef: ExpressionDef) =
     literalConversionsCache.get((exprDef.profile, exprDef.resultType, exprDef.header))
@@ -90,7 +90,7 @@ trait TemplateOptimizingScexCompiler extends ScexPresentationCompiler {
         case Left(classLoader) =>
           val clazz = Class.forName(s"$pkgName.$ConversionSupplierClassName", true, classLoader)
           clazz.getDeclaredClasses // force loading of inner classes
-          clazz.newInstance.asInstanceOf[ConversionSupplier[Any]].get
+          clazz.newInstance.asInstanceOf[ConversionSupplier[Any]]
         case Right(errors) =>
           throw new CompilationFailedException(fullCode, errors)
       }
@@ -111,10 +111,15 @@ trait TemplateOptimizingScexCompiler extends ScexPresentationCompiler {
       case ParsingSuccess((List(singlePart), Nil), _) =>
 
         if (isStringSupertype(exprDef.resultType))
-          Success(LiteralExpression(singlePart)(debugInfo))
+          Success(LiteralExpression(if(singlePart.nonEmpty) singlePart else null)(debugInfo))
         else if (validateLiteralConversion(exprDef).isSuccess)
           getLiteralConversion(exprDef).map { conversion =>
-            try LiteralExpression(conversion(Literal(singlePart)))(debugInfo) catch {
+            try {
+              val convertedValue =
+                if(conversion.isNullable && singlePart.isEmpty) null
+                else conversion.get.apply(Literal(singlePart))
+              LiteralExpression(convertedValue)(debugInfo)
+            } catch {
               case NonFatal(throwable) =>
                 throw new CompilationFailedException(singlePart, List(toCompileError(singlePart, exprDef.resultType, throwable)))
             }
@@ -164,13 +169,15 @@ trait TemplateOptimizingScexCompiler extends ScexPresentationCompiler {
       parseTemplate(exprDef.expression) match {
         case ParsingSuccess((List(singlePart), Nil), _) if validateLiteralConversion(exprDef).isSuccess =>
           getLiteralConversion(exprDef).map { conversion =>
-            val literal = Literal(singlePart)
-            try {
-              conversion(literal)
-              Nil
-            } catch {
-              case throwable: Throwable =>
-                List(toCompileError(singlePart, exprDef.resultType, throwable))
+            if(conversion.isNullable && singlePart.isEmpty) Nil else {
+              val literal = Literal(singlePart)
+              try {
+                conversion.get.apply(literal)
+                Nil
+              } catch {
+                case throwable: Throwable =>
+                  List(toCompileError(singlePart, exprDef.resultType, throwable))
+              }
             }
           }.getOrElse(Nil)
 
@@ -189,6 +196,8 @@ object TemplateOptimizingScexCompiler {
 
   trait ConversionSupplier[+T] {
     def get: Literal => T
+
+    def isNullable: Boolean
   }
 
   import scala.language.experimental.macros
@@ -196,4 +205,6 @@ object TemplateOptimizingScexCompiler {
   def reifyImplicitView[T](arg: Any): T = macro Macros.reifyImplicitView_impl[T]
 
   def checkConstant[T](expr: T): T = macro Macros.checkConstantExpr_impl[T]
+
+  def isNullable[T]: Boolean = macro Macros.isNullable_impl[T]
 }

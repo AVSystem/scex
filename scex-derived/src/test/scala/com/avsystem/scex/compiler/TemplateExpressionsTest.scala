@@ -108,4 +108,22 @@ class TemplateExpressionsTest extends ScexFunSuite with CompilationTest {
       evaluateTemplate[String]("stuff${null}more")
     }
   }
+
+  test("empty template to null coercion test - Any") {
+    assert(evaluateTemplate[Any]("") === null)
+  }
+
+  test("empty template to null coercion test - String") {
+    assert(evaluateTemplate[String]("") === null)
+  }
+
+  test("empty template to null coercion test - jl.Integer") {
+    assert(evaluateTemplate[jl.Integer]("") === null)
+  }
+
+  test("empty template to null coercion test - Int") {
+    intercept[CompilationFailedException] {
+      evaluateTemplate[Int]("")
+    }
+  }
 }

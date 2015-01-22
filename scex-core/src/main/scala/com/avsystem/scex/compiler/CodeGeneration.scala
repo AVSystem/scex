@@ -278,6 +278,8 @@ object CodeGeneration {
       |    $header
       |    implicitly[$ScexPkg.util.Literal => ($resultType)]
       |  }
+      |
+      |  def isNullable = $templateOptimizingScexCompiler.isNullable[$resultType]
       |}
     """.stripMargin
   }

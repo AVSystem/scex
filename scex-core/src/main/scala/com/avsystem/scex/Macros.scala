@@ -4,7 +4,7 @@ import java.{lang => jl, util => ju}
 
 import com.avsystem.scex.compiler.TemplateInterpolations
 import com.avsystem.scex.compiler.TemplateInterpolations.Splicer
-import com.avsystem.scex.util.{MacroUtils, Literal => ScexLiteral}
+import com.avsystem.scex.util.{Literal => ScexLiteral, MacroUtils}
 
 import scala.reflect.macros.whitebox
 
@@ -53,9 +53,11 @@ object Macros {
     lazy val soleArgTree = args.head.tree
     lazy val soleArgImplicitConv = c.inferImplicitView(soleArgTree, soleArgTree.tpe, resultType)
 
-    // special cases for Java enums as there is no way to create general implicit conversion to arbitrary java enum
-    // due to https://issues.scala-lang.org/browse/SI-7609
-    if (resultType <:< typeOf[jl.Enum[_]] && args.size == 0) {
+    if (args.size == 0 && isEmptyStringLiteral(parts.head) && typeOf[Null] <:< resultType) {
+      c.Expr[T](Literal(Constant(null)))
+    } else if (resultType <:< typeOf[jl.Enum[_]] && args.size == 0) {
+      // special cases for Java enums as there is no way to create general implicit conversion to arbitrary java enum
+      // due to https://issues.scala-lang.org/browse/SI-7609
       val enumModuleSymbol = resultType.typeSymbol.companion
       val Literal(Constant(stringLiteral: String)) = parts.head
 
@@ -120,6 +122,11 @@ object Macros {
     }
 
     expr
+  }
+
+  def isNullable_impl[T: c.WeakTypeTag](c: whitebox.Context): c.Expr[Boolean] = {
+    import c.universe._
+    c.literal(typeOf[Null] <:< weakTypeOf[T])
   }
 
   def tripleEquals_impl[A, B](c: whitebox.Context)(right: c.Expr[B]): c.Expr[Boolean] = {
