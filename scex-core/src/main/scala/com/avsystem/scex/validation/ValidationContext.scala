@@ -1,6 +1,8 @@
 package com.avsystem.scex
 package validation
 
+import java.{lang => jl}
+
 import com.avsystem.scex.util.MacroUtils
 
 import scala.reflect.macros.Universe
@@ -102,9 +104,16 @@ abstract class ValidationContext protected extends MacroUtils {
 
         MultipleMemberAccesses(List(access, extractAccess(qualifier)))
 
-      case Select(qualifier, _) if needsValidation(tree.symbol) =>
-        val access = SimpleMemberAccess(qualifier.tpe, tree.symbol, None, allowedSelectionPrefix, tree.pos)
+      case Select(qualifier, name) if needsValidation(tree.symbol) =>
+        // Direct accesses to enum values are allowed because they compile to constants, so I'm also allowing all
+        // Enum#valueOf methods for consistency.
         val staticMember = isStaticModule(qualifier.symbol) && !isFromToplevelType(tree.symbol)
+        lazy val qualCompanion = qualifier.symbol.companion
+        lazy val companionType = qualCompanion.asType.toType
+        val enumValueOf = staticMember && name == TermName("valueOf") && qualCompanion != NoSymbol && companionType <:< typeOf[Enum[_]] &&
+          tree.symbol.isMethod && tree.symbol.asMethod.paramLists.flatten.map(_.typeSignature).corresponds(List(typeOf[String]))(_ =:= _)
+
+        val access = SimpleMemberAccess(qualifier.tpe, tree.symbol, None, allowedSelectionPrefix || enumValueOf, tree.pos)
         // When accessing member of static module (that includes Java statics), excluding getClass/equals/hashCode/toString/etc.
         // the static module access itself (qualifier) is allowed by default. Also, qualifier is allowed by default if its member was
         // allowed with @AlwaysAllowed annotation.

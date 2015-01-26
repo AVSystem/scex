@@ -129,7 +129,6 @@ class TemplateExpressionsTest extends ScexFunSuite with CompilationTest {
 
   test("java inner enum test") {
     val acl = allow {
-      EnumInside.TheEnum.valueOf _
       on { ei: EnumInside =>
         ei.all.members
       }
