@@ -59,6 +59,11 @@ object Macros {
       // special cases for Java enums as there is no way to create general implicit conversion to arbitrary java enum
       // due to https://issues.scala-lang.org/browse/SI-7609
       val enumModuleSymbol = resultType.typeSymbol.companion
+      val Literal(Constant(enumName: String)) = parts.head
+      val resultSymbol = enumModuleSymbol.typeSignature.member(TermName(enumName))
+      if(!(resultSymbol.isJava && resultSymbol.isTerm && !resultSymbol.isMethod && resultSymbol.typeSignature <:< resultType)) {
+        c.error(parts.head.pos, s"No enum constant ${enumModuleSymbol.fullName}.$enumName")
+      }
 
       // I cannot access enum constant directly due to ridiculous compiler bug
       // https://groups.google.com/forum/#!topic/scala-user/wAaTc0TblWo
