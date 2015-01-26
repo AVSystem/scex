@@ -48,6 +48,9 @@ class ScexSettings extends Settings {
   val noPresentation = BooleanSetting("-SCEXno-presentation",
     "Turns of the 'presentation' part of the compiler")
 
+  val noGetterAdapters = BooleanSetting("-SCEXno-getter-adapters",
+    "Disables generation of Java getter adapter methods")
+
   def resolvedClassfileDir = Option(classfileDirectory.value)
     .filter(_.trim.nonEmpty).map(path => new PlainDirectory(new Directory(new File(path))))
 }

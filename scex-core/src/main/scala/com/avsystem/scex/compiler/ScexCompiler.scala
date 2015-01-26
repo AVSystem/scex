@@ -132,7 +132,8 @@ trait ScexCompiler extends LoggingUtils {
     Class.forName(className, true, classLoader).newInstance.asInstanceOf[T]
 
   protected def compileJavaGetterAdapter(clazz: Class[_], full: Boolean): Try[Option[String]] =
-    generateJavaGetterAdapter(clazz, full) match {
+    if(settings.noGetterAdapters.value) Success(None)
+    else generateJavaGetterAdapter(clazz, full) match {
       case Some(code) => underLock {
         val codeToCompile = wrapInSource(code, AdaptersPkg)
         val name = adapterName(clazz, full)

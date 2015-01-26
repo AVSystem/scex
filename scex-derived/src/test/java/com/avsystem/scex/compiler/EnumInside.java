@@ -8,4 +8,8 @@ public class EnumInside {
     public enum TheEnum {
         THIS, THAT
     }
+
+    public TheEnum getLol() {
+        return null;
+    }
 }
