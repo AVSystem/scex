@@ -53,16 +53,19 @@ object Macros {
     lazy val soleArgTree = args.head.tree
     lazy val soleArgImplicitConv = c.inferImplicitView(soleArgTree, soleArgTree.tpe, resultType)
 
+    lazy val Literal(Constant(literalString: String)) = parts.head
+    lazy val literalExpr = reify(com.avsystem.scex.util.Literal(c.literal(literalString).splice))
+    lazy val literalConv = c.inferImplicitView(literalExpr.tree, typeOf[com.avsystem.scex.util.Literal], resultType)
+
     if (args.size == 0 && isEmptyStringLiteral(parts.head) && typeOf[Null] <:< resultType) {
       c.Expr[T](Literal(Constant(null)))
-    } else if (resultType <:< typeOf[jl.Enum[_]] && args.size == 0) {
+    } else if (resultType <:< typeOf[jl.Enum[_]] && args.size == 0 && literalConv == EmptyTree) {
       // special cases for Java enums as there is no way to create general implicit conversion to arbitrary java enum
       // due to https://issues.scala-lang.org/browse/SI-7609
       val enumModuleSymbol = resultType.typeSymbol.companion
-      val Literal(Constant(enumName: String)) = parts.head
-      val resultSymbol = enumModuleSymbol.typeSignature.member(TermName(enumName))
-      if(!(resultSymbol.isJava && resultSymbol.isTerm && !resultSymbol.isMethod && resultSymbol.typeSignature <:< resultType)) {
-        c.error(parts.head.pos, s"No enum constant ${enumModuleSymbol.fullName}.$enumName")
+      val resultSymbol = enumModuleSymbol.typeSignature.member(TermName(literalString))
+      if (!(resultSymbol.isJava && resultSymbol.isTerm && !resultSymbol.isMethod && resultSymbol.typeSignature <:< resultType)) {
+        c.error(parts.head.pos, s"No enum constant ${enumModuleSymbol.fullName}.$literalString")
       }
 
       // I cannot access enum constant directly due to ridiculous compiler bug
@@ -88,9 +91,7 @@ object Macros {
       }
 
     } else if (args.size == 0) {
-      val Literal(Constant(literalString: String)) = parts.head
-      val literalExpr = reify(com.avsystem.scex.util.Literal(c.literal(literalString).splice))
-      c.inferImplicitView(literalExpr.tree, typeOf[com.avsystem.scex.util.Literal], resultType) match {
+      literalConv match {
         case EmptyTree =>
           c.error(parts.head.pos, s"""String literal "$literalString" cannot be parsed as value of type $resultType""")
           null
