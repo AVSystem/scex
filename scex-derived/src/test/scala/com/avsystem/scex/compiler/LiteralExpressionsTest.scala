@@ -101,4 +101,13 @@ class LiteralExpressionsTest extends ScexFunSuite with CompilationTest {
     assert(true === cexpr(SimpleContext(new CustomBooleanConversionRoot("ZUO", "TRÓ"))))
   }
 
+  test("java inner enum test") {
+    val acl = allow {
+      on { ei: EnumInside =>
+        ei.all.members
+      }
+    }
+    assert(EnumInside.TheEnum.THIS === evaluateTemplate[EnumInside.TheEnum]("THIS", acl))
+  }
+
 }
