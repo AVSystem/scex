@@ -39,6 +39,17 @@ class TemplateExpressionsTest extends ScexFunSuite with CompilationTest {
     assert(5 === evaluateTemplate[Any]("${15/3}"))
   }
 
+  test("single-argument null expression") {
+    val nul: Any = null
+    assert(nul === evaluateTemplate[Any]("${null}"))
+    assert(nul === evaluateTemplate[AnyRef]("${null}"))
+    assert(nul === evaluateTemplate[String]("${null}"))
+  }
+
+  test("null splicing test") {
+    assert(" null" === evaluateTemplate[String](" ${null}"))
+  }
+
   test("custom splicer test") {
     val acl = allow {
       on { fsr: FancySplicedRoot =>
@@ -101,12 +112,6 @@ class TemplateExpressionsTest extends ScexFunSuite with CompilationTest {
     }
     exception.printStackTrace()
     assert(exception.errors.size === 2)
-  }
-
-  test("evaluation exception on null argument test") {
-    intercept[EvaluationException] {
-      evaluateTemplate[String]("stuff${null}more")
-    }
   }
 
   test("empty template to null coercion test - Any") {

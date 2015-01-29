@@ -67,7 +67,7 @@ object TemplateInterpolations {
   def concatIterator(parts: String*)(args: Iterator[Any]): String = {
     val sb = new StringBuilder(parts.head)
     (args zip parts.tail.iterator).foreach {
-      case (arg, part) => sb.append(arg.toString).append(part)
+      case (arg, part) => sb.append(String.valueOf(arg)).append(part)
     }
     sb.result()
   }

@@ -48,15 +48,7 @@ trait TemplateOptimizingScexCompiler extends ScexPresentationCompiler {
     extends RawExpression {
 
     def apply(c: ExpressionContext[_, _]) =
-      TemplateInterpolations.concatIterator(parts: _*)(args.iterator.map { arg =>
-        val value = arg.apply(c)
-        if (value != null)
-          value.toString
-        else {
-          val errorMsg = s"Template argument ${arg.debugInfo.definition.originalExpression} evaluated to null"
-          throw new EvaluationException(None, new NullPointerException(errorMsg))
-        }
-      })
+      TemplateInterpolations.concatIterator(parts: _*)(args.iterator.map(_.apply(c)))
   }
 
   import com.avsystem.scex.parsing.TemplateParser.{Success => ParsingSuccess, parseTemplate}
@@ -111,12 +103,12 @@ trait TemplateOptimizingScexCompiler extends ScexPresentationCompiler {
       case ParsingSuccess((List(singlePart), Nil), _) =>
 
         if (isStringSupertype(exprDef.resultType))
-          Success(LiteralExpression(if(singlePart.nonEmpty) singlePart else null)(debugInfo))
+          Success(LiteralExpression(if (singlePart.nonEmpty) singlePart else null)(debugInfo))
         else if (validateLiteralConversion(exprDef).isSuccess)
           getLiteralConversion(exprDef).map { conversion =>
             try {
               val convertedValue =
-                if(conversion.isNullable && singlePart.isEmpty) null
+                if (conversion.isNullable && singlePart.isEmpty) null
                 else conversion.get.apply(Literal(singlePart))
               LiteralExpression(convertedValue)(debugInfo)
             } catch {
@@ -169,7 +161,8 @@ trait TemplateOptimizingScexCompiler extends ScexPresentationCompiler {
       parseTemplate(exprDef.expression) match {
         case ParsingSuccess((List(singlePart), Nil), _) if validateLiteralConversion(exprDef).isSuccess =>
           getLiteralConversion(exprDef).map { conversion =>
-            if(conversion.isNullable && singlePart.isEmpty) Nil else {
+            if (conversion.isNullable && singlePart.isEmpty) Nil
+            else {
               val literal = Literal(singlePart)
               try {
                 conversion.get.apply(literal)
