@@ -1,5 +1,5 @@
 task wrapper(type: Wrapper) {
-    gradleVersion = "2.1"
+    gradleVersion = "2.3"
 }
 
 apply plugin: 'maven'
@@ -9,7 +9,7 @@ allprojects {
     apply plugin: 'idea'
 
     group = "com.avsystem"
-    version = '1.14.10'
+    version = '1.14.11'
 
     repositories {
         mavenCentral()
@@ -29,6 +29,32 @@ allprojects {
         module {
             downloadJavadoc = true
             downloadSources = true
+        }
+    }
+}
+
+idea.project.ipr.withXml {
+    Node scalaSdkLib = it.node.component.find { it.@name == "libraryTable" }
+            .library.find { it.@name == "scala-compiler-$scalaVersion" }
+
+    scalaSdkLib.@name = "scala-sdk-$scalaVersion"
+    scalaSdkLib.@type = "Scala"
+    Node compilerClasspath = scalaSdkLib.appendNode("properties").appendNode("compiler-classpath")
+    def classesRoots = scalaSdkLib.CLASSES[0].children()
+    classesRoots.each { compilerClasspath.appendNode("root", [url: it.@url - '!/']) }
+    classesRoots.clear()
+}
+
+gradle.projectsEvaluated {
+    allprojects {
+        idea.module.iml.withXml {
+            def facetManager = it.node.component.find { it.@name == 'FacetManager' }
+            def scalaFacet = facetManager?.find { it.name() == 'facet' && it.@type == 'scala' }
+            if (scalaFacet != null) {
+                facetManager.remove(scalaFacet)
+                it.node.component.find { it.@name == "NewModuleRootManager" }
+                        .appendNode("orderEntry", [type: "library", name: "scala-sdk-$scalaVersion", level: "project"])
+            }
         }
     }
 }
