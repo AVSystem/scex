@@ -4,6 +4,7 @@ package compiler
 import java.util.concurrent.{ExecutionException, TimeUnit}
 import java.{lang => jl, util => ju}
 
+import com.avsystem.scex.parsing.PositionMapping
 import com.avsystem.scex.validation.{SymbolValidator, SyntaxValidator}
 import com.google.common.cache.CacheBuilder
 
@@ -12,6 +13,11 @@ import scala.util.Try
 trait CachingScexCompiler extends ScexCompiler {
 
   import com.avsystem.scex.util.CommonUtils._
+
+  private val preprocessingCache = CacheBuilder.newBuilder
+    .expireAfterAccess(settings.expressionExpirationTime.value, TimeUnit.SECONDS)
+    .maximumSize(settings.expressionCacheSize.value)
+    .build[(String, Boolean), (String, PositionMapping)]
 
   private val expressionCache = CacheBuilder.newBuilder
     .expireAfterAccess(settings.expressionExpirationTime.value, TimeUnit.SECONDS)
@@ -35,6 +41,9 @@ trait CachingScexCompiler extends ScexCompiler {
 
   private val symbolValidatorsCache =
     CacheBuilder.newBuilder.build[String, SymbolValidator]
+
+  override protected def preprocess(expression: String, template: Boolean) =
+    preprocessingCache.get((expression, template), callable(super.preprocess(expression, template)))
 
   override protected def compileExpression(exprDef: ExpressionDef) =
     expressionCache.get(exprDef, callable(super.compileExpression(exprDef)))
