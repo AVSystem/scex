@@ -4,6 +4,8 @@ task wrapper(type: Wrapper) {
 
 apply plugin: 'maven'
 
+ext.scalaVersion = '2.11.4'
+
 allprojects {
     apply plugin: 'java'
     apply plugin: 'idea'
@@ -21,8 +23,6 @@ allprojects {
 
     sourceCompatibility = 1.8
     targetCompatibility = 1.8
-
-    ext.scalaVersion = '2.11.4'
 
     idea {
         module {
