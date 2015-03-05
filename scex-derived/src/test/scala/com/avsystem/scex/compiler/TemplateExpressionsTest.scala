@@ -7,6 +7,8 @@ import java.{lang => jl, util => ju}
 import com.avsystem.scex.compiler.ScexCompiler.CompilationFailedException
 import com.avsystem.scex.util.{PredefinedAccessSpecs, SimpleContext}
 
+import scala.runtime.BoxedUnit
+
 /**
  * Created: 18-11-2013
  * Author: ghik
@@ -130,5 +132,12 @@ class TemplateExpressionsTest extends ScexFunSuite with CompilationTest {
     intercept[CompilationFailedException] {
       evaluateTemplate[Int]("")
     }
+  }
+
+  test("empty block test") {
+    val unit = ()
+    assert(evaluateTemplate[Any]("${}") === unit)
+    assert(evaluateTemplate[AnyRef]("${}") === "()")
+    assert(evaluateTemplate[String]("${}") === "()")
   }
 }
