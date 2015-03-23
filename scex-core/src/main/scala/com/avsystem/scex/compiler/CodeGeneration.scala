@@ -77,7 +77,7 @@ object CodeGeneration {
       else clazz.getMethods.filter(m => m.getDeclaringClass == clazz || isMultipleInherited(clazz, m))
 
     val scalaGetters = methods.collect {
-      case method@JavaGetter(propName, booleanIsGetter) if Modifier.isPublic(method.getModifiers) =>
+      case method@JavaGetter(propName, booleanIsGetter) if Modifier.isPublic(method.getModifiers) && !Modifier.isStatic(method.getModifiers) =>
         s"def `$propName` = _wrapped.${method.getName}\n"
     }
 
