@@ -121,6 +121,9 @@ object JavaTypeParsing {
     case GenericArrayType(componentType) =>
       s"Array[${javaTypeAsScalaType(componentType)}]"
 
+    case annotatedType: AnnotatedType =>
+      javaTypeAsScalaType(annotatedType.getType)
+
     case ExistentialType(polyType, typeVars) =>
       def typeVarDefs =
         if (typeVars.nonEmpty)

@@ -8,7 +8,7 @@ import com.avsystem.scex.compiler.presentation.ScexPresentationCompiler.Member
 import com.avsystem.scex.japi.XmlFriendlyJavaScexCompiler
 import com.avsystem.scex.presentation.SymbolAttributes
 import com.avsystem.scex.util.PredefinedAccessSpecs.{basicOperations, javaCollectionExtensions}
-import com.avsystem.scex.util.{PredefinedAccessSpecs, PredefinedAttributes, SimpleContext}
+import com.avsystem.scex.util.{PredefinedAttributes, SimpleContext}
 import com.avsystem.scex.validation.{SymbolValidator, SyntaxValidator}
 import com.avsystem.scex.{ExpressionProfile, NamedSource}
 import com.vaadin.event.FieldEvents.{TextChangeEvent, TextChangeListener}
@@ -31,7 +31,7 @@ object CompletionPlayground {
   }
 
   class SampleApplication extends com.vaadin.Application {
-    def init(): Unit = {
+    def init(): Unit = try {
       val window = new Window
       setMainWindow(window)
 
@@ -107,6 +107,9 @@ object CompletionPlayground {
 
       window.addComponent(textField)
       window.addComponent(label)
+    } catch {
+      case e: Exception =>
+        e.printStackTrace()
     }
   }
 

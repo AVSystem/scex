@@ -3,6 +3,7 @@ package util
 
 import java.{lang => jl, util => ju}
 
+import com.avsystem.scex.compiler.CodeGeneration
 import com.avsystem.scex.compiler.Markers.{ExpressionUtil, JavaGetterAdapter, ProfileObject, Synthetic}
 import com.avsystem.scex.compiler.annotation._
 import com.avsystem.scex.util.CommonUtils._
@@ -174,7 +175,7 @@ trait MacroUtils {
 
   // https://groups.google.com/forum/#!topic/scala-user/IeD2siVXyss
   def fixOverride(s: Symbol) =
-    if(s.isTerm && s.asTerm.isOverloaded) {
+    if (s.isTerm && s.asTerm.isOverloaded) {
       s.alternatives.filterNot(_.isSynthetic).head
     } else s
 
@@ -292,13 +293,14 @@ trait MacroUtils {
 
   def isExpressionUtil(symbol: Symbol): Boolean =
     symbol != null && symbol != NoSymbol &&
-      (isExpressionUtilObject(symbol) || isExpressionUtil(symbol.owner))
-
-  def isExpressionUtilObject(symbol: Symbol): Boolean =
-    nonBottomSymbolType(symbol) <:< expressionUtilType
+      (nonBottomSymbolType(symbol) <:< expressionUtilType || isExpressionUtil(symbol.owner))
 
   def isProfileObject(symbol: Symbol) =
     nonBottomSymbolType(symbol) <:< profileObjectType
+
+  def isFromProfileObject(symbol: Symbol): Boolean =
+    symbol != null && symbol != NoSymbol &&
+      (isProfileObject(symbol) || isFromProfileObject(symbol.owner))
 
   def isScexSynthetic(symbol: Symbol): Boolean =
     symbol != null && symbol != NoSymbol &&
@@ -316,7 +318,7 @@ trait MacroUtils {
   def isAdapterWrappedMember(symbol: Symbol): Boolean =
     if (symbol != null && symbol.isTerm) {
       val ts = symbol.asTerm
-      (ts.isGetter && ts.name == TermName("_wrapped") && ts.owner.isType && isAdapter(ts.owner.asType.toType)
+      (ts.isGetter && ts.name == TermName(CodeGeneration.AdapterWrappedSymbol) && ts.owner.isType && isAdapter(ts.owner.asType.toType)
         || ts.isVal && isAdapterWrappedMember(ts.getter))
     } else false
 

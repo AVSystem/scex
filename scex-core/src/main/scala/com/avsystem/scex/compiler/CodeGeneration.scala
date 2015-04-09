@@ -53,6 +53,7 @@ object CodeGeneration {
   val ContextSymbol = "_ctx"
   val VariablesSymbol = "_vars"
   val RootSymbol = "_root"
+  val AdapterWrappedSymbol = "_wrapped"
   val AdaptedRootSymbol = "_adapted_root"
   val ScexPkg = "com.avsystem.scex"
   val CompilerPkg = s"$ScexPkg.compiler"
@@ -92,7 +93,7 @@ object CodeGeneration {
 
       val result =
         s"""
-        |class $adapterWithGenerics(private val _wrapped: $wrappedTpe)
+        |class $adapterWithGenerics(private val $AdapterWrappedSymbol: $wrappedTpe)
         |  extends AnyVal with $MarkersObj.JavaGetterAdapter {
         |
         |$classBody
