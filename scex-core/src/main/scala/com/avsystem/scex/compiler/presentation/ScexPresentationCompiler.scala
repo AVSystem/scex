@@ -212,7 +212,7 @@ trait ScexPresentationCompiler extends ScexCompiler {
       case Stream.Empty => Attributes.empty
     }
 
-    foldAttributes(attributesFromInfos #::: attributesFromAnnotations)
+    foldAttributes(attributesFromInfos append attributesFromAnnotations)
   }
 
   private def translateMember(global: IGlobal, attrs: SymbolAttributes)(member: global.ScexMember) = {
@@ -221,7 +221,7 @@ trait ScexPresentationCompiler extends ScexCompiler {
     def translateType(tpe: Type) =
       if (tpe == NoType) SType.NoType
       else tpe.toOpt.map { tpe =>
-        SType(tpe.widen.toString, erasureClass(tpe))
+        SType(tpe.widen.toString(), erasureClass(tpe))
       }.getOrElse(SType.NoType)
 
     val attributes = getAttributes(global, attrs)(member)
@@ -232,7 +232,10 @@ trait ScexPresentationCompiler extends ScexCompiler {
       Param(nameOverrides.getOrElse(sym, sym.decodedName), translateType(sym.typeSignature))
 
     val adapter = isAdapter(member.sym.owner.toType)
-    val javaMember = memberToJava(if(adapter) getJavaGetter(member.sym, member.ownerTpe) else member.sym)
+    lazy val adaptedType =
+      if (member.implicitlyAdded) member.ownerTpe
+      else member.ownerTpe.declaration(TermName(CodeGeneration.AdapterWrappedSymbol)).typeSignatureIn(member.ownerTpe)
+    val javaMember = memberToJava(if (adapter) getJavaGetter(member.sym, adaptedType) else member.sym)
     val rootMember = isAnnotatedWith(member.ownerTpe.widen, rootValueAnnotType)
 
     SMember(member.sym.decodedName,
@@ -291,8 +294,7 @@ trait ScexPresentationCompiler extends ScexCompiler {
         inCompilerThread {
           val membersIterator = scope.iterator.collect {
             case member@ScopeMember(sym, tpe, accessible, viaImport)
-              if viaImport != EmptyTree && sym.isTerm && !sym.hasPackageFlag &&
-                !isAdapterWrappedMember(sym) && (!isScexSynthetic(sym) || (isExpressionUtil(sym) && !isExpressionUtilObject(sym))) =>
+              if viaImport != EmptyTree && sym.isTerm && !sym.hasPackageFlag && !isFromProfileObject(sym) =>
               val actualSym = if (sym.hasGetter) sym.getterIn(sym.owner) else sym
               ScexScopeMember(actualSym, tpe, accessible, viaImport)
           } filter { m =>

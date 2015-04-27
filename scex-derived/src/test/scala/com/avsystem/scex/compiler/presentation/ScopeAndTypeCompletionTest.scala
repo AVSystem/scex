@@ -2,7 +2,7 @@ package com.avsystem.scex.compiler.presentation
 
 import com.avsystem.scex.compiler.presentation.ScexPresentationCompiler.{MemberFlags, Member, Param}
 import com.avsystem.scex.compiler.presentation.ScopeAndTypeCompletionTest.Root
-import com.avsystem.scex.compiler.{CompilationTest, ScexFunSuite}
+import com.avsystem.scex.compiler.{JavaRootWithGetter, CompilationTest, ScexFunSuite}
 import com.avsystem.scex.presentation.Attributes
 import com.avsystem.scex.presentation.annotation.{Documentation, ParameterNames}
 import com.avsystem.scex.util.SimpleContext
@@ -24,6 +24,9 @@ class ScopeAndTypeCompletionTest extends ScexFunSuite with CompilationTest with 
       }
       on { r: Root =>
         r.method _
+      }
+      on { jr: JavaRootWithGetter =>
+        jr.getName
       }
     }
   }
@@ -81,14 +84,33 @@ class ScopeAndTypeCompletionTest extends ScexFunSuite with CompilationTest with 
     val completer = compiler.getCompleter[SimpleContext[Root], Any](profile, template = false)
     val completion = completer.getScopeCompletion.passTo(c => c.copy(members = c.members.sortBy(_.name)))
 
-    completion.members.foreach(println)
-
     assert(completion.members.map(asPartial) === Vector(
       PartialMember("method", scexType[Any], List(List(
         Param("annotArg", scexType[Any]),
         Param("moar", scexType[Any])
       )), doc = "handles stuff"),
       PartialMember("utilStuff", scexType[Int], doc = "util stuff")
+    ))
+  }
+
+  test("scope completion test with adapted getters") {
+    val completer = compiler.getCompleter[SimpleContext[JavaRootWithGetter], Any](profile, template = false)
+    val completion = completer.getScopeCompletion.passTo(c => c.copy(members = c.members.sortBy(_.name)))
+
+    assert(completion.members.map(asPartial) === Vector(
+      PartialMember("getName", scexType[String], List(Nil)),
+      PartialMember("name", scexType[String]),
+      PartialMember("utilStuff", scexType[Int], doc = "util stuff")
+    ))
+  }
+
+  test("type completion test with adapted getters") {
+    val completer = compiler.getCompleter[SimpleContext[JavaRootWithGetter], Any](profile, template = false)
+    val completion = completer.getTypeCompletion("_root", 4).passTo(c => c.copy(members = c.members.sortBy(_.name)))
+
+    assert(completion.members.map(asPartial) === Vector(
+      PartialMember("getName", scexType[String], List(Nil)),
+      PartialMember("name", scexType[String])
     ))
   }
 
