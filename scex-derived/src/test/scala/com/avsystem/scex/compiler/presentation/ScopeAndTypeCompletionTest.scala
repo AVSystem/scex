@@ -42,10 +42,9 @@ class ScopeAndTypeCompletionTest extends ScexFunSuite with CompilationTest with 
 
   val utils =
     """
-      |import com.avsystem.scex.compiler.presentation._
       |import com.avsystem.scex.presentation.annotation._
       |
-      |implicit class rootOps(root: ScopeAndTypeCompletionTest.Root) {
+      |implicit class rootOps(root: com.avsystem.scex.compiler.presentation.ScopeAndTypeCompletionTest.Root) {
       |  @Documentation("implicit method doc")
       |  def implicitMethod: Int = 42
       |}
