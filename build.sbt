@@ -1,6 +1,6 @@
 name := "scex"
 
-version in Global := "1.15.1"
+version in Global := "1.15.2-SNAPSHOT"
 scalaVersion in Global := "2.11.6"
 organization in Global := "com.avsystem"
 crossPaths in Global := false
@@ -18,14 +18,6 @@ val logbackVersion = "1.0.6"
 val commonsCodecVersion = "1.7"
 val junitVersion = "4.11"
 val scalatestVersion = "2.1.3"
-
-publishTo in Global := {
-  val name = if (isSnapshot.value) "snapshots" else "releases"
-  Some(name at s"http://repo.avsystem.com/libs-$name-local/")
-}
-
-credentials in Global +=
-  Credentials(Path.userHome / ".repo.avsystem.com.credentials")
 
 lazy val scex = project.in(file("."))
   .aggregate(core, derived, test, javaTest)
