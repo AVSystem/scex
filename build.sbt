@@ -1,7 +1,7 @@
 name := "scex"
 
-version in Global := "1.15.2-SNAPSHOT"
-scalaVersion in Global := "2.11.6"
+version in Global := "1.15.2"
+scalaVersion in Global := "2.11.7"
 organization in Global := "com.avsystem"
 crossPaths in Global := false
 scalacOptions in Global ++= Seq(
