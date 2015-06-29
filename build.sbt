@@ -6,7 +6,11 @@ organization in Global := "com.avsystem"
 crossPaths in Global := false
 scalacOptions in Global ++= Seq(
   "-feature",
-  "-deprecation"
+  "-deprecation",
+  "-language:implicitConversions",
+  "-language:existentials",
+  "-language:dynamics",
+  "-language:experimental.macros"
 )
 
 val guavaVersion = "14.0.1"

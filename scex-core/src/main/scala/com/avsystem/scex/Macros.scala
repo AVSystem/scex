@@ -12,10 +12,12 @@ import scala.reflect.macros.whitebox
  * Created: 18-11-2013
  * Author: ghik
  */
-object Macros {
-  def templateInterpolation_impl[T: c.WeakTypeTag, A](c: whitebox.Context)(args: c.Expr[A]*): c.Expr[T] = {
-    import c.universe._
+class Macros(val c: whitebox.Context) extends MacroUtils {
 
+  val universe: c.universe.type = c.universe
+  import universe._
+
+  def templateInterpolation_impl[T: c.WeakTypeTag, A](args: c.Expr[A]*): c.Expr[T] = {
     val Apply(_, List(Apply(_, parts))) = c.prefix.tree
     val argTrees = args.iterator.map(_.tree).toList
 
@@ -57,9 +59,9 @@ object Macros {
     lazy val literalExpr = reify(com.avsystem.scex.util.Literal(c.literal(literalString).splice))
     lazy val literalConv = c.inferImplicitView(literalExpr.tree, typeOf[com.avsystem.scex.util.Literal], resultType)
 
-    if (args.size == 0 && isEmptyStringLiteral(parts.head) && typeOf[Null] <:< resultType) {
+    if (args.isEmpty && isEmptyStringLiteral(parts.head) && typeOf[Null] <:< resultType) {
       c.Expr[T](Literal(Constant(null)))
-    } else if (resultType <:< typeOf[jl.Enum[_]] && args.size == 0 && literalConv == EmptyTree) {
+    } else if (resultType <:< typeOf[jl.Enum[_]] && args.isEmpty && literalConv == EmptyTree) {
       // special cases for Java enums as there is no way to create general implicit conversion to arbitrary java enum
       // due to https://issues.scala-lang.org/browse/SI-7609
       val enumModuleSymbol = resultType.typeSymbol.companion
@@ -83,7 +85,7 @@ object Macros {
         null
       }
 
-    } else if (args.size == 0) {
+    } else if (args.isEmpty) {
       literalConv match {
         case EmptyTree =>
           c.error(parts.head.pos, s"""String literal "$literalString" cannot be parsed as value of type $resultType""")
@@ -101,9 +103,7 @@ object Macros {
     }
   }
 
-  def reifyImplicitView_impl[T: c.WeakTypeTag](c: whitebox.Context)(arg: c.Expr[Any]): c.Expr[T] = {
-    import c.universe._
-
+  def reifyImplicitView_impl[T: c.WeakTypeTag](arg: c.Expr[Any]): c.Expr[T] = {
     val fromType = arg.actualType
     val toType = weakTypeOf[T]
 
@@ -111,10 +111,7 @@ object Macros {
     c.Expr[T](Apply(view, List(arg.tree)))
   }
 
-  def checkConstantExpr_impl[T](c: whitebox.Context)(expr: c.Expr[T]): c.Expr[T] = {
-    val utils = MacroUtils(c.universe)
-    import utils._
-
+  def checkConstantExpr_impl[T](expr: c.Expr[T]): c.Expr[T] = {
     expr.tree.foreach { t =>
       if (isAnnotatedWith(t.tpe.widen, inputAnnotType)) {
         c.error(t.pos, s"Tree references expression input")
@@ -124,14 +121,11 @@ object Macros {
     expr
   }
 
-  def isNullable_impl[T: c.WeakTypeTag](c: whitebox.Context): c.Expr[Boolean] = {
-    import c.universe._
+  def isNullable_impl[T: c.WeakTypeTag]: c.Expr[Boolean] = {
     c.literal(typeOf[Null] <:< weakTypeOf[T])
   }
 
-  def tripleEquals_impl[A, B](c: whitebox.Context)(right: c.Expr[B]): c.Expr[Boolean] = {
-    import c.universe._
-
+  def tripleEquals_impl[A, B](right: c.Expr[B]): c.Expr[Boolean] = {
     val Apply(_, List(leftTree)) = c.prefix.tree
     val rightTree = right.tree
 

@@ -14,21 +14,28 @@ import scala.reflect.macros.whitebox
  * This must be a Scala object and not a class because it contains macros. Validation is performed against
  * given ExpressionProfile which is injected into this object by ScexCompiler by means of a dynamic variable.
  */
-object ExpressionMacroProcessor extends LoggingUtils {
+object ExpressionMacroProcessor {
+  def markExpression[T](expr: T): T = macro ExpressionMacroProcessor.markExpression_impl[T]
 
-  private val logger = createLogger[ExpressionMacroProcessor.type]
+  def processExpression[C, T](expr: T): T = macro ExpressionMacroProcessor.processExpression_impl[C, T]
 
-  def markExpression[T](expr: T): T = macro markExpression_impl[T]
+  def applyTypesafeEquals[T](expr: T): T = macro ExpressionMacroProcessor.applyTypesafeEquals_impl[T]
 
-  def markExpression_impl[T](c: whitebox.Context)(expr: c.Expr[T]): c.Expr[T] = {
+  def asSetter[T](expr: Any): Setter[T] = macro ExpressionMacroProcessor.asSetter_impl[T]
+}
+
+class ExpressionMacroProcessor(val c: whitebox.Context) extends MacroUtils with LoggingUtils {
+  val universe: c.universe.type = c.universe
+  import universe._
+
+  private val logger = createLogger[ExpressionMacroProcessor]
+
+  def markExpression_impl[T](expr: c.Expr[T]): c.Expr[T] = {
     c.internal.updateAttachment(expr.tree, ExpressionTreeAttachment)
     expr
   }
 
-  def processExpression[C, T](expr: T): T = macro processExpression_impl[C, T]
-
-  def processExpression_impl[C: c.WeakTypeTag, T](c: whitebox.Context)(expr: c.Expr[T]): c.Expr[T] = {
-    import c.universe._
+  def processExpression_impl[C: c.WeakTypeTag, T](expr: c.Expr[T]): c.Expr[T] = {
     val validationContext = ValidationContext(c.universe)(weakTypeOf[C])
     import validationContext._
 
@@ -72,11 +79,7 @@ object ExpressionMacroProcessor extends LoggingUtils {
     expr
   }
 
-  def applyTypesafeEquals[T](expr: T): T = macro applyTypesafeEquals_impl[T]
-
-  def applyTypesafeEquals_impl[T](c: whitebox.Context)(expr: c.Expr[T]): c.Expr[T] = {
-    import c.universe._
-
+  def applyTypesafeEquals_impl[T](expr: c.Expr[T]): c.Expr[T] = {
     if (c.inferImplicitValue(typeOf[TypesafeEquals.TypesafeEqualsEnabled.type]) != EmptyTree) {
       var transformed = false
 
@@ -113,14 +116,7 @@ object ExpressionMacroProcessor extends LoggingUtils {
 
   }
 
-  def asSetter[T](expr: Any): Setter[T] = macro asSetter_impl[T]
-
-  def asSetter_impl[T: c.WeakTypeTag](c: whitebox.Context)(expr: c.Expr[Any]): c.Expr[Setter[T]] = {
-    val macroUtils = MacroUtils(c.universe)
-
-    import c.universe._
-    import macroUtils._
-
+  def asSetter_impl[T: c.WeakTypeTag](expr: c.Expr[Any]): c.Expr[Setter[T]] = {
     lazy val ttpe = weakTypeOf[T]
 
     def reifySetterFunction(setter: Tree) =

@@ -8,19 +8,20 @@ import com.avsystem.scex.validation.SymbolValidator.MemberAccessSpec
 
 import scala.reflect.macros.whitebox
 
-object SymbolDslMacros {
-  def allow_impl(c: whitebox.Context)(expr: c.Expr[Any]): c.Expr[List[MemberAccessSpec]] =
-    extractMemberAccessSpecs(c)(expr, allow = true)
+class SymbolDslMacros(val c: whitebox.Context) {
+  import c.universe._
 
-  def deny_impl(c: whitebox.Context)(expr: c.Expr[Any]): c.Expr[List[MemberAccessSpec]] =
-    extractMemberAccessSpecs(c)(expr, allow = false)
+  def allow_impl(expr: c.Expr[Any]): c.Expr[List[MemberAccessSpec]] =
+    extractMemberAccessSpecs(expr, allow = true)
 
-  private def extractMemberAccessSpecs(c: whitebox.Context)(expr: c.Expr[Any], allow: Boolean): c.Expr[List[MemberAccessSpec]] = {
+  def deny_impl(expr: c.Expr[Any]): c.Expr[List[MemberAccessSpec]] =
+    extractMemberAccessSpecs(expr, allow = false)
+
+  private def extractMemberAccessSpecs(expr: c.Expr[Any], allow: Boolean): c.Expr[List[MemberAccessSpec]] = {
     SymbolInfoParser(SymbolValidator, c)(c.literal(allow)).extractSymbolInfos(expr.tree)
   }
 
-  def attributes_impl(c: whitebox.Context)(any: c.Expr[Any]): c.Expr[List[SymbolInfo[Attributes]]] = {
-    import c.universe._
+  def attributes_impl(any: c.Expr[Any]): c.Expr[List[SymbolInfo[Attributes]]] = {
     SymbolInfoParser(SymbolAttributes, c)(reify(Attributes.empty)).extractSymbolInfos(any.tree)
   }
 }
