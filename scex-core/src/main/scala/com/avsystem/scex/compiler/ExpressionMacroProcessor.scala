@@ -7,7 +7,7 @@ import com.avsystem.scex.util.{LoggingUtils, MacroUtils, TypesafeEquals}
 import com.avsystem.scex.validation.ValidationContext
 
 import scala.language.experimental.macros
-import scala.reflect.macros.blackbox
+import scala.reflect.macros.whitebox
 
 /**
  * Object used during expression compilation to validate the expression (syntax, invocations, etc.)
@@ -24,7 +24,7 @@ object ExpressionMacroProcessor {
   def asSetter[T](expr: Any): Setter[T] = macro ExpressionMacroProcessor.asSetter_impl[T]
 }
 
-class ExpressionMacroProcessor(val c: blackbox.Context) extends MacroUtils with LoggingUtils {
+class ExpressionMacroProcessor(val c: whitebox.Context) extends MacroUtils with LoggingUtils {
   val universe: c.universe.type = c.universe
   import universe._
 
@@ -154,12 +154,15 @@ class ExpressionMacroProcessor(val c: blackbox.Context) extends MacroUtils with 
         translate(fun)
 
       case Apply(Select(prefix, TermName("apply")), List(soleArgument)) =>
-        reifyFunction(arg => q"prefix.update($soleArgument, $arg)")
+        reifyFunction(arg => q"$prefix.update($soleArgument, $arg)")
 
       case Apply(Select(prefix, TermName("selectDynamic")), List(dynamicNameArg))
         if prefix.tpe <:< typeOf[Dynamic] =>
 
         reifySetterFunction(q"$prefix.updateDynamic($dynamicNameArg)")
+
+      case Typed(inner, _) =>
+        translate(inner)
 
       case _ =>
         c.abort(tree.pos, "Cannot translate this expression into setter")
