@@ -6,18 +6,24 @@ import com.avsystem.scex.compiler.TemplateInterpolations
 import com.avsystem.scex.compiler.TemplateInterpolations.Splicer
 import com.avsystem.scex.util.{Literal => ScexLiteral, MacroUtils}
 
-import scala.reflect.macros.whitebox
+import scala.reflect.macros.blackbox
 
 /**
  * Created: 18-11-2013
  * Author: ghik
  */
-class Macros(val c: whitebox.Context) extends MacroUtils {
+class Macros(val c: blackbox.Context) extends MacroUtils {
 
   val universe: c.universe.type = c.universe
   import universe._
+  
+  val ScexLiteralTpe = typeOf[ScexLiteral].dealias
+  val ScexLiteralObj = ScexLiteralTpe.typeSymbol.companion
+  val TemplateInterpolationsObjTpe = typeOf[TemplateInterpolations.type]
+  val TemplateInterpolationsObj = reify(TemplateInterpolations).tree
+  val SplicerSymbol = typeOf[Splicer[_]].typeSymbol
 
-  def templateInterpolation_impl[T: c.WeakTypeTag, A](args: c.Expr[A]*): c.Expr[T] = {
+  def templateInterpolation_impl[T: c.WeakTypeTag, A](args: c.Expr[A]*): c.Tree = {
     val Apply(_, List(Apply(_, parts))) = c.prefix.tree
     val argTrees = args.iterator.map(_.tree).toList
 
@@ -30,20 +36,17 @@ class Macros(val c: whitebox.Context) extends MacroUtils {
     assert(parts.size == args.size + 1)
 
     val resultType = weakTypeOf[T]
-    val templateInterpolationsObjectTpe = typeOf[TemplateInterpolations.type]
-    val templateInterpolationsObjectTree = reify(TemplateInterpolations).tree
-    val splicerSymbol = typeOf[Splicer[_]].typeSymbol
 
     def reifyConcatenation(parts: List[Tree], args: List[Tree]) = {
       val convertedArgs = args.map { arg =>
-        val splicerTpe = internal.reificationSupport.TypeRef(templateInterpolationsObjectTpe, splicerSymbol, List(arg.tpe))
+        val splicerTpe = internal.reificationSupport.TypeRef(TemplateInterpolationsObjTpe, SplicerSymbol, List(arg.tpe))
         c.inferImplicitValue(splicerTpe) match {
-          case EmptyTree => Select(arg, TermName("toString"))
-          case tree => Apply(Select(tree, TermName("toString")), List(arg))
+          case EmptyTree => q"$arg.toString"
+          case tree => q"$tree.toString($arg)"
         }
       }
 
-      Apply(Apply(Select(templateInterpolationsObjectTree, TermName("concat")), parts), convertedArgs)
+      q"$TemplateInterpolationsObj.concat(..$parts)(..$convertedArgs)"
     }
 
     def isEmptyStringLiteral(tree: Tree) = tree match {
@@ -56,76 +59,71 @@ class Macros(val c: whitebox.Context) extends MacroUtils {
     lazy val soleArgImplicitConv = c.inferImplicitView(soleArgTree, soleArgTree.tpe, resultType)
 
     lazy val Literal(Constant(literalString: String)) = parts.head
-    lazy val literalExpr = reify(com.avsystem.scex.util.Literal(c.literal(literalString).splice))
-    lazy val literalConv = c.inferImplicitView(literalExpr.tree, typeOf[com.avsystem.scex.util.Literal], resultType)
+    lazy val literalTree = q"$ScexLiteralObj($literalString)"
+    lazy val literalConv = c.inferImplicitView(literalTree, ScexLiteralTpe, resultType)
 
     if (args.isEmpty && isEmptyStringLiteral(parts.head) && typeOf[Null] <:< resultType) {
-      c.Expr[T](Literal(Constant(null)))
+      q"null"
     } else if (resultType <:< typeOf[jl.Enum[_]] && args.isEmpty && literalConv == EmptyTree) {
       // special cases for Java enums as there is no way to create general implicit conversion to arbitrary java enum
       // due to https://issues.scala-lang.org/browse/SI-7609
       val enumModuleSymbol = resultType.typeSymbol.companion
-      c.Expr[T](Select(Ident(enumModuleSymbol), TermName(literalString)))
+      q"$enumModuleSymbol.${TermName(literalString)}"
 
     } else if (resultType <:< typeOf[jl.Enum[_]] && singleArgNoParts && !(soleArgTree.tpe <:< resultType)) {
       val enumModuleSymbol = resultType.typeSymbol.companion
 
-      c.Expr[T](Apply(Select(Ident(enumModuleSymbol), TermName("valueOf")), List(args.head.tree)))
-
+      q"$enumModuleSymbol.valueOf(${args.head})"
     } else if (singleArgNoParts) {
       // typecheck result manually
       if (soleArgTree.tpe <:< resultType) {
-        c.Expr[T](soleArgTree)
+        soleArgTree
       } else if (soleArgImplicitConv != EmptyTree) {
-        c.Expr[T](Apply(soleArgImplicitConv, List(soleArgTree)))
+        q"$soleArgImplicitConv($soleArgTree)"
       } else if (typeOf[String] <:< resultType) {
-        c.Expr[T](reifyConcatenation(parts, argTrees))
+        reifyConcatenation(parts, argTrees)
       } else {
-        c.error(soleArgTree.pos, s"This template (type ${soleArgTree.tpe.widen}) cannot represent value of type $resultType")
-        null
+        c.abort(soleArgTree.pos, s"This template (type ${soleArgTree.tpe.widen}) cannot represent value of type $resultType")
       }
 
     } else if (args.isEmpty) {
       literalConv match {
         case EmptyTree =>
-          c.error(parts.head.pos, s"""String literal "$literalString" cannot be parsed as value of type $resultType""")
-          null
+          c.abort(parts.head.pos, s"""String literal "$literalString" cannot be parsed as value of type $resultType""")
 
         case conversion =>
-          c.Expr[T](Apply(conversion, List(literalExpr.tree)))
+          q"$conversion($literalTree)"
       }
 
     } else if (typeOf[String] <:< resultType) {
-      c.Expr[T](reifyConcatenation(parts, argTrees))
+      reifyConcatenation(parts, argTrees)
     } else {
-      c.error(c.enclosingPosition, s"This template cannot represent value of type $resultType")
-      null
+      c.abort(c.enclosingPosition, s"This template cannot represent value of type $resultType")
     }
   }
 
-  def reifyImplicitView_impl[T: c.WeakTypeTag](arg: c.Expr[Any]): c.Expr[T] = {
+  def reifyImplicitView_impl[T: c.WeakTypeTag](arg: c.Expr[Any]): c.Tree = {
     val fromType = arg.actualType
     val toType = weakTypeOf[T]
 
     val view = c.inferImplicitView(arg.tree, fromType, toType, silent = false, withMacrosDisabled = true)
-    c.Expr[T](Apply(view, List(arg.tree)))
+    q"$view($arg)"
   }
 
-  def checkConstantExpr_impl[T](expr: c.Expr[T]): c.Expr[T] = {
+  def checkConstantExpr_impl[T](expr: c.Expr[T]): c.Tree = {
     expr.tree.foreach { t =>
       if (isAnnotatedWith(t.tpe.widen, inputAnnotType)) {
-        c.error(t.pos, s"Tree references expression input")
+        c.abort(t.pos, s"Tree references expression input")
       }
     }
 
-    expr
+    expr.tree
   }
 
-  def isNullable_impl[T: c.WeakTypeTag]: c.Expr[Boolean] = {
-    c.literal(typeOf[Null] <:< weakTypeOf[T])
-  }
+  def isNullable_impl[T: c.WeakTypeTag]: c.Tree =
+    q"${typeOf[Null] <:< weakTypeOf[T]}"
 
-  def tripleEquals_impl[A, B](right: c.Expr[B]): c.Expr[Boolean] = {
+  def tripleEquals_impl[A, B](right: c.Expr[B]): c.Tree = {
     val Apply(_, List(leftTree)) = c.prefix.tree
     val rightTree = right.tree
 
@@ -136,16 +134,15 @@ class Macros(val c: whitebox.Context) extends MacroUtils {
     lazy val rightToLeftConv = c.inferImplicitView(rightTree, rightTree.tpe, leftTree.tpe.widen)
 
     if (leftTpe <:< rightTpe) {
-      reify(c.Expr[Any](leftTree).splice == c.Expr[Any](rightTree).splice)
+      q"$leftTree == $rightTree"
     } else if (rightTpe <:< leftTpe) {
-      reify(c.Expr[Any](rightTree).splice == c.Expr[Any](leftTree).splice)
+      q"$rightTree == $leftTree"
     } else if (rightToLeftConv != EmptyTree) {
-      reify(c.Expr[Any](leftTree).splice == c.Expr[Any](Apply(rightToLeftConv, List(rightTree))).splice)
+      q"$leftTree == $rightToLeftConv($rightTree)"
     } else if (leftToRightConv != EmptyTree) {
-      reify(c.Expr[Any](Apply(leftToRightConv, List(leftTree))).splice == c.Expr[Any](rightTree).splice)
+      q"$leftToRightConv($leftTree) == $rightTree"
     } else {
-      c.error(c.enclosingPosition, s"Values of types $leftTpe and $rightTpe cannot be compared for equality")
-      null
+      c.abort(c.enclosingPosition, s"Values of types $leftTpe and $rightTpe cannot be compared for equality")
     }
   }
 

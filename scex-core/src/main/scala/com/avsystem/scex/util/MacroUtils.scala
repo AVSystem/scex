@@ -15,6 +15,11 @@ trait MacroUtils {
 
   import universe._
 
+  lazy val ListObj = typeOf[List.type].termSymbol
+  lazy val NilObj = typeOf[Nil.type].termSymbol
+  lazy val NoneObj = typeOf[None.type].termSymbol
+  lazy val SomeObj = typeOf[Some.type].termSymbol
+
   lazy val adapterType = typeOf[JavaGetterAdapter]
   lazy val syntheticType = typeOf[Synthetic]
   lazy val expressionUtilType = typeOf[ExpressionUtil]
@@ -205,9 +210,9 @@ trait MacroUtils {
   def isStaticOrConstructor(symbol: Symbol) =
     symbol.isStatic || (symbol.isMethod && symbol.asMethod.isConstructor)
 
-  def reifyOption[A, B](opt: Option[A], innerReify: A => Expr[B]): Expr[Option[B]] = opt match {
-    case Some(x) => reify(Some(innerReify(x).splice))
-    case None => reify(None)
+  def reifyOption[A](opt: Option[A], innerReify: A => Tree): Tree = opt match {
+    case Some(x) => q"$SomeObj(${innerReify(x)})"
+    case None => q"$NoneObj"
   }
 
   def isBooleanType(tpe: Type) =

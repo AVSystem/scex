@@ -7,7 +7,7 @@ import com.avsystem.scex.util.{LoggingUtils, MacroUtils, TypesafeEquals}
 import com.avsystem.scex.validation.ValidationContext
 
 import scala.language.experimental.macros
-import scala.reflect.macros.whitebox
+import scala.reflect.macros.blackbox
 
 /**
  * Object used during expression compilation to validate the expression (syntax, invocations, etc.)
@@ -24,18 +24,18 @@ object ExpressionMacroProcessor {
   def asSetter[T](expr: Any): Setter[T] = macro ExpressionMacroProcessor.asSetter_impl[T]
 }
 
-class ExpressionMacroProcessor(val c: whitebox.Context) extends MacroUtils with LoggingUtils {
+class ExpressionMacroProcessor(val c: blackbox.Context) extends MacroUtils with LoggingUtils {
   val universe: c.universe.type = c.universe
   import universe._
 
   private val logger = createLogger[ExpressionMacroProcessor]
 
-  def markExpression_impl[T](expr: c.Expr[T]): c.Expr[T] = {
+  def markExpression_impl[T](expr: c.Expr[T]): c.Tree = {
     c.internal.updateAttachment(expr.tree, ExpressionTreeAttachment)
-    expr
+    expr.tree
   }
 
-  def processExpression_impl[C: c.WeakTypeTag, T](expr: c.Expr[T]): c.Expr[T] = {
+  def processExpression_impl[C: c.WeakTypeTag, T](expr: c.Expr[T]): c.Tree = {
     val validationContext = ValidationContext(c.universe)(weakTypeOf[C])
     import validationContext._
 
@@ -76,10 +76,10 @@ class ExpressionMacroProcessor(val c: whitebox.Context) extends MacroUtils with 
       c.error(access.pos, s"Member access forbidden: $access")
     }
 
-    expr
+    expr.tree
   }
 
-  def applyTypesafeEquals_impl[T](expr: c.Expr[T]): c.Expr[T] = {
+  def applyTypesafeEquals_impl[T](expr: c.Expr[T]): c.Tree = {
     if (c.inferImplicitValue(typeOf[TypesafeEquals.TypesafeEqualsEnabled.type]) != EmptyTree) {
       var transformed = false
 
@@ -110,21 +110,20 @@ class ExpressionMacroProcessor(val c: whitebox.Context) extends MacroUtils with 
       }
 
       val result = transformer.transform(expr.tree)
-      c.Expr[T](if (transformed) c.untypecheck(result) else result)
+      if (transformed) c.untypecheck(result) else result
 
-    } else expr
+    } else expr.tree
 
   }
 
-  def asSetter_impl[T: c.WeakTypeTag](expr: c.Expr[Any]): c.Expr[Setter[T]] = {
+  def asSetter_impl[T: c.WeakTypeTag](expr: c.Expr[Any]): c.Tree = {
     lazy val ttpe = weakTypeOf[T]
 
     def reifySetterFunction(setter: Tree) =
-      reifyFunction(arg => Apply(setter, List(arg)))
+      reifyFunction(arg => q"$setter($arg)")
 
     def reifyFunction(bodyGen: Tree => Tree): Tree =
-      Function(List(ValDef(Modifiers(Flag.PARAM), TermName("value"), TypeTree(ttpe), EmptyTree)),
-        bodyGen(Ident(TermName("value"))))
+      q"(value: $ttpe) => ${bodyGen(q"value")}"
 
     def translate(tree: Tree): Tree = tree match {
       case Select(prefix@Ident(_), TermName(propertyName)) if isRootAdapter(prefix.tpe) =>
@@ -149,33 +148,30 @@ class ExpressionMacroProcessor(val c: whitebox.Context) extends MacroUtils with 
         reifySetterFunction(Select(prefix, TermName(setterName).encodedName))
 
       case Select(prefix, TermName(name)) if isJavaField(tree.symbol) =>
-        reifyFunction(arg => Assign(tree, arg))
+        reifyFunction(arg => q"$tree = $arg")
 
       case Apply(fun, Nil) =>
         translate(fun)
 
       case Apply(Select(prefix, TermName("apply")), List(soleArgument)) =>
-        reifyFunction(arg => Apply(Select(prefix, TermName("update")), List(soleArgument, arg)))
+        reifyFunction(arg => q"prefix.update($soleArgument, $arg)")
 
       case Apply(Select(prefix, TermName("selectDynamic")), List(dynamicNameArg))
         if prefix.tpe <:< typeOf[Dynamic] =>
 
-        reifySetterFunction(Apply(Select(prefix, TermName("updateDynamic")), List(dynamicNameArg)))
+        reifySetterFunction(q"$prefix.updateDynamic($dynamicNameArg)")
 
       case _ =>
-        c.error(tree.pos, "Cannot translate this expression into setter")
-        null
+        c.abort(tree.pos, "Cannot translate this expression into setter")
     }
 
-    reify {
-      new Setter[T] {
-        def apply(value: T) = c.Expr[T => Unit](translate(expr.tree)).splice.apply(value)
+    val TypeObj = typeOf[Type.type].termSymbol
+    q"""
+       new ${weakTypeOf[Setter[T]]} {
+         def apply(value: ${weakTypeOf[T]}) = ${translate(expr.tree)}(value)
 
-        def acceptedType = Type(
-          c.literal(expr.actualType.map(_.widen).toString).splice,
-          c.Expr[Class[_]](c.reifyRuntimeClass(expr.actualType)).splice
-        )
-      }
-    }
+         def acceptedType = $TypeObj(${expr.actualType.map(_.widen).toString}, ${c.reifyRuntimeClass(expr.actualType)})
+       }
+     """
   }
 }

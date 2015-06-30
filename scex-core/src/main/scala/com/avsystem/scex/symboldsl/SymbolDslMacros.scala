@@ -4,24 +4,24 @@ import java.{lang => jl, util => ju}
 
 import com.avsystem.scex.presentation.{Attributes, SymbolAttributes}
 import com.avsystem.scex.validation.SymbolValidator
-import com.avsystem.scex.validation.SymbolValidator.MemberAccessSpec
 
-import scala.reflect.macros.whitebox
+import scala.reflect.macros.blackbox
 
-class SymbolDslMacros(val c: whitebox.Context) {
+class SymbolDslMacros(val c: blackbox.Context) {
+
   import c.universe._
 
-  def allow_impl(expr: c.Expr[Any]): c.Expr[List[MemberAccessSpec]] =
+  val AttributesObj = typeOf[Attributes.type].termSymbol
+
+  def allow_impl(expr: c.Expr[Any]): c.Tree =
     extractMemberAccessSpecs(expr, allow = true)
 
-  def deny_impl(expr: c.Expr[Any]): c.Expr[List[MemberAccessSpec]] =
+  def deny_impl(expr: c.Expr[Any]): c.Tree =
     extractMemberAccessSpecs(expr, allow = false)
 
-  private def extractMemberAccessSpecs(expr: c.Expr[Any], allow: Boolean): c.Expr[List[MemberAccessSpec]] = {
-    SymbolInfoParser(SymbolValidator, c)(c.literal(allow)).extractSymbolInfos(expr.tree)
-  }
+  private def extractMemberAccessSpecs(expr: c.Expr[Any], allow: Boolean): c.Tree =
+    SymbolInfoParser(SymbolValidator, c)(q"$allow").extractSymbolInfos(expr.tree)
 
-  def attributes_impl(any: c.Expr[Any]): c.Expr[List[SymbolInfo[Attributes]]] = {
-    SymbolInfoParser(SymbolAttributes, c)(reify(Attributes.empty)).extractSymbolInfos(any.tree)
-  }
+  def attributes_impl(any: c.Expr[Any]): c.Tree =
+    SymbolInfoParser(SymbolAttributes, c)(q"$AttributesObj.empty").extractSymbolInfos(any.tree)
 }

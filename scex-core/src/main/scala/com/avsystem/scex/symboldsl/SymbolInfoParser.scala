@@ -7,20 +7,19 @@ import com.avsystem.scex.util.{MacroUtils, TypeWrapper}
 
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
-import scala.reflect.api.TypeCreator
 import scala.reflect.internal.Flags
-import scala.reflect.macros.whitebox
+import scala.reflect.macros.blackbox
 
 /**
  * Author: ghik
  * Created: 11/14/14.
  */
 trait SymbolInfoParser[D <: SymbolDsl with Singleton] {
-  val c: whitebox.Context
+  val c: blackbox.Context
 
   import c.universe._
 
-  def defaultPayload: c.Expr[D#Payload]
+  def defaultPayload: c.Tree
 
   implicit val dslTypeTag: c.TypeTag[D]
   implicit lazy val payloadTypeTag: c.TypeTag[D#Payload] = {
@@ -37,24 +36,24 @@ trait SymbolInfoParser[D <: SymbolDsl with Singleton] {
 
   private val typeInfos: mutable.Map[TypeKey, TermName] = new mutable.HashMap[TypeKey, TermName]
 
+  lazy val TypeInfoCls = typeOf[TypeInfo].typeSymbol
+  lazy val SymbolInfoObj = typeOf[SymbolInfo.type].termSymbol
+
   // transforms list of expressions of type List[SymbolInfo[T]] to single expression
   // of type List[SymbolInfo[T]] that represents flattened original list of lists
-  def reifyFlattenLists(listExprs: List[c.Expr[List[SymbolInfo[D#Payload]]]]) = {
-    val addToBuilderStatements = listExprs.map { listExpr =>
-      Apply(Select(Ident(TermName("b")), TermName("++=").encodedName), List(listExpr.tree))
-    }
-    reify {
-      val b = new ListBuffer[SymbolInfo[D#Payload]]
-      c.Expr[Unit](Block(addToBuilderStatements, c.literalUnit.tree)).splice
+  def reifyFlattenLists(listExprs: List[Tree]) = {
+    q"""
+      val b = new ${typeOf[ListBuffer[SymbolInfo[D#Payload]]]}
+      ..${listExprs.map(listExpr => q"b ++= $listExpr")}
       b.result()
-    }
+    """
   }
 
-  def reifyRuntimeClassOpt(tpe: Type): Expr[Option[Class[_]]] =
+  def reifyRuntimeClassOpt(tpe: Type): Tree =
     if (tpe == NoType || isJavaStaticType(tpe)) {
-      reify(None)
+      q"$NoneObj"
     } else {
-      reify(Some(c.Expr[Class[_]](c.reifyRuntimeClass(tpe)).splice))
+      q"$SomeObj(${c.reifyRuntimeClass(tpe)})"
     }
 
   def existentialSymbol(name: String, typeSignature: Type) = {
@@ -141,11 +140,7 @@ trait SymbolInfoParser[D <: SymbolDsl with Singleton] {
     val Block(List(_, _), Apply(_, List(_, typeCreatorTree))) =
       c.reifyType(internal.gen.mkRuntimeUniverseRef, EmptyTree, tpe)
 
-    reify(new TypeInfo(
-      c.Expr[TypeCreator](typeCreatorTree).splice,
-      reifyRuntimeClassOpt(tpe).splice,
-      c.literal(tpe.typeSymbol.isJava).splice,
-      c.literal(tpe.toString).splice)).tree
+    q"new $TypeInfoCls($typeCreatorTree, ${reifyRuntimeClassOpt(tpe)}, ${tpe.typeSymbol.isJava}, ${tpe.toString})"
   }
 
   def typeInfoIdent(tpe: Type) = {
@@ -154,15 +149,17 @@ trait SymbolInfoParser[D <: SymbolDsl with Singleton] {
   }
 
   val reifyImplicitConvSpec =
-    (tree: Tree) => c.literal(path(tree))
+    (tree: Tree) => q"${path(tree)}"
 
-  def reifySymbolInfo(prefixTpe: Type, payloadTree: Tree, symbol: Symbol, implicitConv: Option[Tree]) = reify {
-    List(SymbolInfo[D#Payload](
-      typeInfoIdent(prefixTpe).splice,
-      c.literal(memberSignature(symbol)).splice,
-      reifyOption(implicitConv, reifyImplicitConvSpec).splice,
-      c.Expr[D#Payload](payloadTree).splice))
-  }
+  def reifySymbolInfo(prefixTpe: Type, payloadTree: Tree, symbol: Symbol, implicitConv: Option[Tree]) =
+    q"""
+      $ListObj($SymbolInfoObj[${typeOf[D#Payload]}](
+        ${typeInfoIdent(prefixTpe).tree},
+        ${memberSignature(symbol)},
+        ${reifyOption(implicitConv, reifyImplicitConvSpec)},
+        $payloadTree
+      ))
+    """
 
   def unwrapConvertedPrefix(prefix: Tree) = prefix match {
     case TypeApply(Select(convTree@ImplicitlyConverted(actualPrefix, fun), TermName("as")), List(_))
@@ -177,8 +174,7 @@ trait SymbolInfoParser[D <: SymbolDsl with Singleton] {
     case (None, _) if prefix.symbol.isModule =>
       prefix.tpe
     case _ =>
-      c.error(prefix.pos, "Bad prefix: " + show(prefix))
-      typeOf[Nothing]
+      c.abort(prefix.pos, "Bad prefix: " + show(prefix))
   }
 
   def checkNewInstanceTpe(required: Option[(Symbol, Type)], tpeTree: Tree) = required match {
@@ -187,8 +183,7 @@ trait SymbolInfoParser[D <: SymbolDsl with Singleton] {
     case None =>
       tpeTree.tpe
     case _ =>
-      c.error(tpeTree.pos, "Bad symbol specification syntax:")
-      typeOf[Nothing]
+      c.abort(tpeTree.pos, "Bad symbol specification syntax:")
   }
 
   case class ParsedWildcardSelector(prefixTpe: Type, payloadTree: Tree, scope: List[TermSymbol], implConv: Option[(Tree, Type)]) {
@@ -199,22 +194,19 @@ trait SymbolInfoParser[D <: SymbolDsl with Singleton] {
       copy(scope = scope.filterNot(pred))
 
     // have one reified type and implicit conversion spec for all MemberAccessSpecs generated from wildcard
-    private def reifySymbolInfo(member: TermSymbol) = reify {
-      List(SymbolInfo[D#Payload](
-        c.Expr[TypeInfo](Ident(TermName("prefixTypeInfo"))).splice,
-        c.literal(memberSignature(member)).splice,
-        c.Expr[Option[String]](Ident(TermName("implConvOpt"))).splice,
-        c.Expr[D#Payload](Ident(TermName("payload"))).splice))
-    }
+    private def reifySymbolInfo(member: TermSymbol) =
+      q"$ListObj($SymbolInfoObj[${typeOf[D#Payload]}](prefixTypeInfo, ${memberSignature(member)}, implConvOpt, payload))"
 
-    def reifySymbolInfos = reify {
-      val prefixTypeInfo = typeInfoIdent(prefixTpe).splice
-      val implConvOpt = reifyOption(implConv.map(_._1), reifyImplicitConvSpec).splice
-      val payload = c.Expr[D#Payload](payloadTree).splice
-      // separate method to avoid "Code size too large" error
-      def fromWildcard = reifyFlattenLists(scope.map(m => reifySymbolInfo(m))).splice
-      fromWildcard
-    }
+    def reifySymbolInfos =
+      q"""
+        val prefixTypeInfo = ${typeInfoIdent(prefixTpe).tree}
+        val implConvOpt = ${reifyOption(implConv.map(_._1), reifyImplicitConvSpec)}
+        val payload = $payloadTree
+
+        // separate method to avoid "Code size too large" error
+        def fromWildcard = ${reifyFlattenLists(scope.map(m => reifySymbolInfo(m)))}
+        fromWildcard
+       """
 
     val sourceTpe = implConv.map(_._2).getOrElse(prefixTpe)
   }
@@ -347,7 +339,7 @@ trait SymbolInfoParser[D <: SymbolDsl with Singleton] {
       InvalidParsedWildcardSelector
   }
 
-  def extractSymbols(requiredPrefix: Option[(Symbol, Type)], payloadTree: Tree, body: Tree): c.Expr[List[SymbolInfo[D#Payload]]] = body match {
+  def extractSymbols(requiredPrefix: Option[(Symbol, Type)], payloadTree: Tree, body: Tree): Tree = body match {
     case Block(stats, finalExpr) =>
       reifyFlattenLists((stats :+ finalExpr).map(extractSymbols(requiredPrefix, payloadTree, _)))
 
@@ -372,6 +364,9 @@ trait SymbolInfoParser[D <: SymbolDsl with Singleton] {
     case TypeApply(inner, _) =>
       extractSymbols(requiredPrefix, payloadTree, inner)
 
+    case Typed(inner, _) =>
+      extractSymbols(requiredPrefix, payloadTree, inner)
+
     case Function(List(valdef@ValDef(_, _, prefixTpeTree, _)), actualBody)
       if internal.attachments(body).get[SymbolDslOnMark.type].isDefined =>
 
@@ -381,28 +376,27 @@ trait SymbolInfoParser[D <: SymbolDsl with Singleton] {
       extractSymbols(requiredPrefix, payloadTree, actualBody)
 
     case Literal(Constant(())) =>
-      reify(Nil)
+      q"$NilObj"
 
     case _ =>
-      c.error(body.pos, "Bad symbol specification syntax: " + showRaw(body))
-      reify(Nil)
+      c.abort(body.pos, "Bad symbol specification syntax: " + showRaw(body))
   }
 
-  def extractSymbolInfos(tree: Tree): c.Expr[List[SymbolInfo[D#Payload]]] = {
-    val symbolInfos = extractSymbols(None, defaultPayload.tree, tree).tree
+  def extractSymbolInfos(tree: Tree): Tree = {
+    val symbolInfos = extractSymbols(None, defaultPayload, tree)
 
     val typeInfoDefs = typeInfos.iterator.map {
       case (typeKey, termName) =>
         ValDef(Modifiers(), termName, TypeTree(), reifyTypeInfo(typeKey.tpe))
     }.toList
 
-    c.Expr[List[SymbolInfo[D#Payload]]](Block(typeInfoDefs, symbolInfos))
+    Block(typeInfoDefs, symbolInfos)
   }
 }
 
 object SymbolInfoParser {
 
-  def apply[D <: SymbolDsl with Singleton](dsl: D, ctx: whitebox.Context)(defPayload: ctx.Expr[D#Payload])(implicit tag: ctx.TypeTag[D]) =
+  def apply[D <: SymbolDsl with Singleton](dsl: D, ctx: blackbox.Context)(defPayload: ctx.Tree)(implicit tag: ctx.TypeTag[D]) =
     new SymbolInfoParser[D] {
       val c: ctx.type = ctx
 
@@ -415,7 +409,7 @@ object SymbolInfoParser {
 
   object AlreadyReified
 
-  def on_impl[T](c: whitebox.Context)(expr: c.Expr[T => Any]): c.Expr[T => Any] = {
+  def on_impl[T](c: blackbox.Context)(expr: c.Expr[T => Any]): c.Expr[T => Any] = {
     c.internal.updateAttachment(expr.tree, SymbolDslOnMark)
     expr
   }
