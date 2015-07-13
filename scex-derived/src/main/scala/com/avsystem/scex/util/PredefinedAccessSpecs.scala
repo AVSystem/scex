@@ -3,6 +3,7 @@ package com.avsystem.scex.util
 import java.{lang => jl, util => ju}
 
 import com.avsystem.scex.util.JavaCollectionExtensions._
+import com.github.ghik.silencer.silent
 
 import scala.math.ScalaNumericAnyConversions
 import scala.runtime._
@@ -318,8 +319,8 @@ object PredefinedAccessSpecs {
       m.implicitlyAs[MapOps[Any, Any]].all.members
     }
     on { e: Entry[Any@plus, Any@plus] =>
-      e.key
-      e.value
+      e.key: @silent
+      e.value: @silent
       e.withKey _
       e.withValue _
     }

@@ -7,6 +7,7 @@ import com.avsystem.scex.japi.DefaultJavaScexCompiler
 import com.avsystem.scex.presentation.SymbolAttributes
 import com.avsystem.scex.util.PredefinedAccessSpecs
 import com.avsystem.scex.validation._
+import com.github.ghik.silencer.silent
 
 import scala.language.{dynamics, existentials}
 import scala.reflect.macros.Universe
@@ -47,6 +48,7 @@ object ValidationTest {
 
     import com.avsystem.scex.validation.SymbolValidator._
 
+    @silent
     val memberAccessSpecs = allow {
       StringContext.apply _
       ValidationTest.Foo.Bar.c

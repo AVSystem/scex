@@ -10,9 +10,12 @@ scalacOptions in Global ++= Seq(
   "-language:implicitConversions",
   "-language:existentials",
   "-language:dynamics",
-  "-language:experimental.macros"
+  "-language:experimental.macros",
+  "-Xfatal-warnings",
+  "-Xlint:_,-missing-interpolator,-adapted-args"
 )
 
+val silencerVersion = "0.3"
 val guavaVersion = "14.0.1"
 val jettyVersion = "9.1.0.v20131115"
 val vaadinVersion = "6.8.13"
@@ -22,6 +25,11 @@ val logbackVersion = "1.0.6"
 val commonsCodecVersion = "1.7"
 val junitVersion = "4.11"
 val scalatestVersion = "2.1.3"
+
+libraryDependencies in Global ++= Seq(
+  compilerPlugin("com.github.ghik" % "silencer-plugin" % silencerVersion),
+  ("com.github.ghik" % "silencer-lib" % silencerVersion).withSources()
+)
 
 lazy val scex = project.in(file("."))
   .aggregate(core, derived, test, javaTest)
