@@ -56,7 +56,7 @@ trait ScexGlobal extends Global with MacroUtils with SymbolErasures {
       this.last
     }
 
-    override def traverse(t: Tree) {
+    override def traverse(t: Tree): Unit = {
       t match {
         case tt: TypeTree if tt.original != null && includes(tt.pos, tt.original.pos) =>
           traverse(tt.original)

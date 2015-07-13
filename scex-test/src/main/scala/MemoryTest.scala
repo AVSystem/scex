@@ -12,7 +12,7 @@ object MemoryTest {
 
   case class Dummy(costam: Int)
 
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     val compiler = new DefaultJavaScexCompiler(new ScexSettings)
     compiler.settings.expressionExpirationTime.value = 500
     compiler.settings.resetAfterCount.value = 10

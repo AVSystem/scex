@@ -27,7 +27,7 @@ sealed trait Tree extends PrettyPrint {
   def locate(pos: Position): Tree = {
     if (pos != null) {
       var result: Tree = EmptyTree
-      def traverse(tree: Tree) {
+      def traverse(tree: Tree): Unit = {
         tree match {
           case EmptyTree =>
           case tt: TypeTree if tt.original != null && tt.original.attachments.position.includes(pos) =>
@@ -49,9 +49,9 @@ sealed trait Tree extends PrettyPrint {
 
   def pretty(withPositions: Boolean, withTypes: Boolean) = {
     val sb = new StringBuilder
-    def pretty(indent: Int, obj: Any) {
+    def pretty(indent: Int, obj: Any): Unit = {
       val newline = "\n" + "  " * indent
-      def prettyElements(prefix: String, elems: Vector[Any]) {
+      def prettyElements(prefix: String, elems: Vector[Any]): Unit = {
         sb.append(prefix + "(")
         elems.size match {
           case 0 =>

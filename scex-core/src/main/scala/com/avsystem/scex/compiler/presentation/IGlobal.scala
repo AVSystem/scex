@@ -85,7 +85,7 @@ class IGlobal(settings: Settings, reporter: Reporter, val classLoader: ClassLoad
         (!implicitlyAdded || m.implicitlyAdded)) || higherPriorityImplicit
     }
 
-    def add(sym: Symbol, pre: Type, implicitTree: Tree)(toMember: (Symbol, Type) => ScexTypeMember) {
+    def add(sym: Symbol, pre: Type, implicitTree: Tree)(toMember: (Symbol, Type) => ScexTypeMember): Unit = {
       if (sym.hasGetter) {
         add(sym.getterIn(sym.owner), pre, implicitTree)(toMember)
       } else if (!sym.name.decodedName.containsName("$") && !sym.isSynthetic && sym.hasRawInfo) {

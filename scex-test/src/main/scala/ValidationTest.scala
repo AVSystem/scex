@@ -44,7 +44,7 @@ object ValidationTest {
     def selectDynamic(attr: String) = attr
   }
 
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
 
     import com.avsystem.scex.validation.SymbolValidator._
 

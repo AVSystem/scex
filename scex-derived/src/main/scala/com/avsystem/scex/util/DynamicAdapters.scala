@@ -17,7 +17,7 @@ object DynamicAdapters {
   }
 
   trait UpdateAdapter[-A] extends Dynamic {
-    def updateDynamic(member: String)(value: A)
+    def updateDynamic(member: String)(value: A): Unit
   }
 
   trait Apply0Adapter[+R] extends Dynamic {

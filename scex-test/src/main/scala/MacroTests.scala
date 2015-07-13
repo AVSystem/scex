@@ -3,7 +3,7 @@ import java.{lang => jl, util => ju}
 import com.avsystem.scex.TestMacros
 
 object MacroTests {
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     println(TestMacros.gimme(java.lang.String.CASE_INSENSITIVE_ORDER))
   }
 }

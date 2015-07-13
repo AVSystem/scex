@@ -38,7 +38,7 @@ object CommonUtils {
   }
 
   implicit class EnhancedInt(val i: Int) extends AnyVal {
-    def times(expr: => Any) {
+    def times(expr: => Any): Unit = {
       var c = 0
       while (c < i) {
         expr
@@ -91,7 +91,7 @@ object CommonUtils {
   def hierarchy(clazz: Class[_]): Set[Class[_]] = {
     val resultBuilder = Set.newBuilder[Class[_]]
 
-    def fill(clazz: Class[_]) {
+    def fill(clazz: Class[_]): Unit = {
       if (clazz != null) {
         resultBuilder += clazz
         fill(clazz.getSuperclass)

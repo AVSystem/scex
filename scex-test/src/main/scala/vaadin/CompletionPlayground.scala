@@ -113,7 +113,7 @@ object CompletionPlayground {
     }
   }
 
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     val server = new Server(9090)
 
     val handler = new ServletContextHandler

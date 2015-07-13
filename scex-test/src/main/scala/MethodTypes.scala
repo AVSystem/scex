@@ -42,7 +42,7 @@ object MethodTypes {
   def typeSignatureOf[T: TypeTag](member: String) =
     typeOf[T].member(TermName(member)).typeSignature
 
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     println(methodTypesMatch(typeSignatureOf[A]("a"), typeSignatureOf[A]("b")))
   }
 }

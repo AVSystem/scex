@@ -12,7 +12,7 @@ import com.avsystem.scex.{ExpressionProfile, NamedSource}
  * Author: ghik
  */
 object TemplateOptimizingPerformanceTest {
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     val settings = new ScexSettings
     settings.classfileDirectory.value = "scex_classes"
     val compiler = new XmlFriendlyJavaScexCompiler(settings)

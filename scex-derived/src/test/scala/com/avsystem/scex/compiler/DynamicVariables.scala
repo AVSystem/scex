@@ -20,7 +20,7 @@ class DynamicVariables extends DynamicVariableSupport[String] {
 
   def selectDynamic(name: String) = map(name)
 
-  def updateDynamic(name: String)(value: String) {
+  def updateDynamic(name: String)(value: String): Unit = {
     map(name) = value
   }
 }

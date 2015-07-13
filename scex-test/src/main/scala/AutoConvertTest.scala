@@ -13,7 +13,7 @@ object AutoConvertTest {
       conv(Literal(str))
   }
 
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     val int: Int = "123".autoConvert
     val double: Double = "123.5".autoConvert
     println(int)

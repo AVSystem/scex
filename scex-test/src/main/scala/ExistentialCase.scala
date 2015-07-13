@@ -12,7 +12,7 @@ import com.avsystem.scex.{ExpressionProfile, NamedSource}
  * Author: ghik
  */
 object ExistentialCase {
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     val compiler = new XmlFriendlyJavaScexCompiler(new ScexSettings)
 
     val symbolValidator = SymbolValidator(PredefinedAccessSpecs.basicOperations)

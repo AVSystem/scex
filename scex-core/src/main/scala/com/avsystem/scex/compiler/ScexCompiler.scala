@@ -57,7 +57,7 @@ trait ScexCompiler extends LoggingUtils {
         pos.withPoint(mapping(pos.point))
       else pos
 
-    def display(pos: Position, msg: String, severity: Severity) {
+    def display(pos: Position, msg: String, severity: Severity): Unit = {
       if (severity == ERROR) {
         val actualPos = pos.source match {
           case source: ExpressionSourceFile if includes(source.expressionPos, pos) =>

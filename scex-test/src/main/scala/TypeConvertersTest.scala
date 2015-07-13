@@ -5,7 +5,7 @@ object TypeConvertersTest {
 
   import scala.language.existentials
 
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     val clazz = classOf[TypedLol[T]#Dafuq[F] forSome {type T; type F}]
 
     import com.avsystem.scex.compiler.JavaTypeParsing._

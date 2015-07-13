@@ -5,9 +5,9 @@ import com.avsystem.scex.validation.SymbolValidator._
 
 object SymbolValidatorTests {
 
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     var specs: List[MemberAccessSpec] = null
-    def printSpecs() {
+    def printSpecs(): Unit = {
       specs foreach println
       println()
     }

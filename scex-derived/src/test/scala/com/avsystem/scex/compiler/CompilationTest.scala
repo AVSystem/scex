@@ -32,7 +32,7 @@ trait CompilationTest extends BeforeAndAfterAll {
     }
   }
 
-  def catchAndPrint(code: => Any) {
+  def catchAndPrint(code: => Any): Unit = {
     try code catch {
       case t: Throwable => t.printStackTrace(System.out)
     }
@@ -54,7 +54,7 @@ trait CompilationTest extends BeforeAndAfterAll {
       SymbolAttributes(attributes), header, expressionUtils)
   }
 
-  def assertMemberAccessForbidden(expr: => Any) {
+  def assertMemberAccessForbidden(expr: => Any): Unit = {
     try expr catch {
       case e: CompilationFailedException =>
         assert(e.errors.forall(_.msg.startsWith("Member access forbidden")))

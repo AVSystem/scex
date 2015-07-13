@@ -12,6 +12,7 @@ scalacOptions in Global ++= Seq(
   "-language:existentials",
   "-language:dynamics",
   "-language:experimental.macros",
+  "-Xfuture",
   "-Xfatal-warnings",
   "-Xlint:_,-missing-interpolator,-adapted-args"
 )

@@ -1,6 +1,6 @@
 
 object WildcardsTest {
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     import com.avsystem.scex.validation.SymbolValidator._
 
     allow {

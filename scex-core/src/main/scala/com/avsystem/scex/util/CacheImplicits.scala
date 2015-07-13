@@ -16,7 +16,7 @@ object CacheImplicits {
 
   implicit def funToRemovalListener[K, V](fun: RemovalNotification[K, V] => Unit): RemovalListener[K, V] =
     new RemovalListener[K, V] {
-      def onRemoval(notification: RemovalNotification[K, V]) {
+      def onRemoval(notification: RemovalNotification[K, V]): Unit = {
         fun(notification)
       }
     }

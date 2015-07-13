@@ -11,7 +11,7 @@ import com.avsystem.scex.compiler.annotation.NotValidated
 trait ExpressionContext[R, V] {
   @NotValidated def root: R
 
-  def setVariable(name: String, value: V)
+  def setVariable(name: String, value: V): Unit
 
   def getVariable(name: String): V
 }

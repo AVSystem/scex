@@ -6,11 +6,11 @@ class Target {
 
   def c = 20
 
-  def c_=(_c: Int) {}
+  def c_=(_c: Int): Unit = ()
 
   def c(dafuq: Int) = "trololo"
 
-  def a(aa: String) {}
+  def a(aa: String): Unit = ()
 
   @BeanProperty var d = 30
 
