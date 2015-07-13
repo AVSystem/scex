@@ -3,6 +3,8 @@ syntax: glob
 *.ld
 *.log
 .idea
+!.idea/vcs.xml
+!.idea/codeStyleSettings.xml
 
 *.iws
 *.iml
@@ -24,7 +26,6 @@ syntax: regexp
 ^[^/]+/.classpath
 ^[^/]+/.project
 ^[^/]+/.settings/
-^[^/]+/.idea/
 ^[^/]+/target/
 ^[^/]+/build/
 ^[^/]+/lib/
