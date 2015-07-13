@@ -7,6 +7,7 @@ crossPaths in Global := false
 scalacOptions in Global ++= Seq(
   "-feature",
   "-deprecation",
+  "-unchecked",
   "-language:implicitConversions",
   "-language:existentials",
   "-language:dynamics",
