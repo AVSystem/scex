@@ -3,7 +3,9 @@ package compiler
 
 import java.{lang => jl, util => ju}
 
-class JavaTypeParsingTest extends ScexFunSuite {
+import org.scalatest.FunSuite
+
+class JavaTypeParsingTest extends FunSuite {
 
   import com.avsystem.scex.compiler.JavaTypeParsing._
 

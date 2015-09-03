@@ -7,6 +7,7 @@ import com.avsystem.scex.compiler.ScexCompiler.CompilationFailedException
 import com.avsystem.scex.presentation.SymbolAttributes
 import com.avsystem.scex.util.{PredefinedAccessSpecs, SimpleContext}
 import com.avsystem.scex.validation.{SymbolValidator, SyntaxValidator}
+import org.scalatest.FunSuite
 
 import scala.reflect.runtime.universe.TypeTag
 
@@ -14,7 +15,7 @@ import scala.reflect.runtime.universe.TypeTag
  * Created: 20-11-2013
  * Author: ghik
  */
-class TypesafeEqualsTest extends ScexFunSuite with CompilationTest {
+class TypesafeEqualsTest extends FunSuite with CompilationTest {
 
   import com.avsystem.scex.validation.SymbolValidator._
 

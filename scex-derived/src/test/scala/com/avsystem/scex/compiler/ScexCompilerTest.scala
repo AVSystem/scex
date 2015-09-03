@@ -5,13 +5,14 @@ import java.{lang => jl, util => ju}
 
 import com.avsystem.scex.compiler.ParameterizedClass.StaticInnerGeneric
 import com.avsystem.scex.compiler.ScexCompiler.CompilationFailedException
-import com.avsystem.scex.compiler.overriding.{Klass, Base}
+import com.avsystem.scex.compiler.overriding.{Base, Klass}
 import com.avsystem.scex.util.{PredefinedAccessSpecs, SimpleContext}
 import com.google.common.reflect.TypeToken
+import org.scalatest.FunSuite
 
 import scala.collection.immutable.StringOps
 
-class ScexCompilerTest extends ScexFunSuite with CompilationTest {
+class ScexCompilerTest extends FunSuite with CompilationTest {
 
   import com.avsystem.scex.validation.SymbolValidator._
 
@@ -350,5 +351,23 @@ class ScexCompilerTest extends ScexFunSuite with CompilationTest {
     val root = new Klass
     assert(root eq cexpr(SimpleContext(root)))
   }
+
+  def lambdaTest(name: String, expr: String) =
+    test(name) {
+      val acl = allow {
+        List.apply _
+        TestUtils.isAwesome _
+        on { l: List[Any] =>
+          l.forall _
+        }
+      }
+
+      val cexpr = compiler.getCompiledExpression[SimpleContext[Unit], Boolean](createProfile(acl), expr, template = false)
+      assert(cexpr(SimpleContext(())))
+    }
+
+  lambdaTest("regular lambda test", "List(1,2,3).forall(x => 5 > x)")
+  lambdaTest("short lambda test", "List(1,2,3).forall(5 > _)")
+  lambdaTest("eta-expanded lambda test", "List(1,2,3).forall(5.>)")
 
 }

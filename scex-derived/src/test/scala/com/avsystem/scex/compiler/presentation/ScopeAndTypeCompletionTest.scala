@@ -1,17 +1,18 @@
 package com.avsystem.scex.compiler.presentation
 
-import com.avsystem.scex.compiler.presentation.ScexPresentationCompiler.{MemberFlags, Member, Param}
+import com.avsystem.scex.compiler.presentation.ScexPresentationCompiler.Param
 import com.avsystem.scex.compiler.presentation.ScopeAndTypeCompletionTest.Root
-import com.avsystem.scex.compiler.{JavaRootWithGetter, CompilationTest, ScexFunSuite}
+import com.avsystem.scex.compiler.{CompilationTest, JavaRootWithGetter}
 import com.avsystem.scex.presentation.Attributes
 import com.avsystem.scex.presentation.annotation.{Documentation, ParameterNames}
 import com.avsystem.scex.util.SimpleContext
+import org.scalatest.FunSuite
 
 /**
  * Author: ghik
  * Created: 11/18/14.
  */
-class ScopeAndTypeCompletionTest extends ScexFunSuite with CompilationTest with CompletionTest {
+class ScopeAndTypeCompletionTest extends FunSuite with CompilationTest with CompletionTest {
 
   import com.avsystem.scex.util.CommonUtils._
 

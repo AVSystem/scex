@@ -3,13 +3,13 @@ package compiler.xmlfriendly
 
 import java.{lang => jl, util => ju}
 
-import com.avsystem.scex.compiler.ScexFunSuite
+import org.scalatest.FunSuite
 
 /**
  * Created: 23-04-2014
  * Author: ghik
  */
-class XmlFriendlyTranslatorTest extends ScexFunSuite {
+class XmlFriendlyTranslatorTest extends FunSuite {
 
   import com.avsystem.scex.compiler.xmlfriendly.XmlFriendlyTranslator.translate
 

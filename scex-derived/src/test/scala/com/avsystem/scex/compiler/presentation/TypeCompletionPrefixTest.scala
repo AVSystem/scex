@@ -3,15 +3,16 @@ package com.avsystem.scex.compiler.presentation
 import java.{lang => jl, util => ju}
 
 import com.avsystem.scex.Type
+import com.avsystem.scex.compiler.CompilationTest
 import com.avsystem.scex.compiler.presentation.TypeCompletionPrefixTest._
-import com.avsystem.scex.compiler.{CompilationTest, ScexFunSuite}
 import com.avsystem.scex.util.SimpleContext
+import org.scalatest.FunSuite
 
 /**
  * Created: 07-10-2014
  * Author: ghik
  */
-class TypeCompletionPrefixTest extends ScexFunSuite with CompilationTest with CompletionTest {
+class TypeCompletionPrefixTest extends FunSuite with CompilationTest with CompletionTest {
 
   import com.avsystem.scex.validation.SymbolValidator._
 

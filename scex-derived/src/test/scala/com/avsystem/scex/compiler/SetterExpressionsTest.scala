@@ -4,6 +4,7 @@ package compiler
 import java.{lang => jl, util => ju}
 
 import com.avsystem.scex.util.{PredefinedAccessSpecs, SimpleContext}
+import org.scalatest.FunSuite
 
 import scala.reflect.runtime.universe.TypeTag
 
@@ -24,7 +25,7 @@ class SetterTarget {
  * Created: 28-11-2013
  * Author: ghik
  */
-class SetterExpressionsTest extends ScexFunSuite with CompilationTest {
+class SetterExpressionsTest extends FunSuite with CompilationTest {
 
   import com.avsystem.scex.validation.SymbolValidator._
 

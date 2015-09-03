@@ -4,18 +4,20 @@ package compiler
 import java.util.concurrent.Callable
 import java.{lang => jl, util => ju}
 
+import org.scalatest.FunSuite
+
 /**
  * Created: 17-10-2013
  * Author: ghik
  */
-class ArbitraryCompilationTest extends ScexFunSuite {
+class ArbitraryCompilationTest extends FunSuite {
   val compiler = new DefaultScexCompiler(new ScexSettings)
 
   test("arbitrary source code compilation test") {
     val code =
       """
         |package com.avsystem.scex
-package test
+        |package test
         |
         |class Stuff extends java.util.concurrent.Callable[String] {
         |  def call = "stuff"

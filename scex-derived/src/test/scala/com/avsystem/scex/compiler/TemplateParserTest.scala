@@ -3,12 +3,13 @@ package com.avsystem.scex.compiler
 import java.{lang => jl, util => ju}
 
 import com.avsystem.scex.parsing.TemplateParser
+import org.scalatest.FunSuite
 
 /**
  * Created: 03-11-2014
  * Author: ghik
  */
-class TemplateParserTest extends ScexFunSuite {
+class TemplateParserTest extends FunSuite {
   def parse(expr: String) = {
     val (parts, args) = TemplateParser.parseTemplate(expr).get
     (parts, args.map(_.result))

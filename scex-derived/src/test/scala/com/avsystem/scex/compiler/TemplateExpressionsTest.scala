@@ -6,6 +6,7 @@ import java.{lang => jl, util => ju}
 
 import com.avsystem.scex.compiler.ScexCompiler.CompilationFailedException
 import com.avsystem.scex.util.{PredefinedAccessSpecs, SimpleContext}
+import org.scalatest.FunSuite
 
 import scala.runtime.BoxedUnit
 
@@ -13,7 +14,7 @@ import scala.runtime.BoxedUnit
  * Created: 18-11-2013
  * Author: ghik
  */
-class TemplateExpressionsTest extends ScexFunSuite with CompilationTest {
+class TemplateExpressionsTest extends FunSuite with CompilationTest {
 
   import com.avsystem.scex.validation.SymbolValidator._
 

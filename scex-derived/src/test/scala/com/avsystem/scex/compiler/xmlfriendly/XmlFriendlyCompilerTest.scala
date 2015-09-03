@@ -4,18 +4,19 @@ package compiler.xmlfriendly
 import java.{lang => jl, util => ju}
 
 import com.avsystem.scex.compiler.ScexCompiler.{CompilationFailedException, CompileError}
-import com.avsystem.scex.compiler.{ScexFunSuite, ScexSettings}
+import com.avsystem.scex.compiler.ScexSettings
 import com.avsystem.scex.japi.XmlFriendlyJavaScexCompiler
 import com.avsystem.scex.presentation.SymbolAttributes
 import com.avsystem.scex.util.{PredefinedAccessSpecs, SimpleContext}
 import com.avsystem.scex.validation.SymbolValidator._
 import com.avsystem.scex.validation.{SymbolValidator, SyntaxValidator}
+import org.scalatest.FunSuite
 
 /**
  * Created: 17-09-2013
  * Author: ghik
  */
-class XmlFriendlyCompilerTest extends ScexFunSuite {
+class XmlFriendlyCompilerTest extends FunSuite {
 
   val compiler = new XmlFriendlyJavaScexCompiler(new ScexSettings)
 

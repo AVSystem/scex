@@ -3,12 +3,13 @@ package com.avsystem.scex.compiler
 import java.{lang => jl, util => ju}
 
 import com.avsystem.scex.parsing.ScalaParsingCommons
+import org.scalatest.FunSuite
 
 /**
  * Created: 31-10-2014
  * Author: ghik
  */
-class ScalaParsingCommonsTest extends ScexFunSuite {
+class ScalaParsingCommonsTest extends FunSuite {
 
   import com.avsystem.scex.parsing.ScalaParsingCommons._
 

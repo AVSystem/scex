@@ -6,6 +6,9 @@
         <ScalaCodeStyleSettings>
           <option name="PLACE_SELF_TYPE_ON_NEW_LINE" value="false" />
         </ScalaCodeStyleSettings>
+        <XML>
+          <option name="XML_LEGACY_SETTINGS_IMPORTED" value="true" />
+        </XML>
         <codeStyleSettings language="Scala">
           <option name="BLANK_LINES_AROUND_CLASS" value="0" />
           <option name="BLANK_LINES_AROUND_METHOD" value="0" />

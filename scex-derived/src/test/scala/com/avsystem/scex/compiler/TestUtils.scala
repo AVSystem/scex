@@ -10,18 +10,20 @@ import com.avsystem.scex.util.Literal
  * Author: ghik
  */
 object TestUtils {
-  implicit def zeroOneLiteralToBoolean(lit: Literal) = lit.literalString match {
+  implicit def zeroOneLiteralToBoolean(lit: Literal): Boolean = lit.literalString match {
     case "0" => false
     case "1" => true
     case _ => throw new IllegalArgumentException(s"Must be 0 or 1, found ${lit.literalString}")
   }
 
   class CustomBooleanConversionRoot(falseVal: String, trueVal: String) {
-    implicit def customLiteralToBoolean(lit: Literal) = lit.literalString match {
+    implicit def customLiteralToBoolean(lit: Literal): Boolean = lit.literalString match {
       case `falseVal` => false
       case `trueVal` => true
       case _ => throw new IllegalArgumentException(s"Must be $falseVal or $trueVal, found ${lit.literalString}")
     }
   }
 
+  def isAwesome(i: Int): Boolean =
+    i < 5
 }
