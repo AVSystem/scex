@@ -356,9 +356,11 @@ class ScexCompilerTest extends FunSuite with CompilationTest {
     test(name) {
       val acl = allow {
         List.apply _
-        TestUtils.isAwesome _
         on { l: List[Any] =>
           l.forall _
+        }
+        on { i: Int =>
+          i > (_: Int)
         }
       }
 

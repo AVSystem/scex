@@ -23,7 +23,4 @@ object TestUtils {
       case _ => throw new IllegalArgumentException(s"Must be $falseVal or $trueVal, found ${lit.literalString}")
     }
   }
-
-  def isAwesome(i: Int): Boolean =
-    i < 5
 }
