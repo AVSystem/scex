@@ -105,6 +105,15 @@ class TypeCompletionPrefixTest extends FunSuite with CompilationTest with Comple
     "ap|i.inc"
   )
 
+  tests("incomplete selection accidentally keyword", "api", scexType[Api])(
+    "api.type|",
+    "api.typ|e",
+    "api.t|ype",
+    "api.|type",
+    "api|.type",
+    "ap|i.type"
+  )
+
   tests("forbidden selection", "api", scexType[Api])(
     "api.zuo|",
     "api.z|uo",

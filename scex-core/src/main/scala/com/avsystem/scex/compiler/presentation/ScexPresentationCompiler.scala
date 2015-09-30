@@ -5,7 +5,7 @@ import java.{lang => jl, util => ju}
 
 import com.avsystem.scex.compiler.CodeGeneration._
 import com.avsystem.scex.compiler.ScexCompiler.{CompilationFailedException, CompileError}
-import com.avsystem.scex.compiler.presentation.ScexPresentationCompiler.{Completion, Member => SMember, Param, MemberFlags}
+import com.avsystem.scex.compiler.presentation.ScexPresentationCompiler.{Completion, Member => SMember, MemberFlags, Param}
 import com.avsystem.scex.compiler.{ExpressionDef, _}
 import com.avsystem.scex.parsing.EmptyPositionMapping
 import com.avsystem.scex.presentation.annotation.{Documentation, ParameterNames}
@@ -18,8 +18,7 @@ import scala.collection.JavaConversions
 import scala.reflect.NameTransformer
 import scala.reflect.runtime.universe.TypeTag
 
-trait ScexPresentationCompiler extends ScexCompiler {
-  compiler =>
+trait ScexPresentationCompiler extends ScexCompiler {compiler =>
 
   private val logger = createLogger[ScexPresentationCompiler]
 
@@ -333,11 +332,17 @@ trait ScexPresentationCompiler extends ScexCompiler {
         import vc._
 
         inCompilerThread {
-          // fix selectDynamic positions, which scalac computes incorrectly...
           object positionFixer extends Traverser {
             override def traverse(tree: Tree) = {
               super.traverse(tree)
               tree match {
+                // treat keywords incorrectly typed after dot as part of the Select tree
+                case Select(prefix, nme.ERROR) =>
+                  val chars = sourceFile.content
+                  val newEnd = tree.pos.end + Iterator.range(tree.pos.end, chars.length)
+                    .takeWhile(i => chars(i).isLetter).length
+                  tree.setPos(tree.pos.withEnd(newEnd))
+                // fix selectDynamic positions, which scalac computes incorrectly...
                 case tree@Apply(Select(_, TermName("selectDynamic")), List(lit@Literal(Constant(_: String))))
                   if lit.pos.isTransparent && lit.pos.end >= tree.pos.end =>
                   tree.setPos(tree.pos.withEnd(lit.pos.end))
