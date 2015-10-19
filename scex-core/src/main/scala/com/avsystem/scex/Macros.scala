@@ -15,8 +15,9 @@ import scala.reflect.macros.blackbox
 class Macros(val c: blackbox.Context) extends MacroUtils {
 
   val universe: c.universe.type = c.universe
+
   import universe._
-  
+
   val ScexLiteralTpe = typeOf[ScexLiteral].dealias
   val ScexLiteralObj = ScexLiteralTpe.typeSymbol.companion
   val TemplateInterpolationsObjTpe = typeOf[TemplateInterpolations.type]
@@ -133,17 +134,17 @@ class Macros(val c: blackbox.Context) extends MacroUtils {
     lazy val leftToRightConv = c.inferImplicitView(leftTree, leftTree.tpe, rightTree.tpe.widen)
     lazy val rightToLeftConv = c.inferImplicitView(rightTree, rightTree.tpe, leftTree.tpe.widen)
 
-    if (leftTpe <:< rightTpe) {
+    if (leftTpe <:< rightTpe)
       q"$leftTree == $rightTree"
-    } else if (rightTpe <:< leftTpe) {
+    else if (rightTpe <:< leftTpe)
       q"$rightTree == $leftTree"
-    } else if (rightToLeftConv != EmptyTree) {
+    else if (rightToLeftConv != EmptyTree)
       q"$leftTree == $rightToLeftConv($rightTree)"
-    } else if (leftToRightConv != EmptyTree) {
+    else if (leftToRightConv != EmptyTree)
       q"$leftToRightConv($leftTree) == $rightTree"
-    } else {
+    else
       c.abort(c.enclosingPosition, s"Values of types $leftTpe and $rightTpe cannot be compared for equality")
-    }
+
   }
 
 }

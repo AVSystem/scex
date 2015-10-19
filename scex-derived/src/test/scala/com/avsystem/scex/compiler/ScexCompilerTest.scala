@@ -197,15 +197,6 @@ class ScexCompilerTest extends FunSuite with CompilationTest {
     }
   }
 
-  test("static module member validation test") {
-    val acl = allow {
-      Some.apply _
-    }
-    val expr = "Some(42)"
-    val cexpr = compiler.getCompiledExpression[SimpleContext[Unit], Option[Int]](createProfile(acl), expr, template = false)
-    assert(Some(42) === cexpr(SimpleContext(())))
-  }
-
   test("static module access validation test") {
     val acl = allow {
       Some.apply _
@@ -214,6 +205,15 @@ class ScexCompilerTest extends FunSuite with CompilationTest {
     assertMemberAccessForbidden {
       compiler.getCompiledExpression[SimpleContext[Unit], Unit](createProfile(acl), expr, template = false)
     }
+  }
+
+  test("static module member validation test 1") {
+    val acl = allow {
+      Some.apply _
+    }
+    val expr = "Some(42)"
+    val cexpr = compiler.getCompiledExpression[SimpleContext[Unit], Option[Int]](createProfile(acl), expr, template = false)
+    assert(Some(42) === cexpr(SimpleContext(())))
   }
 
   test("static module member validation test 2") {
@@ -226,7 +226,7 @@ class ScexCompilerTest extends FunSuite with CompilationTest {
     }
   }
 
-  test("explicit member-by-implicit validation test") {
+  test("explicit member-by-implicit validation test 1") {
     val acl = allow {
       on { s: String =>
         s.reverse
@@ -235,6 +235,20 @@ class ScexCompilerTest extends FunSuite with CompilationTest {
     val expr = "\"bippy\".reverse"
     val cexpr = compiler.getCompiledExpression[SimpleContext[Unit], String](createProfile(acl), expr, template = false)
     assert("yppib" === cexpr(SimpleContext(())))
+  }
+
+  test("explicit member-by-implicit validation test 2") {
+    import TestExtensions._
+    val acl = allow {
+      on { any: Any =>
+        any ? (_: Any)
+      }
+    }
+    acl.foreach(println)
+    val expr = "\"bippy\" ? \"fuu\""
+    val cexpr = compiler.getCompiledExpression[SimpleContext[Unit], String](
+      createProfile(acl, header = "import com.avsystem.scex.compiler.TestExtensions._"), expr, template = false)
+    assert("bippy" === cexpr(SimpleContext(())))
   }
 
   test("plain implicit conversion validation test") {

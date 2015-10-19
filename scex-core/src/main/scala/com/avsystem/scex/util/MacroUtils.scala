@@ -151,18 +151,17 @@ trait MacroUtils {
   }
 
   def path(tree: Tree): String = tree match {
-    case Select(prefix, name) => s"${path(prefix)}.${name.decodedName.toString}"
-    case Ident(name) => name.decodedName.toString
-    case This(name) => name.decodedName.toString
+    case Select(prefix, name) => s"${path(prefix)}.$name"
+    case _: Ident | _: This => tree.symbol.fullName
     case EmptyTree => "<none>"
     case _ => throw new IllegalArgumentException("This tree does not represent simple path: " + showRaw(tree))
   }
 
   /**
-   * Is this tree a path that starts with package and goes through stable symbols (vals and objects)?
-   *
-   * @return
-   */
+    * Is this tree a path that starts with package and goes through stable symbols (vals and objects)?
+    *
+    * @return
+    */
   def isStableGlobalPath(tree: Tree): Boolean = tree match {
     case Select(prefix, _) => isStableTerm(tree.symbol) && isStableGlobalPath(prefix)
     case Ident(_) => tree.symbol.isStatic && isStableTerm(tree.symbol)
@@ -272,8 +271,8 @@ trait MacroUtils {
     }
 
   /**
-   * Accessible members include methods, modules, val/var setters and getters and Java fields.
-   */
+    * Accessible members include methods, modules, val/var setters and getters and Java fields.
+    */
   def accessibleMembers(tpe: Type) =
     tpe.members.toList.collect { case s if s.isPublic && s.isTerm &&
       (s.isJava || (!s.asTerm.isVal && !s.asTerm.isVar)) && !s.isImplementationArtifact => s.asTerm
@@ -318,8 +317,8 @@ trait MacroUtils {
     tpe <:< definitions.NullTpe || tpe <:< definitions.NothingTpe
 
   /**
-   * Is this symbol the 'wrapped' field of Java getter adapter?
-   */
+    * Is this symbol the 'wrapped' field of Java getter adapter?
+    */
   def isAdapterWrappedMember(symbol: Symbol): Boolean =
     if (symbol != null && symbol.isTerm) {
       val ts = symbol.asTerm

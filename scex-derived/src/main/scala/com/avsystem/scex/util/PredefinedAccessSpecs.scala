@@ -58,6 +58,10 @@ object PredefinedAccessSpecs {
     on { nul: Null =>
       nul.toString
     }
+    Tuple2.apply _
+    on { pair: (Any, Any) =>
+      pair.swap
+    }
 
     // Operations on primitive types
     on { u: Unit =>

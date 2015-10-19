@@ -1,6 +1,6 @@
 name := "scex"
 
-version in Global := "1.15.4"
+version in Global := "1.15.5"
 scalaVersion in Global := "2.11.7"
 organization in Global := "com.avsystem"
 crossPaths in Global := false
