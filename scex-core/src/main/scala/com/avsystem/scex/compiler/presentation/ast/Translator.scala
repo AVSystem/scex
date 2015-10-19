@@ -132,7 +132,7 @@ class Translator(val global: ScexGlobal, offset: Int, exprDef: ExpressionDef) ex
   def translateType(tpe: u.Type) =
     if(tpe == u.NoType) Type.NoType
     else tpe.toOpt.map { tpe =>
-      Type(tpe.widen.toString(), u.erasureClass(tpe))
+      Type(tpe.map(_.dealiasWiden).toString(), u.erasureClass(tpe))
     }.getOrElse(Type.NoType)
 
   def translateAttachments(tree: u.Tree) =

@@ -220,7 +220,7 @@ trait ScexPresentationCompiler extends ScexCompiler {compiler =>
     def translateType(tpe: Type) =
       if (tpe == NoType) SType.NoType
       else tpe.toOpt.map { tpe =>
-        SType(tpe.widen.toString(), erasureClass(tpe))
+        SType(tpe.map(_.dealiasWiden).toString(), erasureClass(tpe))
       }.getOrElse(SType.NoType)
 
     val attributes = getAttributes(global, attrs)(member)
