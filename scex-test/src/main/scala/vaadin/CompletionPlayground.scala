@@ -7,8 +7,8 @@ import com.avsystem.scex.compiler.ScexSettings
 import com.avsystem.scex.compiler.presentation.ScexPresentationCompiler.Member
 import com.avsystem.scex.japi.XmlFriendlyJavaScexCompiler
 import com.avsystem.scex.presentation.SymbolAttributes
-import com.avsystem.scex.util.PredefinedAccessSpecs.{basicOperations, javaCollectionExtensions}
-import com.avsystem.scex.util.{PredefinedAttributes, SimpleContext}
+import com.avsystem.scex.util.PredefinedAccessSpecs.basicOperations
+import com.avsystem.scex.util.SimpleContext
 import com.avsystem.scex.validation.{SymbolValidator, SyntaxValidator}
 import com.avsystem.scex.{ExpressionProfile, NamedSource}
 import com.vaadin.event.FieldEvents.{TextChangeEvent, TextChangeListener}
@@ -37,7 +37,7 @@ object CompletionPlayground {
 
       val acl = {
         import com.avsystem.scex.validation.SymbolValidator._
-        basicOperations ++ javaCollectionExtensions ++ allow {
+        basicOperations ++ allow {
           Dyn.selectDynamic _
 
           on { jl: JavaLol =>
@@ -63,12 +63,10 @@ object CompletionPlayground {
           }
         }
       }
-      val attrList = PredefinedAttributes.basicOperations ++ PredefinedAttributes.javaCollectionExtensions
 
       val header =
         """
           |import com.avsystem.scex.util.TypesafeEquals._
-          |import com.avsystem.scex.util.JavaCollectionExtensions._
         """.stripMargin
 
       val utils =
@@ -77,7 +75,7 @@ object CompletionPlayground {
         """.stripMargin
 
       val profile = new ExpressionProfile("test", SyntaxValidator.SimpleExpressions, SymbolValidator(acl),
-        SymbolAttributes(attrList), header, NamedSource("test", utils))
+        SymbolAttributes(Nil), header, NamedSource("test", utils))
 
       def memberRepr(member: Member) =
         s"${member.name}${member.params.map(_.map(p => s"${p.name}: ${p.tpe}-${p.tpe.erasure}").mkString("(", ", ", ")")).mkString}: " +
