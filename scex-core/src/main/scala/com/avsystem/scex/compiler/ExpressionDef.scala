@@ -6,9 +6,9 @@ import java.{lang => jl, util => ju}
 import com.avsystem.scex.parsing.PositionMapping
 
 /**
- * Created: 14-11-2013
- * Author: ghik
- */
+  * Created: 14-11-2013
+  * Author: ghik
+  */
 case class ExpressionDef(
   profile: ExpressionProfile,
   template: Boolean,
@@ -16,7 +16,8 @@ case class ExpressionDef(
   expression: String,
   header: String,
   contextType: String,
-  resultType: String)(
+  resultType: String,
+  variableTypes: Map[String, String])(
 
   val originalExpression: String,
   val positionMapping: PositionMapping,

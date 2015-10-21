@@ -6,15 +6,16 @@ import java.{lang => jl, util => ju}
 
 import com.avsystem.scex.compiler.JavaTypeParsing._
 import com.avsystem.scex.compiler.presentation.ScexPresentationCompiler
-import com.avsystem.scex.compiler.presentation.ScexPresentationCompiler.Param
-import com.avsystem.scex.compiler.presentation.ast.Tree
 import com.avsystem.scex.compiler.{ExpressionDef, ScexCompiler}
 import com.avsystem.scex.util.Fluent
+import com.avsystem.scex.{Type => SType}
 import com.google.common.cache.CacheBuilder
 import com.google.common.reflect.TypeToken
-import com.avsystem.scex.{Type => SType}
+
+import scala.collection.JavaConverters._
 
 trait JavaScexCompiler extends ScexCompiler with ScexPresentationCompiler {
+
   import com.avsystem.scex.util.CacheImplicits._
 
   private val typesCache = CacheBuilder.newBuilder.weakKeys
@@ -43,6 +44,7 @@ trait JavaScexCompiler extends ScexCompiler with ScexPresentationCompiler {
     private var _template: Boolean = true
     private var _setter: Boolean = false
     private var _header: String = ""
+    private val _variableTypes: ju.Map[String, TypeToken[_]] = new ju.HashMap
 
     def get = {
       require(_contextTypeToken != null, "Context type cannot be null")
@@ -54,10 +56,13 @@ trait JavaScexCompiler extends ScexCompiler with ScexPresentationCompiler {
       val scalaContextType = typesCache.get(_contextTypeToken.getType)
       val scalaResultType = typesCache.get(_resultTypeToken.getType)
       val rootObjectClass = rootObjectClassCache.get(_contextTypeToken)
+      val variableTypes = _variableTypes.asScala.iterator.map {
+        case (key, value) => (key, typesCache.get(value.getType))
+      }.toMap
 
       val (actualExpression, positionMapping) = preprocess(_expression, _template)
       getCompiledExpression[C, T](ExpressionDef(_profile, _template, _setter, actualExpression, _header,
-        scalaContextType, scalaResultType)(_expression, positionMapping, rootObjectClass))
+        scalaContextType, scalaResultType, variableTypes)(_expression, positionMapping, rootObjectClass))
     }
 
     def contextType[NC <: ExpressionContext[_, _]](contextTypeToken: TypeToken[NC]) = fluent {
@@ -103,6 +108,26 @@ trait JavaScexCompiler extends ScexCompiler with ScexPresentationCompiler {
     def additionalHeader(header: String) = fluent {
       _header = header
     }
+
+    def variableTypes(variableTypes: ju.Map[String, TypeToken[_]]): Unit = fluent {
+      _variableTypes.clear()
+      _variableTypes.putAll(variableTypes)
+    }
+
+    def variableType(name: String, typeToken: TypeToken[_]): Unit = fluent {
+      _variableTypes.put(name, typeToken)
+    }
+
+    def variableClasses(variableTypes: ju.Map[String, Class[_]]): Unit = fluent {
+      _variableTypes.clear()
+      variableTypes.entrySet.iterator.asScala.foreach { e =>
+        _variableTypes.put(e.getKey, TypeToken.of(e.getValue))
+      }
+    }
+
+    def variableClass(name: String, clazz: Class[_]): Unit = fluent {
+      _variableTypes.put(name, TypeToken.of(clazz))
+    }
   }
 
   def buildCompleter =
@@ -115,6 +140,7 @@ trait JavaScexCompiler extends ScexCompiler with ScexPresentationCompiler {
     private var _template: Boolean = true
     private var _setter: Boolean = false
     private var _header: String = ""
+    private val _variableTypes: ju.Map[String, TypeToken[_]] = new ju.HashMap
 
     def get = {
       require(_contextTypeToken != null, "Context type cannot be null")
@@ -125,8 +151,11 @@ trait JavaScexCompiler extends ScexCompiler with ScexPresentationCompiler {
       val scalaContextType = typesCache.get(_contextTypeToken.getType)
       val scalaResultType = typesCache.get(_resultTypeToken.getType)
       val rootObjectClass = rootObjectClassCache.get(_contextTypeToken)
+      val variableTypes = _variableTypes.asScala.iterator.map {
+        case (key, value) => (key, typesCache.get(value.getType))
+      }.toMap
 
-      getCompleter(_profile, _template, _setter, _header, scalaContextType, rootObjectClass, scalaResultType)
+      getCompleter(_profile, _template, _setter, _header, scalaContextType, rootObjectClass, scalaResultType, variableTypes)
     }
 
     def contextType(contextTypeToken: TypeToken[_ <: ExpressionContext[_, _]]) = fluent {
@@ -167,6 +196,26 @@ trait JavaScexCompiler extends ScexCompiler with ScexPresentationCompiler {
 
     def additionalHeader(header: String) = fluent {
       _header = header
+    }
+
+    def variableTypes(variableTypes: ju.Map[String, TypeToken[_]]): Unit = fluent {
+      _variableTypes.clear()
+      _variableTypes.putAll(variableTypes)
+    }
+
+    def variableType(name: String, typeToken: TypeToken[_]): Unit = fluent {
+      _variableTypes.put(name, typeToken)
+    }
+
+    def variableClasses(variableTypes: ju.Map[String, Class[_]]): Unit = fluent {
+      _variableTypes.clear()
+      variableTypes.entrySet.iterator.asScala.foreach { e =>
+        _variableTypes.put(e.getKey, TypeToken.of(e.getValue))
+      }
+    }
+
+    def variableClass(name: String, clazz: Class[_]): Unit = fluent {
+      _variableTypes.put(name, TypeToken.of(clazz))
     }
   }
 

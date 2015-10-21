@@ -97,7 +97,7 @@ class LiteralExpressionsTest extends FunSuite with CompilationTest {
     }
 
     val cexpr = compiler.getCompiledExpression[SimpleContext[CustomBooleanConversionRoot], Boolean](
-      createProfile(acl), "TRÓ", template = true, "")
+      createProfile(acl), "TRÓ", template = true, header = "")
 
     assert(true === cexpr(SimpleContext(new CustomBooleanConversionRoot("ZUO", "TRÓ"))))
   }

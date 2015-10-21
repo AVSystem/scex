@@ -113,7 +113,7 @@ object CodeGeneration {
     utilsObjectPkg: String,
     noMacroProcessing: Boolean) = {
 
-    val ExpressionDef(profile, template, setter, expression, header, contextType, resultType) = exprDef
+    val ExpressionDef(profile, template, setter, expression, header, contextType, resultType, _) = exprDef
 
     val resultOrSetterType = if (setter) s"$ScexPkg.Setter[$resultType]" else resultType
 

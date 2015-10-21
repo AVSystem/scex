@@ -16,7 +16,7 @@ import com.avsystem.scex.{Type => SType}
 
 import scala.collection.JavaConversions
 import scala.reflect.NameTransformer
-import scala.reflect.runtime.universe.TypeTag
+import scala.reflect.runtime.{universe => ru}
 
 trait ScexPresentationCompiler extends ScexCompiler {compiler =>
 
@@ -74,7 +74,8 @@ trait ScexPresentationCompiler extends ScexCompiler {compiler =>
     header: String,
     contextType: String,
     rootObjectClass: Class[_],
-    resultType: String) {
+    resultType: String,
+    variableTypes: Map[String, String] = Map.empty) {
 
     require(profile != null, "Profile cannot be null")
     require(contextType != null, "Context type cannot be null")
@@ -86,7 +87,7 @@ trait ScexPresentationCompiler extends ScexCompiler {compiler =>
         if (bare) (expression, EmptyPositionMapping) else preprocess(expression, template)
 
       ExpressionDef(profile, template && !bare, setter && !bare, actualExpression, header, contextType,
-        if (bare) "Any" else resultType)(expression, positionMapping, rootObjectClass)
+        if (bare) "Any" else resultType, variableTypes)(expression, positionMapping, rootObjectClass)
     }
 
     def getErrors(expression: String): List[CompileError] =
@@ -103,13 +104,13 @@ trait ScexPresentationCompiler extends ScexCompiler {compiler =>
 
     def parse(expression: String): ast.Tree =
       compiler.parse(exprDef(expression, bare = false))
-
   }
 
-  def getCompleter[C <: ExpressionContext[_, _] : TypeTag, T: TypeTag](
+  def getCompleter[C <: ExpressionContext[_, _] : ru.TypeTag, T: ru.TypeTag](
     profile: ExpressionProfile,
     template: Boolean = true,
     setter: Boolean = false,
+    variableTypes: Map[String, ru.Type] = Map.empty,
     header: String = ""): Completer = {
 
     import scala.reflect.runtime.universe._
@@ -119,8 +120,10 @@ trait ScexPresentationCompiler extends ScexCompiler {compiler =>
     val resultType = typeOf[T]
     val TypeRef(_, _, List(rootObjectType, _)) = contextType.baseType(typeOf[ExpressionContext[_, _]].typeSymbol)
     val rootObjectClass = mirror.runtimeClass(rootObjectType)
+    val strVariableTypes = variableTypes.iterator.map({ case (k, v) => (k, v.toString) }).toMap
 
-    getCompleter(profile, template, setter, header, contextType.toString, rootObjectClass, resultType.toString)
+    getCompleter(profile, template, setter, header, contextType.toString,
+      rootObjectClass, resultType.toString, strVariableTypes)
   }
 
   protected def getCompleter(
@@ -130,7 +133,8 @@ trait ScexPresentationCompiler extends ScexCompiler {compiler =>
     header: String,
     contextType: String,
     rootObjectClass: Class[_],
-    resultType: String): Completer = {
+    resultType: String,
+    variableTypes: Map[String, String]): Completer = {
 
     new Completer(profile, template, setter, header, contextType, rootObjectClass, resultType)
   }

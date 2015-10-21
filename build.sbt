@@ -30,7 +30,7 @@ val scalatestVersion = "2.1.3"
 
 libraryDependencies in Global ++= Seq(
   compilerPlugin("com.github.ghik" % "silencer-plugin" % silencerVersion),
-  ("com.github.ghik" % "silencer-lib" % silencerVersion).withSources()
+  "com.github.ghik" % "silencer-lib" % silencerVersion
 )
 
 lazy val scex = project.in(file("."))
@@ -40,9 +40,9 @@ lazy val scex = project.in(file("."))
     libraryDependencies := (libraryDependencies in core).value
   )
   .settings((
-  for (packageTask <- Seq(packageBin, packageSrc)) yield mappings in(Compile, packageTask) :=
-    (mappings in(core, Compile, packageTask)).value ++ (mappings in(derived, Compile, packageTask)).value
-  ): _*)
+    for (packageTask <- Seq(packageBin, packageSrc)) yield mappings in(Compile, packageTask) :=
+      (mappings in(core, Compile, packageTask)).value ++ (mappings in(derived, Compile, packageTask)).value
+    ): _*)
 
 lazy val subprojectSettings = Seq(
   publishArtifact := false,

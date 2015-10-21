@@ -63,7 +63,7 @@ trait CompilationTest extends BeforeAndAfterAll {
 
   def evaluateTemplate[T: TypeTag](expr: String, acl: List[MemberAccessSpec] = defaultAcl, header: String = "") =
     compiler.getCompiledExpression[SimpleContext[Unit], T](
-      createProfile(acl), expr, template = true, header).apply(SimpleContext(()))
+      createProfile(acl), expr, template = true, header = header).apply(SimpleContext(()))
 
   def evaluate[T: TypeTag](expr: String, acl: List[MemberAccessSpec] = defaultAcl) = {
     compiler.getCompiledExpression[SimpleContext[Unit], T](createProfile(acl), expr, template = false).apply(SimpleContext(()))

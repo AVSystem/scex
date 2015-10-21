@@ -15,7 +15,7 @@ import scala.collection.mutable.ListBuffer
 import scala.reflect.NameTransformer
 import scala.reflect.internal.util._
 import scala.reflect.io.{AbstractFile, VirtualDirectory}
-import scala.reflect.runtime.universe.TypeTag
+import scala.reflect.runtime.{universe => ru}
 import scala.tools.nsc.plugins.Plugin
 import scala.tools.nsc.reporters.AbstractReporter
 import scala.tools.nsc.{Global, Settings}
@@ -290,9 +290,10 @@ trait ScexCompiler extends LoggingUtils {
   protected final def getCompiledExpression[C <: ExpressionContext[_, _], T](exprDef: ExpressionDef): Expression[C, T] =
     compileExpression(exprDef).get.asInstanceOf[Expression[C, T]]
 
-  def getCompiledExpression[C <: ExpressionContext[_, _] : TypeTag, T: TypeTag](
+  def getCompiledExpression[C <: ExpressionContext[_, _] : ru.TypeTag, T: ru.TypeTag](
     profile: ExpressionProfile,
     expression: String,
+    variableTypes: Map[String, ru.Type] = Map.empty,
     template: Boolean = true,
     header: String = ""): Expression[C, T] = {
 
@@ -309,16 +310,18 @@ trait ScexCompiler extends LoggingUtils {
       try mirror.runtimeClass(rootObjectType) catch {
         case _: ClassNotFoundException => null
       }
+    val strVariableTypes = variableTypes.iterator.map({ case (k, v) => (k, v.toString) }).toMap
 
     val (actualExpression, positionMapping) = preprocess(expression, template)
     getCompiledExpression(ExpressionDef(profile, template, setter = false, actualExpression,
-      header, contextType.toString, typeOf[T].toString)(expression, positionMapping, rootObjectClass))
+      header, contextType.toString, typeOf[T].toString, strVariableTypes)(expression, positionMapping, rootObjectClass))
   }
 
-  def getCompiledSetterExpression[C <: ExpressionContext[_, _] : TypeTag, T: TypeTag](
+  def getCompiledSetterExpression[C <: ExpressionContext[_, _] : ru.TypeTag, T: ru.TypeTag](
     profile: ExpressionProfile,
     expression: String,
     template: Boolean = true,
+    variableTypes: Map[String, ru.Type] = Map.empty,
     header: String = ""): Expression[C, Setter[T]] = {
 
     require(profile != null, "Profile cannot be null")
@@ -334,10 +337,11 @@ trait ScexCompiler extends LoggingUtils {
       try mirror.runtimeClass(rootObjectType) catch {
         case _: ClassNotFoundException => null
       }
+    val strVariableTypes = variableTypes.iterator.map({ case (k, v) => (k, v.toString) }).toMap
 
     val (actualExpression, positionMapping) = preprocess(expression, template)
     getCompiledExpression(ExpressionDef(profile, template, setter = true, actualExpression,
-      header, contextType.toString, typeOf[T].toString)(expression, positionMapping, rootObjectClass))
+      header, contextType.toString, typeOf[T].toString, strVariableTypes)(expression, positionMapping, rootObjectClass))
   }
 
 
