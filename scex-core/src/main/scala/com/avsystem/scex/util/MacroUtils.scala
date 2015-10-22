@@ -37,6 +37,7 @@ trait MacroUtils {
   lazy val booleanTpe = typeOf[Boolean]
   lazy val jBooleanTpe = typeOf[jl.Boolean]
   lazy val dynamicTpe = typeOf[Dynamic]
+  lazy val dynamicVarAccessorTpe = typeOf[DynamicVariableAccessor[_]]
 
   object DecodedTermName {
     def unapply(name: TermName) =
@@ -371,6 +372,9 @@ trait MacroUtils {
       val tsym = sym.asTerm
       if (tsym.isGetter) tsym.accessed.annotations else Nil
     } else Nil)
+
+  def annotationsIncludingOverrides(sym: Symbol) =
+    withOverrides(sym).flatMap(annotations)
 
   def debugTree(pref: String, tree: Tree): Unit = {
     println(pref)

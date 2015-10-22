@@ -75,7 +75,7 @@ trait ScexPresentationCompiler extends ScexCompiler {compiler =>
     contextType: String,
     rootObjectClass: Class[_],
     resultType: String,
-    variableTypes: Map[String, String] = Map.empty) {
+    variableTypes: Map[String, String]) {
 
     require(profile != null, "Profile cannot be null")
     require(contextType != null, "Context type cannot be null")
@@ -136,14 +136,14 @@ trait ScexPresentationCompiler extends ScexCompiler {compiler =>
     resultType: String,
     variableTypes: Map[String, String]): Completer = {
 
-    new Completer(profile, template, setter, header, contextType, rootObjectClass, resultType)
+    new Completer(profile, template, setter, header, contextType, rootObjectClass, resultType, variableTypes)
   }
 
   private def getContextTpe(global: IGlobal)(tree: global.Tree): global.Type = {
     import global._
 
     inCompilerThread {
-      val PackageDef(_, List(ClassDef(_, _, _, Template(List(expressionParent, _), _, _)))) = tree
+      val PackageDef(_, List(ClassDef(_, _, _, Template(List(expressionParent, _), _, _)), _*)) = tree
       val TypeRef(_, _, List(contextTpe, _)) = expressionParent.tpe
       contextTpe
     }

@@ -69,69 +69,67 @@ abstract class ValidationContext protected extends MacroUtils {
   def needsValidation(symbol: Symbol) =
     symbol != null && symbol.isTerm && !symbol.isPackage && !isExpressionUtil(symbol) && !isProfileObject(symbol)
 
-  def extractAccess(tree: Tree, allowedSelectionPrefix: Boolean = false): MemberAccess = {
-    tree match {
-      case (_: Select | _: Ident) if annotations(tree.symbol).exists(_.tree.tpe <:< notValidatedAnnotType) =>
-        NoMemberAccess
+  def extractAccess(tree: Tree, allowedSelectionPrefix: Boolean = false): MemberAccess = tree match {
+    case (_: Select | _: Ident) if annotationsIncludingOverrides(tree.symbol).exists(_.tree.tpe <:< notValidatedAnnotType) =>
+      NoMemberAccess
 
-      case Select(rootAdapter: Ident, _) if isRootAdapter(rootAdapter.tpe) && !isAdapterWrappedMember(tree.symbol) =>
-        val symbol = getJavaGetter(tree.symbol, rootTpe)
+    case Select(rootAdapter: Ident, _) if isRootAdapter(rootAdapter.tpe) && !isAdapterWrappedMember(tree.symbol) =>
+      val symbol = getJavaGetter(tree.symbol, rootTpe)
 
-        SimpleMemberAccess(rootTpe, symbol, None, allowedByDefault = false, tree.pos)
+      SimpleMemberAccess(rootTpe, symbol, None, allowedByDefault = false, tree.pos)
 
-      case Select(apply@ImplicitlyConverted(qualifier, fun), _) if !isScexSynthetic(fun.symbol) =>
-        val accessByImplicit = SimpleMemberAccess(qualifier.tpe, tree.symbol,
-          Some(stripTypeApply(fun)), allowedByDefault = false, tree.pos)
+    case Select(apply@ImplicitlyConverted(qualifier, fun), _) if !isScexSynthetic(fun.symbol) =>
+      val accessByImplicit = SimpleMemberAccess(qualifier.tpe, tree.symbol,
+        Some(stripTypeApply(fun)), allowedByDefault = false, tree.pos)
 
-        val implicitConversionAccess = extractAccess(fun)
-        val plainAccess = SimpleMemberAccess(apply.tpe, tree.symbol, None, allowedByDefault = false, tree.pos)
-        var alternatives = List(accessByImplicit, MultipleMemberAccesses(List(implicitConversionAccess, plainAccess)))
+      val implicitConversionAccess = extractAccess(fun)
+      val plainAccess = SimpleMemberAccess(apply.tpe, tree.symbol, None, allowedByDefault = false, tree.pos)
+      var alternatives = List(accessByImplicit, MultipleMemberAccesses(List(implicitConversionAccess, plainAccess)))
 
-        // special case for configuration convenience: 'any + <string>' (using any2stringadd) is also validated as
-        // combination of toString and string concatenation
-        lazy val toStringMember = toStringSymbol(qualifier.tpe)
-        if (fun.symbol == any2stringadd && tree.symbol == stringAddPlus && toStringMember != NoSymbol) {
-          val toStringAccess = SimpleMemberAccess(qualifier.tpe, toStringMember, None, allowedByDefault = false, tree.pos)
-          val stringConcatAccess = SimpleMemberAccess(stringTpe, stringConcat, None, allowedByDefault = false, tree.pos)
-          alternatives = MultipleMemberAccesses(List(toStringAccess, stringConcatAccess)) :: alternatives
-        }
+      // special case for configuration convenience: 'any + <string>' (using any2stringadd) is also validated as
+      // combination of toString and string concatenation
+      lazy val toStringMember = toStringSymbol(qualifier.tpe)
+      if (fun.symbol == any2stringadd && tree.symbol == stringAddPlus && toStringMember != NoSymbol) {
+        val toStringAccess = SimpleMemberAccess(qualifier.tpe, toStringMember, None, allowedByDefault = false, tree.pos)
+        val stringConcatAccess = SimpleMemberAccess(stringTpe, stringConcat, None, allowedByDefault = false, tree.pos)
+        alternatives = MultipleMemberAccesses(List(toStringAccess, stringConcatAccess)) :: alternatives
+      }
 
-        MultipleMemberAccesses(List(AlternativeMemberAccess(alternatives), extractAccess(qualifier)))
+      MultipleMemberAccesses(List(AlternativeMemberAccess(alternatives), extractAccess(qualifier)))
 
-      case Select(apply@ImplicitlyConverted(qualifier, fun), _) if isAdapterConversion(fun.symbol) && !isAdapterWrappedMember(tree.symbol) =>
-        val symbol = getJavaGetter(tree.symbol, qualifier.tpe)
-        val access = SimpleMemberAccess(qualifier.tpe, symbol, None, allowedByDefault = false, tree.pos)
+    case Select(apply@ImplicitlyConverted(qualifier, fun), _) if isAdapterConversion(fun.symbol) && !isAdapterWrappedMember(tree.symbol) =>
+      val symbol = getJavaGetter(tree.symbol, qualifier.tpe)
+      val access = SimpleMemberAccess(qualifier.tpe, symbol, None, allowedByDefault = false, tree.pos)
 
-        MultipleMemberAccesses(List(access, extractAccess(qualifier)))
+      MultipleMemberAccesses(List(access, extractAccess(qualifier)))
 
-      case Select(qualifier, name) if needsValidation(tree.symbol) =>
-        // Direct accesses to enum values are allowed because they compile to constants, so I'm also allowing all
-        // Enum#valueOf methods for consistency.
-        val staticMember = isStaticModule(qualifier.symbol) && !isFromToplevelType(tree.symbol)
-        lazy val qualCompanion = qualifier.symbol.companion
-        lazy val companionType = qualCompanion.asType.toType
-        val enumValueOf = staticMember && name == TermName("valueOf") && qualCompanion != NoSymbol && companionType <:< typeOf[Enum[_]] &&
-          tree.symbol.isMethod && tree.symbol.asMethod.paramLists.flatten.map(_.typeSignature).corresponds(List(typeOf[String]))(_ =:= _)
+    case Select(qualifier, name) if needsValidation(tree.symbol) =>
+      // Direct accesses to enum values are allowed because they compile to constants, so I'm also allowing all
+      // Enum#valueOf methods for consistency.
+      val staticMember = isStaticModule(qualifier.symbol) && !isFromToplevelType(tree.symbol)
+      lazy val qualCompanion = qualifier.symbol.companion
+      lazy val companionType = qualCompanion.asType.toType
+      val enumValueOf = staticMember && name == TermName("valueOf") && qualCompanion != NoSymbol && companionType <:< typeOf[Enum[_]] &&
+        tree.symbol.isMethod && tree.symbol.asMethod.paramLists.flatten.map(_.typeSignature).corresponds(List(typeOf[String]))(_ =:= _)
 
-        val access = SimpleMemberAccess(qualifier.tpe, tree.symbol, None, allowedSelectionPrefix || enumValueOf, tree.pos)
-        // When accessing member of static module (that includes Java statics), excluding getClass/equals/hashCode/toString/etc.
-        // the static module access itself (qualifier) is allowed by default. Also, qualifier is allowed by default if its member was
-        // allowed with @AlwaysAllowed annotation.
-        MultipleMemberAccesses(List(access, extractAccess(qualifier, staticMember)))
+      val access = SimpleMemberAccess(qualifier.tpe, tree.symbol, None, allowedSelectionPrefix || enumValueOf, tree.pos)
+      // When accessing member of static module (that includes Java statics), excluding getClass/equals/hashCode/toString/etc.
+      // the static module access itself (qualifier) is allowed by default. Also, qualifier is allowed by default if its member was
+      // allowed with @AlwaysAllowed annotation.
+      MultipleMemberAccesses(List(access, extractAccess(qualifier, staticMember)))
 
-      // special case for configuration convenience: string concatenation also forces validation of toString on its argument
-      case Apply(qualifier, List(arg)) if qualifier.symbol == stringConcat =>
-        MultipleMemberAccesses(List(toStringAccess(arg), extractAccess(qualifier), extractAccess(arg)))
+    // special case for configuration convenience: string concatenation also forces validation of toString on its argument
+    case Apply(qualifier, List(arg)) if qualifier.symbol == stringConcat =>
+      MultipleMemberAccesses(List(toStringAccess(arg), extractAccess(qualifier), extractAccess(arg)))
 
-      // special case for configuration convenience: standard string interpolations also force validation of
-      // toString on its arguments
-      case Apply(qualifier, args) if standardStringInterpolations contains qualifier.symbol =>
-        val toStringAccesses = MultipleMemberAccesses(args.map(toStringAccess))
-        MultipleMemberAccesses(toStringAccesses :: extractAccess(qualifier) :: args.map(arg => extractAccess(arg)))
+    // special case for configuration convenience: standard string interpolations also force validation of
+    // toString on its arguments
+    case Apply(qualifier, args) if standardStringInterpolations contains qualifier.symbol =>
+      val toStringAccesses = MultipleMemberAccesses(args.map(toStringAccess))
+      MultipleMemberAccesses(toStringAccesses :: extractAccess(qualifier) :: args.map(arg => extractAccess(arg)))
 
-      case _ =>
-        MultipleMemberAccesses(tree.children.map(child => extractAccess(child)))
-    }
+    case _ =>
+      MultipleMemberAccesses(tree.children.map(child => extractAccess(child)))
   }
 }
 

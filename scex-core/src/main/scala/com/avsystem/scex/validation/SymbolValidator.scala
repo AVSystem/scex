@@ -37,13 +37,13 @@ trait SymbolValidator extends SymbolInfoList[Boolean] with LoggingUtils {
         // SymbolInfos that match this invocation
         val matchingSpecs = matchingInfos(vc.universe)(tpe, symbol, implicitConv)
 
-        def specsRepr = matchingSpecs.map({ case InfoWithIndex(spec, idx) => s"$idx: $spec"}).mkString("\n")
+        def specsRepr = matchingSpecs.map({ case InfoWithIndex(spec, idx) => s"$idx: $spec" }).mkString("\n")
         logger.trace(s"Matching signatures:\n$specsRepr")
 
         // get 'allow' field from matching spec that appeared first in ACL or false if there was no matching spec
         val (allow, index) = matchingSpecs.headOption.map {
           case InfoWithIndex(info, idx) => (info.payload, idx)
-        } getOrElse (allowedByDefault, lowestPriority(allowedByDefault))
+        } getOrElse(allowedByDefault, lowestPriority(allowedByDefault))
 
         ValidationResult(index, if (allow) Nil else List(access))
 
@@ -82,21 +82,21 @@ object SymbolValidator extends SymbolDsl {
   val empty: SymbolValidator = apply(Nil)
 
   /**
-   * Encloses block of statements that specify methods that are allowed to be called in expressions.
-   * Code inside <tt>allow</tt> block is virtualized - it's not actually compiled to bytecode.
-   * Multiple allow/deny blocks joined with <tt>++</tt> operator form an ACL-like structure.
-   * @param expr
-   * @return
-   */
+    * Encloses block of statements that specify methods that are allowed to be called in expressions.
+    * Code inside <tt>allow</tt> block is virtualized - it's not actually compiled to bytecode.
+    * Multiple allow/deny blocks joined with <tt>++</tt> operator form an ACL-like structure.
+    * @param expr
+    * @return
+    */
   def allow(expr: Any): List[MemberAccessSpec] = macro SymbolDslMacros.allow_impl
 
   /**
-   * Encloses block of statements that specify methods that are not allowed to be called in expressions.
-   * Code inside <tt>deny</tt> block is virtualized - it's not actually compiled to bytecode.
-   * Multiple allow/deny blocks joined with <tt>++</tt> operator form an ACL-like structure.
-   * @param expr
-   * @return
-   */
+    * Encloses block of statements that specify methods that are not allowed to be called in expressions.
+    * Code inside <tt>deny</tt> block is virtualized - it's not actually compiled to bytecode.
+    * Multiple allow/deny blocks joined with <tt>++</tt> operator form an ACL-like structure.
+    * @param expr
+    * @return
+    */
   def deny(expr: Any): List[MemberAccessSpec] = macro SymbolDslMacros.deny_impl
 
 }

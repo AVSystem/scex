@@ -197,6 +197,8 @@ object PredefinedAccessSpecs {
       d.longValue
       d.floatValue
       d.doubleValue
+      d.isNaN
+      d.isInfinite
     }
 
     // Implicit conversions between primitive and boxed types

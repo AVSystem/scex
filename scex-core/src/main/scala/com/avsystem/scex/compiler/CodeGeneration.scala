@@ -7,6 +7,7 @@ import java.{lang => jl, util => ju}
 import com.avsystem.scex.compiler.JavaTypeParsing._
 import com.avsystem.scex.util.CommonUtils._
 
+import scala.annotation.switch
 import scala.language.existentials
 
 object CodeGeneration {
@@ -43,6 +44,7 @@ object CodeGeneration {
   val ConversionSupplierPkgPrefix = "_conversion_supplier_"
   val ArbitraryClassSourceNamePrefix = "_scex_class_"
 
+  val VariableAccessorClassName = "VariableAccessor"
   val ExpressionClassName = "Expression"
   val ProfileObjectName = "Profile"
   val UtilsObjectName = "Utils"
@@ -67,10 +69,25 @@ object CodeGeneration {
   def adapterName(clazz: Class[_], full: Boolean) =
     (if (full) "Full" else "") + "Adapter_" + clazz.getName.replaceAll("\\.", "_")
 
+  @switch def escapedChar(ch: Char): String = ch match {
+    case '\b' => "\\b"
+    case '\t' => "\\t"
+    case '\n' => "\\n"
+    case '\f' => "\\f"
+    case '\r' => "\\r"
+    case '"' => "\\\""
+    case '\'' => "\\\'"
+    case '\\' => "\\\\"
+    case _ => if (ch.isControl) "\\0" + Integer.toOctalString(ch.toInt) else String.valueOf(ch)
+  }
+
+  def escapeString(str: String) =
+    str.flatMap(escapedChar)
+
   /**
-   * Generates code of implicit view for given Java class that adds Scala-style getters
-   * forwarding to existing Java-style getters of given class.
-   */
+    * Generates code of implicit view for given Java class that adds Scala-style getters
+    * forwarding to existing Java-style getters of given class.
+    */
   def generateJavaGetterAdapter(clazz: Class[_], full: Boolean): Option[String] = {
     // generate scala getters
     val methods =
@@ -93,12 +110,12 @@ object CodeGeneration {
 
       val result =
         s"""
-        |class $adapterWithGenerics(private val $AdapterWrappedSymbol: $wrappedTpe)
-        |  extends AnyVal with $MarkersObj.JavaGetterAdapter {
-        |
-        |$classBody
-        |}
-        |
+           |class $adapterWithGenerics(private val $AdapterWrappedSymbol: $wrappedTpe)
+           |  extends AnyVal with $MarkersObj.JavaGetterAdapter {
+           |
+           |$classBody
+           |}
+           |
         """.stripMargin
 
       Some(result)
@@ -113,7 +130,7 @@ object CodeGeneration {
     utilsObjectPkg: String,
     noMacroProcessing: Boolean) = {
 
-    val ExpressionDef(profile, template, setter, expression, header, contextType, resultType, _) = exprDef
+    val ExpressionDef(profile, template, setter, expression, header, contextType, resultType, variableTypes) = exprDef
 
     val resultOrSetterType = if (setter) s"$ScexPkg.Setter[$resultType]" else resultType
 
@@ -123,9 +140,9 @@ object CodeGeneration {
     val rootGetterAdapterCode = fullAdapterClassNameOpt match {
       case Some(fullAdapterClassName) =>
         s"""
-        |val $AdaptedRootSymbol = new $fullAdapterClassName($RootSymbol): @$AnnotationPkg.RootAdapter
-        |import $AdaptedRootSymbol._
-        |""".stripMargin
+           |val $AdaptedRootSymbol = new $fullAdapterClassName($RootSymbol): @$AnnotationPkg.RootAdapter
+           |import $AdaptedRootSymbol._
+           |""".stripMargin
       case None =>
         ""
     }
@@ -137,47 +154,67 @@ object CodeGeneration {
     val processingPrefix = if (noMacroProcessing) ""
     else
       s"""
-        |      $MacroProcessor.markExpression(
-        |      $setterConversion(
-        |      $MacroProcessor.processExpression[$contextType, ${if (setter) "Any" else resultType}](
-        |      $MacroProcessor.applyTypesafeEquals(
+         |      $MacroProcessor.markExpression(
+         |      $setterConversion(
+         |      $MacroProcessor.processExpression[$contextType, ${if (setter) "Any" else resultType}](
+         |      $MacroProcessor.applyTypesafeEquals(
       """.stripMargin
 
     val processingPostfix = if (noMacroProcessing) "" else "))))"
 
+    val variableAccessorClass =
+      if (variableTypes.nonEmpty) VariableAccessorClassName
+      else s"$ScexPkg.util.DynamicVariableAccessor"
+
+    val variableAccessorClassDef = if (variableTypes.nonEmpty) {
+      val typedVariables = variableTypes.toList.sorted.iterator.map {
+        case (name, tpe) =>
+          s"""
+             |  @$AnnotationPkg.NotValidated def `$name`: $tpe = _ctx.getTypedVariable[$tpe]("${escapeString(name)}")
+         """.stripMargin
+      }.mkString("\n")
+
+      s"""
+         |class $VariableAccessorClassName(_ctx: $contextType) extends $ScexPkg.util.DynamicVariableAccessor(_ctx) {
+         |$typedVariables
+         |}
+       """.stripMargin
+    } else ""
+
     //_result is needed because: https://groups.google.com/forum/#!topic/scala-user/BAK-mU7o6nM
     val prefix =
       s"""
-        |
-        |final class $ExpressionClassName(
-        |  val debugInfo: com.avsystem.scex.ExpressionDebugInfo,
-        |  val sourceInfo: com.avsystem.scex.compiler.SourceInfo)
-        |
-        |  extends $ScexPkg.AbstractExpression[$contextType, $resultOrSetterType]
-        |  with $CompilerPkg.TemplateInterpolations[$resultType] {
-        |
-        |  def eval($ContextSymbol: $contextType @$AnnotationPkg.Input): $resultOrSetterType = {
-        |    val $RootSymbol = $ContextSymbol.root: @$AnnotationPkg.RootValue
-        |    val $VariablesSymbol = new $ScexPkg.util.DynamicVariableAccessor($ContextSymbol): @$AnnotationPkg.Input
-        |    import $profileObjectPkg.$ProfileObjectName._
-        |    import $utilsObjectPkg.$UtilsObjectName._
-        |    import $RootSymbol._
-        |    $rootGetterAdapterCode
-        |    $profileHeader
-        |    $additionalHeader
-        |    val _result =
-        |      $processingPrefix
-        |      {
-        |""".stripMargin + interpolationPrefix
+         |final class $ExpressionClassName(
+         |  val debugInfo: com.avsystem.scex.ExpressionDebugInfo,
+         |  val sourceInfo: com.avsystem.scex.compiler.SourceInfo)
+         |
+         |  extends $ScexPkg.AbstractExpression[$contextType, $resultOrSetterType]
+         |  with $CompilerPkg.TemplateInterpolations[$resultType] {
+         |
+         |  def eval($ContextSymbol: $contextType @$AnnotationPkg.Input): $resultOrSetterType = {
+         |    val $RootSymbol = $ContextSymbol.root: @$AnnotationPkg.RootValue
+         |    val $VariablesSymbol = new $variableAccessorClass(_ctx): @$AnnotationPkg.Input
+         |    import $profileObjectPkg.$ProfileObjectName._
+         |    import $utilsObjectPkg.$UtilsObjectName._
+         |    import $RootSymbol._
+         |    $rootGetterAdapterCode
+         |    $profileHeader
+         |    $additionalHeader
+         |    val _result =
+         |      $processingPrefix
+         |      {
+         |""".stripMargin + interpolationPrefix
 
     val postfix = interpolationPostfix +
       s"""
-        |    }
-        |    $processingPostfix
-        |    _result
-        |  }
-        |}
-        |
+         |    }
+         |    $processingPostfix
+         |    _result
+         |  }
+         |}
+         |
+         |$variableAccessorClassDef
+         |
       """.stripMargin
 
     val exprCode = prefix + expression + postfix
@@ -194,15 +231,15 @@ object CodeGeneration {
       val adapterWithGenerics = adapterName + generics
 
       s"""
-          |implicit def $adapterWithGenerics(_wrapped: $wrappedTpe) = new $AdaptersPkg.$adapterName(_wrapped)
+         |implicit def $adapterWithGenerics(_wrapped: $wrappedTpe) = new $AdaptersPkg.$adapterName(_wrapped)
         """.stripMargin
     }.mkString
 
     s"""
-      |object $ProfileObjectName extends $MarkersObj.ProfileObject {
-      |$adapterConversions
-      |}
-      |
+       |object $ProfileObjectName extends $MarkersObj.ProfileObject {
+       |$adapterConversions
+       |}
+       |
     """.stripMargin
   }
 
@@ -222,30 +259,30 @@ object CodeGeneration {
 
   def generateSyntaxValidator(code: String) = {
     s"""
-      |final class $SyntaxValidatorClassName extends $ScexPkg.validation.SyntaxValidator {
-      |$code
-      |}
+       |final class $SyntaxValidatorClassName extends $ScexPkg.validation.SyntaxValidator {
+       |$code
+       |}
     """.stripMargin
   }
 
   def generateSymbolValidator(accessSpecs: String) = {
     s"""
-      |final class $SymbolValidatorClassName extends $ScexPkg.validation.SymbolValidator {
-      |  val infoList = {$accessSpecs}
-      |}
+       |final class $SymbolValidatorClassName extends $ScexPkg.validation.SymbolValidator {
+       |  val infoList = {$accessSpecs}
+       |}
     """.stripMargin
   }
 
   def generateSymbolAttributes(attributes: String) = {
     s"""
-      |final class $SymbolAttributesClassName extends $ScexPkg.presentation.SymbolAttributes({$attributes})
+       |final class $SymbolAttributesClassName extends $ScexPkg.presentation.SymbolAttributes({$attributes})
     """.stripMargin
   }
 
   def wrapInSource(code: String, pkgName: String): String = {
     s"""
-      |package $pkgName
-      |
+       |package $pkgName
+       |
       |$code
     """.stripMargin
   }
@@ -253,8 +290,8 @@ object CodeGeneration {
   def wrapInSource(code: String, offset: Int, pkgName: String): (String, String, Int) = {
     val prefix =
       s"""
-      |package $pkgName
-      |
+         |package $pkgName
+         |
       |""".stripMargin
 
     (pkgName, prefix + code, prefix.length + offset)
@@ -271,17 +308,17 @@ object CodeGeneration {
   def implicitLiteralConversionClass(profileObjectPkg: String, utilsObjectPkg: String, profileHeader: String, header: String, resultType: String) = {
     val templateOptimizingScexCompiler = s"$ScexPkg.compiler.TemplateOptimizingScexCompiler"
     s"""
-      |final class $ConversionSupplierClassName extends $templateOptimizingScexCompiler.ConversionSupplier[$resultType] {
-      |  def get = {
-      |    import $profileObjectPkg.$ProfileObjectName._
-      |    import $utilsObjectPkg.$UtilsObjectName._
-      |    $profileHeader
-      |    $header
-      |    implicitly[$ScexPkg.util.Literal => ($resultType)]
-      |  }
-      |
-      |  def isNullable = $templateOptimizingScexCompiler.isNullable[$resultType]
-      |}
+       |final class $ConversionSupplierClassName extends $templateOptimizingScexCompiler.ConversionSupplier[$resultType] {
+       |  def get = {
+       |    import $profileObjectPkg.$ProfileObjectName._
+       |    import $utilsObjectPkg.$UtilsObjectName._
+       |    $profileHeader
+       |    $header
+       |    implicitly[$ScexPkg.util.Literal => ($resultType)]
+       |  }
+       |
+       |  def isNullable = $templateOptimizingScexCompiler.isNullable[$resultType]
+       |}
     """.stripMargin
   }
 

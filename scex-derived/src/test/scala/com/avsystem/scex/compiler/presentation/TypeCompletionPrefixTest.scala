@@ -7,6 +7,7 @@ import com.avsystem.scex.compiler.CompilationTest
 import com.avsystem.scex.compiler.presentation.TypeCompletionPrefixTest._
 import com.avsystem.scex.util.SimpleContext
 import org.scalatest.FunSuite
+import scala.reflect.runtime.universe.typeOf
 
 /**
  * Created: 07-10-2014
@@ -40,7 +41,8 @@ class TypeCompletionPrefixTest extends FunSuite with CompilationTest with Comple
   }
 
   private def createCompleter(acl: List[MemberAccessSpec]) =
-    compiler.getCompleter[SimpleContext[Root], Any](createProfile(acl), template = false, header = header)
+    compiler.getCompleter[SimpleContext[Root], Any](createProfile(acl), template = false, header = header,
+      variableTypes = Map("someInt" -> typeOf[Int]))
 
   private def assertPrefix(exprWithCaret: String, expectedPrefix: String, expectedType: Type): Unit = {
     val completer = createCompleter(acl)
@@ -50,6 +52,7 @@ class TypeCompletionPrefixTest extends FunSuite with CompilationTest with Comple
     val prefixAttachments = completion.typedPrefixTree.attachments
     val tpe = prefixAttachments.tpe
     val prefixPos = prefixAttachments.position
+    println(prefixAttachments)
     val prefix = expr.substring(prefixPos.start, prefixPos.end)
 
     assert(prefix === expectedPrefix)
@@ -165,6 +168,15 @@ class TypeCompletionPrefixTest extends FunSuite with CompilationTest with Comple
     "api.zle|",
     "api.zl|e",
     "api.|zle"
+  )
+
+  tests("typed dynamic variable member selection", "_vars.someInt", scexType[Int])(
+    "_vars.someInt|",
+    "_vars.someInt|.",
+    "_vars.someInt|.lol",
+    "_vars.someInt.|",
+    "_vars.someInt.|lol",
+    "_vars.someInt.l|ol"
   )
 
 }

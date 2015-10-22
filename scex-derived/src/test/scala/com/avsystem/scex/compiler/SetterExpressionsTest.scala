@@ -72,13 +72,24 @@ class SetterExpressionsTest extends FunSuite with CompilationTest {
     assert(42 === target.field)
   }
 
-  test("dynamic setter test") {
+  test("dynamic variable setter test") {
     val setterExpression = compiler.getCompiledSetterExpression[SimpleContext[Unit], String](
       createProfile(Nil), "_vars.lol", template = false)
 
     val context = SimpleContext(())
     setterExpression.apply(context).apply("42")
     assert("42" === context.getVariable("lol"))
+  }
+
+  test("typed dynamic variable setter test") {
+    import scala.reflect.runtime.universe.typeOf
+
+    val setterExpression = compiler.getCompiledSetterExpression[SimpleContext[Unit], Int](
+      createProfile(Nil), "_vars.lol", template = false, variableTypes = Map("lol" -> typeOf[Int]))
+
+    val context = SimpleContext(())
+    setterExpression.apply(context).apply(42)
+    assert(42 === context.getTypedVariable[Int]("lol"))
   }
 
   test("accepted type reporting test") {

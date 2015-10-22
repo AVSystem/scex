@@ -13,9 +13,9 @@ trait ExpressionContext[R, V] {
 
   def setVariable(name: String, value: V): Unit
 
-  def getVariable(name: String): V
+  @NotValidated def getVariable(name: String): V
 
   def setTypedVariable[T](name: String, value: T): Unit
 
-  def getTypedVariable[T](name: String): T
+  @NotValidated def getTypedVariable[T](name: String): T
 }

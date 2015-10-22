@@ -55,6 +55,18 @@ class XmlFriendlyCompilerTest extends FunSuite {
     assert("srsly2345" === cexpr(context))
   }
 
+  test("typed dynamic variables test") {
+    import scala.reflect.runtime.universe.typeOf
+
+    val acl = PredefinedAccessSpecs.basicOperations
+    val expr = "#someDouble.toDegrees"
+    val context = SimpleContext(())
+    context.setTypedVariable("someDouble", math.Pi)
+    val cexpr = compiler.getCompiledExpression[SimpleContext[Unit], Double](createProfile(acl), expr, template = false,
+      variableTypes = Map("someDouble" -> typeOf[Double]))
+    assert(180.0 === cexpr(context))
+  }
+
   test("dynamic variables interpolation test") {
     val acl = PredefinedAccessSpecs.basicOperations
     val expr = "lol ${#dafuq} wtf"

@@ -64,7 +64,7 @@ trait TemplateOptimizingScexCompiler extends ScexPresentationCompiler {
     val actualHeader = implicitLiteralViewHeader(exprDef.header)
     val validationExpression = implicitLiteralViewExpression(exprDef.resultType)
     val validationExprDef = ExpressionDef(exprDef.profile, template = false, setter = false, validationExpression,
-      actualHeader, exprDef.contextType, exprDef.resultType, exprDef.variableTypes)(
+      actualHeader, exprDef.contextType, exprDef.resultType, Map.empty)(
       validationExpression, EmptyPositionMapping, exprDef.rootObjectClass)
     super.compileExpression(validationExprDef)
   }

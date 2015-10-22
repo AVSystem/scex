@@ -10,10 +10,10 @@ import scala.language.experimental.macros
 import scala.reflect.macros.whitebox
 
 /**
- * Object used during expression compilation to validate the expression (syntax, invocations, etc.)
- * This must be a Scala object and not a class because it contains macros. Validation is performed against
- * given ExpressionProfile which is injected into this object by ScexCompiler by means of a dynamic variable.
- */
+  * Object used during expression compilation to validate the expression (syntax, invocations, etc.)
+  * This must be a Scala object and not a class because it contains macros. Validation is performed against
+  * given ExpressionProfile which is injected into this object by ScexCompiler by means of a dynamic variable.
+  */
 object ExpressionMacroProcessor {
   def markExpression[T](expr: T): T = macro ExpressionMacroProcessor.markExpression_impl[T]
 
@@ -26,6 +26,7 @@ object ExpressionMacroProcessor {
 
 class ExpressionMacroProcessor(val c: whitebox.Context) extends MacroUtils with LoggingUtils {
   val universe: c.universe.type = c.universe
+
   import universe._
 
   private val logger = createLogger[ExpressionMacroProcessor]
@@ -131,6 +132,10 @@ class ExpressionMacroProcessor(val c: whitebox.Context) extends MacroUtils with 
 
       case Select(ImplicitlyConverted(prefix, fun), TermName(propertyName)) if isAdapterConversion(fun.symbol) =>
         reifySetterFunction(Select(prefix, TermName("set" + propertyName.capitalize)))
+
+      case Select(va@Ident(TermName(CodeGeneration.VariablesSymbol)), TermName(varName)) if va.tpe <:< dynamicVarAccessorTpe =>
+        val ctx = Ident(TermName(CodeGeneration.ContextSymbol))
+        reifyFunction(arg => q"$ctx.setTypedVariable[${tree.tpe}]($varName, $arg)")
 
       case Select(prefix, TermName(getterName)) if tree.symbol.isMethod =>
         import com.avsystem.scex.util.CommonUtils._

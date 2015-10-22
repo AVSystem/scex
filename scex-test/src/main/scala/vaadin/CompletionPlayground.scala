@@ -17,6 +17,7 @@ import com.vaadin.ui.{Label, TextField, Window}
 import org.eclipse.jetty.server.Server
 import org.eclipse.jetty.server.session.SessionHandler
 import org.eclipse.jetty.servlet.{ServletContextHandler, ServletHolder}
+import scala.reflect.runtime.universe.typeOf
 
 object CompletionPlayground {
 
@@ -81,7 +82,8 @@ object CompletionPlayground {
         s"${member.name}${member.params.map(_.map(p => s"${p.name}: ${p.tpe}-${p.tpe.erasure}").mkString("(", ", ", ")")).mkString}: " +
           s"${member.returnType}-${member.returnType.erasure} - ${member.documentation}"
 
-      val completer = compiler.getCompleter[SimpleContext[JavaRoot], String](profile)
+      val completer = compiler.getCompleter[SimpleContext[JavaRoot], String](profile, variableTypes =
+        Map("someInt" -> typeOf[Int], "intList" -> typeOf[List[Int]]))
       val scopeMembers = completer.getScopeCompletion.members.filterNot(_.flags.iimplicit).map(memberRepr).mkString("\n")
 
       val textField = new TextField
