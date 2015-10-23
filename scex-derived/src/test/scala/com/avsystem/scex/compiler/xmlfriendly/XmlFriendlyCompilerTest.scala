@@ -4,7 +4,7 @@ package compiler.xmlfriendly
 import java.{lang => jl, util => ju}
 
 import com.avsystem.scex.compiler.ScexCompiler.{CompilationFailedException, CompileError}
-import com.avsystem.scex.compiler.ScexSettings
+import com.avsystem.scex.compiler.{ClassTaggedContext, ScexSettings}
 import com.avsystem.scex.japi.XmlFriendlyJavaScexCompiler
 import com.avsystem.scex.presentation.SymbolAttributes
 import com.avsystem.scex.util.{PredefinedAccessSpecs, SimpleContext}
@@ -12,13 +12,22 @@ import com.avsystem.scex.validation.SymbolValidator._
 import com.avsystem.scex.validation.{SymbolValidator, SyntaxValidator}
 import org.scalatest.FunSuite
 
+import scala.reflect.{ClassTag, classTag}
+
 /**
- * Created: 17-09-2013
- * Author: ghik
- */
+  * Created: 17-09-2013
+  * Author: ghik
+  */
 class XmlFriendlyCompilerTest extends FunSuite {
 
   val compiler = new XmlFriendlyJavaScexCompiler(new ScexSettings)
+
+  def assertMemberAccessForbidden(expr: => Any): Unit = {
+    try expr catch {
+      case e: CompilationFailedException =>
+        assert(e.errors.forall(_.msg.startsWith("Member access forbidden")))
+    }
+  }
 
   def createProfile(acl: List[MemberAccessSpec], header: String = "import com.avsystem.scex.compiler._", utils: String = "") =
     new ExpressionProfile("test", SyntaxValidator.SimpleExpressions, SymbolValidator(acl),
@@ -65,6 +74,31 @@ class XmlFriendlyCompilerTest extends FunSuite {
     val cexpr = compiler.getCompiledExpression[SimpleContext[Unit], Double](createProfile(acl), expr, template = false,
       variableTypes = Map("someDouble" -> typeOf[Double]))
     assert(180.0 === cexpr(context))
+  }
+
+  test("tagged typed variables test") {
+    import scala.reflect.runtime.universe.typeOf
+
+    val acl = PredefinedAccessSpecs.basicOperations ++ allow {
+      ClassTag.Double
+    }
+    val expr = "#someDouble.toDegrees"
+    val context = new ClassTaggedContext
+    context.setTypedVariable("someDouble", math.Pi)(classTag[Double])
+    val cexpr = compiler.getCompiledExpression[ClassTaggedContext, Double](createProfile(acl), expr, template = false,
+      variableTypes = Map("someDouble" -> typeOf[Double]))
+    assert(180.0 === cexpr(context))
+  }
+
+  test("forbidden tag for typed variables test") {
+    import scala.reflect.runtime.universe.typeOf
+
+    val acl = PredefinedAccessSpecs.basicOperations
+    val expr = "#someDouble.toDegrees"
+    assertMemberAccessForbidden {
+      compiler.getCompiledExpression[ClassTaggedContext, Double](createProfile(acl), expr, template = false,
+        variableTypes = Map("someDouble" -> typeOf[Double]))
+    }
   }
 
   test("dynamic variables interpolation test") {

@@ -31,7 +31,7 @@ trait WeakReferenceWrappingScexCompiler extends ScexCompiler {
           wrappedExpression
       }
 
-    def apply(context: ExpressionContext[_, _]) =
+    def apply(context: ExpressionContext) =
       wrappedExpression.apply(context)
 
     def debugInfo =

@@ -22,22 +22,22 @@ trait JavaScexCompiler extends ScexCompiler with ScexPresentationCompiler {
     .build[Type, String](javaTypeAsScalaType _)
 
   private val rootObjectClassCache = CacheBuilder.newBuilder.weakKeys
-    .build[TypeToken[_ <: ExpressionContext[_, _]], Class[_]](getRootObjectClass _)
+    .build[TypeToken[_ <: JavaExpressionContext[_, _]], Class[_]](getRootObjectClass _)
 
-  private def getRootObjectClass(token: TypeToken[_ <: ExpressionContext[_, _]]): Class[_] =
-    token.getSupertype(classOf[ExpressionContext[_, _]]).getType match {
+  private def getRootObjectClass(token: TypeToken[_ <: JavaExpressionContext[_, _]]): Class[_] =
+    token.getSupertype(classOf[JavaExpressionContext[_, _]]).getType match {
       case ParameterizedType(_, _, Array(rootObjectType, _)) => rootObjectType match {
         case TypeAny | TypeAnyVal => null
         case _ => TypeToken.of(rootObjectType).getRawType
       }
-      case clazz if clazz == classOf[ExpressionContext[_, _]] => classOf[Object]
+      case clazz if clazz == classOf[JavaExpressionContext[_, _]] => classOf[Object]
     }
 
   def buildExpression: ExpressionBuilder[_, _] =
-    new ExpressionBuilder[ExpressionContext[_, _], Any]
+    new ExpressionBuilder[JavaExpressionContext[_, _], Any]
 
-  class ExpressionBuilder[C <: ExpressionContext[_, _], T] extends Fluent {
-    private var _contextTypeToken: TypeToken[_ <: ExpressionContext[_, _]] = _
+  class ExpressionBuilder[C <: JavaExpressionContext[_, _], T] extends Fluent {
+    private var _contextTypeToken: TypeToken[_ <: JavaExpressionContext[_, _]] = _
     private var _resultTypeToken: TypeToken[_] = _
     private var _profile: ExpressionProfile = _
     private var _expression: String = _
@@ -65,11 +65,11 @@ trait JavaScexCompiler extends ScexCompiler with ScexPresentationCompiler {
         scalaContextType, scalaResultType, variableTypes)(_expression, positionMapping, rootObjectClass))
     }
 
-    def contextType[NC <: ExpressionContext[_, _]](contextTypeToken: TypeToken[NC]) = fluent {
+    def contextType[NC <: JavaExpressionContext[_, _]](contextTypeToken: TypeToken[NC]) = fluent {
       _contextTypeToken = contextTypeToken
     }.asInstanceOf[ExpressionBuilder[NC, T]]
 
-    def contextType[NC <: ExpressionContext[_, _]](contextClass: Class[NC]) = fluent {
+    def contextType[NC <: JavaExpressionContext[_, _]](contextClass: Class[NC]) = fluent {
       _contextTypeToken = TypeToken.of(contextClass)
     }.asInstanceOf[ExpressionBuilder[NC, T]]
 
@@ -134,7 +134,7 @@ trait JavaScexCompiler extends ScexCompiler with ScexPresentationCompiler {
     new CompleterBuilder
 
   class CompleterBuilder extends Fluent {
-    private var _contextTypeToken: TypeToken[_ <: ExpressionContext[_, _]] = _
+    private var _contextTypeToken: TypeToken[_ <: JavaExpressionContext[_, _]] = _
     private var _resultTypeToken: TypeToken[_] = _
     private var _profile: ExpressionProfile = _
     private var _template: Boolean = true
@@ -158,11 +158,11 @@ trait JavaScexCompiler extends ScexCompiler with ScexPresentationCompiler {
       getCompleter(_profile, _template, _setter, _header, scalaContextType, rootObjectClass, scalaResultType, variableTypes)
     }
 
-    def contextType(contextTypeToken: TypeToken[_ <: ExpressionContext[_, _]]) = fluent {
+    def contextType(contextTypeToken: TypeToken[_ <: JavaExpressionContext[_, _]]) = fluent {
       _contextTypeToken = contextTypeToken
     }
 
-    def contextType(contextClass: Class[_ <: ExpressionContext[_, _]]) = fluent {
+    def contextType(contextClass: Class[_ <: JavaExpressionContext[_, _]]) = fluent {
       _contextTypeToken = TypeToken.of(contextClass)
     }
 

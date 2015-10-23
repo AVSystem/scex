@@ -41,13 +41,13 @@ trait TemplateOptimizingScexCompiler extends ScexPresentationCompiler {
     literalConversionsCache.get((exprDef.profile, exprDef.resultType, exprDef.header))
 
   private case class LiteralExpression(value: Any)(val debugInfo: ExpressionDebugInfo) extends RawExpression {
-    def apply(ctx: ExpressionContext[_, _]) = value
+    def apply(ctx: ExpressionContext) = value
   }
 
   private class OptimizedTemplateExpression(parts: List[String], args: List[RawExpression], val debugInfo: ExpressionDebugInfo)
     extends RawExpression {
 
-    def apply(c: ExpressionContext[_, _]) =
+    def apply(c: ExpressionContext) =
       TemplateInterpolations.concatIterator(parts: _*)(args.iterator.map(_.apply(c)))
   }
 

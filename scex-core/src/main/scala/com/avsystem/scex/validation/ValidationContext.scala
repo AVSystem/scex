@@ -13,10 +13,8 @@ abstract class ValidationContext protected extends MacroUtils {
 
   val contextTpe: Type
 
-  private lazy val rootTpe = {
-    val TypeRef(_, _, List(result, _)) = contextTpe.baseType(typeOf[ExpressionContext[_, _]].typeSymbol)
-    result
-  }
+  private lazy val rootTpe =
+    internal.reificationSupport.TypeRef(contextTpe, contextTpe.member(TypeName("Root")), Nil).dealias
 
   sealed abstract class MemberAccess {
     def repr: String = repr("")
@@ -69,8 +67,11 @@ abstract class ValidationContext protected extends MacroUtils {
   def needsValidation(symbol: Symbol) =
     symbol != null && symbol.isTerm && !symbol.isPackage && !isExpressionUtil(symbol) && !isProfileObject(symbol)
 
+  def hasNotValidatedAnnotation(symbol: Symbol) =
+    symbol != null && annotationsIncludingOverrides(symbol).exists(_.tree.tpe <:< notValidatedAnnotType)
+
   def extractAccess(tree: Tree, allowedSelectionPrefix: Boolean = false): MemberAccess = tree match {
-    case (_: Select | _: Ident) if annotationsIncludingOverrides(tree.symbol).exists(_.tree.tpe <:< notValidatedAnnotType) =>
+    case (_: Select | _: Ident) if hasNotValidatedAnnotation(tree.symbol) =>
       NoMemberAccess
 
     case Select(rootAdapter: Ident, _) if isRootAdapter(rootAdapter.tpe) && !isAdapterWrappedMember(tree.symbol) =>

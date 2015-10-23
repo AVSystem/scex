@@ -44,7 +44,7 @@ object CodeGeneration {
   val ConversionSupplierPkgPrefix = "_conversion_supplier_"
   val ArbitraryClassSourceNamePrefix = "_scex_class_"
 
-  val VariableAccessorClassName = "VariableAccessor"
+  val VariableAccessorClassName = "_variableAccessor"
   val ExpressionClassName = "Expression"
   val ProfileObjectName = "Profile"
   val UtilsObjectName = "Utils"
@@ -156,26 +156,31 @@ object CodeGeneration {
       s"""
          |      $MacroProcessor.markExpression(
          |      $setterConversion(
-         |      $MacroProcessor.processExpression[$contextType, ${if (setter) "Any" else resultType}](
+         |      $MacroProcessor.validate[$contextType, ${if (setter) "Any" else resultType}](
          |      $MacroProcessor.applyTypesafeEquals(
       """.stripMargin
 
     val processingPostfix = if (noMacroProcessing) "" else "))))"
 
-    val variableAccessorClass =
+    val variableAccessorConstr =
       if (variableTypes.nonEmpty) VariableAccessorClassName
-      else s"$ScexPkg.util.DynamicVariableAccessor"
+      else s"$ScexPkg.util.DynamicVariableAccessor($ContextSymbol)"
 
     val variableAccessorClassDef = if (variableTypes.nonEmpty) {
+      val validatePrefix = if (noMacroProcessing) "" else s"$MacroProcessor.validate("
+      val validatePostfix = if (noMacroProcessing) "" else ")"
+
       val typedVariables = variableTypes.toList.sorted.iterator.map {
         case (name, tpe) =>
           s"""
-             |  @$AnnotationPkg.NotValidated def `$name`: $tpe = _ctx.getTypedVariable[$tpe]("${escapeString(name)}")
+             |  @$AnnotationPkg.NotValidated def `$name`: $tpe =
+             |    $ContextSymbol.getTypedVariable("${escapeString(name)}")(
+             |      ${validatePrefix}inferVarTag[$tpe]$validatePostfix)
          """.stripMargin
       }.mkString("\n")
 
       s"""
-         |class $VariableAccessorClassName(_ctx: $contextType) extends $ScexPkg.util.DynamicVariableAccessor(_ctx) {
+         |class $VariableAccessorClassName extends $ScexPkg.util.DynamicVariableAccessor($ContextSymbol) {
          |$typedVariables
          |}
        """.stripMargin
@@ -193,13 +198,14 @@ object CodeGeneration {
          |
          |  def eval($ContextSymbol: $contextType @$AnnotationPkg.Input): $resultOrSetterType = {
          |    val $RootSymbol = $ContextSymbol.root: @$AnnotationPkg.RootValue
-         |    val $VariablesSymbol = new $variableAccessorClass(_ctx): @$AnnotationPkg.Input
          |    import $profileObjectPkg.$ProfileObjectName._
          |    import $utilsObjectPkg.$UtilsObjectName._
          |    import $RootSymbol._
          |    $rootGetterAdapterCode
          |    $profileHeader
          |    $additionalHeader
+         |    $variableAccessorClassDef
+         |    val $VariablesSymbol = new $variableAccessorConstr: @$AnnotationPkg.Input
          |    val _result =
          |      $processingPrefix
          |      {
@@ -212,8 +218,6 @@ object CodeGeneration {
          |    _result
          |  }
          |}
-         |
-         |$variableAccessorClassDef
          |
       """.stripMargin
 

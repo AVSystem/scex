@@ -17,7 +17,7 @@ import scala.reflect.macros.whitebox
 object ExpressionMacroProcessor {
   def markExpression[T](expr: T): T = macro ExpressionMacroProcessor.markExpression_impl[T]
 
-  def processExpression[C, T](expr: T): T = macro ExpressionMacroProcessor.processExpression_impl[C, T]
+  def validate[C, T](expr: T): T = macro ExpressionMacroProcessor.validate_impl[C, T]
 
   def applyTypesafeEquals[T](expr: T): T = macro ExpressionMacroProcessor.applyTypesafeEquals_impl[T]
 
@@ -36,24 +36,13 @@ class ExpressionMacroProcessor(val c: whitebox.Context) extends MacroUtils with 
     expr.tree
   }
 
-  def processExpression_impl[C: c.WeakTypeTag, T](expr: c.Expr[T]): c.Tree = {
+  def validate_impl[C: c.WeakTypeTag, T](expr: c.Expr[T]): c.Tree = {
     val validationContext = ValidationContext(c.universe)(weakTypeOf[C])
     import validationContext._
 
     val profile = expr.tree.pos.source match {
       case scexSource: ExpressionSourceFile => scexSource.exprDef.profile
       case _ => throw new Exception("This is not an expression source file")
-    }
-
-    def isForbiddenThisReference(tree: Tree) = tree match {
-      case tree: This if !tree.symbol.isPackage && !tree.symbol.isPackageClass => true
-      case _ => false
-    }
-
-    expr.tree.foreach { subtree =>
-      if (isForbiddenThisReference(subtree)) {
-        c.error(subtree.pos, s"Cannot refer to 'this' or outer instances")
-      }
     }
 
     def validateSyntax(trees: List[Tree]): Unit = trees match {

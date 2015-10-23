@@ -5,7 +5,7 @@ import com.avsystem.scex._
 import com.avsystem.scex.compiler.ScexSettings
 import com.avsystem.scex.japi.DefaultJavaScexCompiler
 import com.avsystem.scex.presentation.SymbolAttributes
-import com.avsystem.scex.util.PredefinedAccessSpecs
+import com.avsystem.scex.util.{SimpleContext, PredefinedAccessSpecs}
 import com.avsystem.scex.validation._
 import com.github.ghik.silencer.silent
 
@@ -184,7 +184,7 @@ object ValidationTest {
 
     //compiler.getCompiledExpression(profile, "ValidationTest.Dyn.costam", classOf[Object], classOf[String])
 
-    val ic = compiler.getCompleter[ExpressionContext[Unit, Unit], Object](profile)
+    val ic = compiler.getCompleter[SimpleContext[Any], Object](profile)
     val completion = ic.getTypeCompletion("${None}", 1)
     completion.members foreach println
 

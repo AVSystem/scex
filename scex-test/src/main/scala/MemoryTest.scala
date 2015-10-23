@@ -3,7 +3,7 @@ import java.{lang => jl, util => ju}
 import com.avsystem.scex.compiler.ScexSettings
 import com.avsystem.scex.japi.DefaultJavaScexCompiler
 import com.avsystem.scex.presentation.SymbolAttributes
-import com.avsystem.scex.util.PredefinedAccessSpecs
+import com.avsystem.scex.util.{SimpleContext, PredefinedAccessSpecs}
 import com.avsystem.scex.validation.{SymbolValidator, SyntaxValidator}
 import com.avsystem.scex.{ExpressionContext, ExpressionProfile, NamedSource}
 
@@ -34,7 +34,7 @@ object MemoryTest {
     var i = 0
     while (true) {
       i += 1
-      compiler.getCompiledExpression[ExpressionContext[Any, Any], String](profile, s"new MemoryTest.Dummy($i).toString")
+      compiler.getCompiledExpression[SimpleContext[Any], String](profile, s"new MemoryTest.Dummy($i).toString")
       if (i % 10 == 0) {
         println(i)
       }

@@ -7,14 +7,14 @@ import com.avsystem.scex.compiler.SourceInfo
 import scala.runtime.AbstractFunction1
 import scala.util.control.NonFatal
 
-trait Expression[-C <: ExpressionContext[_, _], +T] extends (C => T) {
+trait Expression[-C <: ExpressionContext, +T] extends (C => T) {
   @throws(classOf[EvaluationException])
   def apply(c: C): T
 
   def debugInfo: ExpressionDebugInfo
 }
 
-abstract class AbstractExpression[-C <: ExpressionContext[_, _], +T]
+abstract class AbstractExpression[-C <: ExpressionContext, +T]
   extends AbstractFunction1[C, T] with Expression[C, T] {
 
   def sourceInfo: SourceInfo
