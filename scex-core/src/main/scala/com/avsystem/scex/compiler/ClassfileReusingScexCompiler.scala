@@ -2,6 +2,7 @@ package com.avsystem.scex.compiler
 
 import java.{lang => jl, util => ju}
 
+import com.avsystem.scex.compiler.ClassfileReusingScexCompiler.CacheVersion
 import com.google.common.cache.CacheBuilder
 
 import scala.collection.mutable
@@ -9,28 +10,33 @@ import scala.reflect.io.AbstractFile
 import scala.tools.nsc.Phase
 import scala.tools.nsc.plugins.{Plugin, PluginComponent}
 import scala.tools.nsc.util.ClassPath
+import scala.util.Try
+
+object ClassfileReusingScexCompiler {
+  final val CacheVersion = 1
+}
 
 /**
- * An adaptation of ScexCompiler which compiles non-shared classes to disk instead of memory (assuming that classfile
- * directory is configured). Class files are never being deleted automatically and thus are reused even if the entire
- * process is restarted.
- *
- * The decision about need for recompilation is made based on signature file generated every time an expression is compiled
- * Signature file contains typed and erased (bytecode) signatures of all symbols (methods, fields, etc.) used by
- * the expression. In order to reuse previously compiled classfiles, all symbols listed in the signature file must
- * exist and have the same signature they had at the time the expression was originally compiled.
- *
- * This strategy is unfortunately unable to detect some binary compatibility breaches which are source compatible:
- * <ul>
- * <li>Changes to any implicit symbols visible inside expressions (e.g. adding new implicit) that could
- * change the way some implicit parameter or conversion is resolved.</li>
- * <li>Adding or removing overloaded variants to methods used in expressions which could cause the overloaded
- * variant used by expression to change.</li>
- * </ul>
- *
- * Created: 21-10-2014
- * Author: ghik
- */
+  * An adaptation of ScexCompiler which compiles non-shared classes to disk instead of memory (assuming that classfile
+  * directory is configured). Class files are never being deleted automatically and thus are reused even if the entire
+  * process is restarted.
+  *
+  * The decision about need for recompilation is made based on signature file generated every time an expression is compiled
+  * Signature file contains typed and erased (bytecode) signatures of all symbols (methods, fields, etc.) used by
+  * the expression. In order to reuse previously compiled classfiles, all symbols listed in the signature file must
+  * exist and have the same signature they had at the time the expression was originally compiled.
+  *
+  * This strategy is unfortunately unable to detect some binary compatibility breaches which are source compatible:
+  * <ul>
+  * <li>Changes to any implicit symbols visible inside expressions (e.g. adding new implicit) that could
+  * change the way some implicit parameter or conversion is resolved.</li>
+  * <li>Adding or removing overloaded variants to methods used in expressions which could cause the overloaded
+  * variant used by expression to change.</li>
+  * </ul>
+  *
+  * Created: 21-10-2014
+  * Author: ghik
+  */
 trait ClassfileReusingScexCompiler extends ScexCompiler {
 
   import com.avsystem.scex.util.CommonUtils._
@@ -59,7 +65,6 @@ trait ClassfileReusingScexCompiler extends ScexCompiler {
     stateOpt.map { state =>
       import state._
 
-      classfileDir.file.mkdirs()
       val sourceName = sourceFile.file.name
 
       def createClassLoader =
@@ -70,6 +75,22 @@ trait ClassfileReusingScexCompiler extends ScexCompiler {
 
   override protected def setup(): Unit = {
     _stateOpt = settings.resolvedClassfileDir.map(new State(_))
+    stateOpt.foreach { state =>
+      val versionFileName = "cacheVersion"
+      if(state.classfileDir.exists) {
+        val savedVersion = Option(state.classfileDir.lookupName(versionFileName, directory = false))
+          .flatMap(versionFile => Try(new String(versionFile.toCharArray).toInt).toOption)
+          .getOrElse(0)
+
+        if(savedVersion != CacheVersion) {
+          logger.info("Classfile cache version changed, deleting classfile directory")
+          state.classfileDir.delete()
+        }
+      }
+      state.classfileDir.file.mkdirs()
+      val os = state.classfileDir.fileNamed(versionFileName).output
+      try os.write(CacheVersion.toString.getBytes) finally os.close()
+    }
     super.setup()
   }
 
@@ -134,8 +155,7 @@ trait ClassfileReusingScexCompiler extends ScexCompiler {
     sym.fullName + ":" + sym.info.paramLists.map(_.map(_.typeSignature.toString()).mkString("(", ",", ")")).mkString +
       sym.typeSignature.finalResultType.toString()
 
-  private class SignatureGenerator(val global: ScexGlobal) extends Plugin {
-    plugin =>
+  private class SignatureGenerator(val global: ScexGlobal) extends Plugin {plugin =>
 
     import global._
 

@@ -169,7 +169,9 @@ object ValidationTest {
 
     val utils = NamedSource("test", "val lol = \"dafuq\"; def immaUtil = \"util, lol\"")
     val profile = new ExpressionProfile("test", syntaxValidator, symbolValidator, symbolAttributes, "", utils)
-    val compiler = new DefaultJavaScexCompiler(new ScexSettings)
+    val settings = new ScexSettings
+    settings.classfileDirectory.value = "scex_classes"
+    val compiler = new DefaultJavaScexCompiler(settings)
 
     val myexpr = "(null: A[_])"
 
@@ -182,11 +184,11 @@ object ValidationTest {
 
     type Typ = TypedLol[T]#Dafuq[F] forSome {type T <: TypedLol[T]; type F}
 
-    //compiler.getCompiledExpression(profile, "ValidationTest.Dyn.costam", classOf[Object], classOf[String])
+    compiler.getCompiledExpression[SimpleContext[Any], String](profile, "\"lol\".toUpperCase", template = false)
 
-    val ic = compiler.getCompleter[SimpleContext[Any], Object](profile)
-    val completion = ic.getTypeCompletion("${None}", 1)
-    completion.members foreach println
+//    val ic = compiler.getCompleter[SimpleContext[Any], Object](profile)
+//    val completion = ic.getTypeCompletion("${None}", 1)
+//    completion.members foreach println
 
   }
 
