@@ -4,8 +4,8 @@ package compiler.xmlfriendly
 import java.{lang => jl, util => ju}
 
 import com.avsystem.scex.compiler.ScexCompiler.{CompilationFailedException, CompileError}
-import com.avsystem.scex.compiler.{ClassTaggedContext, ScexSettings}
-import com.avsystem.scex.japi.XmlFriendlyJavaScexCompiler
+import com.avsystem.scex.compiler.{CompilationTest, ClassTaggedContext, ScexSettings}
+import com.avsystem.scex.japi.{DefaultJavaScexCompiler, XmlFriendlyJavaScexCompiler}
 import com.avsystem.scex.presentation.SymbolAttributes
 import com.avsystem.scex.util.{PredefinedAccessSpecs, SimpleContext}
 import com.avsystem.scex.validation.SymbolValidator._
@@ -18,20 +18,9 @@ import scala.reflect.{ClassTag, classTag}
   * Created: 17-09-2013
   * Author: ghik
   */
-class XmlFriendlyCompilerTest extends FunSuite {
+class XmlFriendlyCompilerTest extends FunSuite with CompilationTest {
 
-  val compiler = new XmlFriendlyJavaScexCompiler(new ScexSettings)
-
-  def assertMemberAccessForbidden(expr: => Any): Unit = {
-    try expr catch {
-      case e: CompilationFailedException =>
-        assert(e.errors.forall(_.msg.startsWith("Member access forbidden")))
-    }
-  }
-
-  def createProfile(acl: List[MemberAccessSpec], header: String = "import com.avsystem.scex.compiler._", utils: String = "") =
-    new ExpressionProfile("test", SyntaxValidator.SimpleExpressions, SymbolValidator(acl),
-      SymbolAttributes(Nil), header, NamedSource("test", utils))
+  override protected def createCompiler = new XmlFriendlyJavaScexCompiler(new ScexSettings)
 
   test("single quotes test") {
     val profile = createProfile(Nil)

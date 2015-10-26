@@ -9,9 +9,9 @@ import com.avsystem.scex.util.{Literal => ScexLiteral, MacroUtils}
 import scala.reflect.macros.blackbox
 
 /**
- * Created: 18-11-2013
- * Author: ghik
- */
+  * Created: 18-11-2013
+  * Author: ghik
+  */
 class Macros(val c: blackbox.Context) extends MacroUtils {
 
   val universe: c.universe.type = c.universe
@@ -146,5 +146,8 @@ class Macros(val c: blackbox.Context) extends MacroUtils {
       c.abort(c.enclosingPosition, s"Values of types $leftTpe and $rightTpe cannot be compared for equality")
 
   }
+
+  def materializeTypeToken[T: c.WeakTypeTag]: c.Tree =
+    q"new _root_.com.google.common.reflect.TypeToken[${weakTypeOf[T]}] {}"
 
 }

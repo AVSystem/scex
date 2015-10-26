@@ -20,4 +20,6 @@ object ScalaTypeTokens {
   def scalaNull = TypeToken.of(JavaTypeParsing.TypeNull).asInstanceOf[TypeToken[Null]]
 
   def nothing = TypeToken.of(JavaTypeParsing.TypeNothing).asInstanceOf[TypeToken[Nothing]]
+
+  def create[T]: TypeToken[T] = macro Macros.materializeTypeToken[T]
 }
