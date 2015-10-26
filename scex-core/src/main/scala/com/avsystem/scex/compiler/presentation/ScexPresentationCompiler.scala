@@ -106,14 +106,13 @@ trait ScexPresentationCompiler extends ScexCompiler {compiler =>
       compiler.parse(exprDef(expression, bare = false))
   }
 
-  def getCompleter[C <: ExpressionContext, T](
+  def getCompleter[C <: ExpressionContext[_, _], T](
     profile: ExpressionProfile,
     template: Boolean = true,
     setter: Boolean = false,
     variableTypes: Map[String, ru.Type] = Map.empty,
     header: String = "")(implicit
     ctt: ru.TypeTag[C],
-    rtt: ru.TypeTag[C#Root],
     ttt: ru.TypeTag[T]): Completer = {
 
     import scala.reflect.runtime.universe._
@@ -121,8 +120,9 @@ trait ScexPresentationCompiler extends ScexCompiler {compiler =>
     val mirror = typeTag[C].mirror
     val contextType = typeOf[C]
     val resultType = typeOf[T]
+    val TypeRef(_, _, List(rootObjectType, _)) = contextType.baseType(typeOf[ExpressionContext[_, _]].typeSymbol)
     val rootObjectClass =
-      try mirror.runtimeClass(typeOf[C#Root]) catch {
+      try mirror.runtimeClass(rootObjectType) catch {
         case _: ClassNotFoundException => null
       }
     val strVariableTypes = variableTypes.iterator.map({ case (k, v) => (k, v.toString) }).toMap

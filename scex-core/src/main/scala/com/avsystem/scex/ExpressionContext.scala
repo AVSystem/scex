@@ -10,15 +10,15 @@ import scala.language.higherKinds
   * Created: 23-09-2013
   * Author: ghik
   */
-trait ExpressionContext {
-  type Root
-  type Var
+trait ExpressionContext[R, V] {
+  type Root = R
+  type Var = V
   type VarTag[T]
 
-  @NotValidated def root: Root
+  @NotValidated def root: R
 
-  def setVariable(name: String, value: Var): Unit
-  @NotValidated def getVariable(name: String): Var
+  def setVariable(name: String, value: V): Unit
+  @NotValidated def getVariable(name: String): V
 
   def setTypedVariable[T](name: String, value: T)(implicit tag: VarTag[T]): Unit
   @NotValidated def getTypedVariable[T](name: String)(implicit tag: VarTag[T]): T

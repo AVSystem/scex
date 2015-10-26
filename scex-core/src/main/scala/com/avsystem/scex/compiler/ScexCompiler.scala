@@ -80,7 +80,7 @@ trait ScexCompiler extends LoggingUtils {
   protected class ScexClassLoader(val classfileDirectory: AbstractFile, parent: ClassLoader)
     extends AbstractFileClassLoader(classfileDirectory, parent)
 
-  protected type RawExpression = Expression[ExpressionContext, Any]
+  protected type RawExpression = Expression[ExpressionContext[_, _], Any]
 
   protected def underLock[T](code: => T) = {
     ensureSetup()
@@ -287,17 +287,16 @@ trait ScexCompiler extends LoggingUtils {
     Try(result)
   }
 
-  protected final def getCompiledExpression[C <: ExpressionContext, T](exprDef: ExpressionDef): Expression[C, T] =
+  protected final def getCompiledExpression[C <: ExpressionContext[_, _], T](exprDef: ExpressionDef): Expression[C, T] =
     compileExpression(exprDef).get.asInstanceOf[Expression[C, T]]
 
-  def getCompiledExpression[C <: ExpressionContext, T](
+  def getCompiledExpression[C <: ExpressionContext[_, _], T](
     profile: ExpressionProfile,
     expression: String,
     variableTypes: Map[String, ru.Type] = Map.empty,
     template: Boolean = true,
     header: String = "")(implicit
     ctt: ru.TypeTag[C],
-    rtt: ru.TypeTag[C#Root],
     ttt: ru.TypeTag[T]): Expression[C, T] = {
 
     require(profile != null, "Profile cannot be null")
@@ -308,8 +307,9 @@ trait ScexCompiler extends LoggingUtils {
 
     val mirror = typeTag[C].mirror
     val contextType = typeOf[C]
+    val TypeRef(_, _, List(rootObjectType, _)) = contextType.baseType(typeOf[ExpressionContext[_, _]].typeSymbol)
     val rootObjectClass =
-      try mirror.runtimeClass(typeOf[C#Root]) catch {
+      try mirror.runtimeClass(rootObjectType) catch {
         case _: ClassNotFoundException => null
       }
     val strVariableTypes = variableTypes.iterator.map({ case (k, v) => (k, v.toString) }).toMap
@@ -319,14 +319,13 @@ trait ScexCompiler extends LoggingUtils {
       header, contextType.toString, typeOf[T].toString, strVariableTypes)(expression, positionMapping, rootObjectClass))
   }
 
-  def getCompiledSetterExpression[C <: ExpressionContext, T](
+  def getCompiledSetterExpression[C <: ExpressionContext[_, _], T](
     profile: ExpressionProfile,
     expression: String,
     template: Boolean = true,
     variableTypes: Map[String, ru.Type] = Map.empty,
     header: String = "")(implicit
     ctt: ru.TypeTag[C],
-    rtt: ru.TypeTag[C#Root],
     ttt: ru.TypeTag[T]): Expression[C, Setter[T]] = {
 
     require(profile != null, "Profile cannot be null")
@@ -337,8 +336,9 @@ trait ScexCompiler extends LoggingUtils {
 
     val mirror = typeTag[C].mirror
     val contextType = typeOf[C]
+    val TypeRef(_, _, List(rootObjectType, _)) = contextType.baseType(typeOf[ExpressionContext[_, _]].typeSymbol)
     val rootObjectClass =
-      try mirror.runtimeClass(typeOf[C#Root]) catch {
+      try mirror.runtimeClass(rootObjectType) catch {
         case _: ClassNotFoundException => null
       }
     val strVariableTypes = variableTypes.iterator.map({ case (k, v) => (k, v.toString) }).toMap

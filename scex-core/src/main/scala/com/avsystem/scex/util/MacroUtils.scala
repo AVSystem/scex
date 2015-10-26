@@ -37,7 +37,7 @@ trait MacroUtils {
   lazy val booleanTpe = typeOf[Boolean]
   lazy val jBooleanTpe = typeOf[jl.Boolean]
   lazy val dynamicTpe = typeOf[Dynamic]
-  lazy val dynamicVarAccessorTpe = typeOf[DynamicVariableAccessor[_]]
+  lazy val dynamicVarAccessorTpe = typeOf[DynamicVariableAccessor[_, _]]
 
   object DecodedTermName {
     def unapply(name: TermName) =

@@ -164,7 +164,7 @@ object CodeGeneration {
 
     val variableAccessorConstr =
       if (variableTypes.nonEmpty) VariableAccessorClassName
-      else s"$ScexPkg.util.DynamicVariableAccessor($ContextSymbol)"
+      else s"$ScexPkg.util.DynamicVariableAccessor[$ContextSymbol.type, $ContextSymbol.Var]($ContextSymbol)"
 
     val variableAccessorClassDef = if (variableTypes.nonEmpty) {
       val validatePrefix = if (noMacroProcessing) "" else s"$MacroProcessor.validate("
@@ -180,7 +180,8 @@ object CodeGeneration {
       }.mkString("\n")
 
       s"""
-         |class $VariableAccessorClassName extends $ScexPkg.util.DynamicVariableAccessor($ContextSymbol) {
+         |class $VariableAccessorClassName extends
+         |  $ScexPkg.util.DynamicVariableAccessor[$ContextSymbol.type, $ContextSymbol.Var]($ContextSymbol) {
          |$typedVariables
          |}
        """.stripMargin

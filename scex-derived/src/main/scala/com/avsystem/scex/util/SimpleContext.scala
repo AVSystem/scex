@@ -2,6 +2,7 @@ package com.avsystem.scex.util
 
 import java.{lang => jl, util => ju}
 
+import com.avsystem.scex.NoTag
 import com.avsystem.scex.japi.JavaExpressionContext
 
 import scala.collection.mutable
@@ -10,21 +11,19 @@ import scala.collection.mutable
   * Created: 23-09-2013
   * Author: ghik
   */
-case class SimpleContext[R](private val scalaRoot: R) extends JavaExpressionContext[R, String] {
+case class SimpleContext[R](root: R) extends JavaExpressionContext[R, String] {
   private val variables = new mutable.HashMap[String, String]
   private val typedVariables = new mutable.HashMap[String, Any]
 
-  def getRoot = scalaRoot
-
-  def setVariableFromJava(name: String, value: String) =
+  def setVariable(name: String, value: String) =
     variables(name) = value
 
-  def getVariableFromJava(name: String) =
+  def getVariable(name: String) =
     variables(name)
 
-  def getTypedVariableFromJava[T](name: String): T =
+  def getTypedVariable[T](name: String)(implicit tag: NoTag): T =
     typedVariables(name).asInstanceOf[T]
 
-  def setTypedVariableFromJava[T](name: String, value: T): Unit =
+  def setTypedVariable[T](name: String, value: T)(implicit tag: NoTag): Unit =
     typedVariables(name) = value
 }

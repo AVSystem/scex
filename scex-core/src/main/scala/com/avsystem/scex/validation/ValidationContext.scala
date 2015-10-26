@@ -13,8 +13,10 @@ abstract class ValidationContext protected extends MacroUtils {
 
   val contextTpe: Type
 
-  private lazy val rootTpe =
-    internal.reificationSupport.TypeRef(contextTpe, contextTpe.member(TypeName("Root")), Nil).dealias
+  private lazy val rootTpe = {
+    val TypeRef(_, _, List(result, _)) = contextTpe.baseType(typeOf[ExpressionContext[_, _]].typeSymbol)
+    result
+  }
 
   sealed abstract class MemberAccess {
     def repr: String = repr("")
