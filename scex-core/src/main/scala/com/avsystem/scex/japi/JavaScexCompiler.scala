@@ -33,7 +33,7 @@ trait JavaScexCompiler extends ScexCompiler with ScexPresentationCompiler {
       case clazz if clazz == classOf[JavaExpressionContext[_, _]] => classOf[Object]
     }
 
-  def buildExpression: ExpressionBuilder[_, _] =
+  def buildExpression: ExpressionBuilder[_ <: JavaExpressionContext[_, _], _] =
     new ExpressionBuilder[JavaExpressionContext[_, _], Any]
 
   class ExpressionBuilder[C <: JavaExpressionContext[_, _], T] extends Fluent {
@@ -46,7 +46,7 @@ trait JavaScexCompiler extends ScexCompiler with ScexPresentationCompiler {
     private var _header: String = ""
     private val _variableTypes: ju.Map[String, TypeToken[_]] = new ju.HashMap
 
-    def get = {
+    def get: Expression[C, T] = {
       require(_contextTypeToken != null, "Context type cannot be null")
       require(_resultTypeToken != null, "Result type cannot be null")
       require(_profile != null, "Profile cannot be null")
@@ -109,23 +109,23 @@ trait JavaScexCompiler extends ScexCompiler with ScexPresentationCompiler {
       _header = header
     }
 
-    def variableTypes(variableTypes: ju.Map[String, TypeToken[_]]): Unit = fluent {
+    def variableTypes(variableTypes: ju.Map[String, TypeToken[_]]) = fluent {
       _variableTypes.clear()
       _variableTypes.putAll(variableTypes)
     }
 
-    def variableType(name: String, typeToken: TypeToken[_]): Unit = fluent {
+    def variableType(name: String, typeToken: TypeToken[_]) = fluent {
       _variableTypes.put(name, typeToken)
     }
 
-    def variableClasses(variableTypes: ju.Map[String, Class[_]]): Unit = fluent {
+    def variableClasses(variableTypes: ju.Map[String, Class[_]]) = fluent {
       _variableTypes.clear()
       variableTypes.entrySet.iterator.asScala.foreach { e =>
         _variableTypes.put(e.getKey, TypeToken.of(e.getValue))
       }
     }
 
-    def variableClass(name: String, clazz: Class[_]): Unit = fluent {
+    def variableClass(name: String, clazz: Class[_]) = fluent {
       _variableTypes.put(name, TypeToken.of(clazz))
     }
   }
@@ -142,7 +142,7 @@ trait JavaScexCompiler extends ScexCompiler with ScexPresentationCompiler {
     private var _header: String = ""
     private val _variableTypes: ju.Map[String, TypeToken[_]] = new ju.HashMap
 
-    def get = {
+    def get: Completer = {
       require(_contextTypeToken != null, "Context type cannot be null")
       require(_resultTypeToken != null, "Result type cannot be null")
       require(_profile != null, "Profile cannot be null")
@@ -198,23 +198,23 @@ trait JavaScexCompiler extends ScexCompiler with ScexPresentationCompiler {
       _header = header
     }
 
-    def variableTypes(variableTypes: ju.Map[String, TypeToken[_]]): Unit = fluent {
+    def variableTypes(variableTypes: ju.Map[String, TypeToken[_]]) = fluent {
       _variableTypes.clear()
       _variableTypes.putAll(variableTypes)
     }
 
-    def variableType(name: String, typeToken: TypeToken[_]): Unit = fluent {
+    def variableType(name: String, typeToken: TypeToken[_]) = fluent {
       _variableTypes.put(name, typeToken)
     }
 
-    def variableClasses(variableTypes: ju.Map[String, Class[_]]): Unit = fluent {
+    def variableClasses(variableTypes: ju.Map[String, Class[_]]) = fluent {
       _variableTypes.clear()
       variableTypes.entrySet.iterator.asScala.foreach { e =>
         _variableTypes.put(e.getKey, TypeToken.of(e.getValue))
       }
     }
 
-    def variableClass(name: String, clazz: Class[_]): Unit = fluent {
+    def variableClass(name: String, clazz: Class[_]) = fluent {
       _variableTypes.put(name, TypeToken.of(clazz))
     }
   }

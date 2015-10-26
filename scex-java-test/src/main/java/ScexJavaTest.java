@@ -1,3 +1,4 @@
+import com.avsystem.scex.Expression;
 import com.avsystem.scex.ExpressionProfile;
 import com.avsystem.scex.NamedSource;
 import com.avsystem.scex.compiler.ScexSettings;
@@ -7,8 +8,10 @@ import com.avsystem.scex.japi.JavaExpressionContext;
 import com.avsystem.scex.presentation.Attributes;
 import com.avsystem.scex.presentation.SymbolAttributes;
 import com.avsystem.scex.symboldsl.SymbolInfo;
+import com.avsystem.scex.util.SimpleContext;
 import com.avsystem.scex.validation.SymbolValidator;
 import com.avsystem.scex.validation.SyntaxValidator;
+import com.google.common.reflect.TypeToken;
 import scala.collection.JavaConversions;
 
 import java.io.BufferedReader;
@@ -26,6 +29,10 @@ public class ScexJavaTest {
         for (SymbolInfo<Attributes> info : JavaConversions.seqAsJavaList(symbolAttributes.infoList())) {
             System.out.println(info);
         }
+
+        Expression<SimpleContext<Void>, Void> expr =
+                compiler.buildExpression().contextType(new TypeToken<SimpleContext<Void>>() {
+                }).resultType(Void.class).get();
 
         ExpressionProfile profile = new ExpressionProfile("test", syntaxValidator, symbolValidator,
                 symbolAttributes, "", NamedSource.apply("test", ""));
