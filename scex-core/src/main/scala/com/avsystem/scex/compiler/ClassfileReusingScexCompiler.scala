@@ -2,8 +2,9 @@ package com.avsystem.scex.compiler
 
 import java.{lang => jl, util => ju}
 
-import com.avsystem.scex.compiler.ClassfileReusingScexCompiler.CacheVersion
+import com.avsystem.scex.compiler.ClassfileReusingScexCompiler.GlobalCacheVersion
 import com.google.common.cache.CacheBuilder
+import java.io.OutputStreamWriter
 
 import scala.collection.mutable
 import scala.reflect.io.AbstractFile
@@ -13,7 +14,7 @@ import scala.tools.nsc.util.ClassPath
 import scala.util.Try
 
 object ClassfileReusingScexCompiler {
-  final val CacheVersion = 1
+  final val GlobalCacheVersion = 1
 }
 
 /**
@@ -76,20 +77,21 @@ trait ClassfileReusingScexCompiler extends ScexCompiler {
   override protected def setup(): Unit = {
     _stateOpt = settings.resolvedClassfileDir.map(new State(_))
     stateOpt.foreach { state =>
+      val currentVersion = GlobalCacheVersion + "." + settings.backwardsCompatCacheVersion.value
       val versionFileName = "cacheVersion"
-      if(state.classfileDir.exists) {
+      if (state.classfileDir.exists) {
         val savedVersion = Option(state.classfileDir.lookupName(versionFileName, directory = false))
-          .flatMap(versionFile => Try(new String(versionFile.toCharArray).toInt).toOption)
-          .getOrElse(0)
+          .flatMap(versionFile => Try(new String(versionFile.toCharArray)).toOption)
+          .getOrElse("0")
 
-        if(savedVersion != CacheVersion) {
+        if (savedVersion != currentVersion) {
           logger.info("Classfile cache version changed, deleting classfile directory")
           state.classfileDir.delete()
         }
       }
       state.classfileDir.file.mkdirs()
       val os = state.classfileDir.fileNamed(versionFileName).output
-      try os.write(CacheVersion.toString.getBytes) finally os.close()
+      try os.write(currentVersion.getBytes) finally os.close()
     }
     super.setup()
   }
@@ -204,9 +206,11 @@ trait ClassfileReusingScexCompiler extends ScexCompiler {
         outDir <- global.settings.outputDirs.getSingleOutput
         sig <- sigs.get(unit)
       } {
-        logger.debug(s"Saving signatures file for ${unit.source.file.name}:\n$sig")
-        val os = outDir.fileNamed(unit.source.file.name + ".sig").output
-        try os.write(sig.getBytes) finally os.close()
+        logger.debug(s"Saving source and signatures file for ${unit.source.file.name}:\n$sig")
+        val sourceWriter = new OutputStreamWriter(outDir.fileNamed(unit.source.file.name + ".scala").output)
+        try sourceWriter.write(unit.source.content) finally sourceWriter.close()
+        val sigOutputStream = outDir.fileNamed(unit.source.file.name + ".sig").output
+        try sigOutputStream.write(sig.getBytes) finally sigOutputStream.close()
         sigs.remove(unit)
       }
     }

@@ -18,6 +18,7 @@ out
 .gradle
 testClassfileCache
 classfileCache
+scex_classes
 
 # gedit temporary files
 *~

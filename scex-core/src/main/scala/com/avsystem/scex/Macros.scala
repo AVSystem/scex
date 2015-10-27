@@ -18,6 +18,7 @@ class Macros(val c: blackbox.Context) extends MacroUtils {
 
   import universe._
 
+  val ScexPkg = q"_root_.com.avsystem.scex"
   val ScexLiteralTpe = typeOf[ScexLiteral].dealias
   val ScexLiteralObj = ScexLiteralTpe.typeSymbol.companion
   val TemplateInterpolationsObjTpe = typeOf[TemplateInterpolations.type]
@@ -117,7 +118,6 @@ class Macros(val c: blackbox.Context) extends MacroUtils {
         c.abort(t.pos, s"Tree references expression input")
       }
     }
-
     expr.tree
   }
 
@@ -150,4 +150,8 @@ class Macros(val c: blackbox.Context) extends MacroUtils {
   def materializeTypeToken[T: c.WeakTypeTag]: c.Tree =
     q"new _root_.com.google.common.reflect.TypeToken[${weakTypeOf[T]}] {}"
 
+  import scala.reflect.runtime.{universe => ru}
+
+  def materializeTypeRepr[T: c.WeakTypeTag](tt: c.Expr[ru.TypeTag[T]]): c.Tree =
+    q"$ScexPkg.TypeRepr(${showCode(TypeTree(weakTypeOf[T]))})"
 }

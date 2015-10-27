@@ -51,6 +51,9 @@ class ScexSettings extends Settings {
   val noGetterAdapters = BooleanSetting("-SCEXno-getter-adapters",
     "Disables generation of Java getter adapter methods")
 
+  val backwardsCompatCacheVersion = StringSetting("-SCEXbackwards-compat-cache-version", "versionString",
+    "Additional version string for controlling invalidation of classfile cache", "0")
+
   def resolvedClassfileDir = Option(classfileDirectory.value)
     .filter(_.trim.nonEmpty).map(path => new PlainDirectory(new Directory(new File(path))))
 }
