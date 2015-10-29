@@ -5,7 +5,7 @@ import java.{lang => jl, util => ju}
 
 import com.avsystem.scex.compiler.ParameterizedClass.StaticInnerGeneric
 import com.avsystem.scex.compiler.ScexCompiler.CompilationFailedException
-import com.avsystem.scex.compiler.overriding.{Base, Klass}
+import com.avsystem.scex.compiler.overriding.{Base, Klass, Specialized}
 import com.avsystem.scex.util.{PredefinedAccessSpecs, SimpleContext}
 import com.google.common.reflect.TypeToken
 import org.scalatest.FunSuite
@@ -19,11 +19,11 @@ class ScexCompilerTest extends FunSuite with CompilationTest {
   override def defaultAcl = Nil
 
   test("trivial compilation test") {
-    assert(() === evaluate[Unit]("()"))
+    evaluate[Unit]("()")
   }
 
   test("simple arithmetic expression") {
-    assert(298 === evaluate[Int]("1+5+250+42"))
+    assert(298 == evaluate[Int]("1+5+250+42"))
   }
 
   test("simple syntax validation test") {
@@ -52,7 +52,7 @@ class ScexCompilerTest extends FunSuite with CompilationTest {
     }
     val expr = "property + extraordinary + extraordinarilyBoxed + field + twice(42)"
     val cexpr = compiler.getCompiledExpression[SimpleContext[JavaRoot], String](createProfile(acl), expr, template = false)
-    assert("propertytruefalse42.4284" === cexpr(SimpleContext(new JavaRoot)))
+    assert("propertytruefalse42.4284" == cexpr(SimpleContext(new JavaRoot)))
   }
 
   test("complicated root type test with java getter adapters") {
@@ -70,7 +70,7 @@ class ScexCompilerTest extends FunSuite with CompilationTest {
       .resultType(classOf[String]).profile(createProfile(acl)).expression(expr).get
 
     val sig = new StaticInnerGeneric[Cloneable]
-    assert("EXPR:true{}[interesting stuff handled]true[fjeld]" === cexpr(SimpleContext(new sig.DeeplyInnerGeneric[String])))
+    assert("EXPR:true{}[interesting stuff handled]true[fjeld]" == cexpr(SimpleContext(new sig.DeeplyInnerGeneric[String])))
   }
 
   test("non-root java getter adapters test") {
@@ -82,7 +82,7 @@ class ScexCompilerTest extends FunSuite with CompilationTest {
     }
     val expr = "new JavaRoot().property + new JavaRoot().extraordinary + new JavaRoot().extraordinarilyBoxed"
     val cexpr = compiler.getCompiledExpression[SimpleContext[Unit], String](createProfile(acl), expr, template = false)
-    assert("propertytruefalse" === cexpr(SimpleContext(())))
+    assert("propertytruefalse" == cexpr(SimpleContext(())))
   }
 
   test("constructor allow test") {
@@ -91,7 +91,7 @@ class ScexCompilerTest extends FunSuite with CompilationTest {
     }
     val expr = "new JavaRoot"
     val cexpr = compiler.getCompiledExpression[SimpleContext[Unit], Unit](createProfile(acl), expr, template = false)
-    assert(() === cexpr(SimpleContext(())))
+    cexpr(SimpleContext(()))
   }
 
   test("constructor deny test") {
@@ -119,7 +119,7 @@ class ScexCompilerTest extends FunSuite with CompilationTest {
     }
     val expr = "property"
     val cexpr = compiler.getCompiledExpression[SimpleContext[JavaRoot], String](createProfile(acl), expr, template = false)
-    assert("property" === cexpr(SimpleContext(new JavaRoot)))
+    assert("property" == cexpr(SimpleContext(new JavaRoot)))
   }
 
   test("validation test with subtyping") {
@@ -146,7 +146,7 @@ class ScexCompilerTest extends FunSuite with CompilationTest {
     }
     val expr = "overriddenMethod()"
     val cexpr = compiler.getCompiledExpression[SimpleContext[DerivedJavaRoot], Unit](createProfile(acl), expr, template = false)
-    assert(() === cexpr(SimpleContext(new DerivedJavaRoot)))
+    cexpr(SimpleContext(new DerivedJavaRoot))
   }
 
   test("header test") {
@@ -156,14 +156,14 @@ class ScexCompilerTest extends FunSuite with CompilationTest {
     val expr = "new ArrayList[String]"
     val cexpr = compiler.getCompiledExpression[SimpleContext[Unit], ju.List[_]](
       createProfile(acl, header = "import java.util.ArrayList"), expr, template = false)
-    assert(new ju.ArrayList[String] === cexpr(SimpleContext(())))
+    assert(new ju.ArrayList[String] == cexpr(SimpleContext(())))
   }
 
   test("utils test") {
     val expr = "utilValue"
     val cexpr = compiler.getCompiledExpression[SimpleContext[Unit], Int](
       createProfile(Nil, header = "", utils = "val utilValue = 42"), expr, template = false)
-    assert(42 === cexpr(SimpleContext(())))
+    assert(42 == cexpr(SimpleContext(())))
   }
 
   test("ACL allow entry precedence test") {
@@ -178,7 +178,7 @@ class ScexCompilerTest extends FunSuite with CompilationTest {
     }
     val expr = "42.toString"
     val cexpr = compiler.getCompiledExpression[SimpleContext[Unit], String](createProfile(acl), expr, template = false)
-    assert("42" === cexpr(SimpleContext(())))
+    assert("42" == cexpr(SimpleContext(())))
   }
 
   test("ACL deny entry precedence test") {
@@ -213,7 +213,7 @@ class ScexCompilerTest extends FunSuite with CompilationTest {
     }
     val expr = "Some(42)"
     val cexpr = compiler.getCompiledExpression[SimpleContext[Unit], Option[Int]](createProfile(acl), expr, template = false)
-    assert(Some(42) === cexpr(SimpleContext(())))
+    assert(Some(42) == cexpr(SimpleContext(())))
   }
 
   test("static module member validation test 2") {
@@ -234,7 +234,7 @@ class ScexCompilerTest extends FunSuite with CompilationTest {
     }
     val expr = "\"bippy\".reverse"
     val cexpr = compiler.getCompiledExpression[SimpleContext[Unit], String](createProfile(acl), expr, template = false)
-    assert("yppib" === cexpr(SimpleContext(())))
+    assert("yppib" == cexpr(SimpleContext(())))
   }
 
   test("explicit member-by-implicit validation test 2") {
@@ -248,7 +248,7 @@ class ScexCompilerTest extends FunSuite with CompilationTest {
     val expr = "\"bippy\" ? \"fuu\""
     val cexpr = compiler.getCompiledExpression[SimpleContext[Unit], String](
       createProfile(acl, header = "import com.avsystem.scex.compiler.TestExtensions._"), expr, template = false)
-    assert("bippy" === cexpr(SimpleContext(())))
+    assert("bippy" == cexpr(SimpleContext(())))
   }
 
   test("plain implicit conversion validation test") {
@@ -260,7 +260,7 @@ class ScexCompilerTest extends FunSuite with CompilationTest {
     }
     val expr = "\"bippy\".reverse"
     val cexpr = compiler.getCompiledExpression[SimpleContext[Unit], String](createProfile(acl), expr, template = false)
-    assert("yppib" === cexpr(SimpleContext(())))
+    assert("yppib" == cexpr(SimpleContext(())))
   }
 
   test("mixed access implicit conversion validation test 1") {
@@ -304,7 +304,7 @@ class ScexCompilerTest extends FunSuite with CompilationTest {
     val expr = "_root(0)"
     val cexpr = compiler.getCompiledExpression[SimpleContext[ju.List[String]], Any](createProfile(acl, header = header), expr, template = false)
     val list = ju.Arrays.asList("0", "1", "2")
-    assert("0" === cexpr(SimpleContext(list)))
+    assert("0" == cexpr(SimpleContext(list)))
   }
 
   test("covariance by @plus annotation test") {
@@ -317,7 +317,7 @@ class ScexCompilerTest extends FunSuite with CompilationTest {
     val cexpr = compiler.getCompiledExpression[SimpleContext[ju.List[String]], Unit](createProfile(acl), expr, template = false)
     val list = new ju.ArrayList[String]
     cexpr(SimpleContext(list))
-    assert("string" === list.get(0))
+    assert("string" == list.get(0))
   }
 
   test("contravariance by @minus annotation test") {
@@ -330,7 +330,7 @@ class ScexCompilerTest extends FunSuite with CompilationTest {
     val cexpr = compiler.getCompiledExpression[SimpleContext[ju.List[Any]], Any](createProfile(acl), expr, template = false)
     val list = ju.Arrays.asList[Any]("cos")
     cexpr(SimpleContext(list))
-    assert("cos" === list.get(0))
+    assert("cos" == list.get(0))
   }
 
   test("dynamic test") {
@@ -339,7 +339,7 @@ class ScexCompilerTest extends FunSuite with CompilationTest {
     }
     val expr = "com.avsystem.scex.compiler.SomeDynamic.dynamicProperty"
     val cexpr = compiler.getCompiledExpression[SimpleContext[Unit], String](createProfile(acl), expr, template = false)
-    assert("dynamicProperty" === cexpr(SimpleContext(())))
+    assert("dynamicProperty" == cexpr(SimpleContext(())))
   }
 
   test("java getter inherited from multiple bases test") {
@@ -350,7 +350,7 @@ class ScexCompilerTest extends FunSuite with CompilationTest {
     }
     val expr = "self.id"
     val cexpr = compiler.getCompiledExpression[SimpleContext[SubRoot], String](createProfile(acl), expr, template = false)
-    assert("tehId" === cexpr(SimpleContext(new SubRoot)))
+    assert("tehId" == cexpr(SimpleContext(new SubRoot)))
   }
 
   // https://groups.google.com/forum/#!topic/scala-user/IeD2siVXyss
@@ -364,6 +364,21 @@ class ScexCompilerTest extends FunSuite with CompilationTest {
     val cexpr = compiler.getCompiledExpression[SimpleContext[Klass], AnyRef](createProfile(acl), expr, template = false)
     val root = new Klass
     assert(root eq cexpr(SimpleContext(root)))
+  }
+
+  test("overridden java getter with bridge method test") {
+    val acl = allow {
+      on { s: Specialized =>
+        s.all.members
+      }
+      on { s: String =>
+        s + _
+        s.toString
+      }
+    }
+    val expr = "that + _root.that"
+    val cexpr = compiler.getCompiledExpression[SimpleContext[Specialized], String](createProfile(acl), expr, template = false)
+    assert("thatthat" == cexpr(SimpleContext(new Specialized)))
   }
 
   def lambdaTest(name: String, expr: String) =
