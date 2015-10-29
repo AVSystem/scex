@@ -1,6 +1,6 @@
 name := "scex"
 
-version in Global := "1.16.5"
+version in Global := "1.16.6"
 scalaVersion in Global := "2.11.7"
 organization in Global := "com.avsystem"
 crossPaths in Global := false
@@ -18,7 +18,7 @@ scalacOptions in Global ++= Seq(
 )
 
 val silencerVersion = "0.3"
-val guavaVersion = "14.0.1"
+val guavaVersion = "18.0"
 val jettyVersion = "9.1.0.v20131115"
 val vaadinVersion = "6.8.13"
 val findbugsVersion = "2.0.1"
