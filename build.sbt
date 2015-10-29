@@ -1,6 +1,6 @@
 name := "scex"
 
-version in Global := "1.16.4"
+version in Global := "1.16.5"
 scalaVersion in Global := "2.11.7"
 organization in Global := "com.avsystem"
 crossPaths in Global := false
@@ -47,6 +47,11 @@ lazy val scex = project.in(file("."))
 lazy val subprojectSettings = Seq(
   publishArtifact := false,
   fork in Test := true,
+  outputStrategy in Test := Some(LoggedOutput(new Logger {
+    def log(level: Level.Value, message: => String): Unit = ()
+    def success(message: => String): Unit = ()
+    def trace(t: => Throwable): Unit = ()
+  })),
   libraryDependencies ++= Seq(
     "junit" % "junit" % junitVersion % Test,
     "org.scalatest" %% "scalatest" % scalatestVersion % Test
