@@ -40,16 +40,16 @@ trait CachingScexPresentationCompiler extends ScexPresentationCompiler {
     .build[String, SymbolAttributes]
 
   override protected def getErrors(exprDef: ExpressionDef) =
-    errorsCache.get(exprDef, callable(super.getErrors(exprDef)))
+    unwrapExecutionException(errorsCache.get(exprDef, callable(super.getErrors(exprDef))))
 
   override protected def getScopeCompletion(exprDef: ExpressionDef) =
-    scopeCompletionCache.get(exprDef, callable(super.getScopeCompletion(exprDef)))
+    unwrapExecutionException(scopeCompletionCache.get(exprDef, callable(super.getScopeCompletion(exprDef))))
 
   override protected def getTypeMembers(global: IGlobal)(exprDef: ExpressionDef, ownerTpe: global.Type)
     (computeMembers: => Vector[Member]): Vector[Member] = {
 
     val key = TypeMembersCacheKey(exprDef.profile, exprDef.contextType, TypeWrapper(global)(ownerTpe.map(_.widen)))
-    typeMembersCache.get(key, callable(computeMembers))
+    unwrapExecutionException(typeMembersCache.get(key, callable(computeMembers)))
   }
 
   override def compileSymbolAttributes(source: NamedSource) =

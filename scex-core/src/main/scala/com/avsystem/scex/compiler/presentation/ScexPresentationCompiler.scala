@@ -22,18 +22,7 @@ trait ScexPresentationCompiler extends ScexCompiler {compiler =>
 
   private val logger = createLogger[ScexPresentationCompiler]
 
-  private object lock
-
-  protected def underPresentationLock[T](code: => T) = {
-    checkEnabled()
-    ensureSetup()
-    lock.synchronized(code)
-  }
-
   protected def isEnabled = !settings.noPresentation.value
-
-  protected def checkEnabled(): Unit =
-    if (!isEnabled) throw new RuntimeException("Presentation compiler was disabled with -SCEXno-presentation.")
 
   private var reporter: Reporter = _
   private var global: IGlobal = _
@@ -41,11 +30,9 @@ trait ScexPresentationCompiler extends ScexCompiler {compiler =>
   override protected def setup(): Unit = {
     super.setup()
     if (isEnabled) {
-      lock.synchronized {
-        logger.info("Initializing Scala presentation compiler")
-        reporter = new Reporter(settings)
-        global = new IGlobal(settings, reporter, getSharedClassLoader)
-      }
+      logger.info("Initializing Scala presentation compiler")
+      reporter = new Reporter(settings)
+      global = new IGlobal(settings, reporter, getSharedClassLoader)
     }
   }
 
@@ -58,7 +45,7 @@ trait ScexPresentationCompiler extends ScexCompiler {compiler =>
     getOrThrow(global.askForResponse(() => code))
   }
 
-  protected final def withIGlobal[T](code: IGlobal => T) = underPresentationLock {
+  protected final def withIGlobal[T](code: IGlobal => T) = underLock {
     reporter.reset()
     val global = compiler.global
     val result = try code(global) finally {
@@ -256,69 +243,66 @@ trait ScexPresentationCompiler extends ScexCompiler {compiler =>
       attributes.documentation)
   }
 
-  protected def getErrors(exprDef: ExpressionDef) = {
+  protected def getErrors(exprDef: ExpressionDef) = withIGlobal { global =>
     val (pkgName, code, offset) = expressionCode(exprDef)
     val sourceFile = new ExpressionSourceFile(exprDef, pkgName, code, offset)
-    withIGlobal { global =>
-      val response = new global.Response[global.Tree]
-      try {
-        global.askLoadedTyped(sourceFile, response)
-        getOrThrow(response)
-        reporter.compileErrors()
-      } finally {
-        global.removeUnitOf(sourceFile)
-      }
+
+    val response = new global.Response[global.Tree]
+    try {
+      global.askLoadedTyped(sourceFile, response)
+      getOrThrow(response)
+      reporter.compileErrors()
+    } finally {
+      global.removeUnitOf(sourceFile)
     }
   }
 
-  protected def getScopeCompletion(exprDef: ExpressionDef): Completion = {
+  protected def getScopeCompletion(exprDef: ExpressionDef): Completion = withIGlobal { global =>
     val symbolValidator = exprDef.profile.symbolValidator
     val symbolAttributes = exprDef.profile.symbolAttributes
 
     val (pkgName, code, offset) = expressionCode(exprDef, noMacroProcessing = true)
     val sourceFile = new ExpressionSourceFile(exprDef, pkgName, code, offset)
 
-    withIGlobal { global =>
-      import global.{position => _, sourceFile => _, _}
-      try {
-        val pos = sourceFile.position(offset)
-        logger.debug(s"Computing scope completion for $exprDef")
+    import global.{position => _, sourceFile => _, _}
+    try {
+      val pos = sourceFile.position(offset)
+      logger.debug(s"Computing scope completion for $exprDef")
 
-        val treeResponse = new Response[Tree]
-        askLoadedTyped(sourceFile, treeResponse)
-        val sourceTree = getOrThrow(treeResponse)
+      val treeResponse = new Response[Tree]
+      askLoadedTyped(sourceFile, treeResponse)
+      val sourceTree = getOrThrow(treeResponse)
 
-        val vc = ValidationContext(global)(getContextTpe(global)(sourceTree))
-        import vc._
+      val vc = ValidationContext(global)(getContextTpe(global)(sourceTree))
+      import vc._
 
-        def accessFromScopeMember(m: ScexScopeMember) = {
-          extractAccess(Select(m.viaImport, m.sym))
-        }
-
-        val response = new Response[List[Member]]
-        askScopeCompletion(pos, response)
-        val scope = getOrThrow(response)
-
-        inCompilerThread {
-          val membersIterator = scope.iterator.collect {
-            case member@ScopeMember(sym, tpe, accessible, viaImport)
-              if viaImport != EmptyTree && sym.isTerm && !sym.hasPackageFlag && !isFromProfileObject(sym) =>
-              val actualSym = if (sym.hasGetter) sym.getterIn(sym.owner) else sym
-              ScexScopeMember(actualSym, tpe, accessible, viaImport)
-          } filter { m =>
-            symbolValidator.validateMemberAccess(vc)(accessFromScopeMember(m)).deniedAccesses.isEmpty
-          } map translateMember(global, symbolAttributes)
-
-          Completion(ast.EmptyTree, membersIterator.toVector)
-        }
-
-      } finally {
-        removeUnitOf(sourceFile)
+      def accessFromScopeMember(m: ScexScopeMember) = {
+        extractAccess(Select(m.viaImport, m.sym))
       }
+
+      val response = new Response[List[Member]]
+      askScopeCompletion(pos, response)
+      val scope = getOrThrow(response)
+
+      inCompilerThread {
+        val membersIterator = scope.iterator.collect {
+          case member@ScopeMember(sym, tpe, accessible, viaImport)
+            if viaImport != EmptyTree && sym.isTerm && !sym.hasPackageFlag && !isFromProfileObject(sym) =>
+            val actualSym = if (sym.hasGetter) sym.getterIn(sym.owner) else sym
+            ScexScopeMember(actualSym, tpe, accessible, viaImport)
+        } filter { m =>
+          symbolValidator.validateMemberAccess(vc)(accessFromScopeMember(m)).deniedAccesses.isEmpty
+        } map translateMember(global, symbolAttributes)
+
+        Completion(ast.EmptyTree, membersIterator.toVector)
+      }
+
+    } finally {
+      removeUnitOf(sourceFile)
     }
   }
 
-  protected def getTypeCompletion(exprDef: ExpressionDef, position: Int) = {
+  protected def getTypeCompletion(exprDef: ExpressionDef, position: Int) = withIGlobal { global =>
     logger.debug(s"Computing type completion for $exprDef at position $position")
     val startTime = System.nanoTime()
 
@@ -328,7 +312,7 @@ trait ScexPresentationCompiler extends ScexCompiler {compiler =>
     val (pkgName, code, offset) = expressionCode(exprDef, noMacroProcessing = true)
     val sourceFile = new ExpressionSourceFile(exprDef, pkgName, code, offset)
 
-    val result = withIGlobal { global =>
+    val result = {
       import global.{position => _, sourceFile => _, _}
       try {
         val sourcePosition = sourceFile.position(offset + exprDef.positionMapping(position))
@@ -463,12 +447,11 @@ trait ScexPresentationCompiler extends ScexCompiler {compiler =>
 
     if (isEnabled) {
       result match {
-        case Left(_) if sourceFile.shared => underPresentationLock {
+        case Left(_) if sourceFile.shared =>
           val global = this.global
           val response = new global.Response[global.Tree]
           global.askLoadedTyped(sourceFile, response)
           getOrThrow(response)
-        }
         case _ =>
       }
     }
@@ -478,10 +461,10 @@ trait ScexPresentationCompiler extends ScexCompiler {compiler =>
 
   override def reset(): Unit =
     if (isEnabled) {
-      underLock(underPresentationLock {
+      underLock {
         global.askShutdown()
         super.reset()
-      })
+      }
     } else super.reset()
 }
 

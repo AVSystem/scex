@@ -1,6 +1,7 @@
 package com.avsystem.scex
 package compiler
 
+import java.util.concurrent.locks.ReentrantLock
 import java.{lang => jl, util => ju}
 
 import com.avsystem.scex.compiler.CodeGeneration._
@@ -25,7 +26,7 @@ trait ScexCompiler extends LoggingUtils {
 
   private val logger = createLogger[ScexCompiler]
 
-  private object lock
+  private val lock = new ReentrantLock
 
   class Reporter(val settings: Settings) extends AbstractReporter {
     private val errorsBuilder = new ListBuffer[CompileError]
@@ -82,10 +83,13 @@ trait ScexCompiler extends LoggingUtils {
 
   protected type RawExpression = Expression[ExpressionContext[_, _], Any]
 
-  protected def underLock[T](code: => T) = {
+  protected def underLock[T](code: => T): T = {
     ensureSetup()
-    lock.synchronized {
+    try {
+      lock.lock()
       code
+    } finally {
+      lock.unlock()
     }
   }
 
@@ -117,11 +121,14 @@ trait ScexCompiler extends LoggingUtils {
 
   protected final def ensureSetup(): Unit = {
     if (!initialized) {
-      lock.synchronized {
+      try {
+        lock.lock()
         if (!initialized) {
           setup()
           initialized = true
         }
+      } finally {
+        lock.unlock()
       }
     }
   }
@@ -151,24 +158,22 @@ trait ScexCompiler extends LoggingUtils {
       case None => Success(None)
     }
 
-  protected def compileProfileObject(profile: ExpressionProfile): Try[String] = {
+  protected def compileProfileObject(profile: ExpressionProfile): Try[String] = underLock {
     val adapters = profile.symbolValidator.referencedJavaClasses.toVector.sortBy(_.getName).flatMap {
       clazz => compileJavaGetterAdapter(clazz, full = false).get.map(adapterName => (clazz, adapterName))
     }
 
-    underLock {
-      val pkgName = ProfilePkgPrefix + NameTransformer.encode(profile.name)
-      val codeToCompile = wrapInSource(generateProfileObject(profile, adapters), pkgName)
-      val sourceFile = new ScexSourceFile(pkgName, codeToCompile, shared = true)
+    val pkgName = ProfilePkgPrefix + NameTransformer.encode(profile.name)
+    val codeToCompile = wrapInSource(generateProfileObject(profile, adapters), pkgName)
+    val sourceFile = new ScexSourceFile(pkgName, codeToCompile, shared = true)
 
-      def result =
-        compile(sourceFile) match {
-          case Left(_) => pkgName
-          case Right(errors) => throw new CompilationFailedException(codeToCompile, errors)
-        }
+    def result =
+      compile(sourceFile) match {
+        case Left(_) => pkgName
+        case Right(errors) => throw new CompilationFailedException(codeToCompile, errors)
+      }
 
-      Try(result)
-    }
+    Try(result)
   }
 
   protected def compileExpressionUtils(utils: NamedSource): Try[String] = underLock {

@@ -43,25 +43,32 @@ trait CachingScexCompiler extends ScexCompiler {
     CacheBuilder.newBuilder.build[String, SymbolValidator]
 
   override protected def preprocess(expression: String, template: Boolean) =
-    preprocessingCache.get((expression, template), callable(super.preprocess(expression, template)))
+    unwrapExecutionException(
+      preprocessingCache.get((expression, template), callable(super.preprocess(expression, template))))
 
   override protected def compileExpression(exprDef: ExpressionDef) =
-    expressionCache.get(exprDef, callable(super.compileExpression(exprDef)))
+    unwrapExecutionException(
+      expressionCache.get(exprDef, callable(super.compileExpression(exprDef))))
 
   override protected def compileProfileObject(profile: ExpressionProfile) =
-    profileCompilationResultsCache.get(profile, callable(super.compileProfileObject(profile)))
+    unwrapExecutionException(underLock(
+      profileCompilationResultsCache.get(profile, callable(super.compileProfileObject(profile)))))
 
   override protected def compileExpressionUtils(source: NamedSource) =
-    utilsCompilationResultsCache.get(source.name, callable(super.compileExpressionUtils(source)))
+    unwrapExecutionException(underLock(
+      utilsCompilationResultsCache.get(source.name, callable(super.compileExpressionUtils(source)))))
 
   override protected def compileJavaGetterAdapter(clazz: Class[_], full: Boolean) =
-    javaGetterAdaptersCache.get((clazz, full), callable(super.compileJavaGetterAdapter(clazz, full)))
+    unwrapExecutionException(underLock(
+      javaGetterAdaptersCache.get((clazz, full), callable(super.compileJavaGetterAdapter(clazz, full)))))
 
   override def compileSyntaxValidator(source: NamedSource) =
-    unwrapExecutionException(syntaxValidatorsCache.get(source.name, callable(super.compileSyntaxValidator(source))))
+    unwrapExecutionException(
+      syntaxValidatorsCache.get(source.name, callable(super.compileSyntaxValidator(source))))
 
   override def compileSymbolValidator(source: NamedSource) =
-    unwrapExecutionException(symbolValidatorsCache.get(source.name, callable(super.compileSymbolValidator(source))))
+    unwrapExecutionException(
+      symbolValidatorsCache.get(source.name, callable(super.compileSymbolValidator(source))))
 
   override def reset(): Unit = underLock {
     super.reset()
