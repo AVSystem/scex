@@ -12,11 +12,11 @@ import scala.tools.nsc.reporters.Reporter
 import scala.tools.nsc.symtab.Flags.{ACCESSOR, PARAMACCESSOR}
 
 /**
- * Created: 13-12-2013
- * Author: ghik
- *
- * I needed to hack a custom implementation of type completion, hence this class.
- */
+  * Created: 13-12-2013
+  * Author: ghik
+  *
+  * I needed to hack a custom implementation of type completion, hence this class.
+  */
 class IGlobal(settings: Settings, reporter: Reporter, val classLoader: ClassLoader)
   extends Global(settings, reporter) with ScexGlobal {
 
@@ -90,20 +90,20 @@ class IGlobal(settings: Settings, reporter: Reporter, val classLoader: ClassLoad
         add(sym.getterIn(sym.owner), pre, implicitTree)(toMember)
       } else if (!sym.name.decodedName.containsName("$") && !sym.isSynthetic && sym.hasRawInfo) {
         val symtpe = pre.memberType(sym) onTypeError ErrorType
-        matching(sym, symtpe, this(sym.name)) match {
+        matching(sym, symtpe, this (sym.name)) match {
           case Some(m) =>
             if (keepSecond(m, sym, implicitTree)) {
-              this(sym.name) = this(sym.name) - m + toMember(sym, symtpe)
+              this (sym.name) = this (sym.name) - m + toMember(sym, symtpe)
             }
           case None =>
-            this(sym.name) = this(sym.name) + toMember(sym, symtpe)
+            this (sym.name) = this (sym.name) + toMember(sym, symtpe)
         }
       }
     }
 
     def addNonShadowed(other: Members) = {
       for ((name, ms) <- other)
-        if (ms.nonEmpty && this(name).isEmpty) this(name) = ms
+        if (ms.nonEmpty && this (name).isEmpty) this (name) = ms
     }
 
     def allMembers: Vector[ScexTypeMember] = values.toVector.flatten
@@ -174,13 +174,13 @@ class IGlobal(settings: Settings, reporter: Reporter, val classLoader: ClassLoad
   }
 
   /**
-   * Reimplementation of `scala.tools.interactive.Global.typeMembers` method, adjusted to SCEX needs:
-   * <ul>
-   * <li>returned completion members contain more information (e.g. implicit view tree instead of just symbol)</li>
-   * <li>there is a number of hacks and workarounds for scalac inability to properly handle dynamic invocations</li>
-   * <li>all members are returned at once, instead of returning a stream</li>
-   * </ul>
-   */
+    * Reimplementation of `scala.tools.interactive.Global.typeMembers` method, adjusted to SCEX needs:
+    * <ul>
+    * <li>returned completion members contain more information (e.g. implicit view tree instead of just symbol)</li>
+    * <li>there is a number of hacks and workarounds for scalac inability to properly handle dynamic invocations</li>
+    * <li>all members are returned at once, instead of returning a stream</li>
+    * </ul>
+    */
   def typeMembers(completionContext: TypeCompletionContext) = {
     val TypeCompletionContext(context, tree, pre, ownerTpe) = completionContext
 
@@ -196,8 +196,9 @@ class IGlobal(settings: Settings, reporter: Reporter, val classLoader: ClassLoad
       }
     }
 
-    /** Create a function application of a given view function to `tree` and typecheck it.
-      */
+    /*
+     * Create a function application of a given view function to `tree` and typecheck it.
+     */
     def viewApply(view: analyzer.SearchResult): Tree = {
       assert(view.tree != EmptyTree)
       analyzer.newTyper(context.makeImplicit(reportAmbiguousErrors = false))

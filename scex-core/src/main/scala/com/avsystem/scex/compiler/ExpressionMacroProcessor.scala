@@ -25,7 +25,7 @@ object ExpressionMacroProcessor {
 }
 
 class ExpressionMacroProcessor(val c: whitebox.Context) extends MacroUtils with LoggingUtils {
-  val universe: c.universe.type = c.universe
+  lazy val universe: c.universe.type = c.universe
 
   import universe._
 
@@ -127,8 +127,6 @@ class ExpressionMacroProcessor(val c: whitebox.Context) extends MacroUtils with 
         reifyFunction(arg => q"$ctx.setTypedVariable[${tree.tpe}]($varName, $arg)")
 
       case Select(prefix, TermName(getterName)) if tree.symbol.isMethod =>
-        import com.avsystem.scex.util.CommonUtils._
-
         val returnType = tree.symbol.asMethod.returnType
         val setterName = getterName match {
           case BooleanBeanGetterNamePattern(capitalizedProperty, _) if returnType <:< booleanTpe || returnType <:< jBooleanTpe =>

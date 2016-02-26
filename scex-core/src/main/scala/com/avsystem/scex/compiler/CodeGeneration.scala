@@ -175,9 +175,14 @@ object CodeGeneration {
       val typedVariables = variableTypes.toList.sorted.iterator.map {
         case (name, tpe) =>
           s"""
+             |  private def ${name}VarTag = ${validatePrefix}inferVarTag[$tpe]$validatePostfix
+             |
              |  @$AnnotationPkg.NotValidated def `$name`: $tpe =
-             |    $ContextSymbol.getTypedVariable("${escapeString(name)}")(
-             |      ${validatePrefix}inferVarTag[$tpe]$validatePostfix)
+             |    $ContextSymbol.getTypedVariable("${escapeString(name)}")(${name}VarTag)
+             |
+             |  @$AnnotationPkg.NotValidated def `${name}_=`(value: $tpe): Unit =
+             |    $ContextSymbol.setTypedVariable("${escapeString(name)}", value)(${name}VarTag)
+             |
          """.stripMargin
       }.mkString("\n")
 

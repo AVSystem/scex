@@ -2,9 +2,8 @@ package com.avsystem.scex
 
 import java.{lang => jl, util => ju}
 
-import com.avsystem.scex.compiler.TemplateInterpolations
-import com.avsystem.scex.compiler.TemplateInterpolations.Splicer
-import com.avsystem.scex.util.{Literal => ScexLiteral, MacroUtils}
+import com.avsystem.commons.macros.MacroCommons
+import com.avsystem.scex.util.MacroUtils
 
 import scala.reflect.macros.blackbox
 
@@ -12,18 +11,15 @@ import scala.reflect.macros.blackbox
   * Created: 18-11-2013
   * Author: ghik
   */
-class Macros(val c: blackbox.Context) extends MacroUtils {
+class Macros(val c: blackbox.Context) extends MacroCommons with MacroUtils {
 
-  val universe: c.universe.type = c.universe
+  lazy val universe: c.universe.type = c.universe
 
   import universe._
 
-  val ScexPkg = q"_root_.com.avsystem.scex"
-  val ScexLiteralTpe = typeOf[ScexLiteral].dealias
-  val ScexLiteralObj = ScexLiteralTpe.typeSymbol.companion
-  val TemplateInterpolationsObjTpe = typeOf[TemplateInterpolations.type]
-  val TemplateInterpolationsObj = reify(TemplateInterpolations).tree
-  val SplicerSymbol = typeOf[Splicer[_]].typeSymbol
+  lazy val ScexLiteralTpe = getType(tq"$ScexPkg.util.Literal")
+  lazy val ScexLiteralObj = ScexLiteralTpe.typeSymbol.companion
+  lazy val TemplateInterpolationsObj = q"$ScexPkg.compiler.TemplateInterpolations"
 
   def templateInterpolation_impl[T: c.WeakTypeTag, A](args: c.Expr[A]*): c.Tree = {
     val Apply(_, List(Apply(_, parts))) = c.prefix.tree
@@ -41,7 +37,7 @@ class Macros(val c: blackbox.Context) extends MacroUtils {
 
     def reifyConcatenation(parts: List[Tree], args: List[Tree]) = {
       val convertedArgs = args.map { arg =>
-        val splicerTpe = internal.reificationSupport.TypeRef(TemplateInterpolationsObjTpe, SplicerSymbol, List(arg.tpe))
+        val splicerTpe = getType(tq"$TemplateInterpolationsObj.Splicer[${arg.tpe}]")
         c.inferImplicitValue(splicerTpe) match {
           case EmptyTree => q"$arg.toString"
           case tree => q"$tree.toString($arg)"

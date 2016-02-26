@@ -12,7 +12,7 @@ import com.avsystem.scex.compiler.ScexCompiler
  * <li>string literals can be enclosed in both single and double quotes</li>
  * <li>identifiers 'lt', 'gt', 'lte', 'gte', 'and' and 'or' are
  * aliases of '<', '>', '<=', '>=', '&&' and '||'</li>
- * <li>interpolation arguments must always be blocks, i.e <tt>${ident}</tt>, not <tt>$ident</tt>
+ * <li>interpolation arguments must always be blocks, i.e <tt>&#36;{ident}</tt>, not <tt>&#36;ident</tt>
  * <li>dollars need not be escaped using two dollars</li>
  * </ul>
  *

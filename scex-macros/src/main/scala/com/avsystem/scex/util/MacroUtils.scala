@@ -1,12 +1,6 @@
-package com.avsystem.scex
-package util
+package com.avsystem.scex.util
 
 import java.{lang => jl, util => ju}
-
-import com.avsystem.scex.compiler.CodeGeneration
-import com.avsystem.scex.compiler.Markers.{ExpressionUtil, JavaGetterAdapter, ProfileObject, Synthetic}
-import com.avsystem.scex.compiler.annotation._
-import com.avsystem.scex.util.CommonUtils._
 
 import scala.reflect.api.Universe
 
@@ -15,20 +9,20 @@ trait MacroUtils {
 
   import universe._
 
-  lazy val ListObj = typeOf[List.type].termSymbol
-  lazy val NilObj = typeOf[Nil.type].termSymbol
-  lazy val NoneObj = typeOf[None.type].termSymbol
-  lazy val SomeObj = typeOf[Some.type].termSymbol
+  def scexClassType(suffix: String): Type =
+    rootMirror.staticClass("com.avsystem.scex." + suffix).toType
 
-  lazy val adapterType = typeOf[JavaGetterAdapter]
-  lazy val syntheticType = typeOf[Synthetic]
-  lazy val expressionUtilType = typeOf[ExpressionUtil]
-  lazy val profileObjectType = typeOf[ProfileObject]
+  lazy val ScexPkg = q"_root_.com.avsystem.scex"
 
-  lazy val inputAnnotType = typeOf[Input]
-  lazy val rootValueAnnotType = typeOf[RootValue]
-  lazy val rootAdapterAnnotType = typeOf[RootAdapter]
-  lazy val notValidatedAnnotType = typeOf[NotValidated]
+  lazy val adapterType = scexClassType("compiler.Markers.JavaGetterAdapter")
+  lazy val syntheticType = scexClassType("compiler.Markers.Synthetic")
+  lazy val expressionUtilType = scexClassType("compiler.Markers.ExpressionUtil")
+  lazy val profileObjectType = scexClassType("compiler.Markers.ProfileObject")
+
+  lazy val inputAnnotType = scexClassType("compiler.annotation.Input")
+  lazy val rootValueAnnotType = scexClassType("compiler.annotation.RootValue")
+  lazy val rootAdapterAnnotType = scexClassType("compiler.annotation.RootAdapter")
+  lazy val notValidatedAnnotType = scexClassType("compiler.annotation.NotValidated")
 
   lazy val any2stringadd = typeOf[Predef.type].member(TermName("any2stringadd"))
   lazy val stringAddPlus = typeOf[any2stringadd[_]].member(TermName("+").encodedName)
@@ -37,7 +31,16 @@ trait MacroUtils {
   lazy val booleanTpe = typeOf[Boolean]
   lazy val jBooleanTpe = typeOf[jl.Boolean]
   lazy val dynamicTpe = typeOf[Dynamic]
-  lazy val dynamicVarAccessorTpe = typeOf[DynamicVariableAccessor[_, _]]
+  lazy val dynamicVarAccessorTpe = scexClassType("util.DynamicVariableAccessor")
+
+  lazy val BeanGetterNamePattern = "get(([A-Z][a-z0-9_]*)+)".r
+  lazy val BooleanBeanGetterNamePattern = "is(([A-Z][a-z0-9_]*)+)".r
+  lazy val BeanSetterNamePattern = "set(([A-Z][a-z0-9_]*)+)".r
+  lazy val AdapterWrappedName = TermName("_wrapped")
+
+  lazy val toplevelSymbols = Set(typeOf[Any], typeOf[AnyRef], typeOf[AnyVal]).map(_.typeSymbol)
+  lazy val standardStringInterpolations = Set("s", "raw").map(name => typeOf[StringContext].member(TermName(name)))
+  lazy val getClassSymbol = typeOf[Any].member(TermName("getClass"))
 
   object DecodedTermName {
     def unapply(name: TermName) =
@@ -187,8 +190,6 @@ trait MacroUtils {
   def withOverrides(s: Symbol) =
     s :: s.overrides.map(fixOverride)
 
-  lazy val toplevelSymbols = Set(typeOf[Any], typeOf[AnyRef], typeOf[AnyVal]).map(_.typeSymbol)
-
   def isStaticModule(symbol: Symbol) =
     symbol != null && symbol.isModule && symbol.isStatic
 
@@ -211,14 +212,12 @@ trait MacroUtils {
     symbol.isStatic || (symbol.isMethod && symbol.asMethod.isConstructor)
 
   def reifyOption[A](opt: Option[A], innerReify: A => Tree): Tree = opt match {
-    case Some(x) => q"$SomeObj(${innerReify(x)})"
-    case None => q"$NoneObj"
+    case Some(x) => q"_root_.scala.Some(${innerReify(x)})"
+    case None => q"_root_.scala.None"
   }
 
   def isBooleanType(tpe: Type) =
     tpe <:< typeOf[Boolean] || tpe <:< typeOf[jl.Boolean]
-
-  lazy val getClassSymbol = typeOf[Any].member(TermName("getClass"))
 
   def isGetClass(symbol: Symbol) =
     symbol.name == TermName("getClass") && withOverrides(symbol).contains(getClassSymbol)
@@ -279,18 +278,15 @@ trait MacroUtils {
       (s.isJava || (!s.asTerm.isVal && !s.asTerm.isVar)) && !s.isImplementationArtifact => s.asTerm
     }
 
-  def hasType[T: TypeTag](tree: Tree) =
-    tree.tpe <:< typeOf[T]
+  def hasType(tree: Tree, tpe: Type) =
+    tree.tpe <:< tpe
 
   def toStringSymbol(tpe: Type) =
-    alternatives(tpe.member(TermName("toString")))
+    symAlternatives(tpe.member(TermName("toString")))
       .find(s => s.isTerm && isParameterless(s.asTerm))
       .getOrElse(NoSymbol)
 
-  lazy val standardStringInterpolations =
-    Set("s", "raw").map(name => typeOf[StringContext].member(TermName(name)))
-
-  def alternatives(sym: Symbol) = sym match {
+  def symAlternatives(sym: Symbol) = sym match {
     case termSymbol: TermSymbol => termSymbol.alternatives
     case NoSymbol => Nil
     case _ => List(sym)
@@ -323,7 +319,7 @@ trait MacroUtils {
   def isAdapterWrappedMember(symbol: Symbol): Boolean =
     if (symbol != null && symbol.isTerm) {
       val ts = symbol.asTerm
-      (ts.isGetter && ts.name == TermName(CodeGeneration.AdapterWrappedSymbol) && ts.owner.isType && isAdapter(ts.owner.asType.toType)
+      (ts.isGetter && ts.name == AdapterWrappedName && ts.owner.isType && isAdapter(ts.owner.asType.toType)
         || ts.isVal && isAdapterWrappedMember(ts.getter))
     } else false
 
@@ -345,7 +341,7 @@ trait MacroUtils {
 
     def fail = throw new Exception(s"Could not find Java getter for property ${symbol.name} on $javaTpe")
     def findGetter(getterName: String) =
-      alternatives(javaTpe.member(TermName(getterName))).find(isBeanGetter)
+      symAlternatives(javaTpe.member(TermName(getterName))).find(isBeanGetter)
 
     if (isBooleanType(symbol.asMethod.returnType)) {
       findGetter(booleanGetterName) orElse findGetter(getterName) getOrElse fail

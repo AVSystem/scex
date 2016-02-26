@@ -16,7 +16,7 @@ import scala.tools.nsc.plugins.Plugin
  * Author: ghik
  */
 trait ScexGlobal extends Global with MacroUtils with SymbolErasures {
-  val universe: this.type = this
+  lazy val universe: this.type = this
 
   def loadAdditionalPlugins(): List[Plugin] = Nil
 

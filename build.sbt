@@ -1,23 +1,29 @@
+import com.typesafe.sbt.SbtPgp.autoImportImpl.PgpKeys._
+
 name := "scex"
 
-version in Global := "1.16.8"
-scalaVersion in Global := "2.11.7"
-organization in Global := "com.avsystem"
-crossPaths in Global := false
-scalacOptions in Global ++= Seq(
-  "-feature",
-  "-deprecation",
-  "-unchecked",
-  "-language:implicitConversions",
-  "-language:existentials",
-  "-language:dynamics",
-  "-language:experimental.macros",
-  "-Xfuture",
-  "-Xfatal-warnings",
-  "-Xlint:_,-missing-interpolator,-adapted-args"
-)
+inThisBuild(Seq(
+  scalaVersion := "2.11.7",
+  organization := "com.avsystem.scex",
+  crossPaths := false,
+  scalacOptions ++= Seq(
+    "-feature",
+    "-deprecation",
+    "-unchecked",
+    "-language:implicitConversions",
+    "-language:existentials",
+    "-language:dynamics",
+    "-language:experimental.macros",
+    "-Xfuture",
+    "-Xfatal-warnings",
+    "-Xlint:_,-missing-interpolator,-adapted-args"
+  )
+))
+
+val CompileAndTest = "compile->compile;test->test"
 
 val silencerVersion = "0.3"
+val avsCommonsVersion = "1.13.0"
 val guavaVersion = "18.0"
 val jettyVersion = "9.1.0.v20131115"
 val vaadinVersion = "6.8.13"
@@ -28,24 +34,16 @@ val commonsCodecVersion = "1.7"
 val junitVersion = "4.11"
 val scalatestVersion = "2.1.3"
 
-libraryDependencies in Global ++= Seq(
-  compilerPlugin("com.github.ghik" % "silencer-plugin" % silencerVersion),
-  "com.github.ghik" % "silencer-lib" % silencerVersion
+val noPublishSettings = Seq(
+  publishArtifact := false,
+  publish := {},
+  publishLocal := {},
+  publishM2 := {},
+  publishSigned := {},
+  publishLocalSigned := {}
 )
 
-lazy val scex = project.in(file("."))
-  .aggregate(core, derived, test, javaTest)
-  .settings(
-    // for POM generation
-    libraryDependencies := (libraryDependencies in core).value
-  )
-  .settings((
-    for (packageTask <- Seq(packageBin, packageSrc)) yield mappings in(Compile, packageTask) :=
-      (mappings in(core, Compile, packageTask)).value ++ (mappings in(derived, Compile, packageTask)).value
-    ): _*)
-
 lazy val subprojectSettings = Seq(
-  publishArtifact := false,
   fork in Test := true,
   javaOptions in Test += "-Xmx1G",
   outputStrategy in Test := Some(LoggedOutput(new Logger {
@@ -54,12 +52,26 @@ lazy val subprojectSettings = Seq(
     def trace(t: => Throwable): Unit = ()
   })),
   libraryDependencies ++= Seq(
+    compilerPlugin("com.github.ghik" % "silencer-plugin" % silencerVersion),
+    compilerPlugin("com.avsystem.commons" %% "commons-analyzer" % avsCommonsVersion),
+    "com.github.ghik" % "silencer-lib" % silencerVersion,
     "junit" % "junit" % junitVersion % Test,
     "org.scalatest" %% "scalatest" % scalatestVersion % Test
   )
 )
 
-lazy val core = project.in(file("scex-core"))
+lazy val scex = project.in(file("."))
+  .aggregate(`scex-macros`, `scex-core`, `scex-test`, `scex-java-test`)
+  .settings(noPublishSettings: _*)
+
+lazy val `scex-macros` = project
+  .settings(subprojectSettings: _*)
+  .settings(
+    libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value,
+    libraryDependencies += "com.avsystem.commons" %% "commons-macros" % avsCommonsVersion
+  )
+
+lazy val `scex-core` = project.dependsOn(`scex-macros` % CompileAndTest)
   .settings(subprojectSettings: _*)
   .settings(
     libraryDependencies ++= Seq(
@@ -70,15 +82,14 @@ lazy val core = project.in(file("scex-core"))
       "org.slf4j" % "slf4j-api" % slf4jVersion,
       "ch.qos.logback" % "logback-core" % logbackVersion,
       "ch.qos.logback" % "logback-classic" % logbackVersion,
-      "commons-codec" % "commons-codec" % commonsCodecVersion
+      "commons-codec" % "commons-codec" % commonsCodecVersion,
+      "com.avsystem.commons" %% "commons-core" % avsCommonsVersion
     )
   )
 
-lazy val derived = project.in(file("scex-derived")).dependsOn(core)
+lazy val `scex-test` = project.dependsOn(`scex-core`)
   .settings(subprojectSettings: _*)
-
-lazy val test = project.in(file("scex-test")).dependsOn(derived)
-  .settings(subprojectSettings: _*)
+  .settings(noPublishSettings: _*)
   .settings(
     libraryDependencies ++= Seq(
       "com.vaadin" % "vaadin" % vaadinVersion,
@@ -87,8 +98,9 @@ lazy val test = project.in(file("scex-test")).dependsOn(derived)
     )
   )
 
-lazy val javaTest = project.in(file("scex-java-test")).dependsOn(derived)
+lazy val `scex-java-test` = project.dependsOn(`scex-core`)
   .settings(subprojectSettings: _*)
+  .settings(noPublishSettings: _*)
   .settings(
     compileOrder := CompileOrder.JavaThenScala
   )

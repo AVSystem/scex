@@ -232,7 +232,7 @@ trait SymbolDsl {
   class plus extends StaticAnnotation
 
   /**
-   * Analogous to {@link com.avsystem.scex.validation.SymbolDsl.plus plus},
+   * Analogous to [[plus]],
    * but used to express wildcards with lower bounds, e.g. <tt>java.lang.List[_ >: String]</tt>
    */
   class minus extends StaticAnnotation

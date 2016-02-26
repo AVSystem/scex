@@ -109,7 +109,7 @@ trait ClassfileReusingScexCompiler extends ScexCompiler {
           nameParts match {
             case namePart :: rest if owner.isClass || owner.isModule =>
               val ownerType = owner.toType
-              val members = Iterator(ownerType.member(TypeName(namePart))) ++ alternatives(ownerType.member(TermName(namePart)))
+              val members = Iterator(ownerType.member(TypeName(namePart))) ++ symAlternatives(ownerType.member(TermName(namePart)))
               members.filter(_ != NoSymbol).flatMap(symbolsWithName(_, rest))
             case Nil => Iterator(owner)
             case _ => Iterator.empty
