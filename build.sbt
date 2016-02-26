@@ -24,10 +24,8 @@ val CompileAndTest = "compile->compile;test->test"
 
 val silencerVersion = "0.3"
 val avsCommonsVersion = "1.13.0"
-val guavaVersion = "18.0"
 val jettyVersion = "9.1.0.v20131115"
 val vaadinVersion = "6.8.13"
-val findbugsVersion = "2.0.1"
 val slf4jVersion = "1.6.4"
 val logbackVersion = "1.0.6"
 val commonsCodecVersion = "1.7"
@@ -115,13 +113,11 @@ lazy val `scex-core` = project.dependsOn(`scex-macros` % CompileAndTest)
     libraryDependencies ++= Seq(
       "org.scala-lang" % "scala-reflect" % scalaVersion.value,
       "org.scala-lang" % "scala-compiler" % scalaVersion.value,
-      "com.google.guava" % "guava" % guavaVersion,
-      "com.google.code.findbugs" % "jsr305" % findbugsVersion,
+      "com.avsystem.commons" %% "commons-core" % avsCommonsVersion,
       "org.slf4j" % "slf4j-api" % slf4jVersion,
       "ch.qos.logback" % "logback-core" % logbackVersion,
       "ch.qos.logback" % "logback-classic" % logbackVersion,
-      "commons-codec" % "commons-codec" % commonsCodecVersion,
-      "com.avsystem.commons" %% "commons-core" % avsCommonsVersion
+      "commons-codec" % "commons-codec" % commonsCodecVersion
     )
   )
 
