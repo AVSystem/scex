@@ -47,6 +47,7 @@ lazy val scex = project.in(file("."))
 lazy val subprojectSettings = Seq(
   publishArtifact := false,
   fork in Test := true,
+  javaOptions in Test += "-Xmx1G",
   outputStrategy in Test := Some(LoggedOutput(new Logger {
     def log(level: Level.Value, message: => String): Unit = ()
     def success(message: => String): Unit = ()
