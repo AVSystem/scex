@@ -5,3 +5,4 @@ resolvers += Resolver.url("jetbrains-bintray",
 
 addSbtPlugin("org.jetbrains" % "sbt-ide-settings" % "0.1.1")
 addSbtPlugin("com.jsuereth" % "sbt-pgp" % "1.0.0")
+addSbtPlugin("org.xerial.sbt" % "sbt-sonatype" % "1.1")

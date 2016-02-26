@@ -44,6 +44,44 @@ val noPublishSettings = Seq(
 )
 
 lazy val subprojectSettings = Seq(
+  sonatypeProfileName := "com.avsystem",
+  publishTo := {
+    val nexus = "https://oss.sonatype.org/"
+    if (isSnapshot.value)
+      Some("snapshots" at nexus + "content/repositories/snapshots")
+    else
+      Some("releases" at nexus + "service/local/staging/deploy/maven2")
+  },
+
+  projectInfo := ModuleInfo(
+    nameFormal = "SCEX",
+    description = "Extensible, fast and secure Scala expression evaluation engine",
+    homepage = Some(url("https://github.com/AVSystem/scex")),
+    startYear = Some(2015),
+    organizationName = "AVSystem",
+    organizationHomepage = Some(url("http://www.avsystem.com/")),
+    scmInfo = Some(ScmInfo(
+      browseUrl = url("https://github.com/AVSystem/scex.git"),
+      connection = "scm:git:git@github.com:AVSystem/scex.git",
+      devConnection = Some("scm:git:git@github.com:AVSystem/scex.git")
+    )),
+    licenses = Seq(
+      ("The MIT License", url("https://opensource.org/licenses/MIT"))
+    )
+  ),
+
+  publishMavenStyle := true,
+  pomIncludeRepository := { _ => false },
+  pomExtra := {
+    <developers>
+      <developer>
+        <id>ghik</id>
+        <name>Roman Janusz</name>
+        <url>https://github.com/ghik</url>
+      </developer>
+    </developers>
+  },
+
   fork in Test := true,
   javaOptions in Test += "-Xmx1G",
   outputStrategy in Test := Some(LoggedOutput(new Logger {
