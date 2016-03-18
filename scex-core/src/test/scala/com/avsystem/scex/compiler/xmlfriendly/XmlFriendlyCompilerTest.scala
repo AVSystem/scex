@@ -120,16 +120,6 @@ class XmlFriendlyCompilerTest extends FunSuite with CompilationTest {
     }
   }
 
-  test("evaluation exception translation test") {
-    val acl = PredefinedAccessSpecs.basicOperations
-    val expr = "#nonexistent.toString"
-    val cexpr = compiler.getCompiledExpression[SimpleContext[Unit], String](createProfile(acl), expr, template = false)
-    try cexpr(SimpleContext(())) catch {
-      case ee: EvaluationException =>
-        assert(ee.getMessage === new EvaluationException(expr, 1, null).getMessage)
-    }
-  }
-
   test("compilation error message test") {
     val expr = "abc${5 + #shiet.toLol}fuu"
     intercept[CompilationFailedException] {
