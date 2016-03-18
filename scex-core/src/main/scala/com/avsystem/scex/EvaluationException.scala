@@ -8,21 +8,4 @@ import scala.util.control.NoStackTrace
   * Created: 16-06-2014
   * Author: ghik
   */
-
-import com.avsystem.scex.EvaluationException._
-
-case class EvaluationException(lineWithNumber: Option[(String, Int)], cause: Throwable)
-  extends RuntimeException(lineWithNumber.map((message _).tupled).getOrElse(cause.getMessage), cause)
-    with NoStackTrace {
-
-  def this(line: String, number: Int, cause: Throwable) =
-    this(Some((line, number)), cause)
-
-  def this(cause: Throwable) =
-    this(None, cause)
-}
-
-object EvaluationException {
-  def message(line: String, number: Int) =
-    s"Failed to evaluate expression - error in line $number:\n$line"
-}
+case class EvaluationException(cause: Throwable) extends RuntimeException(cause) with NoStackTrace
