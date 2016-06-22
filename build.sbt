@@ -41,6 +41,8 @@ val noPublishSettings = Seq(
   publishLocalSigned := {}
 )
 
+sonatypeProfileName := "com.avsystem"
+
 lazy val subprojectSettings = Seq(
   sonatypeProfileName := "com.avsystem",
   publishTo := {
