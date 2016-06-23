@@ -39,7 +39,7 @@ class Macros(val c: blackbox.Context) extends MacroCommons with MacroUtils {
       val convertedArgs = args.map { arg =>
         val splicerTpe = getType(tq"$TemplateInterpolationsObj.Splicer[${arg.tpe}]")
         c.inferImplicitValue(splicerTpe) match {
-          case EmptyTree => arg
+          case EmptyTree => q"${""}+$arg" // force validation of toString and be null-safe at the same time
           case tree => q"$tree.toString($arg)"
         }
       }
