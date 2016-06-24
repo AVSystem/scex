@@ -3,7 +3,7 @@ package compiler
 
 import java.{lang => jl, util => ju}
 
-import com.avsystem.scex.util.{LoggingUtils, MacroUtils, TypesafeEquals}
+import com.avsystem.scex.util.{LoggingUtils, MacroUtils, TypesafeEqualsEnabled}
 import com.avsystem.scex.validation.ValidationContext
 
 import scala.language.experimental.macros
@@ -70,27 +70,23 @@ class ExpressionMacroProcessor(val c: whitebox.Context) extends MacroUtils with 
   }
 
   def applyTypesafeEquals_impl[T](expr: c.Expr[T]): c.Tree = {
-    if (c.inferImplicitValue(typeOf[TypesafeEquals.TypesafeEqualsEnabled.type]) != EmptyTree) {
-      var transformed = false
-
+    if (c.inferImplicitValue(typeOf[TypesafeEqualsEnabled]) != EmptyTree) {
       object transformer extends Transformer {
-        override def transform(tree: Tree) = tree match {
-          case apply@Apply(select@Select(left, operator), List(right)) => operator.decodedName.toString match {
+        override def transform(tree: Tree): Tree = tree match {
+          case apply@Apply(Select(left, operator), List(right)) => operator.decodedName.toString match {
             case "==" =>
-              transformed = true
-              internal.setPos(Apply(
-                internal.setPos(Select(transform(left), TermName("===").encodedName), select.pos),
-                List(transform(right))
-              ), apply.pos)
+              c.typecheck(
+                typesafeEquals(transform(left), transform(right), apply.pos),
+                pt = typeOf[Boolean]
+              )
             case "!=" =>
-              transformed = true
-              internal.setPos(Select(
-                internal.setPos(Apply(
-                  internal.setPos(Select(transform(left), TermName("===").encodedName), select.pos),
-                  List(transform(right))
-                ), apply.pos),
-                TermName("unary_!").encodedName
-              ), apply.pos)
+              internal.setPos(
+                c.typecheck(
+                  q"!${typesafeEquals(transform(left), transform(right), apply.pos)}",
+                  pt = typeOf[Boolean]
+                ),
+                apply.pos
+              )
             case _ =>
               super.transform(tree)
           }
@@ -99,11 +95,31 @@ class ExpressionMacroProcessor(val c: whitebox.Context) extends MacroUtils with 
         }
       }
 
-      val result = transformer.transform(expr.tree)
-      if (transformed) c.untypecheck(result) else result
+      transformer.transform(expr.tree)
 
     } else expr.tree
 
+  }
+
+  def typesafeEquals(leftTree: Tree, rightTree: Tree, pos: Position): Tree = {
+    val leftTpe = leftTree.tpe.widen
+    val rightTpe = rightTree.tpe.widen
+
+    lazy val leftToRightConv = c.inferImplicitView(leftTree, leftTree.tpe, rightTree.tpe.widen)
+    lazy val rightToLeftConv = c.inferImplicitView(rightTree, rightTree.tpe, leftTree.tpe.widen)
+
+    val result = if (leftTpe <:< rightTpe)
+      q"$leftTree == $rightTree"
+    else if (rightTpe <:< leftTpe)
+      q"$rightTree == $leftTree"
+    else if (rightToLeftConv != EmptyTree)
+      q"$leftTree == $rightToLeftConv($rightTree)"
+    else if (leftToRightConv != EmptyTree)
+      q"$leftToRightConv($leftTree) == $rightTree"
+    else
+      c.abort(pos, s"Values of types $leftTpe and $rightTpe cannot be compared for equality")
+
+    internal.setPos(result, pos)
   }
 
   def asSetter_impl[T: c.WeakTypeTag](expr: c.Expr[Any]): c.Tree = {

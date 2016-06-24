@@ -129,4 +129,9 @@ class XmlFriendlyCompilerTest extends FunSuite with CompilationTest {
     }
 
   }
+
+  test("spliced argument validation test") {
+    val header = "import com.avsystem.scex.util.TypesafeEquals._"
+    assert("false" === evaluateTemplate[String]("${if(4 > 5) true else false}", header = header))
+  }
 }

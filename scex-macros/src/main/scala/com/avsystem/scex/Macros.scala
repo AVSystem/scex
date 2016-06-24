@@ -120,29 +120,6 @@ class Macros(val c: blackbox.Context) extends MacroCommons with MacroUtils {
   def isNullable_impl[T: c.WeakTypeTag]: c.Tree =
     q"${typeOf[Null] <:< weakTypeOf[T]}"
 
-  def tripleEquals_impl[A, B](right: c.Expr[B]): c.Tree = {
-    val Apply(_, List(leftTree)) = c.prefix.tree
-    val rightTree = right.tree
-
-    val leftTpe = leftTree.tpe.widen
-    val rightTpe = rightTree.tpe.widen
-
-    lazy val leftToRightConv = c.inferImplicitView(leftTree, leftTree.tpe, rightTree.tpe.widen)
-    lazy val rightToLeftConv = c.inferImplicitView(rightTree, rightTree.tpe, leftTree.tpe.widen)
-
-    if (leftTpe <:< rightTpe)
-      q"$leftTree == $rightTree"
-    else if (rightTpe <:< leftTpe)
-      q"$rightTree == $leftTree"
-    else if (rightToLeftConv != EmptyTree)
-      q"$leftTree == $rightToLeftConv($rightTree)"
-    else if (leftToRightConv != EmptyTree)
-      q"$leftToRightConv($leftTree) == $rightTree"
-    else
-      c.abort(c.enclosingPosition, s"Values of types $leftTpe and $rightTpe cannot be compared for equality")
-
-  }
-
   def materializeTypeToken[T: c.WeakTypeTag]: c.Tree =
     q"new _root_.com.google.common.reflect.TypeToken[${weakTypeOf[T]}] {}"
 
