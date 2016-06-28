@@ -4,7 +4,9 @@ package compiler
 import java.{lang => jl, util => ju}
 
 import com.avsystem.commons.jiop.JavaInterop._
+import com.avsystem.scex.compiler.TemplateInterpolations.Splicer
 import com.avsystem.scex.util.{PredefinedAccessSpecs, SimpleContext}
+import com.github.ghik.silencer.silent
 import org.scalatest.FunSuite
 
 import scala.reflect.runtime.universe.TypeTag
@@ -25,6 +27,13 @@ class SetterTarget {
 object SetterConversions {
   implicit val stringJBooleanConv: SetterConversion[String, JBoolean] =
     SetterConversion(_.toBoolean)
+}
+
+object CustomBooleanSplicer {
+  implicit val jBooleanSplicer: Splicer[JBoolean] =
+    new Splicer[JBoolean] {
+      def toString(b: JBoolean) = b.toString
+    }
 }
 
 /**
@@ -80,6 +89,28 @@ class SetterExpressionsTest extends FunSuite with CompilationTest {
     val target = new JavaSetterTarget
     val header = "import SetterConversions._"
     applySetter("awesome", target, "true", allow(on { st: JavaSetterTarget => st.all.introduced.members }), header = header)
+    assert(target.isAwesome)
+  }
+
+  test("adapted root bean setter template test with conversion") {
+    val target = new JavaSetterTarget
+    val header = "import SetterConversions._"
+    val acl = PredefinedAccessSpecs.basicOperations ++ allow {
+      on { st: JavaSetterTarget => st.all.introduced.members }
+    }
+    applySetter("${awesome}", target, "true", acl, template = true, header = header)
+    assert(target.isAwesome)
+  }
+
+  test("adapted root bean setter template test with conversion and splicer") {
+    val target = new JavaSetterTarget
+    val header = "import SetterConversions._; import CustomBooleanSplicer._"
+    val acl = PredefinedAccessSpecs.basicOperations ++ allow {
+      CustomBooleanSplicer.jBooleanSplicer: @silent
+      on { s: Splicer[JBoolean] => s.toString(_: JBoolean) }
+      on { st: JavaSetterTarget => st.all.introduced.members }
+    }
+    applySetter("${awesome}", target, "true", acl, template = true, header = header)
     assert(target.isAwesome)
   }
 

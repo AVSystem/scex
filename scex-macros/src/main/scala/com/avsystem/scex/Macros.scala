@@ -35,18 +35,6 @@ class Macros(val c: blackbox.Context) extends MacroCommons with MacroUtils {
 
     val resultType = weakTypeOf[T]
 
-    def reifyConcatenation(parts: List[Tree], args: List[Tree]) = {
-      val convertedArgs = args.map { arg =>
-        val splicerTpe = getType(tq"$TemplateInterpolationsObj.Splicer[${arg.tpe}]")
-        c.inferImplicitValue(splicerTpe) match {
-          case EmptyTree => q"${""}+$arg" // force validation of toString and be null-safe at the same time
-          case tree => q"$tree.toString($arg)"
-        }
-      }
-
-      q"$TemplateInterpolationsObj.concat(..$parts)(..$convertedArgs)"
-    }
-
     def isEmptyStringLiteral(tree: Tree) = tree match {
       case Literal(Constant(str: String)) if str.isEmpty => true
       case _ => false
@@ -55,6 +43,19 @@ class Macros(val c: blackbox.Context) extends MacroCommons with MacroUtils {
     lazy val singleArgNoParts = args.size == 1 && parts.forall(isEmptyStringLiteral)
     lazy val soleArgTree = args.head.tree
     lazy val soleArgImplicitConv = c.inferImplicitView(soleArgTree, soleArgTree.tpe, resultType)
+
+    def reifyConcatenation(parts: List[Tree], args: List[Tree]) = {
+      val convertedArgs = args.map { arg =>
+        val splicerTpe = getType(tq"$TemplateInterpolationsObj.Splicer[${arg.tpe}]")
+        c.inferImplicitValue(splicerTpe) match {
+          case EmptyTree => q"$TemplateInterpolationsObj.safeToString($arg)"
+          case tree => q"$tree.toString($arg)"
+        }
+      }
+
+      if(singleArgNoParts) convertedArgs.head
+      else q"$TemplateInterpolationsObj.concat(..$parts)(..$convertedArgs)"
+    }
 
     lazy val Literal(Constant(literalString: String)) = parts.head
     lazy val literalTree = q"$ScexLiteralObj($literalString)"

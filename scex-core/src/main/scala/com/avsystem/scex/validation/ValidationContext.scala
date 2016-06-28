@@ -125,6 +125,9 @@ abstract class ValidationContext protected extends MacroUtils {
     case Apply(qualifier, List(arg)) if qualifier.symbol == stringConcat =>
       MultipleMemberAccesses(List(toStringAccess(arg), extractAccess(qualifier), extractAccess(arg)))
 
+    case Apply(fun, List(arg)) if fun.symbol == safeToString =>
+      MultipleMemberAccesses(List(toStringAccess(arg), extractAccess(arg)))
+
     // special case for configuration convenience: standard string interpolations also force validation of
     // toString on its arguments
     case Apply(qualifier, args) if standardStringInterpolations contains qualifier.symbol =>

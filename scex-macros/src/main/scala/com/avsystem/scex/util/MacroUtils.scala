@@ -23,10 +23,14 @@ trait MacroUtils {
   lazy val rootValueAnnotType = scexClassType("compiler.annotation.RootValue")
   lazy val rootAdapterAnnotType = scexClassType("compiler.annotation.RootAdapter")
   lazy val notValidatedAnnotType = scexClassType("compiler.annotation.NotValidated")
+  lazy val templateInterpolationsType = scexClassType("compiler.TemplateInterpolations")
+  lazy val splicerType = scexClassType("compiler.TemplateInterpolations.Splicer")
 
   lazy val any2stringadd = typeOf[Predef.type].member(TermName("any2stringadd"))
   lazy val stringAddPlus = typeOf[any2stringadd[_]].member(TermName("+").encodedName)
   lazy val stringConcat = typeOf[String].member(TermName("+").encodedName)
+  lazy val safeToString = templateInterpolationsType.companion.decl(TermName("safeToString"))
+  lazy val splicerToString = splicerType.decl(TermName("toString"))
   lazy val stringTpe = typeOf[String]
   lazy val booleanTpe = typeOf[Boolean]
   lazy val jBooleanTpe = typeOf[jl.Boolean]

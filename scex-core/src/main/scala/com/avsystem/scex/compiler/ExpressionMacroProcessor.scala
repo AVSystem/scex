@@ -133,6 +133,9 @@ class ExpressionMacroProcessor(val c: whitebox.Context) extends MacroUtils with 
       q"(value: $ttpe) => ${bodyGen(q"value")}"
 
     def translate(tree: Tree): Tree = tree match {
+      case Apply(fun, List(arg)) if fun.symbol == safeToString || (fun.symbol :: fun.symbol.overrides).contains(splicerToString) =>
+        translate(arg)
+
       case Select(prefix@Ident(_), TermName(propertyName)) if isRootAdapter(prefix.tpe) =>
         reifySetterFunction(Select(Ident(TermName(CodeGeneration.RootSymbol)), TermName("set" + propertyName.capitalize)))
 
