@@ -124,9 +124,10 @@ class ExpressionMacroProcessor(val c: whitebox.Context) extends MacroUtils with 
 
   def asSetter_impl[T: c.WeakTypeTag](expr: c.Expr[Any]): c.Tree = {
     lazy val ttpe = weakTypeOf[T]
+    val convertOnSet = q"$ScexPkg.SetterConversion.convert"
 
     def reifySetterFunction(setter: Tree) =
-      reifyFunction(arg => q"$setter($arg)")
+      reifyFunction(arg => q"$setter($convertOnSet($arg))")
 
     def reifyFunction(bodyGen: Tree => Tree): Tree =
       q"(value: $ttpe) => ${bodyGen(q"value")}"
@@ -156,18 +157,18 @@ class ExpressionMacroProcessor(val c: whitebox.Context) extends MacroUtils with 
         reifySetterFunction(Select(prefix, TermName(setterName).encodedName))
 
       case Select(prefix, TermName(name)) if isJavaField(tree.symbol) =>
-        reifyFunction(arg => q"$tree = $arg")
+        reifyFunction(arg => q"$tree = $convertOnSet($arg)")
 
       case Apply(fun, Nil) =>
         translate(fun)
 
       case Apply(Select(prefix, TermName("apply")), List(soleArgument)) =>
-        reifyFunction(arg => q"$prefix.update($soleArgument, $arg)")
+        reifyFunction(arg => q"$prefix.update($soleArgument, $convertOnSet($arg))")
 
       case Apply(Select(prefix, TermName("selectDynamic")), List(dynamicNameArg))
         if prefix.tpe <:< typeOf[Dynamic] =>
 
-        reifySetterFunction(q"$prefix.updateDynamic($dynamicNameArg)")
+        reifySetterFunction(q"$prefix.updateDynamic($convertOnSet($dynamicNameArg))")
 
       case Typed(inner, _) =>
         translate(inner)
