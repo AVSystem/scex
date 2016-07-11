@@ -1,14 +1,15 @@
 package com.avsystem.scex.compiler
 
+import java.io.{IOException, OutputStreamWriter}
 import java.{lang => jl, util => ju}
 
 import com.avsystem.scex.compiler.ClassfileReusingScexCompiler.GlobalCacheVersion
 import com.google.common.cache.CacheBuilder
-import java.io.OutputStreamWriter
 
 import scala.collection.mutable
 import scala.reflect.io.AbstractFile
 import scala.tools.nsc.Phase
+import scala.tools.nsc.interpreter.JFile
 import scala.tools.nsc.plugins.{Plugin, PluginComponent}
 import scala.tools.nsc.util.ClassPath
 import scala.util.Try
@@ -62,14 +63,29 @@ trait ClassfileReusingScexCompiler extends ScexCompiler {
     _stateOpt
   }
 
+  private def ensureDirectoryExists(file: JFile): Unit = {
+    // I heard some rumors about race conditions in `mkdirs`...
+    var i = 0
+    while (i < 100 && !file.exists() && !file.mkdirs()) {
+      Thread.sleep(50)
+      i += 1
+    }
+    if (!file.exists()) {
+      throw new IOException(s"Failed to create directory $file")
+    }
+  }
+
   override protected def createNonSharedClassLoader(sourceFile: ScexSourceFile) =
     stateOpt.map { state =>
       import state._
 
       val sourceName = sourceFile.file.name
 
-      def createClassLoader =
-        new ScexClassLoader(classfileDir.subdirectoryNamed(sourceName), getSharedClassLoader)
+      def createClassLoader = {
+        val dir = classfileDir.subdirectoryNamed(sourceName)
+        ensureDirectoryExists(dir.file)
+        new ScexClassLoader(dir, getSharedClassLoader)
+      }
 
       nonSharedClassLoaders.get(sourceName, callable(createClassLoader))
     } getOrElse super.createNonSharedClassLoader(sourceFile)
@@ -89,7 +105,7 @@ trait ClassfileReusingScexCompiler extends ScexCompiler {
           state.classfileDir.delete()
         }
       }
-      state.classfileDir.file.mkdirs()
+      ensureDirectoryExists(state.classfileDir.file)
       val os = state.classfileDir.fileNamed(versionFileName).output
       try os.write(currentVersion.getBytes) finally os.close()
     }
