@@ -381,6 +381,22 @@ class ScexCompilerTest extends FunSuite with CompilationTest {
     assert("thatthat" == cexpr(SimpleContext(new Specialized)))
   }
 
+  test("toString on any2stringadd validation test") {
+    val acl = allow {
+      on { any: Any =>
+        any + (_: String)
+      }
+      on { s: String =>
+        s + _
+        s.toString
+      }
+    }
+    val expr = "_root + \"\""
+    assertMemberAccessForbidden {
+      compiler.getCompiledExpression[SimpleContext[JavaRoot], String](createProfile(acl), expr, template = false)
+    }
+  }
+
   def lambdaTest(name: String, expr: String) =
     test(name) {
       val acl = allow {

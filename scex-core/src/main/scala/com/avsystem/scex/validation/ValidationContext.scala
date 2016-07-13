@@ -87,18 +87,19 @@ abstract class ValidationContext protected extends MacroUtils {
 
       val implicitConversionAccess = extractAccess(fun)
       val plainAccess = SimpleMemberAccess(apply.tpe, tree.symbol, None, allowedByDefault = false, tree.pos)
-      var alternatives = List(accessByImplicit, MultipleMemberAccesses(List(implicitConversionAccess, plainAccess)))
+      val alternatives = AlternativeMemberAccess(List(accessByImplicit, MultipleMemberAccesses(List(implicitConversionAccess, plainAccess))))
 
       // special case for configuration convenience: 'any + <string>' (using any2stringadd) is also validated as
       // combination of toString and string concatenation
       lazy val toStringMember = toStringSymbol(qualifier.tpe)
-      if (fun.symbol == any2stringadd && tree.symbol == stringAddPlus && toStringMember != NoSymbol) {
-        val toStringAccess = SimpleMemberAccess(qualifier.tpe, toStringMember, None, allowedByDefault = false, tree.pos)
-        val stringConcatAccess = SimpleMemberAccess(stringTpe, stringConcat, None, allowedByDefault = false, tree.pos)
-        alternatives = MultipleMemberAccesses(List(toStringAccess, stringConcatAccess)) :: alternatives
-      }
+      val toStringAndConcatAccess =
+        if (fun.symbol == any2stringadd && tree.symbol == stringAddPlus && toStringMember != NoSymbol) {
+          val toStringAccess = SimpleMemberAccess(qualifier.tpe, toStringMember, None, allowedByDefault = false, tree.pos)
+          val stringConcatAccess = SimpleMemberAccess(stringTpe, stringConcat, None, allowedByDefault = false, tree.pos)
+          MultipleMemberAccesses(List(toStringAccess, stringConcatAccess))
+        } else NoMemberAccess
 
-      MultipleMemberAccesses(List(AlternativeMemberAccess(alternatives), extractAccess(qualifier)))
+      MultipleMemberAccesses(List(alternatives, toStringAndConcatAccess, extractAccess(qualifier)))
 
     case Select(apply@ImplicitlyConverted(qualifier, fun), _) if isAdapterConversion(fun.symbol) && !isAdapterWrappedMember(tree.symbol) =>
       val symbol = getJavaGetter(tree.symbol, qualifier.tpe)

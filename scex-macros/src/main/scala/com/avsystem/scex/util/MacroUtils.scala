@@ -26,7 +26,8 @@ trait MacroUtils {
   lazy val templateInterpolationsType = scexClassType("compiler.TemplateInterpolations")
   lazy val splicerType = scexClassType("compiler.TemplateInterpolations.Splicer")
 
-  lazy val any2stringadd = typeOf[Predef.type].member(TermName("any2stringadd"))
+  lazy val any2stringadd = symAlternatives(typeOf[Predef.type].member(TermName("any2stringadd")))
+    .find(_.isMethod).getOrElse(NoSymbol)
   lazy val stringAddPlus = typeOf[any2stringadd[_]].member(TermName("+").encodedName)
   lazy val stringConcat = typeOf[String].member(TermName("+").encodedName)
   lazy val safeToString = templateInterpolationsType.companion.decl(TermName("safeToString"))

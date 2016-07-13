@@ -4,7 +4,7 @@ package compiler
 import java.{lang => jl, util => ju}
 
 import com.avsystem.scex.compiler.ScexCompiler.CompilationFailedException
-import com.avsystem.scex.japi.{JavaScexCompiler, DefaultJavaScexCompiler}
+import com.avsystem.scex.japi.{DefaultJavaScexCompiler, JavaScexCompiler}
 import com.avsystem.scex.presentation.{Attributes, SymbolAttributes}
 import com.avsystem.scex.symboldsl.SymbolInfo
 import com.avsystem.scex.util.{PredefinedAccessSpecs, SimpleContext}
@@ -59,10 +59,8 @@ trait CompilationTest extends BeforeAndAfterAll {this: Suite =>
   }
 
   def assertMemberAccessForbidden(expr: => Any): Unit = {
-    try expr catch {
-      case e: CompilationFailedException =>
-        assert(e.errors.forall(_.msg.startsWith("Member access forbidden")))
-    }
+    val exception = intercept[CompilationFailedException](expr)
+    assert(exception.errors.forall(_.msg.startsWith("Member access forbidden")))
   }
 
   def evaluateTemplate[T: TypeTag](expr: String, acl: List[MemberAccessSpec] = defaultAcl, header: String = "") =
