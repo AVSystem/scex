@@ -23,7 +23,9 @@ class IGlobal(settings: Settings, reporter: Reporter, val classLoader: ClassLoad
   import definitions._
 
   abstract class ScexMember extends Member {
-    def ownerTpe: Type
+    def prefix: Type
+
+    def ownerTpe: Type = prefix
 
     def implicitTree: Tree
 
@@ -33,7 +35,7 @@ class IGlobal(settings: Settings, reporter: Reporter, val classLoader: ClassLoad
   }
 
   case class ScexTypeMember(
-    ownerTpe: Type,
+    prefix: Type,
     sym: Symbol,
     tpe: Type,
     accessible: Boolean,
@@ -45,7 +47,7 @@ class IGlobal(settings: Settings, reporter: Reporter, val classLoader: ClassLoad
     tpe: Type,
     accessible: Boolean,
     viaImport: Tree) extends ScexMember {
-    def ownerTpe = viaImport.tpe
+    def prefix = viaImport.tpe
 
     def implicitTree = EmptyTree
 
@@ -88,7 +90,7 @@ class IGlobal(settings: Settings, reporter: Reporter, val classLoader: ClassLoad
     def add(sym: Symbol, pre: Type, implicitTree: Tree)(toMember: (Symbol, Type) => ScexTypeMember): Unit = {
       if (sym.hasGetter) {
         add(sym.getterIn(sym.owner), pre, implicitTree)(toMember)
-      } else if (!sym.name.decodedName.containsName("$") && !sym.isSynthetic && sym.hasRawInfo) {
+      } else if (!sym.name.decodedName.containsName("$") && !sym.isError && !sym.isArtifact && sym.hasRawInfo) {
         val symtpe = pre.memberType(sym) onTypeError ErrorType
         matching(sym, symtpe, this (sym.name)) match {
           case Some(m) =>

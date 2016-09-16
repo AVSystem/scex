@@ -84,7 +84,7 @@ class ScopeAndTypeCompletionTest extends FunSuite with CompilationTest with Comp
     val completer = compiler.getCompleter[SimpleContext[Root], Any](profile, template = false)
     val completion = completer.getScopeCompletion.passTo(c => c.copy(members = c.members.sortBy(_.name)))
 
-    assert(completion.members.map(asPartial) === Vector(
+    assert(completion.members.filterNot(_.flags.iimplicit).map(asPartial) === Vector(
       PartialMember("method", scexType[Any], List(List(
         Param("annotArg", scexType[Any]),
         Param("moar", scexType[Any])
@@ -97,7 +97,7 @@ class ScopeAndTypeCompletionTest extends FunSuite with CompilationTest with Comp
     val completer = compiler.getCompleter[SimpleContext[JavaRootWithGetter], Any](profile, template = false)
     val completion = completer.getScopeCompletion.passTo(c => c.copy(members = c.members.sortBy(_.name)))
 
-    assert(completion.members.map(asPartial) === Vector(
+    assert(completion.members.filterNot(_.flags.iimplicit).map(asPartial) === Vector(
       PartialMember("getName", scexType[String], List(Nil)),
       PartialMember("name", scexType[String]),
       PartialMember("utilStuff", scexType[Int], doc = "util stuff")
