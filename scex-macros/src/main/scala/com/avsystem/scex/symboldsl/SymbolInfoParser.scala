@@ -2,7 +2,7 @@ package com.avsystem.scex.symboldsl
 
 import java.{lang => jl, util => ju}
 
-import com.avsystem.commons.macros.MacroCommons
+import com.avsystem.commons.macros.AbstractMacroCommons
 import com.avsystem.scex.util.{MacroUtils, TypeWrapper}
 
 import scala.collection.mutable
@@ -14,7 +14,7 @@ import scala.reflect.macros.blackbox
   * Author: ghik
   * Created: 11/14/14.
   */
-trait SymbolInfoParser extends MacroCommons with MacroUtils {
+abstract class SymbolInfoParser[C <: blackbox.Context](override val c: C) extends AbstractMacroCommons(c) with MacroUtils {
   lazy val universe: c.universe.type = c.universe
 
   import c.universe._
@@ -201,7 +201,7 @@ trait SymbolInfoParser extends MacroCommons with MacroUtils {
 
     // have one reified type and implicit conversion spec for all MemberAccessSpecs generated from wildcard
     private def reifySymbolInfo(member: TermSymbol) =
-      q"$ListObj($SymbolInfoObj[$PayloadType](prefixTypeInfo, ${memberSignature(member)}, implConvOpt, payload))"
+    q"$ListObj($SymbolInfoObj[$PayloadType](prefixTypeInfo, ${memberSignature(member)}, implConvOpt, payload))"
 
     def reifySymbolInfos =
       q"""

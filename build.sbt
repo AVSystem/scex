@@ -23,7 +23,7 @@ inThisBuild(Seq(
 val CompileAndTest = "compile->compile;test->test"
 
 val silencerVersion = "0.4"
-val avsCommonsVersion = "1.18.0"
+val avsCommonsVersion = "1.18.1"
 val jettyVersion = "9.1.0.v20131115"
 val vaadinVersion = "6.8.13"
 val slf4jVersion = "1.6.4"
