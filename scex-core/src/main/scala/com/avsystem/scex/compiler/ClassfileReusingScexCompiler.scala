@@ -119,7 +119,7 @@ trait ClassfileReusingScexCompiler extends ScexCompiler {
     def isValid(signature: String): Boolean = signature.startsWith(sigHeader) &&
       signature.stripPrefix(sigHeader).split("\\n{2,}").iterator.map(_.trim).filter(!_.isEmpty).forall { sig =>
         val Array(typedSig, erasedSig) = sig.split("\n")
-        val Array(fullName, _) = typedSig.split(":")
+        val Array(fullName, _) = typedSig.split(":", 2)
 
         def symbolsWithName(owner: Symbol, nameParts: List[String]): Iterator[Symbol] =
           nameParts match {
