@@ -1,7 +1,7 @@
 package com.avsystem.scex.compiler.presentation
 
 import com.avsystem.scex.compiler.presentation.ScexPresentationCompiler.Param
-import com.avsystem.scex.compiler.presentation.ScopeAndTypeCompletionTest.Root
+import com.avsystem.scex.compiler.presentation.ScopeAndTypeCompletionTest.{DynStr, Root, SvRoot}
 import com.avsystem.scex.compiler.{CompilationTest, JavaRootWithGetter}
 import com.avsystem.scex.presentation.Attributes
 import com.avsystem.scex.presentation.annotation.{Documentation, ParameterNames}
@@ -9,9 +9,9 @@ import com.avsystem.scex.util.SimpleContext
 import org.scalatest.FunSuite
 
 /**
- * Author: ghik
- * Created: 11/18/14.
- */
+  * Author: ghik
+  * Created: 11/18/14.
+  */
 class ScopeAndTypeCompletionTest extends FunSuite with CompilationTest with CompletionTest {
 
   import com.avsystem.scex.util.CommonUtils._
@@ -22,12 +22,22 @@ class ScopeAndTypeCompletionTest extends FunSuite with CompilationTest with Comp
       on { s: String =>
         s.charAt _
         s.toInt
+        s.isEmpty
+      }
+      on { b: Boolean =>
+        b.unary_!
       }
       on { r: Root =>
         r.method _
       }
       on { jr: JavaRootWithGetter =>
         jr.getName
+      }
+      on { r: SvRoot =>
+        r.sv
+      }
+      on { ds: DynStr =>
+        ds.selectDynamic _
       }
     }
   }
@@ -63,6 +73,8 @@ class ScopeAndTypeCompletionTest extends FunSuite with CompilationTest with Comp
 
     assert(completion.members.map(asPartial) === Vector(
       PartialMember("charAt", scexType[Char], List(List(Param("index", scexType[Int]))), doc = "doc of charAt"),
+      PartialMember("empty", scexType[Boolean]),
+      PartialMember("isEmpty", scexType[Boolean], List(Nil)),
       PartialMember("toInt", scexType[Int])
     ))
   }
@@ -114,6 +126,15 @@ class ScopeAndTypeCompletionTest extends FunSuite with CompilationTest with Comp
     ))
   }
 
+  test("type completion test on dynamic string member") {
+    val completer = compiler.getCompleter[SimpleContext[SvRoot], Any](profile, template = false)
+    val completion = completer.getTypeCompletion("sv.costam.isEmpty.un", 19).passTo(c => c.copy(members = c.members.sortBy(_.name)))
+
+    assert(completion.members.map(asPartial) === Vector(
+      PartialMember("unary_!", scexType[Boolean], Nil)
+    ))
+  }
+
 }
 
 object ScopeAndTypeCompletionTest {
@@ -122,6 +143,14 @@ object ScopeAndTypeCompletionTest {
     @ParameterNames(Array("annotArg"))
     @Documentation("handles stuff")
     def method(arg: Any, moar: Any): Any
+  }
+
+  trait SvRoot {
+    def sv: DynStr
+  }
+
+  trait DynStr extends Dynamic {
+    def selectDynamic(str: String): String
   }
 
 }

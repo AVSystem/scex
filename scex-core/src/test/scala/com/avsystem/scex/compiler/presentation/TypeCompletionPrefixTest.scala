@@ -7,12 +7,13 @@ import com.avsystem.scex.compiler.CompilationTest
 import com.avsystem.scex.compiler.presentation.TypeCompletionPrefixTest._
 import com.avsystem.scex.util.SimpleContext
 import org.scalatest.FunSuite
+
 import scala.reflect.runtime.universe.typeOf
 
 /**
- * Created: 07-10-2014
- * Author: ghik
- */
+  * Created: 07-10-2014
+  * Author: ghik
+  */
 class TypeCompletionPrefixTest extends FunSuite with CompilationTest with CompletionTest {
 
   import com.avsystem.scex.validation.SymbolValidator._
@@ -37,6 +38,9 @@ class TypeCompletionPrefixTest extends FunSuite with CompilationTest with Comple
     }
     on { dyn: Dyn =>
       dyn.all.members
+    }
+    on { str: String =>
+      str.isEmpty
     }
   }
 
@@ -170,6 +174,14 @@ class TypeCompletionPrefixTest extends FunSuite with CompilationTest with Comple
     "api.|zle"
   )
 
+  tests("select dynamic returning string selection", "api.dynStr.lol.isEmpty", scexType[Boolean])(
+    "api.dynStr.lol.isEmpty|",
+    "api.dynStr.lol.isEmpt|y",
+    "api.dynStr.lol.isEmpty.|",
+    "api.dynStr.lol.isEmpty|.",
+    "api.dynStr.lol.isEm|pty."
+  )
+
   tests("typed dynamic variable member selection", "_vars.someInt", scexType[Int])(
     "_vars.someInt|",
     "_vars.someInt|.",
@@ -199,6 +211,8 @@ object TypeCompletionPrefixTest {
     def ddd(a: Int): Int
 
     def zuo: Int
+
+    def dynStr: DynStr
   }
 
   trait ExtApi {
@@ -211,6 +225,10 @@ object TypeCompletionPrefixTest {
 
   trait Dyn extends Dynamic {
     def selectDynamic(name: String): Api
+  }
+
+  trait DynStr extends Dynamic {
+    def selectDynamic(name: String): String
   }
 
   implicit def apiToExt(api: Api): ExtApi = ???
