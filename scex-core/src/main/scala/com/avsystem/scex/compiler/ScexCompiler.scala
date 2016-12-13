@@ -20,7 +20,7 @@ import scala.reflect.runtime.{universe => ru}
 import scala.tools.nsc.plugins.Plugin
 import scala.tools.nsc.reporters.AbstractReporter
 import scala.tools.nsc.{Global, Settings}
-import scala.util.{Success, Try}
+import scala.util.{Failure, Success, Try}
 
 trait ScexCompiler extends LoggingUtils {
 
@@ -276,20 +276,19 @@ trait ScexCompiler extends LoggingUtils {
       sourceFile.offsetToLine(offset) + 1, sourceFile.offsetToLine(offset + exprDef.expression.length - 1) + 2)
     val debugInfo = new ExpressionDebugInfo(exprDef)
 
-    def result =
-      compile(sourceFile) match {
-        case Left(classLoader) =>
-          val clazz = Class.forName(s"$pkgName.$ExpressionClassName", true, classLoader)
-          clazz.getDeclaredClasses // force loading of inner classes
-          clazz.getConstructor(classOf[ExpressionDebugInfo], classOf[SourceInfo])
-            .newInstance(debugInfo, sourceInfo)
-            .asInstanceOf[RawExpression]
+    compile(sourceFile) match {
+      case Left(classLoader) =>
+        val clazz = Class.forName(s"$pkgName.$ExpressionClassName", true, classLoader)
+        clazz.getDeclaredClasses
+        // force loading of inner classes
+        val expr = clazz.getConstructor(classOf[ExpressionDebugInfo], classOf[SourceInfo])
+          .newInstance(debugInfo, sourceInfo)
+          .asInstanceOf[RawExpression]
+        Success(expr)
 
-        case Right(errors) =>
-          throw new CompilationFailedException(codeToCompile, errors)
-      }
-
-    Try(result)
+      case Right(errors) =>
+        Failure(CompilationFailedException(codeToCompile, errors))
+    }
   }
 
   protected final def getCompiledExpression[C <: ExpressionContext[_, _], T](exprDef: ExpressionDef): Expression[C, T] =
