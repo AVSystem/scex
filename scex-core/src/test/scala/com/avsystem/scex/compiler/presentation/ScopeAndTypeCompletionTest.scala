@@ -126,7 +126,7 @@ class ScopeAndTypeCompletionTest extends FunSuite with CompilationTest with Comp
     ))
   }
 
-  test("type completion test on dynamic string member") {
+  ignore("type completion test on dynamic string member") {
     val completer = compiler.getCompleter[SimpleContext[SvRoot], Any](profile, template = false)
 
     // this works fine
