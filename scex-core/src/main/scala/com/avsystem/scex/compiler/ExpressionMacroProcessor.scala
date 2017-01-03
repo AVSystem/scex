@@ -117,7 +117,7 @@ class ExpressionMacroProcessor(val c: whitebox.Context) extends MacroUtils with 
     else if (leftToRightConv != EmptyTree)
       q"$leftToRightConv($leftTree) == $rightTree"
     else
-      c.abort(pos, s"Values of types $leftTpe and $rightTpe cannot be compared for equality")
+      c.abort(pos, s"Values of types ${leftTpe.dealias} and ${rightTpe.dealias} cannot be compared for equality")
 
     internal.setPos(result, pos)
   }
