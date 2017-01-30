@@ -14,7 +14,7 @@ import com.avsystem.scex.util.CommonUtils._
 import com.avsystem.scex.validation.ValidationContext
 import com.avsystem.scex.{Type => SType}
 
-import scala.collection.JavaConversions
+import scala.collection.JavaConverters._
 import scala.reflect.NameTransformer
 import scala.reflect.runtime.{universe => ru}
 
@@ -81,7 +81,7 @@ trait ScexPresentationCompiler extends ScexCompiler {compiler =>
       compiler.getErrors(exprDef(expression, bare = false))
 
     def getErrorsAsJava(expression: String): ju.List[CompileError] =
-      JavaConversions.seqAsJavaList(getErrors(expression))
+      getErrors(expression).asJava
 
     def getScopeCompletion: Completion =
       compiler.getScopeCompletion(exprDef("()", bare = true))
@@ -478,10 +478,10 @@ object ScexPresentationCompiler {
     flags: MemberFlags, javaMember: Option[jl.reflect.Member], documentation: Option[String]) {
 
     def paramsAsJava =
-      JavaConversions.seqAsJavaList(params.map(JavaConversions.seqAsJavaList))
+      params.map(_.asJava).asJava
 
     def implicitParamsAsJava =
-      JavaConversions.seqAsJavaList(implicitParams)
+      implicitParams.asJava
 
     def javaField = javaMember.filterByClass[jl.reflect.Field]
 
@@ -491,10 +491,10 @@ object ScexPresentationCompiler {
   }
 
   case class Completion(typedPrefixTree: ast.Tree, members: Vector[Member]) {
-    def membersAsJava = JavaConversions.seqAsJavaList(members)
+    def membersAsJava = members.asJava
 
     def withMembers(newMembers: ju.Collection[Member]) =
-      copy(members = JavaConversions.collectionAsScalaIterable(newMembers).toVector)
+      copy(members = newMembers.asScala.toVector)
   }
 
 }

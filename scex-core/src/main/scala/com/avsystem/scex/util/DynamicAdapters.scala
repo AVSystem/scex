@@ -3,7 +3,8 @@ package com.avsystem.scex.util
 import java.util.Collections
 import java.{lang => jl, util => ju}
 
-import scala.collection.{JavaConversions, mutable}
+import scala.collection.mutable
+import scala.collection.JavaConverters._
 import scala.language.dynamics
 
 
@@ -55,7 +56,7 @@ object DynamicAdapters {
   /**
    * Converts Scala-style varargs (a `scala.collection.Seq`) into an unmodifiable `java.util.List`.
    */
-  def varargsAsJavaList[AV](args: AV*) = JavaConversions.seqAsJavaList(args)
+  def varargsAsJavaList[AV](args: AV*) = args.asJava
 
   trait ApplyNamedAdapter[-AV, +R] extends Dynamic {
     /**
@@ -74,7 +75,7 @@ object DynamicAdapters {
    * <tt>{a=1,b=3}</tt>
    */
   def namedArgsAsJavaMap[AV](args: (String, AV)*) = Collections.unmodifiableMap[String, AV](
-    JavaConversions.mapAsJavaMap(mutable.LinkedHashMap(args.filter(_._1.nonEmpty): _*)))
+    mutable.LinkedHashMap(args.filter(_._1.nonEmpty): _*).asJava)
 
   /**
    * Extracts unnamed argument values from named argument list and returns it as unmodifiable
@@ -84,7 +85,7 @@ object DynamicAdapters {
    * <tt>[2,4]</tt>
    */
   def unnamedArgsAsJavaList[AV](args: (String, AV)*) =
-    JavaConversions.seqAsJavaList(args.collect { case ("", arg) => arg})
+    args.collect({ case ("", arg) => arg}).asJava
 
   /**
    * Convenience trait that can be implemented by contexts passed as expression inputs to provide

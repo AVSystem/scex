@@ -173,7 +173,7 @@ object JavaCollectionExtensions {
   }
 
   trait MapOpsExtended[K, V] extends Any {
-    val map: JMap[K, V]
+    def map: JMap[K, V]
     def update(key: K, value: V): Unit = map.put(key, value)
   }
 

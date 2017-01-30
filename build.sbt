@@ -3,9 +3,9 @@ import com.typesafe.sbt.SbtPgp.autoImportImpl.PgpKeys._
 name := "scex"
 
 inThisBuild(Seq(
-  scalaVersion := "2.11.8",
+  scalaVersion := "2.12.1",
   organization := "com.avsystem.scex",
-  crossPaths := false,
+  crossScalaVersions := Seq("2.11.8", "2.12.1"),
   scalacOptions ++= Seq(
     "-feature",
     "-deprecation",
@@ -22,15 +22,16 @@ inThisBuild(Seq(
 
 val CompileAndTest = "compile->compile;test->test"
 
+val parserCombinatorsVersion = "1.0.5"
 val silencerVersion = "0.5"
-val avsCommonsVersion = "1.19.3"
+val avsCommonsVersion = "1.19.8"
 val jettyVersion = "9.1.0.v20131115"
 val vaadinVersion = "6.8.13"
 val slf4jVersion = "1.6.4"
 val logbackVersion = "1.0.6"
 val commonsCodecVersion = "1.7"
 val junitVersion = "4.11"
-val scalatestVersion = "2.1.3"
+val scalatestVersion = "3.0.0"
 
 val noPublishSettings = Seq(
   publishArtifact := false,
@@ -115,6 +116,7 @@ lazy val `scex-core` = project.dependsOn(`scex-macros` % CompileAndTest)
     libraryDependencies ++= Seq(
       "org.scala-lang" % "scala-reflect" % scalaVersion.value,
       "org.scala-lang" % "scala-compiler" % scalaVersion.value,
+      "org.scala-lang.modules" %% "scala-parser-combinators" % parserCombinatorsVersion,
       "com.avsystem.commons" %% "commons-core" % avsCommonsVersion,
       "org.slf4j" % "slf4j-api" % slf4jVersion,
       "ch.qos.logback" % "logback-core" % logbackVersion,

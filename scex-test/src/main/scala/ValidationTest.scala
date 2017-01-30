@@ -106,7 +106,7 @@ object ValidationTest {
       }
 
       on {
-        a: A[_] =>
+        a: A[Any@plus] =>
           a.costam _
           a.hoho _
           a.b()
