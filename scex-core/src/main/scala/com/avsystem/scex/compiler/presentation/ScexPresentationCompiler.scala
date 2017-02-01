@@ -5,7 +5,7 @@ import java.{lang => jl, util => ju}
 
 import com.avsystem.scex.compiler.CodeGeneration._
 import com.avsystem.scex.compiler.ScexCompiler.{CompilationFailedException, CompileError}
-import com.avsystem.scex.compiler.presentation.ScexPresentationCompiler.{Completion, Member => SMember, MemberFlags, Param}
+import com.avsystem.scex.compiler.presentation.ScexPresentationCompiler.{Completion, MemberFlags, Param, Member => SMember}
 import com.avsystem.scex.compiler.{ExpressionDef, _}
 import com.avsystem.scex.parsing.EmptyPositionMapping
 import com.avsystem.scex.presentation.annotation.{Documentation, ParameterNames}
@@ -18,7 +18,7 @@ import scala.collection.JavaConverters._
 import scala.reflect.NameTransformer
 import scala.reflect.runtime.{universe => ru}
 
-trait ScexPresentationCompiler extends ScexCompiler {compiler =>
+trait ScexPresentationCompiler extends ScexCompiler { compiler =>
 
   private val logger = createLogger[ScexPresentationCompiler]
 
@@ -312,8 +312,38 @@ trait ScexPresentationCompiler extends ScexCompiler {compiler =>
     val (pkgName, code, offset) = expressionCode(exprDef, noMacroProcessing = true)
     val sourceFile = new ExpressionSourceFile(exprDef, pkgName, code, offset)
 
+    import global.{position => _, sourceFile => _, _}
+
+    val positionFixer: Traverser = new Traverser {
+      override def traverse(tree: Tree) = {
+        super.traverse(tree)
+        tree match {
+          // treat keywords incorrectly typed after dot as part of the Select tree
+          case Select(_, termNames.ERROR) =>
+            val chars = sourceFile.content
+            val newEnd = tree.pos.end + Iterator.range(tree.pos.end, chars.length)
+              .takeWhile(i => chars(i).isLetter).length
+            tree.setPos(tree.pos.withEnd(newEnd))
+          // fix selectDynamic positions, which scalac computes incorrectly...
+          case tree@Apply(Select(_, TermName("selectDynamic")), List(lit@Literal(Constant(_: String))))
+            if lit.pos.isTransparent && lit.pos.end >= tree.pos.end =>
+            tree.setPos(tree.pos.withEnd(lit.pos.end))
+          case _ =>
+        }
+        if (tree.pos.isRange) {
+          def positions = (tree :: tree.children).iterator.map(_.pos).filter(_.isRange)
+          val start = positions.map(_.start).min
+          val end = positions.map(_.end).max
+          val transparent = tree.pos.isTransparent
+          tree.pos = tree.pos.withStart(start).withEnd(end)
+          if (transparent) {
+            tree.pos = tree.pos.makeTransparent
+          }
+        }
+      }
+    }
+
     val result = {
-      import global.{position => _, sourceFile => _, _}
       try {
         val sourcePosition = sourceFile.position(offset + exprDef.positionMapping(position))
 
@@ -325,34 +355,6 @@ trait ScexPresentationCompiler extends ScexCompiler {compiler =>
         import vc._
 
         inCompilerThread {
-          object positionFixer extends Traverser {
-            override def traverse(tree: Tree) = {
-              super.traverse(tree)
-              tree match {
-                // treat keywords incorrectly typed after dot as part of the Select tree
-                case Select(prefix, nme.ERROR) =>
-                  val chars = sourceFile.content
-                  val newEnd = tree.pos.end + Iterator.range(tree.pos.end, chars.length)
-                    .takeWhile(i => chars(i).isLetter).length
-                  tree.setPos(tree.pos.withEnd(newEnd))
-                // fix selectDynamic positions, which scalac computes incorrectly...
-                case tree@Apply(Select(_, TermName("selectDynamic")), List(lit@Literal(Constant(_: String))))
-                  if lit.pos.isTransparent && lit.pos.end >= tree.pos.end =>
-                  tree.setPos(tree.pos.withEnd(lit.pos.end))
-                case _ =>
-              }
-              if (tree.pos.isRange) {
-                def positions = (tree :: tree.children).iterator.map(_.pos).filter(_.isRange)
-                val start = positions.map(_.start).min
-                val end = positions.map(_.end).max
-                val transparent = tree.pos.isTransparent
-                tree.pos = tree.pos.withStart(start).withEnd(end)
-                if (transparent) {
-                  tree.pos = tree.pos.makeTransparent
-                }
-              }
-            }
-          }
           positionFixer.traverse(fullTree)
 
           val tree = new Locator(sourcePosition).locateIn(fullTree).toOpt
