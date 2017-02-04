@@ -2,7 +2,7 @@ scex
 ====
 
 [![Build Status](https://travis-ci.org/AVSystem/scex.svg?branch=master)](https://travis-ci.org/AVSystem/scex)
-[![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.avsystem.scex/scex-core/badge.svg)](https://maven-badges.herokuapp.com/maven-central/com.avsystem.scex/scex-core_2.12)
+[![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.avsystem.scex/scex-core_2.12/badge.svg)](https://maven-badges.herokuapp.com/maven-central/com.avsystem.scex/scex-core_2.12)
 
 Extensible, fast and secure Scala expression evaluation engine
 
