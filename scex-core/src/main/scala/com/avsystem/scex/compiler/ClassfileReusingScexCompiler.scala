@@ -15,7 +15,7 @@ import scala.tools.nsc.util.ClassPath
 import scala.util.Try
 
 object ClassfileReusingScexCompiler {
-  final val GlobalCacheVersion = 1
+  final val GlobalCacheVersion = 2
 }
 
 /**
