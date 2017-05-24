@@ -166,6 +166,19 @@ class ScexCompilerTest extends FunSuite with CompilationTest {
     assert(42 == cexpr(SimpleContext(())))
   }
 
+  test("implicit context test") {
+    val expr = "gimmeVar(\"tehname\")"
+    val acl = allow {
+      on { car: ContextAccessingRoot =>
+        car.gimmeVar(_: String)(_: ExpressionContext[ContextAccessingRoot, String])
+      }
+    }
+    val cexpr = compiler.getCompiledExpression[SimpleContext[ContextAccessingRoot], String](createProfile(acl), expr, template = false)
+    val ctx = SimpleContext(new ContextAccessingRoot)
+    ctx.setVariable("tehname", "tehvalue")
+    assert("tehvalue" == cexpr(ctx))
+  }
+
   test("ACL allow entry precedence test") {
     val acl = allow {
       on { i: Int =>

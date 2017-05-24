@@ -53,6 +53,7 @@ object CodeGeneration {
   val SymbolAttributesClassName = "SymbolAttributes"
   val ConversionSupplierClassName = "ConversionSupplier"
   val ContextSymbol = "_ctx"
+  val ImplicitContextSymbol = "_implicit_ctx"
   val VariablesSymbol = "_vars"
   val RootSymbol = "_root"
   val AdapterWrappedSymbol = "_wrapped"
@@ -205,6 +206,7 @@ object CodeGeneration {
          |  with $CompilerPkg.TemplateInterpolations[$resultType] {
          |
          |  def eval($ContextSymbol: $contextType @$AnnotationPkg.Input): $resultOrSetterType = {
+         |    implicit def $ImplicitContextSymbol: $contextType @$AnnotationPkg.Input = $ContextSymbol
          |    val $RootSymbol = $ContextSymbol.root: @$AnnotationPkg.RootValue
          |    import $profileObjectPkg.$ProfileObjectName._
          |    import $utilsObjectPkg.$UtilsObjectName._
