@@ -16,7 +16,7 @@ inThisBuild(Seq(
     "-language:experimental.macros",
     "-Xfuture",
     "-Xfatal-warnings",
-    "-Xlint:_,-missing-interpolator,-adapted-args"
+    "-Xlint:-missing-interpolator,-adapted-args,-unused,_"
   )
 ))
 
