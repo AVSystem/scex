@@ -1,7 +1,5 @@
 package vaadin
 
-import java.{lang => jl, util => ju}
-
 /**
  * Created: 11-12-2013
  * Author: ghik

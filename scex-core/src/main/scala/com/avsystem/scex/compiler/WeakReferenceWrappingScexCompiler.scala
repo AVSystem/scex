@@ -1,8 +1,6 @@
 package com.avsystem.scex
 package compiler
 
-import java.{lang => jl, util => ju}
-
 import scala.ref.WeakReference
 import scala.util.Try
 

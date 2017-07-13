@@ -1,7 +1,5 @@
 package com.avsystem.scex
 
-import java.{lang => jl, util => ju}
-
 import com.avsystem.scex.presentation.SymbolAttributes
 import com.avsystem.scex.validation.{SymbolValidator, SyntaxValidator}
 

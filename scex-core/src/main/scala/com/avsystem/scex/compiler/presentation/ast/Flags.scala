@@ -1,8 +1,6 @@
 package com.avsystem.scex
 package compiler.presentation.ast
 
-import java.{lang => jl, util => ju}
-
 import scala.reflect.internal.ModifierFlags
 
 /**

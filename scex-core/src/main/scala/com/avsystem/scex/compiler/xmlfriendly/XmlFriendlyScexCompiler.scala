@@ -1,8 +1,6 @@
 package com.avsystem.scex
 package compiler.xmlfriendly
 
-import java.{lang => jl, util => ju}
-
 import com.avsystem.scex.compiler.ScexCompiler
 
 /**

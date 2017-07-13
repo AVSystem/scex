@@ -1,8 +1,6 @@
 package com.avsystem.scex
 package compiler
 
-import java.{lang => jl, util => ju}
-
 import com.avsystem.commons.jiop.JavaInterop._
 import com.avsystem.scex.compiler.TemplateInterpolations.Splicer
 import com.avsystem.scex.util.{PredefinedAccessSpecs, SimpleContext}

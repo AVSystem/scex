@@ -1,7 +1,5 @@
 package com.avsystem.scex.util
 
-import java.{lang => jl, util => ju}
-
 import com.avsystem.scex.NoTag
 import com.avsystem.scex.japi.JavaExpressionContext
 

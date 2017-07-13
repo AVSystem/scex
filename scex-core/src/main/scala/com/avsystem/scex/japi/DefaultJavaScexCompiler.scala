@@ -1,8 +1,6 @@
 package com.avsystem.scex
 package japi
 
-import java.{lang => jl, util => ju}
-
 import com.avsystem.scex.compiler._
 import com.avsystem.scex.compiler.presentation.{CachingScexPresentationCompiler, ScexPresentationCompiler}
 

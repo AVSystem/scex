@@ -1,7 +1,7 @@
 package com.avsystem.scex
 package compiler
 
-import java.{lang => jl, util => ju}
+import java.{util => ju}
 
 import com.avsystem.scex.compiler.ParameterizedClass.StaticInnerGeneric
 import com.avsystem.scex.compiler.ScexCompiler.CompilationFailedException

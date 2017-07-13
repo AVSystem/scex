@@ -1,8 +1,6 @@
 package com.avsystem.scex
 package compiler.xmlfriendly
 
-import java.{lang => jl, util => ju}
-
 import com.avsystem.scex.compiler.CodeGeneration
 import com.avsystem.scex.parsing.{PString, PositionTrackingParsers}
 import com.avsystem.scex.util.CommonUtils._

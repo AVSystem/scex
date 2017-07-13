@@ -1,7 +1,5 @@
 package com.avsystem.scex.compiler
 
-import java.{lang => jl, util => ju}
-
 import scala.tools.nsc._
 import scala.tools.nsc.plugins.{Plugin, PluginComponent}
 

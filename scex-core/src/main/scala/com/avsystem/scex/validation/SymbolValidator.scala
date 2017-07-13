@@ -1,8 +1,6 @@
 package com.avsystem.scex
 package validation
 
-import java.{lang => jl, util => ju}
-
 import com.avsystem.scex.symboldsl.{SymbolDslMacros, SymbolDsl, SymbolInfo, SymbolInfoList}
 import com.avsystem.scex.util.CommonUtils._
 import com.avsystem.scex.util.LoggingUtils

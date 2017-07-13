@@ -1,7 +1,5 @@
 package com.avsystem.scex.compiler
 
-import java.{lang => jl, util => ju}
-
 import com.avsystem.scex.parsing.TemplateParser
 import org.scalatest.FunSuite
 

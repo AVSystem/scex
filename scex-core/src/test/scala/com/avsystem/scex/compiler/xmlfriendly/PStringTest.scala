@@ -1,8 +1,6 @@
 package com.avsystem.scex
 package compiler.xmlfriendly
 
-import java.{lang => jl, util => ju}
-
 import com.avsystem.scex.parsing.{Modification, PString, ShiftInfo}
 import org.scalatest.FunSuite
 

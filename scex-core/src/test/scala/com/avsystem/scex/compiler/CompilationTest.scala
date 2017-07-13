@@ -1,8 +1,6 @@
 package com.avsystem.scex
 package compiler
 
-import java.{lang => jl, util => ju}
-
 import com.avsystem.scex.compiler.ScexCompiler.CompilationFailedException
 import com.avsystem.scex.japi.{DefaultJavaScexCompiler, JavaScexCompiler}
 import com.avsystem.scex.presentation.{Attributes, SymbolAttributes}

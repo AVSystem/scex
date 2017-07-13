@@ -1,8 +1,6 @@
 package com.avsystem.scex
 package symboldsl
 
-import java.{lang => jl, util => ju}
-
 import com.google.common.cache.CacheBuilder
 
 import scala.reflect.api.{TreeCreator, TypeCreator, Universe}

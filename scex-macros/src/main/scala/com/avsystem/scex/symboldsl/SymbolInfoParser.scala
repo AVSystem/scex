@@ -1,7 +1,5 @@
 package com.avsystem.scex.symboldsl
 
-import java.{lang => jl, util => ju}
-
 import com.avsystem.commons.macros.AbstractMacroCommons
 import com.avsystem.scex.util.{MacroUtils, TypeWrapper}
 

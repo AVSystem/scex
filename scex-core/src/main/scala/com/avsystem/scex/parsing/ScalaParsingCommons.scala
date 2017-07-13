@@ -1,7 +1,5 @@
 package com.avsystem.scex.parsing
 
-import java.{lang => jl, util => ju}
-
 import scala.reflect.internal.Chars
 import scala.util.parsing.combinator.RegexParsers
 

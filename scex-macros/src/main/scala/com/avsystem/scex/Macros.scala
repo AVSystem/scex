@@ -1,7 +1,5 @@
 package com.avsystem.scex
 
-import java.{lang => jl, util => ju}
-
 import com.avsystem.commons.macros.MacroCommons
 import com.avsystem.scex.util.MacroUtils
 
@@ -17,6 +15,7 @@ class Macros(val c: blackbox.Context) extends MacroCommons with MacroUtils {
 
   import universe._
 
+  lazy val JEnumTpe = typeOf[java.lang.Enum[_]]
   lazy val ScexLiteralTpe = getType(tq"$ScexPkg.util.Literal")
   lazy val ScexLiteralObj = ScexLiteralTpe.typeSymbol.companion
   lazy val TemplateInterpolationsObj = q"$ScexPkg.compiler.TemplateInterpolations"
@@ -63,13 +62,13 @@ class Macros(val c: blackbox.Context) extends MacroCommons with MacroUtils {
 
     if (args.isEmpty && isEmptyStringLiteral(parts.head) && typeOf[Null] <:< resultType) {
       q"null"
-    } else if (resultType <:< typeOf[jl.Enum[_]] && args.isEmpty && literalConv == EmptyTree) {
+    } else if (resultType <:< JEnumTpe && args.isEmpty && literalConv == EmptyTree) {
       // special cases for Java enums as there is no way to create general implicit conversion to arbitrary java enum
       // due to https://issues.scala-lang.org/browse/SI-7609
       val enumModuleSymbol = resultType.typeSymbol.companion
       q"$enumModuleSymbol.${TermName(literalString)}"
 
-    } else if (resultType <:< typeOf[jl.Enum[_]] && singleArgNoParts && !(soleArgTree.tpe <:< resultType)) {
+    } else if (resultType <:< JEnumTpe && singleArgNoParts && !(soleArgTree.tpe <:< resultType)) {
       val enumModuleSymbol = resultType.typeSymbol.companion
 
       q"$enumModuleSymbol.valueOf(${args.head})"

@@ -1,8 +1,6 @@
 package com.avsystem.scex
 package util
 
-import java.{lang => jl, util => ju}
-
 import com.google.common.cache.{CacheLoader, RemovalListener, RemovalNotification}
 
 import scala.language.implicitConversions

@@ -1,8 +1,6 @@
 package com.avsystem.scex
 package compiler
 
-import java.{lang => jl, util => ju}
-
 import com.avsystem.scex.util.{LoggingUtils, MacroUtils, TypesafeEqualsEnabled}
 import com.avsystem.scex.validation.ValidationContext
 

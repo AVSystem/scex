@@ -1,7 +1,5 @@
 package com.avsystem.scex.compiler
 
-import java.{lang => jl, util => ju}
-
 /**
  * Created: 03-11-2014
  * Author: ghik

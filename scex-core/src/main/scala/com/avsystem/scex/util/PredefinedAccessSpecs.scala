@@ -1,6 +1,6 @@
 package com.avsystem.scex.util
 
-import java.{lang => jl, util => ju}
+import java.{lang => jl}
 
 import com.github.ghik.silencer.silent
 

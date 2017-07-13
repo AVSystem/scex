@@ -1,7 +1,5 @@
 package com.avsystem.scex
 
-import java.{lang => jl, util => ju}
-
 import scala.util.control.NoStackTrace
 
 /**

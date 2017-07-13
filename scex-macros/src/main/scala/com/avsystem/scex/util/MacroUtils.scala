@@ -1,7 +1,5 @@
 package com.avsystem.scex.util
 
-import java.{lang => jl, util => ju}
-
 import scala.reflect.api.Universe
 
 trait MacroUtils {
@@ -34,7 +32,7 @@ trait MacroUtils {
   lazy val splicerToString = splicerType.decl(TermName("toString"))
   lazy val stringTpe = typeOf[String]
   lazy val booleanTpe = typeOf[Boolean]
-  lazy val jBooleanTpe = typeOf[jl.Boolean]
+  lazy val jBooleanTpe = typeOf[java.lang.Boolean]
   lazy val dynamicTpe = typeOf[Dynamic]
   lazy val dynamicVarAccessorTpe = scexClassType("util.DynamicVariableAccessor")
 
@@ -222,7 +220,7 @@ trait MacroUtils {
   }
 
   def isBooleanType(tpe: Type) =
-    tpe <:< typeOf[Boolean] || tpe <:< typeOf[jl.Boolean]
+    tpe <:< booleanTpe || tpe <:< jBooleanTpe
 
   def isGetClass(symbol: Symbol) =
     symbol.name == TermName("getClass") && withOverrides(symbol).contains(getClassSymbol)

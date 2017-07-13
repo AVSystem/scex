@@ -1,7 +1,5 @@
 package com.avsystem.scex.compiler
 
-import java.{lang => jl, util => ju}
-
 import com.avsystem.scex.compiler.presentation.ScexPresentationCompiler
 import com.avsystem.scex.presentation.SymbolAttributes
 import com.avsystem.scex.util.{PredefinedAccessSpecs, SimpleContext}

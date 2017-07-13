@@ -1,8 +1,6 @@
 package com.avsystem.scex
 package util
 
-import java.{lang => jl, util => ju}
-
 import org.slf4j.{Logger, LoggerFactory}
 
 import scala.reflect.{ClassTag, classTag}

@@ -1,7 +1,5 @@
 package com.avsystem.scex.compiler.presentation
 
-import java.{lang => jl, util => ju}
-
 import com.avsystem.scex.Type
 import com.avsystem.scex.compiler.CompilationTest
 import com.avsystem.scex.compiler.presentation.TypeCompletionPrefixTest._

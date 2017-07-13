@@ -1,7 +1,5 @@
 package vaadin
 
-import java.{lang => jl, util => ju}
-
 import scala.language.dynamics
 
 /**
