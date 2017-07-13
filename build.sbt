@@ -24,12 +24,15 @@ val CompileAndTest = "compile->compile;test->test"
 
 val parserCombinatorsVersion = "1.0.5"
 val silencerVersion = "0.5"
-val avsCommonsVersion = "1.19.8"
+val avsCommonsVersion = "1.21.4"
 val jettyVersion = "9.1.0.v20131115"
 val vaadinVersion = "6.8.13"
 val slf4jVersion = "1.6.4"
 val logbackVersion = "1.0.6"
+val commonsLang3Version = "3.4"
 val commonsCodecVersion = "1.7"
+val commonsNetVersion = "3.3"
+val jodaTimeVersion = "2.8.2"
 val junitVersion = "4.11"
 val scalatestVersion = "3.0.0"
 
@@ -100,7 +103,7 @@ lazy val subprojectSettings = Seq(
 )
 
 lazy val scex = project.in(file("."))
-  .aggregate(`scex-macros`, `scex-core`, `scex-test`, `scex-java-test`)
+  .aggregate(`scex-macros`, `scex-core`, `scex-util`, `scex-test`, `scex-java-test`)
   .settings(noPublishSettings: _*)
 
 lazy val `scex-macros` = project
@@ -122,6 +125,16 @@ lazy val `scex-core` = project.dependsOn(`scex-macros` % CompileAndTest)
       "ch.qos.logback" % "logback-core" % logbackVersion,
       "ch.qos.logback" % "logback-classic" % logbackVersion,
       "commons-codec" % "commons-codec" % commonsCodecVersion
+    )
+  )
+
+lazy val `scex-util` = project.dependsOn(`scex-core` % CompileAndTest)
+  .settings(subprojectSettings: _*)
+  .settings(
+    libraryDependencies ++= Seq(
+      "org.apache.commons" % "commons-lang3" % commonsLang3Version,
+      "commons-net" % "commons-net" % commonsNetVersion,
+      "joda-time" % "joda-time" % jodaTimeVersion
     )
   )
 

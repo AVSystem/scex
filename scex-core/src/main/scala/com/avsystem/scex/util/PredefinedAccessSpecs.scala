@@ -2,11 +2,8 @@ package com.avsystem.scex.util
 
 import java.{lang => jl}
 
-import com.github.ghik.silencer.silent
-
 import scala.math.ScalaNumericAnyConversions
 import scala.runtime._
-import com.avsystem.commons.jiop.JavaInterop._
 
 object PredefinedAccessSpecs {
 
@@ -293,82 +290,9 @@ object PredefinedAccessSpecs {
     Literal.all.introduced.members
   }
 
-  val javaCollectionExtensions = {
-    import JavaCollectionExtensions._
-
-    allow {
-      on { c: JCollection[Any@plus] =>
-        c.size
-        c.contains _
-        c.containsAll _
-        c.isEmpty
-        c.implicitlyAs[CollectionOps[Any]].all.members
-      }
-      on { sc: JCollection[String] =>
-        sc.implicitlyAs[StringCollectionOps].all.members
-      }
-      list _
-      range(_: Int, _: Int, _: Int)
-      range(_: Int, _: Int)
-      on { l: JList[Any@plus] =>
-        l.get _
-        l.implicitlyAs[ListOps[Any]].all.members
-      }
-      set _
-      on { s: JSet[Any@plus] =>
-        s.implicitlyAs[SetOps[Any]].all.members
-      }
-      map _
-      on { m: JMap[Any@plus, Any@plus] =>
-        m.isEmpty
-        m.size
-        m.get _
-        m.keySet
-        m.values
-        m.containsKey _
-        m.containsValue _
-        m.implicitlyAs[MapOps[Any, Any]].all.introduced.members
-      }
-      entry _
-      on { e: Entry[Any@plus, Any@plus] =>
-        e.key: @silent
-        e.value: @silent
-        e.withKey _
-        e.withValue _
-        e.toString
-      }
-      on { c: JCollection[Entry[Any@plus, Any@plus]@plus] =>
-        c.implicitlyAs[EntryCollectionOps[Any, Any]].all.members
-      }
-      on { c: JCollection[(Any, Any)@plus] =>
-        c.implicitlyAs[PairCollectionOps[Any, Any]].all.members
-      }
-
-      on { o: Ordering.type =>
-        o.BigDecimal
-        o.BigInt
-        o.Boolean
-        o.Byte
-        o.Char
-        o.Double
-        o.Float
-        o.Int
-        o.Long
-        o.Short
-        o.String
-        o.Unit
-        o.ordered(_: Nothing)
-      }
-
-      on { n: Numeric.type =>
-        n.ByteIsIntegral
-        n.CharIsIntegral
-        n.ShortIsIntegral
-        n.IntIsIntegral
-        n.LongIsIntegral
-        n.FloatIsFractional
-        n.DoubleIsFractional
-      }
+  val universalToString = allow {
+    on { any: Any =>
+      any.toString
     }
   }
 }
