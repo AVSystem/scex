@@ -138,29 +138,33 @@ trait ScexCompiler extends LoggingUtils {
   protected def instantiate[T](classLoader: ClassLoader, className: String) =
     Class.forName(className, true, classLoader).newInstance.asInstanceOf[T]
 
-  protected def compileJavaGetterAdapter(clazz: Class[_], full: Boolean): Try[Option[String]] =
-    if (settings.noGetterAdapters.value) Success(None)
-    else generateJavaGetterAdapter(clazz, full) match {
-      case Some(code) => underLock {
-        val codeToCompile = wrapInSource(code, AdaptersPkg)
-        val name = adapterName(clazz, full)
-        val sourceFile = new ScexSourceFile(name, codeToCompile, shared = true)
-
-        def result() = {
-          compile(sourceFile) match {
-            case Left(_) => Some(name)
-            case Right(errors) => throw new CompilationFailedException(codeToCompile, errors)
-          }
+  protected def compileJavaGetterAdapters(name: String, classes: Seq[Class[_]], full: Boolean): Try[Seq[Option[String]]] =
+    if (settings.noGetterAdapters.value) Success(classes.map(_ => None))
+    else {
+      val (fullCode, names) = classes.foldLeft(("", Vector.empty[Option[String]])) {
+        case ((prevCode, prevNames), clazz) => generateJavaGetterAdapter(clazz, full) match {
+          case Some(code) => (prevCode + "\n" + code, prevNames :+ Some(adapterName(clazz, full)))
+          case None => (prevCode, prevNames :+ None)
         }
-
-        Try(result())
       }
-      case None => Success(None)
+      val codeToCompile = wrapInSource(fullCode, AdaptersPkg)
+      val sourceFile = new ScexSourceFile(name, codeToCompile, shared = true)
+
+      def result() = {
+        compile(sourceFile) match {
+          case Left(_) => names
+          case Right(errors) => throw CompilationFailedException(codeToCompile, errors)
+        }
+      }
+
+      Try(result())
     }
 
   protected def compileProfileObject(profile: ExpressionProfile): Try[String] = underLock {
-    val adapters = profile.symbolValidator.referencedJavaClasses.toVector.sortBy(_.getName).flatMap {
-      clazz => compileJavaGetterAdapter(clazz, full = false).get.map(adapterName => (clazz, adapterName))
+    val classes = profile.symbolValidator.referencedJavaClasses.toVector.sortBy(_.getName)
+    val adapterNames = compileJavaGetterAdapters("Adapters_" + profile.name, classes, full = false).get
+    val adapters = (classes zip adapterNames).collect {
+      case (clazz, Some(adapterName)) => (clazz, adapterName)
     }
 
     val pkgName = ProfilePkgPrefix + NameTransformer.encode(profile.name)
@@ -170,7 +174,7 @@ trait ScexCompiler extends LoggingUtils {
     def result =
       compile(sourceFile) match {
         case Left(_) => pkgName
-        case Right(errors) => throw new CompilationFailedException(codeToCompile, errors)
+        case Right(errors) => throw CompilationFailedException(codeToCompile, errors)
       }
 
     Try(result)
@@ -184,7 +188,7 @@ trait ScexCompiler extends LoggingUtils {
     def result =
       compile(sourceFile) match {
         case Left(_) => pkgName
-        case Right(errors) => throw new CompilationFailedException(codeToCompile, errors)
+        case Right(errors) => throw CompilationFailedException(codeToCompile, errors)
       }
 
     Try(result)
@@ -196,7 +200,8 @@ trait ScexCompiler extends LoggingUtils {
 
     val fullAdapterClassNameOpt =
       if (profile.symbolValidator.referencedJavaClasses.contains(rootObjectClass)) {
-        compileJavaGetterAdapter(rootObjectClass, full = true).get.map(name => s"$AdaptersPkg.$name")
+        val name = adapterName(rootObjectClass, full = true)
+        compileJavaGetterAdapters(name, Seq(rootObjectClass), full = true).get.head.map(name => s"$AdaptersPkg.$name")
       } else None
 
     val profileObjectPkg = compileProfileObject(profile).get
@@ -363,7 +368,7 @@ trait ScexCompiler extends LoggingUtils {
       case Left(classLoader) =>
         instantiate[SyntaxValidator](classLoader, s"$pkgName.$SyntaxValidatorClassName")
       case Right(errors) =>
-        throw new CompilationFailedException(codeToCompile, errors)
+        throw CompilationFailedException(codeToCompile, errors)
     }
   }
 
@@ -377,7 +382,7 @@ trait ScexCompiler extends LoggingUtils {
       case Left(classLoader) =>
         instantiate[SymbolValidator](classLoader, s"$pkgName.$SymbolValidatorClassName")
       case Right(errors) =>
-        throw new CompilationFailedException(codeToCompile, errors)
+        throw CompilationFailedException(codeToCompile, errors)
     }
   }
 
@@ -393,7 +398,7 @@ trait ScexCompiler extends LoggingUtils {
       case Left(classLoader) =>
         Class.forName(name, true, classLoader)
       case Right(errors) =>
-        throw new CompilationFailedException(code, errors)
+        throw CompilationFailedException(code, errors)
     }
   }
 

@@ -3,9 +3,9 @@ import com.typesafe.sbt.SbtPgp.autoImportImpl.PgpKeys._
 name := "scex"
 
 inThisBuild(Seq(
-  scalaVersion := "2.12.2",
+  scalaVersion := "2.12.3",
   organization := "com.avsystem.scex",
-  crossScalaVersions := Seq("2.11.11", "2.12.2"),
+  crossScalaVersions := Seq("2.11.11", "2.12.3"),
   scalacOptions ++= Seq(
     "-feature",
     "-deprecation",
