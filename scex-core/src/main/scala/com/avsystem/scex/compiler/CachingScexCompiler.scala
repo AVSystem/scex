@@ -26,11 +26,11 @@ trait CachingScexCompiler extends ScexCompiler {
 
   // holds names of packages to which profiles are compiled
   private val profileCompilationResultsCache =
-    CacheBuilder.newBuilder.build[ExpressionProfile, Try[String]]
+    CacheBuilder.newBuilder.build[ExpressionProfile, Try[Option[String]]]
 
   // holds names of packages to which utils are compiled
   private val utilsCompilationResultsCache =
-    CacheBuilder.newBuilder.build[String, Try[String]]
+    CacheBuilder.newBuilder.build[String, Try[Option[String]]]
 
   // holds code of implicit adapters over Java classes that add Scala-style getters to Java bean getters
   private val javaGetterAdaptersCache =

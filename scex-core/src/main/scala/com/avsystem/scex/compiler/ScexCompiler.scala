@@ -160,39 +160,46 @@ trait ScexCompiler extends LoggingUtils {
       Try(result())
     }
 
-  protected def compileProfileObject(profile: ExpressionProfile): Try[String] = underLock {
+  protected def compileProfileObject(profile: ExpressionProfile): Try[Option[String]] = underLock {
     val classes = profile.symbolValidator.referencedJavaClasses.toVector.sortBy(_.getName)
     val adapterNames = compileJavaGetterAdapters("Adapters_" + profile.name, classes, full = false).get
     val adapters = (classes zip adapterNames).collect {
       case (clazz, Some(adapterName)) => (clazz, adapterName)
     }
 
-    val pkgName = ProfilePkgPrefix + NameTransformer.encode(profile.name)
-    val codeToCompile = wrapInSource(generateProfileObject(profile, adapters), pkgName)
-    val sourceFile = new ScexSourceFile(pkgName, codeToCompile, shared = true)
+    generateProfileObject(profile, adapters) match {
+      case Some(profileObjCode) =>
+        val pkgName = ProfilePkgPrefix + NameTransformer.encode(profile.name)
+        val codeToCompile = wrapInSource(profileObjCode, pkgName)
+        val sourceFile = new ScexSourceFile(pkgName, codeToCompile, shared = true)
 
-    def result =
-      compile(sourceFile) match {
-        case Left(_) => pkgName
-        case Right(errors) => throw CompilationFailedException(codeToCompile, errors)
-      }
+        def result =
+          compile(sourceFile) match {
+            case Left(_) => pkgName
+            case Right(errors) => throw CompilationFailedException(codeToCompile, errors)
+          }
 
-    Try(result)
+        Try(Some(result))
+
+      case None =>
+        Success(None)
+    }
   }
 
-  protected def compileExpressionUtils(utils: NamedSource): Try[String] = underLock {
-    val pkgName = UtilsPkgPrefix + NameTransformer.encode(utils.name)
-    val codeToCompile = wrapInSource(generateExpressionUtils(utils.code), pkgName)
-    val sourceFile = new ScexSourceFile(pkgName, codeToCompile, shared = true)
+  protected def compileExpressionUtils(utils: NamedSource): Try[Option[String]] =
+    if(utils.code.isEmpty) Success(None) else underLock {
+      val pkgName = UtilsPkgPrefix + NameTransformer.encode(utils.name)
+      val codeToCompile = wrapInSource(generateExpressionUtils(utils.code), pkgName)
+      val sourceFile = new ScexSourceFile(pkgName, codeToCompile, shared = true)
 
-    def result =
-      compile(sourceFile) match {
-        case Left(_) => pkgName
-        case Right(errors) => throw CompilationFailedException(codeToCompile, errors)
-      }
+      def result =
+        compile(sourceFile) match {
+          case Left(_) => pkgName
+          case Right(errors) => throw CompilationFailedException(codeToCompile, errors)
+        }
 
-    Try(result)
-  }
+      Try(Some(result))
+    }
 
   protected final def expressionCode(exprDef: ExpressionDef, noMacroProcessing: Boolean = false): (String, String, Int) = {
     val profile = exprDef.profile

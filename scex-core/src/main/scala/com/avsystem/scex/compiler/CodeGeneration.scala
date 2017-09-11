@@ -129,8 +129,8 @@ object CodeGeneration {
   def generateExpressionClass(
     exprDef: ExpressionDef,
     fullAdapterClassNameOpt: Option[String],
-    profileObjectPkg: String,
-    utilsObjectPkg: String,
+    profileObjectPkg: Option[String],
+    utilsObjectPkg: Option[String],
     noMacroProcessing: Boolean) = {
 
     val ExpressionDef(profile, template, setter, expression, header, contextType, resultType, variableTypes) = exprDef
@@ -195,6 +195,9 @@ object CodeGeneration {
        """.stripMargin
     } else ""
 
+    val profileImport = profileObjectPkg.fold("")(pkg => s"import $pkg.$ProfileObjectName._")
+    val utilsImport = utilsObjectPkg.fold("")(pkg => s"import $pkg.$UtilsObjectName._")
+
     //_result is needed because: https://groups.google.com/forum/#!topic/scala-user/BAK-mU7o6nM
     val prefix =
       s"""
@@ -208,8 +211,8 @@ object CodeGeneration {
          |  def eval($ContextSymbol: $contextType @$AnnotationPkg.Input): $resultOrSetterType = {
          |    implicit def $ImplicitContextSymbol: $contextType @$AnnotationPkg.Input = $ContextSymbol
          |    val $RootSymbol = $ContextSymbol.root: @$AnnotationPkg.RootValue
-         |    import $profileObjectPkg.$ProfileObjectName._
-         |    import $utilsObjectPkg.$UtilsObjectName._
+         |    $profileImport
+         |    $utilsImport
          |    import $RootSymbol._
          |    $rootGetterAdapterCode
          |    $profileHeader
@@ -249,12 +252,14 @@ object CodeGeneration {
         """.stripMargin
     }.mkString
 
-    s"""
-       |object $ProfileObjectName extends $MarkersObj.ProfileObject {
-       |$adapterConversions
-       |}
-       |
-    """.stripMargin
+    if(adapterConversions.nonEmpty) Some(
+      s"""
+         |object $ProfileObjectName extends $MarkersObj.ProfileObject {
+         |$adapterConversions
+         |}
+         |
+      """.stripMargin
+    ) else None
   }
 
   def generateExpressionUtils(code: String) = {
@@ -319,13 +324,15 @@ object CodeGeneration {
     s"$templateOptimizingObj.checkConstant($templateOptimizingObj.reifyImplicitView[$resultType](_dummy_literal))\n"
   }
 
-  def implicitLiteralConversionClass(profileObjectPkg: String, utilsObjectPkg: String, profileHeader: String, header: String, resultType: String) = {
+  def implicitLiteralConversionClass(profileObjectPkg: Option[String], utilsObjectPkg: Option[String], profileHeader: String, header: String, resultType: String) = {
     val templateOptimizingScexCompiler = s"$ScexPkg.compiler.TemplateOptimizingScexCompiler"
+    val profileImport = profileObjectPkg.fold("")(pkg => s"import $pkg.$ProfileObjectName._")
+    val utilsImport = utilsObjectPkg.fold("")(pkg => s"import $pkg.$UtilsObjectName._")
     s"""
        |final class $ConversionSupplierClassName extends $templateOptimizingScexCompiler.ConversionSupplier[$resultType] {
        |  def get = {
-       |    import $profileObjectPkg.$ProfileObjectName._
-       |    import $utilsObjectPkg.$UtilsObjectName._
+       |    $profileImport
+       |    $utilsImport
        |    $profileHeader
        |    $header
        |    implicitly[$ScexPkg.util.Literal => ($resultType)]
