@@ -198,9 +198,11 @@ object CodeGeneration {
     val profileImport = profileObjectPkg.fold("")(pkg => s"import $pkg.$ProfileObjectName._")
     val utilsImport = utilsObjectPkg.fold("")(pkg => s"import $pkg.$UtilsObjectName._")
 
+    //comment with profile name ensures that caching distinguishes between profiles
     //_result is needed because: https://groups.google.com/forum/#!topic/scala-user/BAK-mU7o6nM
     val prefix =
       s"""
+         |// profile: ${profile.name}
          |final class $ExpressionClassName(
          |  val debugInfo: com.avsystem.scex.ExpressionDebugInfo,
          |  val sourceInfo: com.avsystem.scex.compiler.SourceInfo)
