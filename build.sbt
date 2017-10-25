@@ -3,9 +3,9 @@ import com.typesafe.sbt.SbtPgp.autoImportImpl.PgpKeys._
 name := "scex"
 
 inThisBuild(Seq(
-  scalaVersion := "2.12.3",
+  scalaVersion := "2.12.4",
   organization := "com.avsystem.scex",
-  crossScalaVersions := Seq("2.11.11", "2.12.3"),
+  crossScalaVersions := Seq("2.11.11", "2.12.4"),
   scalacOptions ++= Seq(
     "-feature",
     "-deprecation",
@@ -24,7 +24,7 @@ val CompileAndTest = "compile->compile;test->test"
 
 val parserCombinatorsVersion = "1.0.5"
 val silencerVersion = "0.5"
-val avsCommonsVersion = "1.21.4"
+val avsCommonsVersion = "1.23.1"
 val jettyVersion = "9.1.0.v20131115"
 val vaadinVersion = "6.8.13"
 val slf4jVersion = "1.6.4"
@@ -69,22 +69,16 @@ lazy val subprojectSettings = Seq(
       connection = "scm:git:git@github.com:AVSystem/scex.git",
       devConnection = Some("scm:git:git@github.com:AVSystem/scex.git")
     )),
-    licenses = Seq(
+    licenses = Vector(
       ("The MIT License", url("https://opensource.org/licenses/MIT"))
+    ),
+    developers = Vector(
+      Developer("ghik", "Roman Janusz", "romeqjanoosh@gmail.com", url("https://github.com/ghik"))
     )
   ),
 
   publishMavenStyle := true,
   pomIncludeRepository := { _ => false },
-  pomExtra := {
-    <developers>
-      <developer>
-        <id>ghik</id>
-        <name>Roman Janusz</name>
-        <url>https://github.com/ghik</url>
-      </developer>
-    </developers>
-  },
 
   fork in Test := true,
   javaOptions in Test += "-Xmx1G",

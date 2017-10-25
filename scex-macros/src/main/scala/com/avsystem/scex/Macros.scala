@@ -1,6 +1,6 @@
 package com.avsystem.scex
 
-import com.avsystem.commons.macros.MacroCommons
+import com.avsystem.commons.macros.AbstractMacroCommons
 import com.avsystem.scex.util.MacroUtils
 
 import scala.reflect.macros.blackbox
@@ -9,7 +9,7 @@ import scala.reflect.macros.blackbox
   * Created: 18-11-2013
   * Author: ghik
   */
-class Macros(val c: blackbox.Context) extends MacroCommons with MacroUtils {
+class Macros(val ctx: blackbox.Context) extends AbstractMacroCommons(ctx) with MacroUtils {
 
   lazy val universe: c.universe.type = c.universe
 
@@ -52,7 +52,7 @@ class Macros(val c: blackbox.Context) extends MacroCommons with MacroUtils {
         }
       }
 
-      if(singleArgNoParts) convertedArgs.head
+      if (singleArgNoParts) convertedArgs.head
       else q"$TemplateInterpolationsObj.concat(..$parts)(..$convertedArgs)"
     }
 
