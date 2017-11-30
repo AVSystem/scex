@@ -3,9 +3,9 @@ import com.typesafe.sbt.SbtPgp.autoImportImpl.PgpKeys._
 name := "scex"
 
 inThisBuild(Seq(
-  scalaVersion := "2.12.3",
+  scalaVersion := "2.12.4",
   organization := "com.avsystem.scex",
-  crossScalaVersions := Seq("2.11.11", "2.12.3"),
+  crossScalaVersions := Seq("2.11.11", "2.12.4"),
   scalacOptions ++= Seq(
     "-feature",
     "-deprecation",
@@ -17,14 +17,14 @@ inThisBuild(Seq(
     "-Xfuture",
     "-Xfatal-warnings",
     "-Xlint:-missing-interpolator,-adapted-args,-unused,_"
-  )
+  ),
 ))
 
 val CompileAndTest = "compile->compile;test->test"
 
 val parserCombinatorsVersion = "1.0.5"
 val silencerVersion = "0.5"
-val avsCommonsVersion = "1.25.1"
+val avsCommonsVersion = "1.25.0"
 val jettyVersion = "9.1.0.v20131115"
 val vaadinVersion = "6.8.13"
 val slf4jVersion = "1.6.4"
