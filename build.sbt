@@ -24,7 +24,7 @@ val CompileAndTest = "compile->compile;test->test"
 
 val parserCombinatorsVersion = "1.0.5"
 val silencerVersion = "0.5"
-val avsCommonsVersion = "1.23.1"
+val avsCommonsVersion = "1.25.1"
 val jettyVersion = "9.1.0.v20131115"
 val vaadinVersion = "6.8.13"
 val slf4jVersion = "1.6.4"
@@ -90,7 +90,7 @@ lazy val subprojectSettings = Seq(
   libraryDependencies ++= Seq(
     compilerPlugin("com.github.ghik" %% "silencer-plugin" % silencerVersion),
     compilerPlugin("com.avsystem.commons" %% "commons-analyzer" % avsCommonsVersion),
-    "com.github.ghik" %% "silencer-lib" % silencerVersion,
+    "com.github.ghik" %% "silencer-lib" % silencerVersion % Provided,
     "junit" % "junit" % junitVersion % Test,
     "org.scalatest" %% "scalatest" % scalatestVersion % Test
   )
