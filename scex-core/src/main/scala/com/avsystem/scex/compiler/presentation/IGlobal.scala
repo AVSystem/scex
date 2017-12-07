@@ -124,7 +124,7 @@ class IGlobal(settings: Settings, reporter: Reporter, val classLoader: ClassLoad
     // now, drop incomplete selection
 
     tree match {
-      case Select(qual, name) if tree.tpe == ErrorType && !(qual.tpe != ErrorType && qual.tpe <:< dynamicTpe) =>
+      case Select(qual, name) if tree.tpe == ErrorType && !(qual.tpe != null && qual.tpe != ErrorType && qual.tpe <:< dynamicTpe) =>
         tree = qual
       case SelectDynamic(qual, "<error>") =>
         tree = qual
