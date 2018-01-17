@@ -5,9 +5,9 @@ import scala.reflect.macros.Universe
 
 
 /**
- * Trait for expression syntax validator. This validator validates only language constructs, invocation validation
- * is performed by SymbolValidator.
- */
+  * Trait for expression syntax validator. This validator validates only language constructs, invocation validation
+  * is performed by SymbolValidator.
+  */
 trait SyntaxValidator {
   def validateSyntax(u: Universe)(tree: u.Tree): (Boolean, List[u.Tree])
 }
@@ -26,6 +26,8 @@ object SyntaxValidator {
           (true, tree.children)
         case Function(valDefs, body) if valDefs.forall(isLambdaParamDef) =>
           (true, body :: valDefs.map(_.tpt))
+        case valDef: ValDef if valDef.mods.hasFlag(Flag.ARTIFACT) || valDef.mods.hasFlag(Flag.SYNTHETIC) =>
+          (true, tree.children)
         case _ => (false, tree.children)
       }
     }

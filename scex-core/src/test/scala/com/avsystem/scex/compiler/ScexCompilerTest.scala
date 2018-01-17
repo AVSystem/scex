@@ -430,4 +430,11 @@ class ScexCompilerTest extends FunSuite with CompilationTest {
   lambdaTest("short lambda test", "List(1,2,3).forall(5 > _)")
   lambdaTest("eta-expanded lambda test", "List(1,2,3).forall(5.>)")
 
+  test("default arguments") {
+    val profile = createProfile(Nil, utils = "def hasDefs(int: Int = 42, str: String = \"fuu\") = s\"$int:$str\"")
+    val expr = "hasDefs(str = \"omglol\")"
+    val cexpr = compiler.getCompiledExpression[SimpleContext[Unit], String](profile, expr, template = false)
+    assert(cexpr(SimpleContext(())) == "42:omglol")
+  }
+
 }
