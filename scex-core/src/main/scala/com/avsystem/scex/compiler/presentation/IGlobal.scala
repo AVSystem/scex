@@ -115,9 +115,10 @@ class IGlobal(settings: Settings, reporter: Reporter, val classLoader: ClassLoad
   object ErroneousSelectDynamic {
     def unapply(tree: Tree): Option[(Tree, Name)] = tree match {
       case Select(qual, name)
-        if tree.tpe == ErrorType && !(qual.tpe != null && qual.tpe != ErrorType && qual.tpe <:< dynamicTpe) =>
+        if tree.tpe == ErrorType && qual.tpe != null && qual.tpe != ErrorType && qual.tpe <:< dynamicTpe =>
         Some((qual, name))
-      case _ => None
+      case _ =>
+        None
     }
   }
 
@@ -149,8 +150,14 @@ class IGlobal(settings: Settings, reporter: Reporter, val classLoader: ClassLoad
         val literal = Literal(Constant(name.decoded)).setPos(literalPos)
         val result = Apply(Select(qual, TermName("selectDynamic")).setPos(qual.pos), List(literal)).setPos(tree.pos)
         analyzer.newTyper(context).typedQualifier(result)
-      case MemberCall(qual, name, targs, argss) if tree.tpe == ErrorType =>
-        analyzer.newTyper(context).typedQualifier(MemberCall(fixDynamicCalls(qual), name, targs, argss).setPos(tree.pos))
+      case Select(qual, name) if tree.tpe == ErrorType =>
+        if (qual.tpe == null) {
+          val typedQual = analyzer.newTyper(context).typedQualifier(qual)
+          fixDynamicCalls(treeCopy.Select(tree, typedQual, name))
+        } else {
+          val fixedSelect = treeCopy.Select(tree, fixDynamicCalls(qual), name)
+          analyzer.newTyper(context).typedQualifier(fixedSelect)
+        }
       case _ => tree
     }
 

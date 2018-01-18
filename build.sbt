@@ -3,21 +3,7 @@ import com.typesafe.sbt.SbtPgp.autoImportImpl.PgpKeys._
 name := "scex"
 
 inThisBuild(Seq(
-  scalaVersion := "2.12.4",
   organization := "com.avsystem.scex",
-  crossScalaVersions := Seq("2.11.11", "2.12.4"),
-  scalacOptions ++= Seq(
-    "-feature",
-    "-deprecation",
-    "-unchecked",
-    "-language:implicitConversions",
-    "-language:existentials",
-    "-language:dynamics",
-    "-language:experimental.macros",
-    "-Xfuture",
-    "-Xfatal-warnings",
-    "-Xlint:-missing-interpolator,-adapted-args,-unused,_"
-  ),
 ))
 
 val CompileAndTest = "compile->compile;test->test"
@@ -48,6 +34,21 @@ val noPublishSettings = Seq(
 sonatypeProfileName := "com.avsystem"
 
 lazy val subprojectSettings = Seq(
+  scalaVersion := "2.12.4",
+  crossScalaVersions := Seq("2.11.12", "2.12.4"),
+  scalacOptions ++= Seq(
+    "-feature",
+    "-deprecation",
+    "-unchecked",
+    "-language:implicitConversions",
+    "-language:existentials",
+    "-language:dynamics",
+    "-language:experimental.macros",
+    "-Xfuture",
+    "-Xfatal-warnings",
+    s"-Xlint:-missing-interpolator,-adapted-args,${if (scalaBinaryVersion.value == "2.12") "-unused," else ""}_"
+  ),
+
   sonatypeProfileName := "com.avsystem",
   publishTo := {
     val nexus = "https://oss.sonatype.org/"
