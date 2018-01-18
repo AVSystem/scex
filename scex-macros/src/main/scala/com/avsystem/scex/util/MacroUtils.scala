@@ -84,6 +84,36 @@ trait MacroUtils {
     }
   }
 
+  object MultiApply {
+    def apply(qual: Tree, valueArgLists: List[List[Tree]]): Tree =
+      valueArgLists.foldLeft(qual)(Apply(_, _))
+
+    def unapply(tree: Tree): Option[(Tree, List[List[Tree]])] = tree match {
+      case Apply(MultiApply(qual, argLists), args) => Some((qual, argLists :+ args))
+      case _ => Some((tree, Nil))
+    }
+  }
+
+  object MemberCall {
+    def apply(qual: Tree, name: Name, typeArgs: List[Tree], valueArgLists: List[List[Tree]]): Tree = {
+      val selected = Select(qual, name)
+      val typeApplied = if (typeArgs.nonEmpty) TypeApply(selected, typeArgs) else selected
+      valueArgLists.foldLeft(typeApplied)(Apply(_, _))
+    }
+
+    def unapply(tree: Tree): Option[(Tree, Name, List[Tree], List[List[Tree]])] = {
+      val MultiApply(qual, argLists) = tree
+      val (typeQual, typeArgs) = qual match {
+        case TypeApply(tq, ta) => (tq, ta)
+        case _ => (qual, Nil)
+      }
+      typeQual match {
+        case Select(squal, name) => Some((squal, name, typeArgs, argLists))
+        case _ => None
+      }
+    }
+  }
+
   object SelectDynamic {
     def unapply(tree: Tree) = tree match {
       case Apply(Select(qual, TermName("selectDynamic")), List(lit@Literal(Constant(name: String))))
@@ -343,6 +373,7 @@ trait MacroUtils {
     val booleanGetterName = "is" + symbol.name.toString.capitalize
 
     def fail = throw new Exception(s"Could not find Java getter for property ${symbol.name} on $javaTpe")
+
     def findGetter(getterName: String) =
       symAlternatives(javaTpe.member(TermName(getterName))).find(isBeanGetter)
 

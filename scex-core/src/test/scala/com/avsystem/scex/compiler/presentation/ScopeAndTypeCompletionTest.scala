@@ -125,44 +125,6 @@ class ScopeAndTypeCompletionTest extends FunSuite with CompilationTest with Comp
       PartialMember("name", scexType[String])
     ))
   }
-
-  ignore("type completion test on dynamic string member") {
-    val completer = compiler.getCompleter[SimpleContext[SvRoot], Any](profile, template = false)
-
-    // this works fine
-
-    //at position 11 type should be int
-    val indx1 = "012345678901"
-    val expr1 = "1+sv.x.toInt"
-
-    val completion1 = completer.getTypeCompletion(expr1, 11)
-    assert(completion1.typedPrefixTree.attachments.tpe.erasure === classOf[Int])
-
-    // append something to expression and it'll fail
-
-    //at position 11 type should *still* be int
-    val indx2 = "0123456789012345678"
-    val expr2 = "1+sv.x.toInt.byteVa"
-
-    val completion2 = completer.getTypeCompletion(expr2, 11)
-    assert(completion2.typedPrefixTree.attachments.tpe.erasure === classOf[Int])
-
-    // To see the issue "type patterns"
-
-    /** Each position in expression is mapped to the first letter of type returned by the completer
-      */
-    def typePattern(expression: String, completer: ScexPresentationCompiler#Completer): String = {
-      (0 to expression.length).map(index => {
-        val tpe = completer.getTypeCompletion(expression, index).typedPrefixTree.attachments.tpe.erasure
-        Option(tpe).map(_.getSimpleName).getOrElse("#").head
-      }).mkString("")
-    }
-    assert(typePattern(expr1, completer) === "iiDDSSiiiiii#")
-    assert(typePattern(expr2, completer) === "iiDDSSiiiiiiiiiiiii#")    //But it is iiDDSSSSSSSS########
-
-    // Anyway this is OK
-    assert(typePattern("sv.x.toInt.byteVa", completer) === "DDSSiiiiiiiiiiiii#")
-  }
 }
 
 object ScopeAndTypeCompletionTest {

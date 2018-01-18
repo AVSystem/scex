@@ -61,6 +61,7 @@ class IGlobal(settings: Settings, reporter: Reporter, val classLoader: ClassLoad
 
     private def keepSecond(m: ScexTypeMember, sym: Symbol, implicitTree: Tree): Boolean = {
       val implicitlyAdded = implicitTree != EmptyTree
+
       def superclasses(symbol: Symbol): Set[Symbol] =
         if (symbol.isType) symbol.asType.toType.baseClasses match {
           case _ :: tail => tail.toSet
@@ -111,6 +112,15 @@ class IGlobal(settings: Settings, reporter: Reporter, val classLoader: ClassLoad
 
   case class TypeCompletionContext(context: Context, prefixTree: Tree, pre: Type, ownerTpe: Type)
 
+  object ErroneousSelectDynamic {
+    def unapply(tree: Tree): Option[(Tree, Name)] = tree match {
+      case Select(qual, name)
+        if tree.tpe == ErrorType && !(qual.tpe != null && qual.tpe != ErrorType && qual.tpe <:< dynamicTpe) =>
+        Some((qual, name))
+      case _ => None
+    }
+  }
+
   def typeCompletionContext(typedTree: Tree, pos: Position) = {
     val context = doLocateContext(pos)
     var tree = typedTree
@@ -133,13 +143,18 @@ class IGlobal(settings: Settings, reporter: Reporter, val classLoader: ClassLoad
 
     // manually help the compiler understand that the qualifier is a proper dynamic call
 
-    tree match {
-      case Select(qual, name) if tree.tpe == ErrorType && (qual.tpe != null && qual.tpe != ErrorType && qual.tpe <:< dynamicTpe) =>
+    def fixDynamicCalls(tree: Tree): Tree = tree match {
+      case ErroneousSelectDynamic(qual, name) =>
         val literalPos = tree.pos.withStart(tree.pos.end min (qual.pos.end + 1)).makeTransparent
         val literal = Literal(Constant(name.decoded)).setPos(literalPos)
-        tree = Apply(Select(qual, TermName("selectDynamic")).setPos(qual.pos), List(literal)).setPos(tree.pos)
-      case _ =>
+        val result = Apply(Select(qual, TermName("selectDynamic")).setPos(qual.pos), List(literal)).setPos(tree.pos)
+        analyzer.newTyper(context).typedQualifier(result)
+      case MemberCall(qual, name, targs, argss) if tree.tpe == ErrorType =>
+        analyzer.newTyper(context).typedQualifier(MemberCall(fixDynamicCalls(qual), name, targs, argss).setPos(tree.pos))
+      case _ => tree
     }
+
+    tree = fixDynamicCalls(tree)
 
     // possibly retype to catch up with changes made to the tree
 
