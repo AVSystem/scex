@@ -177,7 +177,7 @@ class TypeCompletionPrefixTest extends FunSuite with CompilationTest with Comple
     "api.dynStr.fuu + api.dynStr.lol.|",
     "api.dynStr.fuu + api.dynStr.lol.is|",
     "api.dynStr.fuu + api.dynStr.lol.i|s",
-    "api.dynStr.fuu + api.dynStr.lol.|is",
+    "api.dynStr.fuu + api.dynStr.lol.|is"
   )
 
   tests("select dynamic returning string selection", "api.dynStr.lol.isEmpty", scexType[Boolean])(
