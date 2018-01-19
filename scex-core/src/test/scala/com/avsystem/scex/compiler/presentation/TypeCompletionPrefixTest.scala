@@ -90,7 +90,7 @@ class TypeCompletionPrefixTest extends FunSuite with CompilationTest with Comple
 
   tests("literal")(
     "123|",
-    "1|23",
+    "1|23"
   )
 
   tests("plain identifier")(
@@ -102,7 +102,7 @@ class TypeCompletionPrefixTest extends FunSuite with CompilationTest with Comple
     "#|",
     "#lo|",
     "#lo|l",
-    "#|lol",
+    "#|lol"
   )
 
   test("space after selection")(
@@ -114,7 +114,7 @@ class TypeCompletionPrefixTest extends FunSuite with CompilationTest with Comple
     "api.aaa.substring(|",
     "api.aaa.substring(32|",
     "api.aaa.substring(32,|",
-    "api.aaa.substring(32, |",
+    "api.aaa.substring(32, |"
   )
 
   tests("plain selection", "api", scexType[Api])(
@@ -136,7 +136,7 @@ class TypeCompletionPrefixTest extends FunSuite with CompilationTest with Comple
   tests("incomplete selection", "api", scexType[Api])(
     "api.inc|",
     "api.i|nc",
-    "api.|inc",
+    "api.|inc"
   )
 
   tests("incomplete selection accidentally keyword", "api", scexType[Api])(
@@ -149,7 +149,7 @@ class TypeCompletionPrefixTest extends FunSuite with CompilationTest with Comple
   tests("forbidden selection", "api", scexType[Api])(
     "api.zuo|",
     "api.z|uo",
-    "api.|zuo",
+    "api.|zuo"
   )
 
   tests("plain select dynamic", "dyn", scexType[Dyn])(
