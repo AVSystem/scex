@@ -132,14 +132,21 @@ class IGlobal(settings: Settings, reporter: Reporter, val classLoader: ClassLoad
       tree = analyzer.newTyper(context).typedQualifier(tree)
     }
 
-    // now, drop incomplete selection
+    // now, drop selection being edited or assume empty tree when not editing a selection
+
+    def includes(tree: Tree, inner: Position): Boolean =
+      if (tree.pos.isDefined && !tree.pos.isTransparent)
+        tree.pos.start <= inner.pos.start && tree.pos.end >= inner.pos.end
+      else
+        tree.children.exists(includes(_, inner))
 
     tree match {
-      case Select(qual, name) if tree.tpe == ErrorType && !(qual.tpe != null && qual.tpe != ErrorType && qual.tpe <:< dynamicTpe) =>
-        tree = qual
-      case SelectDynamic(qual, "<error>") =>
+      case SyntacticIdent(_) | Literal(_) | VariableIdent(_) if includes(tree, pos) =>
+        tree = EmptyTree
+      case SyntacticSelect(qual, _) if includes(tree, pos) =>
         tree = qual
       case _ =>
+        tree = EmptyTree
     }
 
     // manually help the compiler understand that the qualifier is a proper dynamic call

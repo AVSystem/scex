@@ -114,6 +114,33 @@ trait MacroUtils {
     }
   }
 
+  object VariableIdent {
+    def unapply(tree: Tree): Option[String] = stripInferredTrees(tree) match {
+      case SelectDynamic(SyntacticIdent(TermName("_vars")), name) => Some(name)
+      case _ => None
+    }
+  }
+
+  object SyntacticSelect {
+    def unapply(tree: Tree): Option[(Tree, String)] = stripInferredTrees(tree) match {
+      case Select(qual, name) =>
+        Some((qual, name.decodedName.toString))
+      case SelectDynamic(qual, name) =>
+        Some((qual, name))
+      case _ => None
+    }
+  }
+
+  object SyntacticIdent {
+    def unapply(tree: Tree): Option[Name] = stripInferredTrees(tree) match {
+      case Ident(name) =>
+        Some(name)
+      case Select(qual, name) if qual.pos.start == qual.pos.end && qual.pos.start == tree.pos.start =>
+        Some(name)
+      case _ => None
+    }
+  }
+
   object SelectDynamic {
     def unapply(tree: Tree) = tree match {
       case Apply(Select(qual, TermName("selectDynamic")), List(lit@Literal(Constant(name: String))))
@@ -172,6 +199,16 @@ trait MacroUtils {
 
   def stripTypeApply(tree: Tree): Tree = tree match {
     case TypeApply(prefix, _) => stripTypeApply(prefix)
+    case _ => tree
+  }
+
+  def sameRange(pos1: Position, pos2: Position) =
+    pos1.start == pos2.start && pos1.end == pos2.end
+
+  def stripInferredTrees(tree: Tree): Tree = tree match {
+    case Select(qual, _) if sameRange(tree.pos, qual.pos) => stripInferredTrees(qual)
+    case Apply(fun, _) if sameRange(tree.pos, fun.pos) => stripInferredTrees(fun)
+    case TypeApply(fun, _) if sameRange(tree.pos, fun.pos) => stripInferredTrees(fun)
     case _ => tree
   }
 
@@ -352,8 +389,10 @@ trait MacroUtils {
   def isAdapterWrappedMember(symbol: Symbol): Boolean =
     if (symbol != null && symbol.isTerm) {
       val ts = symbol.asTerm
-      (ts.isGetter && ts.name == AdapterWrappedName && ts.owner.isType && isAdapter(ts.owner.asType.toType)
-        || ts.isVal && isAdapterWrappedMember(ts.getter))
+      if (ts.isGetter)
+        ts.name == AdapterWrappedName && ts.owner.isType && isAdapter(ts.owner.asType.toType)
+      else
+        ts.isVal && isAdapterWrappedMember(ts.getter)
     } else false
 
   def isRootAdapter(tpe: Type) =

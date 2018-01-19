@@ -69,7 +69,7 @@ class ScopeAndTypeCompletionTest extends FunSuite with CompilationTest with Comp
 
   test("simple type completion test") {
     val completer = compiler.getCompleter[SimpleContext[Unit], Any](profile, template = false)
-    val completion = completer.getTypeCompletion("\"\"", 1).passTo(c => c.copy(members = c.members.sortBy(_.name)))
+    val completion = completer.getTypeCompletion("\"\".", 2).passTo(c => c.copy(members = c.members.sortBy(_.name)))
 
     assert(completion.members.map(asPartial) === Vector(
       PartialMember("charAt", scexType[Char], List(List(Param("index", scexType[Int]))), doc = "doc of charAt"),
@@ -81,7 +81,7 @@ class ScopeAndTypeCompletionTest extends FunSuite with CompilationTest with Comp
 
   test("attribute annotations test") {
     val completer = compiler.getCompleter[SimpleContext[Root], Any](profile, template = false)
-    val completion = completer.getTypeCompletion("_root", 4).passTo(c => c.copy(members = c.members.sortBy(_.name)))
+    val completion = completer.getTypeCompletion("_root.", 5).passTo(c => c.copy(members = c.members.sortBy(_.name)))
 
     assert(completion.members.map(asPartial) === Vector(
       PartialMember("implicitMethod", scexType[Int], doc = "implicit method doc"),
@@ -118,7 +118,7 @@ class ScopeAndTypeCompletionTest extends FunSuite with CompilationTest with Comp
 
   test("type completion test with adapted getters") {
     val completer = compiler.getCompleter[SimpleContext[JavaRootWithGetter], Any](profile, template = false)
-    val completion = completer.getTypeCompletion("_root", 4).passTo(c => c.copy(members = c.members.sortBy(_.name)))
+    val completion = completer.getTypeCompletion("_root.", 5).passTo(c => c.copy(members = c.members.sortBy(_.name)))
 
     assert(completion.members.map(asPartial) === Vector(
       PartialMember("getName", scexType[String], List(Nil)),

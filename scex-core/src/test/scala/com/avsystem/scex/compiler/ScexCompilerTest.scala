@@ -257,7 +257,6 @@ class ScexCompilerTest extends FunSuite with CompilationTest {
         any ? (_: Any)
       }
     }
-    acl.foreach(println)
     val expr = "\"bippy\" ? \"fuu\""
     val cexpr = compiler.getCompiledExpression[SimpleContext[Unit], String](
       createProfile(acl, header = "import com.avsystem.scex.compiler.TestExtensions._"), expr, template = false)

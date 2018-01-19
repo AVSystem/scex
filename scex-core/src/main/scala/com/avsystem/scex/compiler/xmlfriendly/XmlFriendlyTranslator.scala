@@ -6,13 +6,17 @@ import com.avsystem.scex.parsing.{PString, PositionTrackingParsers}
 import com.avsystem.scex.util.CommonUtils._
 
 /**
- * Parser that translates XML-friendly expressions into correct scala code.
- * Implemented using Scala parser combinators (recursive descent parser).
- *
- * Created: 17-09-2013
- * Author: ghik
- */
+  * Parser that translates XML-friendly expressions into correct scala code.
+  * Implemented using Scala parser combinators (recursive descent parser).
+  *
+  * Created: 17-09-2013
+  * Author: ghik
+  */
 object XmlFriendlyTranslator extends PositionTrackingParsers {
+  val AllowedKeywords = Set(
+    "case", "else", "false", "if", "match", "new", "null", "true"
+  )
+
   val xmlFriendlyOperators = Map(
     "lt" -> "< ",
     "gt" -> "> ",
@@ -22,8 +26,11 @@ object XmlFriendlyTranslator extends PositionTrackingParsers {
     "or" -> "||"
   ).withDefault(identity)
 
-  def xmlFriendly(pstr: PString) =
-    pstr.withResult(xmlFriendlyOperators(pstr.result))
+  def escapeIdent(pstr: PString) =
+    if (!AllowedKeywords.contains(pstr.result) && ScalaKeywords.contains(pstr.result))
+      "`" ~+ pstr + "`"
+    else
+      pstr.withResult(xmlFriendlyOperators(pstr.result))
 
   def translate(expr: String, template: Boolean = false) =
     parse(if (template) templateParser else expressionParser, expr).getOrElse(PString(expr, 0, expr.length, Vector.empty))
@@ -47,7 +54,7 @@ object XmlFriendlyTranslator extends PositionTrackingParsers {
     rep(ident | btident | variable | stringlit | number | block | delim | operator | bracket | whitespace) ^^ join
 
   def ident: Parser[PString] =
-    "[A-Za-z_][A-Za-z_0-9]*".rp ^^ xmlFriendly
+    "[A-Za-z_][A-Za-z_0-9]*".rp ^^ escapeIdent
 
   def btident: Parser[PString] =
     "`[^`]*`?".rp
@@ -73,11 +80,7 @@ object XmlFriendlyTranslator extends PositionTrackingParsers {
 
   def delim = "[,;.]".rp
 
-  def identOrKeyword = ident ^^ { id =>
-    if (ScalaKeywords.contains(id.result)) "`" ~+ id + "`" else id
-  }
-
-  def variable = "#".p ~> (identOrKeyword | btident) ^^ { id =>
+  def variable = "#".p ~> (ident | btident) ^^ { id =>
     (" " + CodeGeneration.VariablesSymbol + ".") ~+ id
   }
 

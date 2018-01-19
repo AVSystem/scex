@@ -17,6 +17,7 @@ import com.vaadin.ui.{Label, TextField, Window}
 import org.eclipse.jetty.server.Server
 import org.eclipse.jetty.server.session.SessionHandler
 import org.eclipse.jetty.servlet.{ServletContextHandler, ServletHolder}
+
 import scala.reflect.runtime.universe.typeOf
 
 object CompletionPlayground {
@@ -39,7 +40,17 @@ object CompletionPlayground {
       val acl = {
         import com.avsystem.scex.validation.SymbolValidator._
         basicOperations ++ allow {
-          Dyn.selectDynamic _
+          on { dyn: Dyn =>
+            dyn.all.members
+          }
+
+          on { inter: Intermediate =>
+            inter.all.members
+          }
+
+          on { interDyn: InterDyn =>
+            interDyn.all.members
+          }
 
           on { jl: JavaLol =>
             jl.all.members
@@ -82,7 +93,7 @@ object CompletionPlayground {
         s"${member.name}${member.params.map(_.map(p => s"${p.name}: ${p.tpe}-${p.tpe.erasure}").mkString("(", ", ", ")")).mkString}: " +
           s"${member.returnType}-${member.returnType.erasure} - ${member.documentation}"
 
-      val completer = compiler.getCompleter[SimpleContext[JavaRoot], String](profile, variableTypes =
+      val completer = compiler.getCompleter[SimpleContext[Root], String](profile, variableTypes =
         Map("someInt" -> typeOf[Int], "intList" -> typeOf[List[Int]]))
       val scopeMembers = completer.getScopeCompletion.members.filterNot(_.flags.iimplicit).map(memberRepr).mkString("\n")
 
@@ -94,13 +105,14 @@ object CompletionPlayground {
 
       textField.addListener(new TextChangeListener {
         def textChange(event: TextChangeEvent): Unit = {
-          val completion = completer.getTypeCompletion(event.getText + "}}}", event.getCursorPosition - 1)
+          val pos = event.getCursorPosition - 1
+          val completion = completer.getTypeCompletion(event.getText + "}}}", pos)
           val errors = completer.getErrors(event.getText).mkString("\n")
           val members = completion.members.filterNot(_.flags.iimplicit).map(memberRepr).mkString("\n")
           val parsedTree = completer.parse(event.getText)
           val typedPrefix = completion.typedPrefixTree
           val parsedPrefix = parsedTree.locate(typedPrefix.attachments.position)
-          label.setValue(s"PARSED:\n${parsedTree.pretty(true, true)}\nERRORS:\n$errors\nPPREFIX:\n${parsedPrefix.pretty(true, true)}\n" +
+          label.setValue(s"POSITION: $pos\nPARSED:\n${parsedTree.pretty(true, true)}\nERRORS:\n$errors\nPPREFIX:\n${parsedPrefix.pretty(true, true)}\n" +
             s"TPREFIX:\n${typedPrefix.pretty(true, true)}\nCOMPLETION:\n$members\nSCOPE COMPLETION:\n$scopeMembers")
         }
       })
