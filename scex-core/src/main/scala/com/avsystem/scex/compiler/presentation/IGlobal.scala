@@ -22,11 +22,8 @@ class IGlobal(settings: Settings, reporter: Reporter, val classLoader: ClassLoad
 
   abstract class ScexMember extends Member {
     def prefix: Type
-
     def ownerTpe: Type = prefix
-
     def implicitTree: Tree
-
     def implicitType: Type
 
     override def implicitlyAdded = implicitTree != EmptyTree
@@ -44,11 +41,10 @@ class IGlobal(settings: Settings, reporter: Reporter, val classLoader: ClassLoad
     sym: Symbol,
     tpe: Type,
     accessible: Boolean,
-    viaImport: Tree) extends ScexMember {
+    viaImport: Tree
+  ) extends ScexMember {
     def prefix = viaImport.tpe
-
     def implicitTree = EmptyTree
-
     def implicitType = NoType
   }
 
