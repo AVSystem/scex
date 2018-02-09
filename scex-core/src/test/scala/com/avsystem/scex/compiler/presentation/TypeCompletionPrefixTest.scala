@@ -199,6 +199,13 @@ class TypeCompletionPrefixTest extends FunSuite with CompilationTest with Comple
     "api.dynStr.fuu + api.dynStr.lol.isEm|pty."
   )
 
+  tests("argument-positioned double select dynamic subselection", "api.dyn.fuu.dynStr", scexType[String])(
+    "api.dynStr.fuu + api.dyn.fuu.dynStr.|",
+    "api.dynStr.fuu + api.dyn.fuu.dynStr.i|s",
+    "api.dynStr.fuu + api.dyn.fuu.dynStr.is|",
+    "api.dynStr.fuu + api.dyn.fuu.dynStr.|is"
+  )
+
   tests("select dynamic forbidden selection", "dyn.whatevs", scexType[Api])(
     "dyn.whatevs.zuo|",
     "dyn.whatevs.z|uo",
