@@ -164,8 +164,7 @@ class IGlobal(settings: Settings, reporter: Reporter, val classLoader: ClassLoad
 
         preFixed match {
           case ErroneousSelectDynamic(newQual, literal) =>
-            val result = Apply(Select(newQual, TermName("selectDynamic")).setPos(newQual.pos), List(literal)).setPos(tree.pos)
-            analyzer.newTyper(context).typedQualifier(result)
+            retypeQual(Apply(Select(newQual, TermName("selectDynamic")).setPos(newQual.pos), List(literal)).setPos(tree.pos))
           case _ =>
             preFixed
         }
