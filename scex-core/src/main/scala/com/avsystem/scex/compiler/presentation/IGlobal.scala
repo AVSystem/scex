@@ -109,10 +109,12 @@ class IGlobal(settings: Settings, reporter: Reporter, val classLoader: ClassLoad
   case class TypeCompletionContext(context: Context, prefixTree: Tree, pre: Type, ownerTpe: Type)
 
   object ErroneousSelectDynamic {
-    def unapply(tree: Tree): Option[(Tree, Name)] = tree match {
+    def unapply(tree: Tree): Option[(Tree, Literal)] = tree match {
       case Select(qual, name)
-        if tree.tpe == ErrorType && qual.tpe != null && qual.tpe != ErrorType && qual.tpe <:< dynamicTpe =>
-        Some((qual, name))
+        if (tree.tpe == ErrorType || tree.tpe == null) && qual.tpe != null && qual.tpe != ErrorType && qual.tpe <:< dynamicTpe =>
+        val literalPos = tree.pos.withStart(tree.pos.end min (qual.pos.end + 1)).makeTransparent
+        val literal = Literal(Constant(name.decoded)).setPos(literalPos)
+        Some((qual, literal))
       case _ =>
         None
     }
@@ -147,19 +149,25 @@ class IGlobal(settings: Settings, reporter: Reporter, val classLoader: ClassLoad
 
     // manually help the compiler understand that the qualifier is a proper dynamic call
 
+    def retypeQual(tree: Tree) =
+      analyzer.newTyper(context).typedQualifier(tree)
+
     def fixDynamicCalls(tree: Tree): Tree = tree match {
-      case ErroneousSelectDynamic(qual, name) =>
-        val literalPos = tree.pos.withStart(tree.pos.end min (qual.pos.end + 1)).makeTransparent
-        val literal = Literal(Constant(name.decoded)).setPos(literalPos)
-        val result = Apply(Select(qual, TermName("selectDynamic")).setPos(qual.pos), List(literal)).setPos(tree.pos)
-        analyzer.newTyper(context).typedQualifier(result)
-      case Select(qual, name) if tree.tpe == ErrorType =>
-        if (qual.tpe == null) {
-          val typedQual = analyzer.newTyper(context).typedQualifier(qual)
-          fixDynamicCalls(treeCopy.Select(tree, typedQual, name))
-        } else {
-          val fixedSelect = treeCopy.Select(tree, fixDynamicCalls(qual), name)
-          analyzer.newTyper(context).typedQualifier(fixedSelect)
+      case Select(qual, name) if qual.tpe == null =>
+        fixDynamicCalls(retypeQual(Select(retypeQual(qual), name).setPos(tree.pos)))
+
+      case Select(qual, name) if tree.tpe == null || tree.tpe == ErrorType =>
+        val preFixed =
+          if (qual.tpe == ErrorType)
+            retypeQual(Select(fixDynamicCalls(qual), name).setPos(tree.pos))
+          else tree
+
+        preFixed match {
+          case ErroneousSelectDynamic(newQual, literal) =>
+            val result = Apply(Select(newQual, TermName("selectDynamic")).setPos(newQual.pos), List(literal)).setPos(tree.pos)
+            analyzer.newTyper(context).typedQualifier(result)
+          case _ =>
+            preFixed
         }
       case _ => tree
     }

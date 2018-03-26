@@ -192,6 +192,28 @@ class TypeCompletionPrefixTest extends FunSuite with CompilationTest with Comple
     "api.dynStr.lol.isEm|pty."
   )
 
+  tests("select dynamic sub-subselection", "dyn.abc.aaa", scexType[String])(
+    "dyn.abc.aaa.|",
+    "dyn.abc.aaa.i|",
+    "dyn.abc.aaa.i|s",
+    "dyn.abc.aaa.|is",
+    "dyn.abc.aaa.is|"
+  )
+
+  tests("double select dynamic", "api.dyn.fuu.dynStr", scexType[DynStr])(
+    "api.dyn.fuu.dynStr.|",
+    "api.dyn.fuu.dynStr.i|s",
+    "api.dyn.fuu.dynStr.is|",
+    "api.dyn.fuu.dynStr.|is"
+  )
+
+  tests("double select dynamic subselection", "api.dyn.fuu.dynStr.krap", scexType[String])(
+    "api.dyn.fuu.dynStr.krap.|",
+    "api.dyn.fuu.dynStr.krap.i|s",
+    "api.dyn.fuu.dynStr.krap.is|",
+    "api.dyn.fuu.dynStr.krap.|is"
+  )
+
   tests("argument-positioned select dynamic complete subselection", "api.dynStr.lol", scexType[String])(
     "api.dynStr.fuu + api.dynStr.lol.isEmpty|",
     "api.dynStr.fuu + api.dynStr.lol.isEmpt|y",
@@ -199,11 +221,18 @@ class TypeCompletionPrefixTest extends FunSuite with CompilationTest with Comple
     "api.dynStr.fuu + api.dynStr.lol.isEm|pty."
   )
 
-  tests("argument-positioned double select dynamic subselection", "api.dyn.fuu.dynStr", scexType[String])(
+  tests("argument-positioned double select dynamic", "api.dyn.fuu.dynStr", scexType[DynStr])(
     "api.dynStr.fuu + api.dyn.fuu.dynStr.|",
     "api.dynStr.fuu + api.dyn.fuu.dynStr.i|s",
     "api.dynStr.fuu + api.dyn.fuu.dynStr.is|",
     "api.dynStr.fuu + api.dyn.fuu.dynStr.|is"
+  )
+
+  tests("argument-positioned double select dynamic subselection", "api.dyn.fuu.dynStr.krap", scexType[String])(
+    "api.dynStr.fuu + api.dyn.fuu.dynStr.krap.|",
+    "api.dynStr.fuu + api.dyn.fuu.dynStr.krap.i|s",
+    "api.dynStr.fuu + api.dyn.fuu.dynStr.krap.is|",
+    "api.dynStr.fuu + api.dyn.fuu.dynStr.krap.|is"
   )
 
   tests("select dynamic forbidden selection", "dyn.whatevs", scexType[Api])(
@@ -259,6 +288,8 @@ object TypeCompletionPrefixTest {
     def iii: String
 
     def zle: Int
+
+    def dyn: Dyn
   }
 
   import scala.language.dynamics
