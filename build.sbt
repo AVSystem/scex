@@ -35,7 +35,7 @@ sonatypeProfileName := "com.avsystem"
 
 lazy val subprojectSettings = Seq(
   scalaVersion := "2.12.4",
-  crossScalaVersions := Seq("2.11.12", "2.12.4"),
+  crossScalaVersions := Seq("2.11.12", "2.12.5"),
   scalacOptions ++= Seq(
     "-feature",
     "-deprecation",
