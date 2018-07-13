@@ -2,13 +2,12 @@ package com.avsystem.scex
 package japi
 
 import java.lang.reflect.Type
-import java.{lang => jl, util => ju}
+import java.{util => ju}
 
 import com.avsystem.scex.compiler.JavaTypeParsing._
 import com.avsystem.scex.compiler.presentation.ScexPresentationCompiler
 import com.avsystem.scex.compiler.{ExpressionDef, ScexCompiler}
 import com.avsystem.scex.util.Fluent
-import com.avsystem.scex.{Type => SType}
 import com.google.common.cache.CacheBuilder
 import com.google.common.reflect.TypeToken
 

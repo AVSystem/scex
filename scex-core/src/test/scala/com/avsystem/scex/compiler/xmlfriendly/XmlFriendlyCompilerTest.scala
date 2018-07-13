@@ -1,13 +1,12 @@
 package com.avsystem.scex
 package compiler.xmlfriendly
 
+import com.avsystem.commons.misc.TypeString
 import com.avsystem.scex.compiler.ScexCompiler.{CompilationFailedException, CompileError}
-import com.avsystem.scex.compiler.{CompilationTest, ClassTaggedContext, ScexSettings}
-import com.avsystem.scex.japi.{DefaultJavaScexCompiler, XmlFriendlyJavaScexCompiler}
-import com.avsystem.scex.presentation.SymbolAttributes
+import com.avsystem.scex.compiler.{ClassTaggedContext, CompilationTest, ScexSettings}
+import com.avsystem.scex.japi.XmlFriendlyJavaScexCompiler
 import com.avsystem.scex.util.{PredefinedAccessSpecs, SimpleContext}
 import com.avsystem.scex.validation.SymbolValidator._
-import com.avsystem.scex.validation.{SymbolValidator, SyntaxValidator}
 import org.scalatest.FunSuite
 
 import scala.reflect.{ClassTag, classTag}
@@ -52,20 +51,16 @@ class XmlFriendlyCompilerTest extends FunSuite with CompilationTest {
   }
 
   test("typed dynamic variables test") {
-    import scala.reflect.runtime.universe.typeOf
-
     val acl = PredefinedAccessSpecs.basicOperations
     val expr = "#someDouble.toDegrees"
     val context = SimpleContext(())
     context.setTypedVariable("someDouble", math.Pi)
     val cexpr = compiler.getCompiledExpression[SimpleContext[Unit], Double](createProfile(acl), expr, template = false,
-      variableTypes = Map("someDouble" -> typeOf[Double]))
+      variableTypes = Map("someDouble" -> TypeString[Double]))
     assert(180.0 === cexpr(context))
   }
 
   test("tagged typed variables test") {
-    import scala.reflect.runtime.universe.typeOf
-
     val acl = PredefinedAccessSpecs.basicOperations ++ allow {
       ClassTag.Double
     }
@@ -73,18 +68,16 @@ class XmlFriendlyCompilerTest extends FunSuite with CompilationTest {
     val context = new ClassTaggedContext
     context.setTypedVariable("someDouble", math.Pi)(classTag[Double])
     val cexpr = compiler.getCompiledExpression[ClassTaggedContext, Double](createProfile(acl), expr, template = false,
-      variableTypes = Map("someDouble" -> typeOf[Double]))
+      variableTypes = Map("someDouble" -> TypeString[Double]))
     assert(180.0 === cexpr(context))
   }
 
   test("forbidden tag for typed variables test") {
-    import scala.reflect.runtime.universe.typeOf
-
     val acl = PredefinedAccessSpecs.basicOperations
     val expr = "#someDouble.toDegrees"
     assertMemberAccessForbidden {
       compiler.getCompiledExpression[ClassTaggedContext, Double](createProfile(acl), expr, template = false,
-        variableTypes = Map("someDouble" -> typeOf[Double]))
+        variableTypes = Map("someDouble" -> TypeString[Double]))
     }
   }
 

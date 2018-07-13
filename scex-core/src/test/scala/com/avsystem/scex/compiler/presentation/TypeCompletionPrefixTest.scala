@@ -1,5 +1,6 @@
 package com.avsystem.scex.compiler.presentation
 
+import com.avsystem.commons.misc.TypeString
 import com.avsystem.scex.Type
 import com.avsystem.scex.compiler.CompilationTest
 import com.avsystem.scex.compiler.presentation.TypeCompletionPrefixTest._
@@ -7,8 +8,6 @@ import com.avsystem.scex.compiler.presentation.ast.EmptyTree
 import com.avsystem.scex.util.SimpleContext
 import org.scalactic.source.Position
 import org.scalatest.FunSuite
-
-import scala.reflect.runtime.universe.typeOf
 
 /**
   * Created: 07-10-2014
@@ -46,7 +45,7 @@ class TypeCompletionPrefixTest extends FunSuite with CompilationTest with Comple
 
   private def createCompleter(acl: List[MemberAccessSpec]) =
     compiler.getCompleter[SimpleContext[Root], Any](createProfile(acl), template = false, header = header,
-      variableTypes = Map("someInt" -> typeOf[Int]))
+      variableTypes = Map("someInt" -> TypeString[Int]))
 
   private def assertPrefix(exprWithCaret: String, expectedPrefix: String, expectedType: Type): Unit = {
     val completer = createCompleter(acl)

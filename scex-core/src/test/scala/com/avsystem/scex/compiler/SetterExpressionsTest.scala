@@ -2,12 +2,11 @@ package com.avsystem.scex
 package compiler
 
 import com.avsystem.commons.jiop.JavaInterop._
+import com.avsystem.commons.misc.{JavaClassName, TypeString}
 import com.avsystem.scex.compiler.TemplateInterpolations.Splicer
 import com.avsystem.scex.util.{PredefinedAccessSpecs, SimpleContext}
 import com.github.ghik.silencer.silent
 import org.scalatest.FunSuite
-
-import scala.reflect.runtime.universe.TypeTag
 
 class SetterTarget {
   var costam = 0
@@ -42,7 +41,7 @@ class SetterExpressionsTest extends FunSuite with CompilationTest {
 
   import com.avsystem.scex.validation.SymbolValidator._
 
-  def applySetter[R: TypeTag, T: TypeTag](
+  def applySetter[R: JavaClassName: TypeString, T: TypeString](
     expr: String, root: R, value: T,
     acl: List[MemberAccessSpec] = PredefinedAccessSpecs.basicOperations,
     header: String = "",
@@ -146,10 +145,9 @@ class SetterExpressionsTest extends FunSuite with CompilationTest {
   }
 
   test("typed dynamic variable setter test") {
-    import scala.reflect.runtime.universe.typeOf
 
     val setterExpression = compiler.getCompiledSetterExpression[SimpleContext[Unit], Int](
-      createProfile(Nil), "_vars.lol", template = false, variableTypes = Map("lol" -> typeOf[Int]))
+      createProfile(Nil), "_vars.lol", template = false, variableTypes = Map("lol" -> TypeString[Int]))
 
     val context = SimpleContext(())
     setterExpression.apply(context).apply(42)

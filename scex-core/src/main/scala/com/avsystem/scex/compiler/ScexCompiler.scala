@@ -2,8 +2,8 @@ package com.avsystem.scex
 package compiler
 
 import java.util.concurrent.locks.ReentrantLock
-import java.{lang => jl, util => ju}
 
+import com.avsystem.commons.misc.TypeString
 import com.avsystem.scex.compiler.CodeGeneration._
 import com.avsystem.scex.compiler.ScexCompiler._
 import com.avsystem.scex.parsing.{EmptyPositionMapping, PositionMapping}
@@ -16,7 +16,6 @@ import scala.collection.mutable.ListBuffer
 import scala.reflect.NameTransformer
 import scala.reflect.internal.util._
 import scala.reflect.io.{AbstractFile, VirtualDirectory}
-import scala.reflect.runtime.{universe => ru}
 import scala.tools.nsc.plugins.Plugin
 import scala.tools.nsc.reporters.AbstractReporter
 import scala.tools.nsc.{Global, Settings}
@@ -187,7 +186,7 @@ trait ScexCompiler extends LoggingUtils {
   }
 
   protected def compileExpressionUtils(utils: NamedSource): Try[Option[String]] =
-    if(utils.code.isEmpty) Success(None) else underLock {
+    if (utils.code.isEmpty) Success(None) else underLock {
       val pkgName = UtilsPkgPrefix + NameTransformer.encode(utils.name)
       val codeToCompile = wrapInSource(generateExpressionUtils(utils.code), pkgName)
       val sourceFile = new ScexSourceFile(pkgName, codeToCompile, shared = true)
@@ -309,61 +308,52 @@ trait ScexCompiler extends LoggingUtils {
   def getCompiledExpression[C <: ExpressionContext[_, _], T](
     profile: ExpressionProfile,
     expression: String,
-    variableTypes: Map[String, ru.Type] = Map.empty,
+    variableTypes: Map[String, TypeString[_]] = Map.empty,
     template: Boolean = true,
-    header: String = "")(implicit
-    ctt: ru.TypeTag[C],
-    ttt: ru.TypeTag[T]): Expression[C, T] = {
+    header: String = ""
+  )(implicit
+    cti: ContextTypeInfo[C],
+    tts: TypeString[T]
+  ): Expression[C, T] = {
 
     require(profile != null, "Profile cannot be null")
     require(expression != null, "Expression cannot be null")
     require(header != null, "Header cannot be null")
 
-    import scala.reflect.runtime.universe._
-
-    val mirror = typeTag[C].mirror
-    val contextType = typeOf[C]
-    val TypeRef(_, _, List(rootObjectType, _)) = contextType.baseType(typeOf[ExpressionContext[_, _]].typeSymbol)
-    val rootObjectClass =
-      try mirror.runtimeClass(rootObjectType) catch {
-        case _: ClassNotFoundException => null
-      }
-    val strVariableTypes = variableTypes.iterator.map({ case (k, v) => (k, v.toString) }).toMap
+    val strVariableTypes = variableTypes.iterator.map({ case (k, v) => (k, v.value) }).toMap
+    val rootObjectClass = try cti.resolveRootClass() catch {
+      case _: ClassNotFoundException => null
+    }
 
     val (actualExpression, positionMapping) = preprocess(expression, template)
     getCompiledExpression(ExpressionDef(profile, template, setter = false, actualExpression,
-      header, contextType.toString, typeOf[T].toString, strVariableTypes)(expression, positionMapping, rootObjectClass))
+      header, cti.fullTypeString, tts.value, strVariableTypes)(expression, positionMapping, rootObjectClass))
   }
 
   def getCompiledSetterExpression[C <: ExpressionContext[_, _], T](
     profile: ExpressionProfile,
     expression: String,
     template: Boolean = true,
-    variableTypes: Map[String, ru.Type] = Map.empty,
-    header: String = "")(implicit
-    ctt: ru.TypeTag[C],
-    ttt: ru.TypeTag[T]): Expression[C, Setter[T]] = {
+    variableTypes: Map[String, TypeString[_]] = Map.empty,
+    header: String = ""
+  )(implicit
+    cti: ContextTypeInfo[C],
+    tts: TypeString[T]
+  ): Expression[C, Setter[T]] = {
 
     require(profile != null, "Profile cannot be null")
     require(expression != null, "Expression cannot be null")
     require(header != null, "Header cannot be null")
 
-    import scala.reflect.runtime.universe._
-
-    val mirror = typeTag[C].mirror
-    val contextType = typeOf[C]
-    val TypeRef(_, _, List(rootObjectType, _)) = contextType.baseType(typeOf[ExpressionContext[_, _]].typeSymbol)
-    val rootObjectClass =
-      try mirror.runtimeClass(rootObjectType) catch {
-        case _: ClassNotFoundException => null
-      }
-    val strVariableTypes = variableTypes.iterator.map({ case (k, v) => (k, v.toString) }).toMap
+    val strVariableTypes = variableTypes.iterator.map({ case (k, v) => (k, v.value) }).toMap
+    val rootObjectClass = try cti.resolveRootClass() catch {
+      case _: ClassNotFoundException => null
+    }
 
     val (actualExpression, positionMapping) = preprocess(expression, template)
     getCompiledExpression(ExpressionDef(profile, template, setter = true, actualExpression,
-      header, contextType.toString, typeOf[T].toString, strVariableTypes)(expression, positionMapping, rootObjectClass))
+      header, cti.fullTypeString, tts.value, strVariableTypes)(expression, positionMapping, rootObjectClass))
   }
-
 
   @throws[CompilationFailedException]
   def compileSyntaxValidator(source: NamedSource): SyntaxValidator = underLock {

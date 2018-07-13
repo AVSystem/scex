@@ -1,8 +1,6 @@
 package vaadin
 
-import java.{lang => jl, util => ju}
-import javax.servlet.http.HttpServletRequest
-
+import com.avsystem.commons.misc.TypeString
 import com.avsystem.scex.compiler.ScexSettings
 import com.avsystem.scex.compiler.presentation.ScexPresentationCompiler.Member
 import com.avsystem.scex.japi.XmlFriendlyJavaScexCompiler
@@ -14,11 +12,10 @@ import com.avsystem.scex.{ExpressionProfile, NamedSource}
 import com.vaadin.event.FieldEvents.{TextChangeEvent, TextChangeListener}
 import com.vaadin.terminal.gwt.server.AbstractApplicationServlet
 import com.vaadin.ui.{Label, TextField, Window}
+import javax.servlet.http.HttpServletRequest
 import org.eclipse.jetty.server.Server
 import org.eclipse.jetty.server.session.SessionHandler
 import org.eclipse.jetty.servlet.{ServletContextHandler, ServletHolder}
-
-import scala.reflect.runtime.universe.typeOf
 
 object CompletionPlayground {
 
@@ -94,7 +91,7 @@ object CompletionPlayground {
           s"${member.returnType}-${member.returnType.erasure} - ${member.documentation}"
 
       val completer = compiler.getCompleter[SimpleContext[Root], String](profile, variableTypes =
-        Map("someInt" -> typeOf[Int], "intList" -> typeOf[List[Int]]))
+        Map("someInt" -> TypeString[Int], "intList" -> TypeString[List[Int]]))
       val scopeMembers = completer.getScopeCompletion.members.filterNot(_.flags.iimplicit).map(memberRepr).mkString("\n")
 
       val textField = new TextField

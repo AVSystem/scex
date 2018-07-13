@@ -84,12 +84,12 @@ trait MacroUtils {
     }
   }
 
-  object MultiApply {
+  object ScexMultiApply {
     def apply(qual: Tree, valueArgLists: List[List[Tree]]): Tree =
       valueArgLists.foldLeft(qual)(Apply(_, _))
 
     def unapply(tree: Tree): Option[(Tree, List[List[Tree]])] = tree match {
-      case Apply(MultiApply(qual, argLists), args) => Some((qual, argLists :+ args))
+      case Apply(ScexMultiApply(qual, argLists), args) => Some((qual, argLists :+ args))
       case _ => Some((tree, Nil))
     }
   }
@@ -102,7 +102,7 @@ trait MacroUtils {
     }
 
     def unapply(tree: Tree): Option[(Tree, Name, List[Tree], List[List[Tree]])] = {
-      val MultiApply(qual, argLists) = tree
+      val ScexMultiApply(qual, argLists) = tree
       val (typeQual, typeArgs) = qual match {
         case TypeApply(tq, ta) => (tq, ta)
         case _ => (qual, Nil)

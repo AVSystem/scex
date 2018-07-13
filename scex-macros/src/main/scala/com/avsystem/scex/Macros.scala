@@ -19,6 +19,7 @@ class Macros(val ctx: blackbox.Context) extends AbstractMacroCommons(ctx) with M
   lazy val ScexLiteralTpe = getType(tq"$ScexPkg.util.Literal")
   lazy val ScexLiteralObj = ScexLiteralTpe.typeSymbol.companion
   lazy val TemplateInterpolationsObj = q"$ScexPkg.compiler.TemplateInterpolations"
+  lazy val ExpressionContextCls = getType(tq"$ScexPkg.ExpressionContext[_,_]").typeSymbol
 
   def templateInterpolation_impl[T: c.WeakTypeTag, A](args: c.Expr[A]*): c.Tree = {
     val Apply(_, List(Apply(_, parts))) = c.prefix.tree
@@ -123,8 +124,11 @@ class Macros(val ctx: blackbox.Context) extends AbstractMacroCommons(ctx) with M
   def materializeTypeToken[T: c.WeakTypeTag]: c.Tree =
     q"new _root_.com.google.common.reflect.TypeToken[${weakTypeOf[T]}] {}"
 
-  import scala.reflect.runtime.{universe => ru}
-
-  def materializeTypeRepr[T: c.WeakTypeTag](tt: c.Expr[ru.TypeTag[T]]): c.Tree =
-    q"$ScexPkg.TypeRepr(${showCode(TypeTree(weakTypeOf[T]))})"
+  def mkContextTypeInfo[C: c.WeakTypeTag]: c.Tree = {
+    val contextTpe = weakTypeOf[C]
+    val rootTpe = contextTpe.baseType(ExpressionContextCls).typeArgs.head
+    val fullTypeRepr = q"$CommonsPkg.misc.TypeString.of[$contextTpe]"
+    val rootClassName = q"$CommonsPkg.misc.JavaClassName.of[$rootTpe]"
+    q"$ScexPkg.compiler.ContextTypeInfo($fullTypeRepr, $rootClassName)"
+  }
 }

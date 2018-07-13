@@ -3,6 +3,7 @@ package compiler.presentation
 
 import java.{lang => jl, util => ju}
 
+import com.avsystem.commons.misc.TypeString
 import com.avsystem.scex.compiler.CodeGeneration._
 import com.avsystem.scex.compiler.ScexCompiler.{CompilationFailedException, CompileError}
 import com.avsystem.scex.compiler.presentation.ScexPresentationCompiler.{Completion, MemberFlags, Param, Member => SMember}
@@ -16,7 +17,6 @@ import com.avsystem.scex.{Type => SType}
 
 import scala.collection.JavaConverters._
 import scala.reflect.NameTransformer
-import scala.reflect.runtime.{universe => ru}
 
 trait ScexPresentationCompiler extends ScexCompiler { compiler =>
 
@@ -97,25 +97,19 @@ trait ScexPresentationCompiler extends ScexCompiler { compiler =>
     profile: ExpressionProfile,
     template: Boolean = true,
     setter: Boolean = false,
-    variableTypes: Map[String, ru.Type] = Map.empty,
-    header: String = "")(implicit
-    ctt: ru.TypeTag[C],
-    ttt: ru.TypeTag[T]): Completer = {
+    variableTypes: Map[String, TypeString[_]] = Map.empty,
+    header: String = ""
+  )(implicit
+    cti: ContextTypeInfo[C],
+    tts: TypeString[T]
+  ): Completer = {
 
-    import scala.reflect.runtime.universe._
+    val strVariableTypes = variableTypes.iterator.map({ case (k, v) => (k, v.value) }).toMap
+    val rootObjectClass = try cti.resolveRootClass() catch {
+      case _: ClassNotFoundException => null
+    }
 
-    val mirror = typeTag[C].mirror
-    val contextType = typeOf[C]
-    val resultType = typeOf[T]
-    val TypeRef(_, _, List(rootObjectType, _)) = contextType.baseType(typeOf[ExpressionContext[_, _]].typeSymbol)
-    val rootObjectClass =
-      try mirror.runtimeClass(rootObjectType) catch {
-        case _: ClassNotFoundException => null
-      }
-    val strVariableTypes = variableTypes.iterator.map({ case (k, v) => (k, v.toString) }).toMap
-
-    getCompleter(profile, template, setter, header, contextType.toString,
-      rootObjectClass, resultType.toString, strVariableTypes)
+    getCompleter(profile, template, setter, header, cti.fullTypeString, rootObjectClass, tts.value, strVariableTypes)
   }
 
   protected def getCompleter(
@@ -332,6 +326,7 @@ trait ScexPresentationCompiler extends ScexCompiler { compiler =>
         }
         if (tree.pos.isRange) {
           def positions = (tree :: tree.children).iterator.map(_.pos).filter(_.isRange)
+
           val start = positions.map(_.start).min
           val end = positions.map(_.end).max
           val transparent = tree.pos.isTransparent
@@ -387,6 +382,7 @@ trait ScexPresentationCompiler extends ScexCompiler { compiler =>
             val typeMembers = global.typeMembers(completionCtx)
 
             val fakeDirectPrefix = fakeIdent(completionCtx.ownerTpe, tree.symbol)
+
             def fakeSelect(member: ScexTypeMember) = {
               val fakePrefix =
                 if (!member.implicitlyAdded) fakeDirectPrefix

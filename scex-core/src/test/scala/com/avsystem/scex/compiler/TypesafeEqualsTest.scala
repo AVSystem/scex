@@ -1,23 +1,22 @@
 package com.avsystem.scex
 package compiler
 
+import com.avsystem.commons.misc.TypeString
 import com.avsystem.scex.compiler.ScexCompiler.CompilationFailedException
 import com.avsystem.scex.presentation.SymbolAttributes
 import com.avsystem.scex.util.{PredefinedAccessSpecs, SimpleContext}
 import com.avsystem.scex.validation.{SymbolValidator, SyntaxValidator}
 import org.scalatest.FunSuite
 
-import scala.reflect.runtime.universe.TypeTag
-
 /**
- * Created: 20-11-2013
- * Author: ghik
- */
+  * Created: 20-11-2013
+  * Author: ghik
+  */
 class TypesafeEqualsTest extends FunSuite with CompilationTest {
 
   import com.avsystem.scex.validation.SymbolValidator._
 
-  override def evaluate[T: TypeTag](expr: String, acl: List[MemberAccessSpec] = PredefinedAccessSpecs.basicOperations) = {
+  override def evaluate[T: TypeString](expr: String, acl: List[MemberAccessSpec] = PredefinedAccessSpecs.basicOperations) = {
     val profile = new ExpressionProfile(newProfileName(), SyntaxValidator.SimpleExpressions, SymbolValidator(acl),
       SymbolAttributes(Nil), "import com.avsystem.scex.util.TypesafeEquals._", NamedSource("test", ""))
 

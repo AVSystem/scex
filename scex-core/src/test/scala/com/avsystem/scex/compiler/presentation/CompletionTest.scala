@@ -1,19 +1,18 @@
 package com.avsystem.scex.compiler.presentation
 
+import com.avsystem.commons.misc.TypeString
 import com.avsystem.scex.Type
 import com.avsystem.scex.compiler.presentation.ScexPresentationCompiler.{Member, Param}
 
-import scala.reflect.runtime.{universe => ru}
+import scala.reflect.{ClassTag, classTag}
 
 /**
- * Author: ghik
- * Created: 11/18/14.
- */
+  * Author: ghik
+  * Created: 11/18/14.
+  */
 trait CompletionTest {
-  protected def scexType[T: ru.TypeTag] = {
-    val tag = ru.typeTag[T]
-    Type(tag.tpe.toString, tag.mirror.runtimeClass(tag.tpe.erasure))
-  }
+  protected def scexType[T: TypeString : ClassTag]: Type =
+    Type(TypeString.of[T], classTag[T].runtimeClass)
 
   case class PartialMember(
     name: String,

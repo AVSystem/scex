@@ -10,7 +10,7 @@ val CompileAndTest = "compile->compile;test->test"
 
 val parserCombinatorsVersion = "1.0.5"
 val silencerVersion = "1.0"
-val avsCommonsVersion = "1.25.1"
+val avsCommonsVersion = "1.28.2"
 val jettyVersion = "9.1.0.v20131115"
 val vaadinVersion = "6.8.13"
 val slf4jVersion = "1.6.4"
@@ -21,6 +21,7 @@ val commonsNetVersion = "3.3"
 val jodaTimeVersion = "2.8.2"
 val junitVersion = "4.11"
 val scalatestVersion = "3.0.0"
+val guavaVersion = "23.0"
 
 val noPublishSettings = Seq(
   publishArtifact := false,
@@ -119,7 +120,8 @@ lazy val `scex-core` = project.dependsOn(`scex-macros` % CompileAndTest)
       "org.slf4j" % "slf4j-api" % slf4jVersion,
       "ch.qos.logback" % "logback-core" % logbackVersion,
       "ch.qos.logback" % "logback-classic" % logbackVersion,
-      "commons-codec" % "commons-codec" % commonsCodecVersion
+      "commons-codec" % "commons-codec" % commonsCodecVersion,
+      "com.google.guava" % "guava" % guavaVersion
     )
   )
 

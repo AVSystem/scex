@@ -1,6 +1,7 @@
 package com.avsystem.scex
 package compiler
 
+import com.avsystem.commons.misc.TypeString
 import com.avsystem.scex.compiler.ScexCompiler.CompilationFailedException
 import com.avsystem.scex.japi.{DefaultJavaScexCompiler, JavaScexCompiler}
 import com.avsystem.scex.presentation.{Attributes, SymbolAttributes}
@@ -11,13 +12,12 @@ import com.avsystem.scex.validation.{SymbolValidator, SyntaxValidator}
 import org.scalatest.{BeforeAndAfterAll, Suite}
 
 import scala.reflect.io.AbstractFile
-import scala.reflect.runtime.universe.TypeTag
 
 /**
   * Created: 18-11-2013
   * Author: ghik
   */
-trait CompilationTest extends BeforeAndAfterAll {this: Suite =>
+trait CompilationTest extends BeforeAndAfterAll { this: Suite =>
 
   val compiler = createCompiler
 
@@ -61,11 +61,11 @@ trait CompilationTest extends BeforeAndAfterAll {this: Suite =>
     assert(exception.errors.forall(_.msg.startsWith("Member access forbidden")))
   }
 
-  def evaluateTemplate[T: TypeTag](expr: String, acl: List[MemberAccessSpec] = defaultAcl, header: String = "") =
+  def evaluateTemplate[T: TypeString](expr: String, acl: List[MemberAccessSpec] = defaultAcl, header: String = "") =
     compiler.getCompiledExpression[SimpleContext[Unit], T](
       createProfile(acl), expr, template = true, header = header).apply(SimpleContext(()))
 
-  def evaluate[T: TypeTag](expr: String, acl: List[MemberAccessSpec] = defaultAcl) = {
+  def evaluate[T: TypeString](expr: String, acl: List[MemberAccessSpec] = defaultAcl) = {
     compiler.getCompiledExpression[SimpleContext[Unit], T](createProfile(acl), expr, template = false).apply(SimpleContext(()))
   }
 
