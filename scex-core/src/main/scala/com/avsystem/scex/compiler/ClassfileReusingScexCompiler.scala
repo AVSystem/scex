@@ -1,7 +1,6 @@
 package com.avsystem.scex.compiler
 
 import java.io.{IOException, OutputStreamWriter}
-import java.{lang => jl, util => ju}
 
 import com.avsystem.scex.compiler.ClassfileReusingScexCompiler.GlobalCacheVersion
 import com.google.common.cache.CacheBuilder
@@ -145,6 +144,14 @@ trait ClassfileReusingScexCompiler extends ScexCompiler {
     } yield {
       logger.debug(s"Expression source file ${sourceFile.file.name} has already been compiled and bytecode is compatible.")
     }
+
+    // If we're about to recompile expression, then we need to make the compiler forget about the old, cached one that
+    // we've just inspected. Otherwise the compiler will see a conflict and issue an error (at least since 2.12.5):
+    // "package x contains object and package with same name: x"
+    val rootScope = RootClass.info.decls
+    val exprPkgSym = rootScope.lookup(TermName(sourceFile.file.name))
+    rootScope.unlink(exprPkgSym)
+
     optimizedRun getOrElse super.runCompiler(global, sourceFile)
   }
 
@@ -173,7 +180,7 @@ trait ClassfileReusingScexCompiler extends ScexCompiler {
     sym.fullName + ":" + sym.info.paramLists.map(_.map(_.typeSignature.toString()).mkString("(", ",", ")")).mkString +
       sym.typeSignature.finalResultType.toString()
 
-  private class SignatureGenerator(val global: ScexGlobal) extends Plugin {plugin =>
+  private class SignatureGenerator(val global: ScexGlobal) extends Plugin { plugin =>
 
     import global._
 
