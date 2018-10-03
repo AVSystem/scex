@@ -9,7 +9,7 @@ inThisBuild(Seq(
 val CompileAndTest = "compile->compile;test->test"
 
 val parserCombinatorsVersion = "1.0.5"
-val silencerVersion = "0.5"
+val silencerVersion = "1.2.1"
 val avsCommonsVersion = "1.25.1"
 val jettyVersion = "9.1.0.v20131115"
 val vaadinVersion = "6.8.13"
@@ -34,8 +34,8 @@ val noPublishSettings = Seq(
 sonatypeProfileName := "com.avsystem"
 
 lazy val subprojectSettings = Seq(
-  scalaVersion := "2.12.4",
-  crossScalaVersions := Seq("2.11.12", "2.12.4"),
+  scalaVersion := "2.12.7",
+  crossScalaVersions := Seq(scalaVersion.value, "2.11.12"),
   scalacOptions ++= Seq(
     "-feature",
     "-deprecation",
