@@ -4,6 +4,8 @@ name := "scex"
 
 inThisBuild(Seq(
   organization := "com.avsystem.scex",
+  scalaVersion := "2.12.7",
+  crossScalaVersions := Seq(scalaVersion.value, "2.11.12"),
 ))
 
 val CompileAndTest = "compile->compile;test->test"
@@ -34,8 +36,6 @@ val noPublishSettings = Seq(
 sonatypeProfileName := "com.avsystem"
 
 lazy val subprojectSettings = Seq(
-  scalaVersion := "2.12.7",
-  crossScalaVersions := Seq(scalaVersion.value, "2.11.12"),
   scalacOptions ++= Seq(
     "-feature",
     "-deprecation",
