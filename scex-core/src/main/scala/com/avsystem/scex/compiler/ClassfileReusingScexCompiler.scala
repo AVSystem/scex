@@ -1,7 +1,6 @@
 package com.avsystem.scex.compiler
 
 import java.io.{IOException, OutputStreamWriter}
-import java.{lang => jl, util => ju}
 
 import com.avsystem.scex.compiler.ClassfileReusingScexCompiler.GlobalCacheVersion
 import com.google.common.cache.CacheBuilder
