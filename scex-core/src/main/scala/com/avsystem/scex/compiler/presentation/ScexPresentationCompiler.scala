@@ -300,7 +300,9 @@ trait ScexPresentationCompiler extends ScexCompiler { compiler =>
       }
 
     } finally {
-      removeUnitOf(sourceFile)
+      val resp = new global.Response[Unit]
+      global.askFilesDeleted(List(sourceFile), resp)
+      getOrThrow(resp)
     }
   }
 
@@ -412,7 +414,9 @@ trait ScexPresentationCompiler extends ScexCompiler { compiler =>
         }
 
       } finally {
-        removeUnitOf(sourceFile)
+        val resp = new global.Response[Unit]
+        global.askFilesDeleted(List(sourceFile), resp)
+        getOrThrow(resp)
       }
     }
 
