@@ -253,7 +253,9 @@ trait ScexPresentationCompiler extends ScexCompiler { compiler =>
       getOrThrow(response)
       reporter.compileErrors()
     } finally {
-      global.removeUnitOf(sourceFile)
+      val resp = new global.Response[Unit]
+      global.askFilesDeleted(List(sourceFile), resp)
+      getOrThrow(resp)
     }
   }
 
@@ -332,6 +334,7 @@ trait ScexPresentationCompiler extends ScexCompiler { compiler =>
         }
         if (tree.pos.isRange) {
           def positions = (tree :: tree.children).iterator.map(_.pos).filter(_.isRange)
+
           val start = positions.map(_.start).min
           val end = positions.map(_.end).max
           val transparent = tree.pos.isTransparent
@@ -387,6 +390,7 @@ trait ScexPresentationCompiler extends ScexCompiler { compiler =>
             val typeMembers = global.typeMembers(completionCtx)
 
             val fakeDirectPrefix = fakeIdent(completionCtx.ownerTpe, tree.symbol)
+
             def fakeSelect(member: ScexTypeMember) = {
               val fakePrefix =
                 if (!member.implicitlyAdded) fakeDirectPrefix
