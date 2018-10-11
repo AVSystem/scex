@@ -397,11 +397,13 @@ trait MacroUtils {
   def isAdapterConversion(symbol: Symbol) =
     isProfileObject(symbol.owner) && symbol.isImplicit && symbol.isMethod && isAdapter(symbol.asMethod.returnType)
 
-  def annotations(sym: Symbol) =
+  def annotations(sym: Symbol): List[Annotation] = {
+    sym.info // force annotations
     sym.annotations ++ (if (sym.isTerm) {
       val tsym = sym.asTerm
-      if (tsym.isGetter) tsym.accessed.annotations else Nil
+      if (tsym.isGetter) annotations(tsym.accessed) else Nil
     } else Nil)
+  }
 
   def annotationsIncludingOverrides(sym: Symbol) =
     withOverrides(sym).flatMap(annotations)
