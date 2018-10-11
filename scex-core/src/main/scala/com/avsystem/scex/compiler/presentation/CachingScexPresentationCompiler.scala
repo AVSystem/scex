@@ -10,6 +10,7 @@ import com.avsystem.scex.compiler.presentation.ScexPresentationCompiler.{Member,
 import com.avsystem.scex.presentation.SymbolAttributes
 import com.avsystem.scex.util.TypeWrapper
 import com.google.common.cache.CacheBuilder
+import com.google.common.util.concurrent.ExecutionError
 
 /**
  * Created: 12-12-2013
@@ -66,5 +67,6 @@ trait CachingScexPresentationCompiler extends ScexPresentationCompiler {
   private def unwrapExecutionException[T](code: => T) =
     try code catch {
       case e: ExecutionException => throw e.getCause
+      case e: ExecutionError => throw e.getCause
     }
 }
