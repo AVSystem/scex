@@ -80,9 +80,11 @@ trait ScexPresentationCompiler extends ScexCompiler { compiler =>
     // sometimes presentation compiler just fails to typecheck things and crashes
     // until we know what's happening it's better to return some default value (e.g. empty completion)
     // instead of crashing
-    private def workaroundAssertionError[T](expr: => T, default: => T): T =
+    private def workaroundAssertionError[T](expr: => T, default: T): T =
       try expr catch {
-        case _: AssertionError => default
+        case e: AssertionError =>
+          logger.error(s"Presentation compiler crashed, returning $default", e)
+          default
       }
 
     def getErrors(expression: String): List[CompileError] =
@@ -515,7 +517,7 @@ object ScexPresentationCompiler {
       copy(members = newMembers.asScala.toVector)
   }
   object Completion {
-    final val Empty = Completion(EmptyTree, Vector.empty)
+    final val Empty = Completion(ast.EmptyTree, Vector.empty)
   }
 
 }
