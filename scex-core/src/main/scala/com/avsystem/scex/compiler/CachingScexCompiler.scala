@@ -2,11 +2,11 @@ package com.avsystem.scex
 package compiler
 
 import java.util.concurrent.{ExecutionException, TimeUnit}
-import java.{lang => jl, util => ju}
 
 import com.avsystem.scex.parsing.PositionMapping
 import com.avsystem.scex.validation.{SymbolValidator, SyntaxValidator}
 import com.google.common.cache.CacheBuilder
+import com.google.common.util.concurrent.ExecutionError
 
 import scala.util.Try
 
@@ -83,5 +83,6 @@ trait CachingScexCompiler extends ScexCompiler {
   private def unwrapExecutionException[T](code: => T) =
     try code catch {
       case e: ExecutionException => throw e.getCause
+      case e: ExecutionError => throw e.getCause
     }
 }

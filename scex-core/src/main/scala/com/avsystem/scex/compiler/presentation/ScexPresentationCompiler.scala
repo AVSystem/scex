@@ -77,17 +77,27 @@ trait ScexPresentationCompiler extends ScexCompiler { compiler =>
         if (bare) "Any" else resultType, variableTypes)(expression, positionMapping, rootObjectClass)
     }
 
+    // sometimes presentation compiler just fails to typecheck things and crashes
+    // until we know what's happening it's better to return some default value (e.g. empty completion)
+    // instead of crashing
+    private def workaroundAssertionError[T](expr: => T, default: T): T =
+      try expr catch {
+        case e: AssertionError =>
+          logger.error(s"Presentation compiler crashed, returning $default", e)
+          default
+      }
+
     def getErrors(expression: String): List[CompileError] =
-      compiler.getErrors(exprDef(expression, bare = false))
+      workaroundAssertionError(compiler.getErrors(exprDef(expression, bare = false)), Nil)
 
     def getErrorsAsJava(expression: String): ju.List[CompileError] =
       getErrors(expression).asJava
 
     def getScopeCompletion: Completion =
-      compiler.getScopeCompletion(exprDef("()", bare = true))
+      workaroundAssertionError(compiler.getScopeCompletion(exprDef("()", bare = true)), Completion.Empty)
 
     def getTypeCompletion(expression: String, position: Int): Completion =
-      compiler.getTypeCompletion(exprDef(expression, bare = false), position)
+      workaroundAssertionError(compiler.getTypeCompletion(exprDef(expression, bare = false), position), Completion.Empty)
 
     def parse(expression: String): ast.Tree =
       compiler.parse(exprDef(expression, bare = false))
@@ -243,11 +253,13 @@ trait ScexPresentationCompiler extends ScexCompiler { compiler =>
 
     val response = new global.Response[global.Tree]
     try {
-      global.askLoadedTyped(sourceFile, response)
+      global.askLoadedTyped(sourceFile, keepLoaded = true, response)
       getOrThrow(response)
       reporter.compileErrors()
     } finally {
-      global.removeUnitOf(sourceFile)
+      val resp = new global.Response[Unit]
+      global.askFilesDeleted(List(sourceFile), resp)
+      getOrThrow(resp)
     }
   }
 
@@ -264,7 +276,7 @@ trait ScexPresentationCompiler extends ScexCompiler { compiler =>
       logger.debug(s"Computing scope completion for $exprDef")
 
       val treeResponse = new Response[Tree]
-      askLoadedTyped(sourceFile, treeResponse)
+      askLoadedTyped(sourceFile, keepLoaded = true, treeResponse)
       val sourceTree = getOrThrow(treeResponse)
 
       val vc = ValidationContext(global)(getContextTpe(global)(sourceTree))
@@ -292,7 +304,9 @@ trait ScexPresentationCompiler extends ScexCompiler { compiler =>
       }
 
     } finally {
-      removeUnitOf(sourceFile)
+      val resp = new global.Response[Unit]
+      global.askFilesDeleted(List(sourceFile), resp)
+      getOrThrow(resp)
     }
   }
 
@@ -404,7 +418,9 @@ trait ScexPresentationCompiler extends ScexCompiler { compiler =>
         }
 
       } finally {
-        removeUnitOf(sourceFile)
+        val resp = new global.Response[Unit]
+        global.askFilesDeleted(List(sourceFile), resp)
+        getOrThrow(resp)
       }
     }
 
@@ -448,7 +464,7 @@ trait ScexPresentationCompiler extends ScexCompiler { compiler =>
         case Left(_) if sourceFile.shared =>
           val global = this.global
           val response = new global.Response[global.Tree]
-          global.askLoadedTyped(sourceFile, response)
+          global.askLoadedTyped(sourceFile, keepLoaded = true, response)
           getOrThrow(response)
         case _ =>
       }
@@ -493,6 +509,9 @@ object ScexPresentationCompiler {
 
     def withMembers(newMembers: ju.Collection[Member]) =
       copy(members = newMembers.asScala.toVector)
+  }
+  object Completion {
+    final val Empty = Completion(ast.EmptyTree, Vector.empty)
   }
 
 }
