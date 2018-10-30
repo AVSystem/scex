@@ -11,6 +11,10 @@ public class NetUtilImpl implements NetUtil {
     private NetUtilImpl() {
     }
 
+    protected boolean isIpAndMask(String ip, String mask) {
+        return isIp(ip) && isIp(mask);
+    }
+
     @Override
     public boolean isIpInSubnet(String ip, String subnetWithMask) {
         return NetFunctions.isIpInSubnet(ip, subnetWithMask);
@@ -48,10 +52,41 @@ public class NetUtilImpl implements NetUtil {
 
     @Override
     public String networkAddress(String ip, String mask) {
-        if (isIp(ip) && isIp(mask)) {
+        if (isIpAndMask(ip, mask)) {
             return new SubnetUtils(ip, mask).getInfo().getNetworkAddress();
         }
         return null;
+    }
+
+    @Override
+    public String getMask(String cidr) {
+        if (!cidr.startsWith("/"))
+            cidr = "/" + cidr;
+        if (cidr.matches("\\/\\d{1,2}")) {
+            return new SubnetUtils("0.0.0.0" + cidr).getInfo().getNetmask();
+        }
+        return null;
+    }
+
+    @Override
+    public String getMinAddress(String ip, String mask) {
+        if (isIpAndMask(ip, mask)) {
+            return new SubnetUtils(ip, mask).getInfo().getLowAddress();
+        }
+        return null;
+    }
+
+    @Override
+    public String getMaxAddress(String ip, String mask) {
+        if (isIpAndMask(ip, mask)) {
+            return new SubnetUtils(ip, mask).getInfo().getHighAddress();
+        }
+        return null;
+    }
+
+    @Override
+    public String networkAddress(String subnetWithMask) {
+        return new SubnetUtils(subnetWithMask).getInfo().getHighAddress();
     }
 
     @Override
