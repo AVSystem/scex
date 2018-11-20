@@ -29,6 +29,7 @@ class ScopeAndTypeCompletionTest extends FunSuite with CompilationTest with Comp
       }
       on { r: Root =>
         r.method _
+        r.com
       }
       on { jr: JavaRootWithGetter =>
         jr.getName
@@ -84,6 +85,7 @@ class ScopeAndTypeCompletionTest extends FunSuite with CompilationTest with Comp
     val completion = completer.getTypeCompletion("_root.", 5).passTo(c => c.copy(members = c.members.sortBy(_.name)))
 
     assert(completion.members.map(asPartial) === Vector(
+      PartialMember("com", scexType[Int]),
       PartialMember("implicitMethod", scexType[Int], doc = "implicit method doc"),
       PartialMember("method", scexType[Any], List(List(
         Param("annotArg", scexType[Any]),
@@ -96,7 +98,8 @@ class ScopeAndTypeCompletionTest extends FunSuite with CompilationTest with Comp
     val completer = compiler.getCompleter[SimpleContext[Root], Any](profile, template = false)
     val completion = completer.getScopeCompletion.passTo(c => c.copy(members = c.members.sortBy(_.name)))
 
-    assert(completion.members.filterNot(_.flags.iimplicit).map(asPartial) === Vector(
+    assert(completion.members.filterNot(_.flags.iimplicit).map(asPartial) == Vector(
+      PartialMember("com", scexType[Int]), // test shadowing of toplevel package
       PartialMember("method", scexType[Any], List(List(
         Param("annotArg", scexType[Any]),
         Param("moar", scexType[Any])
@@ -109,7 +112,7 @@ class ScopeAndTypeCompletionTest extends FunSuite with CompilationTest with Comp
     val completer = compiler.getCompleter[SimpleContext[JavaRootWithGetter], Any](profile, template = false)
     val completion = completer.getScopeCompletion.passTo(c => c.copy(members = c.members.sortBy(_.name)))
 
-    assert(completion.members.filterNot(_.flags.iimplicit).map(asPartial) === Vector(
+    assert(completion.members.filterNot(_.flags.iimplicit).map(asPartial) == Vector(
       PartialMember("getName", scexType[String], List(Nil)),
       PartialMember("name", scexType[String]),
       PartialMember("utilStuff", scexType[Int], doc = "util stuff")
@@ -133,6 +136,7 @@ object ScopeAndTypeCompletionTest {
     @ParameterNames(Array("annotArg"))
     @Documentation("handles stuff")
     def method(arg: Any, moar: Any): Any
+    def com: Int
   }
 
   trait SvRoot {
