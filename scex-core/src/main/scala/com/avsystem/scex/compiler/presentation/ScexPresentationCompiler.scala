@@ -282,22 +282,14 @@ trait ScexPresentationCompiler extends ScexCompiler { compiler =>
       val vc = ValidationContext(global)(getContextTpe(global)(sourceTree))
       import vc._
 
-      def accessFromScopeMember(m: ScexScopeMember) = {
+      def accessFromScopeMember(m: ScexScopeMember): MemberAccess =
         extractAccess(Select(m.viaImport, m.sym))
-      }
-
-      val response = new Response[List[Member]]
-      askScopeCompletion(pos, response)
-      val scope = getOrThrow(response)
 
       inCompilerThread {
-        val membersIterator = scope.iterator.collect {
-          case member@ScopeMember(sym, tpe, accessible, viaImport)
-            if viaImport != EmptyTree && sym.isTerm && !sym.hasPackageFlag && !isFromProfileObject(sym) =>
-            val actualSym = if (sym.hasGetter) sym.getterIn(sym.owner) else sym
-            ScexScopeMember(actualSym, tpe, accessible, viaImport)
-        } filter { m =>
-          symbolValidator.validateMemberAccess(vc)(accessFromScopeMember(m)).deniedAccesses.isEmpty
+        val scope: Vector[ScexScopeMember] = scopeMembers(pos)
+        val membersIterator = scope.iterator.filter { m =>
+          m.viaImport != EmptyTree && m.sym.isTerm && !m.sym.hasPackageFlag && !isFromProfileObject(m.sym) &&
+            symbolValidator.validateMemberAccess(vc)(accessFromScopeMember(m)).deniedAccesses.isEmpty
         } map translateMember(global, symbolAttributes)
 
         Completion(ast.EmptyTree, membersIterator.toVector)
@@ -310,7 +302,7 @@ trait ScexPresentationCompiler extends ScexCompiler { compiler =>
     }
   }
 
-  protected def getTypeCompletion(exprDef: ExpressionDef, position: Int) = withIGlobal { global =>
+  protected def getTypeCompletion(exprDef: ExpressionDef, position: Int): Completion = withIGlobal { global =>
     logger.debug(s"Computing type completion for $exprDef at position $position")
     val startTime = System.nanoTime()
 
