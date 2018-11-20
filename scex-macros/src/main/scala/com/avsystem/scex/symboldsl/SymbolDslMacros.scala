@@ -1,11 +1,10 @@
 package com.avsystem.scex.symboldsl
 
-import com.avsystem.commons.macros.AbstractMacroCommons
 import com.avsystem.scex.util.MacroUtils
 
 import scala.reflect.macros.blackbox
 
-class SymbolDslMacros(ctx: blackbox.Context) extends AbstractMacroCommons(ctx) with MacroUtils { self =>
+class SymbolDslMacros(val c: blackbox.Context) extends MacroUtils { self =>
 
   import c.universe._
 
@@ -23,13 +22,13 @@ class SymbolDslMacros(ctx: blackbox.Context) extends AbstractMacroCommons(ctx) w
 
   private def extractMemberAccessSpecs(expr: c.Expr[Any], allow: Boolean): c.Tree =
     new SymbolInfoParser[self.c.type](self.c) {
-      def defaultPayload = q"$allow"
-      def dslObject = SymbolValidatorObj
+      def defaultPayload: Tree = q"$allow"
+      def dslObject: Tree = SymbolValidatorObj
     }.extractSymbolInfos(expr.tree)
 
   def attributes_impl(any: c.Expr[Any]): c.Tree =
     new SymbolInfoParser[self.c.type](self.c) {
-      def defaultPayload = q"$AttributesObj.empty"
-      def dslObject = SymbolAttributesObj
+      def defaultPayload: Tree = q"$AttributesObj.empty"
+      def dslObject: Tree = SymbolAttributesObj
     }.extractSymbolInfos(any.tree)
 }

@@ -1,6 +1,5 @@
 package com.avsystem.scex
 
-import com.avsystem.commons.macros.AbstractMacroCommons
 import com.avsystem.scex.util.MacroUtils
 
 import scala.reflect.macros.blackbox
@@ -9,17 +8,22 @@ import scala.reflect.macros.blackbox
   * Created: 18-11-2013
   * Author: ghik
   */
-class Macros(val ctx: blackbox.Context) extends AbstractMacroCommons(ctx) with MacroUtils {
+class Macros(val c: blackbox.Context) extends MacroUtils {
 
   lazy val universe: c.universe.type = c.universe
 
   import universe._
+
+  def getType(typeTree: Tree): Type =
+    c.typecheck(typeTree, c.TYPEmode).tpe
 
   lazy val JEnumTpe = typeOf[java.lang.Enum[_]]
   lazy val ScexLiteralTpe = getType(tq"$ScexPkg.util.Literal")
   lazy val ScexLiteralObj = ScexLiteralTpe.typeSymbol.companion
   lazy val TemplateInterpolationsObj = q"$ScexPkg.compiler.TemplateInterpolations"
   lazy val ExpressionContextCls = getType(tq"$ScexPkg.ExpressionContext[_,_]").typeSymbol
+
+  val CommonsPkg = q"_root_.com.avsystem.commons"
 
   def templateInterpolation_impl[T: c.WeakTypeTag, A](args: c.Expr[A]*): c.Tree = {
     val Apply(_, List(Apply(_, parts))) = c.prefix.tree
