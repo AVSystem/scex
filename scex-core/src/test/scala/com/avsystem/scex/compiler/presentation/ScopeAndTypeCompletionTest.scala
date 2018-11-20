@@ -89,7 +89,7 @@ class ScopeAndTypeCompletionTest extends FunSuite with CompilationTest with Comp
       PartialMember("implicitMethod", scexType[Int], doc = "implicit method doc"),
       PartialMember("method", scexType[Any], List(List(
         Param("annotArg", scexType[Any]),
-        Param("moar", scexType[Any]),
+        Param("moar", scexType[Any])
       )), doc = "handles stuff")
     ))
   }
