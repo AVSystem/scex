@@ -103,6 +103,6 @@ object Quickstart {
     val context = SimpleContext[Root](RootImpl("fred", 42))
 
     // At last, evaluate and print the result!
-    println(compiledExpr(context))
+    println(compiledExpr(context)) // FRED-43
   }
 }
