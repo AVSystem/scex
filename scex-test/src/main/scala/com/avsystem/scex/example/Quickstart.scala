@@ -25,7 +25,7 @@ object Quickstart {
   // The next thing we need is an expression profile. An expression profile is an "environment" against which
   // expressions will be compiled. There may be multiple expression profiles used with a single compiler.
   // An expression profile consists of:
-  // * Name
+  // * Name - should uniquely identify the profile, it is used as part of cache keys in expression caches
   // * Syntax validator - a strategy which limits Scala syntactic constructs which can be used by an expression.
   //   Typically, `SyntaxValidator.SimpleExpressions` is used which actually limits the language only to its
   //   "expression" subset by disallowing all sorts of definitions and declarations (variables, methods, classes, etc.)
