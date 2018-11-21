@@ -93,7 +93,7 @@ object Quickstart {
     compiler.getCompiledExpression[SimpleContext[Root], String](profile, expression)
 
   // Now that we have the expression compiled, we can finally *evaluate* it.
-  // For that we will need an implementation root object.
+  // For that we will need a root object implementation.
   case class RootImpl(someString: String, someInt: Int) extends Root
 
   def main(args: Array[String]): Unit = {
