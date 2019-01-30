@@ -34,7 +34,7 @@ trait CachingScexCompiler extends ScexCompiler {
 
   // holds code of implicit adapters over Java classes that add Scala-style getters to Java bean getters
   private val javaGetterAdaptersCache =
-    CacheBuilder.newBuilder.build[(String, Seq[Class[_]], Boolean), Try[Seq[Option[String]]]]
+    CacheBuilder.newBuilder.build[(String, String, Seq[Class[_]], Boolean), Try[Seq[Option[String]]]]
 
   private val syntaxValidatorsCache =
     CacheBuilder.newBuilder.build[String, SyntaxValidator]
@@ -58,9 +58,9 @@ trait CachingScexCompiler extends ScexCompiler {
     unwrapExecutionException(underLock(
       utilsCompilationResultsCache.get(source.name, callable(super.compileExpressionUtils(source)))))
 
-  override protected def compileJavaGetterAdapters(name: String, classes: Seq[Class[_]], full: Boolean) =
+  override protected def compileJavaGetterAdapters(profile: ExpressionProfile, name: String, classes: Seq[Class[_]], full: Boolean) =
     unwrapExecutionException(underLock(
-      javaGetterAdaptersCache.get((name, classes, full), callable(super.compileJavaGetterAdapters(name, classes, full)))))
+      javaGetterAdaptersCache.get((profile.name, name, classes, full), callable(super.compileJavaGetterAdapters(profile, name, classes, full)))))
 
   override def compileSyntaxValidator(source: NamedSource) =
     unwrapExecutionException(
