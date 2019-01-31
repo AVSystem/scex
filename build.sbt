@@ -24,7 +24,6 @@ val commonsNetVersion = "3.3"
 val jodaTimeVersion = "2.8.2"
 val junitVersion = "4.11"
 val scalatestVersion = "3.0.0"
-val guavaVersion = "23.0"
 
 val noPublishSettings = Seq(
   publishArtifact := false,
