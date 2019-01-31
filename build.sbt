@@ -4,7 +4,7 @@ name := "scex"
 
 inThisBuild(Seq(
   organization := "com.avsystem.scex",
-  scalaVersion := "2.12.7",
+  scalaVersion := "2.12.8",
   crossScalaVersions := Seq(scalaVersion.value, "2.11.12"),
 ))
 
@@ -19,6 +19,7 @@ val slf4jVersion = "1.6.4"
 val logbackVersion = "1.0.6"
 val commonsLang3Version = "3.4"
 val commonsCodecVersion = "1.7"
+val guavaVersion = "23.0"
 val commonsNetVersion = "3.3"
 val jodaTimeVersion = "2.8.2"
 val junitVersion = "4.11"

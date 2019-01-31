@@ -9,6 +9,7 @@ import com.avsystem.scex.util.CommonUtils._
 
 import scala.annotation.switch
 import scala.language.existentials
+import scala.reflect.NameTransformer
 
 object CodeGeneration {
 
@@ -34,7 +35,7 @@ object CodeGeneration {
 
   }
 
-  val AdaptersPkg = "_scex_adapter"
+  val AdaptersPkgPrefix = "_scex_adapter_"
   val ProfilePkgPrefix = "_scex_profile_"
   val UtilsPkgPrefix = "_scex_utils_"
   val ExpressionPkgPrefix = "_scex_expr_"
@@ -96,14 +97,12 @@ object CodeGeneration {
       else clazz.getMethods.filter(m => m.getDeclaringClass == clazz || isMultipleInherited(clazz, m))
 
     val scalaGetters = methods.collect {
-      case method@JavaGetter(propName, booleanIsGetter) if !method.isSynthetic && 
+      case method@JavaGetter(propName, _) if !method.isSynthetic &&
         Modifier.isPublic(method.getModifiers) && !Modifier.isStatic(method.getModifiers) =>
-        
         s"def `$propName` = _wrapped.${method.getName}\n"
     }
 
     if (full || scalaGetters.nonEmpty) {
-
       val classBody = scalaGetters.sorted.mkString
 
       val ExistentialType(polyTpe, typeVariables) = classToExistential(clazz)
@@ -250,7 +249,8 @@ object CodeGeneration {
       val adapterWithGenerics = adapterName + generics
 
       s"""
-         |implicit def $adapterWithGenerics(_wrapped: $wrappedTpe) = new $AdaptersPkg.$adapterName(_wrapped)
+         |implicit def $adapterWithGenerics(_wrapped: $wrappedTpe) =
+         |  new $AdaptersPkgPrefix${NameTransformer.encode(profile.name)}.$adapterName(_wrapped)
         """.stripMargin
     }.mkString
 
