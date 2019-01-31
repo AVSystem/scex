@@ -145,7 +145,7 @@ trait ScexCompiler extends LoggingUtils {
           case None => (prevCode, prevNames :+ None)
         }
       }
-      val codeToCompile = wrapInSource(fullCode, AdaptersPkgPrefix + profile.name)
+      val codeToCompile = wrapInSource(fullCode, AdaptersPkgPrefix + NameTransformer.encode(profile.name))
       val sourceFile = new ScexSourceFile(name + profile.name, codeToCompile, shared = true)
 
       def result() = {
@@ -207,7 +207,7 @@ trait ScexCompiler extends LoggingUtils {
       if (profile.symbolValidator.referencedJavaClasses.contains(rootObjectClass)) {
         val name = adapterName(rootObjectClass, full = true)
         compileJavaGetterAdapters(profile, name, Seq(rootObjectClass), full = true)
-          .get.head.map(name => s"$AdaptersPkgPrefix${profile.name}.$name")
+          .get.head.map(name => s"$AdaptersPkgPrefix${NameTransformer.encode(profile.name)}.$name")
       } else None
 
     val profileObjectPkg = compileProfileObject(profile).get

@@ -9,6 +9,7 @@ import com.avsystem.scex.util.CommonUtils._
 
 import scala.annotation.switch
 import scala.language.existentials
+import scala.reflect.NameTransformer
 
 object CodeGeneration {
 
@@ -248,7 +249,8 @@ object CodeGeneration {
       val adapterWithGenerics = adapterName + generics
 
       s"""
-         |implicit def $adapterWithGenerics(_wrapped: $wrappedTpe) = new $AdaptersPkgPrefix${profile.name}.$adapterName(_wrapped)
+         |implicit def $adapterWithGenerics(_wrapped: $wrappedTpe) =
+         |  new $AdaptersPkgPrefix${NameTransformer.encode(profile.name)}.$adapterName(_wrapped)
         """.stripMargin
     }.mkString
 
