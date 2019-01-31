@@ -13,7 +13,7 @@ case class SimpleContext[R](root: R) extends JavaExpressionContext[R, String] {
   private val variables = new mutable.HashMap[String, String]
   private val typedVariables = new mutable.HashMap[String, Any]
 
-  def setVariable(name: String, value: String) =
+  def setVariable(name: String, value: String): Unit =
     variables(name) = value
 
   def getVariable(name: String) =

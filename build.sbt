@@ -136,7 +136,7 @@ lazy val `scex-util` = project.dependsOn(`scex-core` % CompileAndTest)
     )
   )
 
-lazy val `scex-test` = project.dependsOn(`scex-core`)
+lazy val `scex-test` = project.dependsOn(`scex-core`, `scex-util`)
   .settings(subprojectSettings: _*)
   .settings(noPublishSettings: _*)
   .settings(
@@ -147,7 +147,7 @@ lazy val `scex-test` = project.dependsOn(`scex-core`)
     )
   )
 
-lazy val `scex-java-test` = project.dependsOn(`scex-core`)
+lazy val `scex-java-test` = project.dependsOn(`scex-core`, `scex-util`)
   .settings(subprojectSettings: _*)
   .settings(noPublishSettings: _*)
   .settings(
