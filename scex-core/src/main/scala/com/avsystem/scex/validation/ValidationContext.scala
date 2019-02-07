@@ -1,8 +1,6 @@
 package com.avsystem.scex
 package validation
 
-import java.{lang => jl}
-
 import com.avsystem.scex.util.MacroUtils
 
 import scala.reflect.macros.Universe
