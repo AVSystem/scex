@@ -1,6 +1,5 @@
 package com.avsystem.scex.util
 
-import scala.annotation.tailrec
 import scala.reflect.api.Universe
 import scala.util.matching.Regex
 
@@ -459,7 +458,8 @@ trait MacroUtils {
 }
 
 object MacroUtils {
-  def apply(u: Universe): MacroUtils = new MacroUtils {
-    val universe: u.type = u
-  }
+  def apply(u: Universe): MacroUtils {val universe: u.type} =
+    new MacroUtils {
+      val universe: u.type = u
+    }
 }
