@@ -5,7 +5,7 @@ name := "scex"
 inThisBuild(Seq(
   organization := "com.avsystem.scex",
   scalaVersion := "2.12.8",
-  crossScalaVersions := Seq(scalaVersion.value, "2.11.12"),
+  crossScalaVersions := Seq(scalaVersion.value),
 ))
 
 val CompileAndTest = "compile->compile;test->test"

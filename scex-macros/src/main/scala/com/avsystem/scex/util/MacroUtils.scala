@@ -394,7 +394,7 @@ trait MacroUtils {
       if (ts.isGetter)
         ts.name == AdapterWrappedName && ts.owner.isType && isAdapter(ts.owner.asType.toType)
       else
-        ts.isVal && isAdapterWrappedMember(ts.getter)
+        ts.isVal && ts.getter.isMethod && isAdapterWrappedMember(ts.getter)
     } else false
 
   def isRootAdapter(tpe: Type): Boolean =
