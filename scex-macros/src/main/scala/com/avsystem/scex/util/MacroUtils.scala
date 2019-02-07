@@ -352,8 +352,10 @@ trait MacroUtils {
   def isAdapterWrappedMember(symbol: Symbol): Boolean =
     if (symbol != null && symbol.isTerm) {
       val ts = symbol.asTerm
-      (ts.isGetter && ts.name == AdapterWrappedName && ts.owner.isType && isAdapter(ts.owner.asType.toType)
-        || ts.isVal && isAdapterWrappedMember(ts.getter))
+      if (ts.isGetter)
+        ts.name == AdapterWrappedName && ts.owner.isType && isAdapter(ts.owner.asType.toType)
+      else
+        ts.isVal && ts.getter.isMethod && isAdapterWrappedMember(ts.getter)
     } else false
 
   def isRootAdapter(tpe: Type) =
