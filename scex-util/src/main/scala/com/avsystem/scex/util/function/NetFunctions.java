@@ -1,5 +1,6 @@
 package com.avsystem.scex.util.function;
 
+import com.google.common.net.InetAddresses;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.net.util.SubnetUtils;
 import org.slf4j.Logger;
@@ -14,21 +15,13 @@ import java.util.regex.Pattern;
 public class NetFunctions {
     private static final Logger LOGGER = LoggerFactory.getLogger(NetFunctions.class);
 
-    private static final String IPADDRESS_PATTERN =
-            "^([01]?\\d\\d?|2[0-4]\\d|25[0-5])\\." +
-                    "([01]?\\d\\d?|2[0-4]\\d|25[0-5])\\." +
-                    "([01]?\\d\\d?|2[0-4]\\d|25[0-5])\\." +
-                    "([01]?\\d\\d?|2[0-4]\\d|25[0-5])$";
-
     private static final String MACADDRESS_PATTERN =
             "^(([0-9A-Fa-f][0-9A-Fa-f][-:]?){5}[0-9A-Fa-f]" +
                     "[0-9A-Fa-f])|(([0-9A-Fa-f][0-9A-Fa-f]" +
                     "[0-9A-Fa-f][0-9A-Fa-f].){2}[0-9A-Fa-f]" +
                     "[0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f])$";
 
-    private static final Pattern ipPattern = Pattern.compile(IPADDRESS_PATTERN);
     private static final Pattern macPattern = Pattern.compile(MACADDRESS_PATTERN);
-
 
     public static class InetAddressComparator implements Comparator<InetAddress> {
         @Override
@@ -108,8 +101,7 @@ public class NetFunctions {
         if (ip == null) {
             return false;
         }
-        Matcher matcher = ipPattern.matcher(ip.replaceAll("\\s", ""));
-        return matcher.matches();
+        return InetAddresses.isInetAddress(ip);
     }
 
     /**
