@@ -23,19 +23,19 @@ class EnrichedDateTest extends FunSuite {
   test("truncate to minutes")(assert(testDate.truncateToMinutes === new Date(1555505700000L)))
   // 2019-04-17 12:00:00.000 UTC
   test("truncate to hours")(assert(testDate.truncateToHours === new Date(1555502400000L)))
-  // 2019-04-17 00:00.00.000 default time zone
+  // 2019-04-17 00:00:00.000 default time zone
   val truncatedToDays: Calendar = localMidnight
   truncatedToDays.set(Calendar.YEAR, 2019)
   truncatedToDays.set(Calendar.MONTH, Calendar.APRIL)
   truncatedToDays.set(Calendar.DAY_OF_MONTH, 17)
   test("truncate to day")(assert(testDate.truncateToDays === truncatedToDays.getTime))
-  // 2019-04-01 00:00.00.000 default time zone
+  // 2019-04-01 00:00:00.000 default time zone
   val truncatedToMonths: Calendar = localMidnight
   truncatedToMonths.set(Calendar.YEAR, 2019)
   truncatedToMonths.set(Calendar.MONTH, Calendar.APRIL)
   truncatedToMonths.set(Calendar.DAY_OF_MONTH, 1)
   test("truncate to month")(assert(testDate.truncateToMonths === truncatedToMonths.getTime))
-  // 2019-01-01 00:00.00.000 default time zone
+  // 2019-01-01 00:00:00.000 default time zone
   val truncatedToYears: Calendar = localMidnight
   truncatedToYears.set(Calendar.YEAR, 2019)
   truncatedToYears.set(Calendar.MONTH, Calendar.JANUARY)
