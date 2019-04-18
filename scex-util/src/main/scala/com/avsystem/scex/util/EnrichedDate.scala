@@ -27,7 +27,7 @@ final class EnrichedDate(private val wrapped: Date) extends AnyVal {
   def truncateToSeconds: Date = DateUtils.truncate(wrapped, Calendar.SECOND)
   def truncateToMinutes: Date = DateUtils.truncate(wrapped, Calendar.MINUTE)
   def truncateToHours: Date = DateUtils.truncate(wrapped, Calendar.HOUR)
-  def truncateToDays: Date = DateUtils.truncate(wrapped, Calendar.DAY_OF_YEAR)
+  def truncateToDays: Date = DateUtils.truncate(wrapped, Calendar.DAY_OF_MONTH)
   def truncateToMonths: Date = DateUtils.truncate(wrapped, Calendar.MONTH)
   def truncateToYears: Date = DateUtils.truncate(wrapped, Calendar.YEAR)
 
