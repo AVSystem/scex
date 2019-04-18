@@ -12,6 +12,8 @@ trait Root extends JavaRoot {
   val tehList = List(1, 2, 3)
 
   def goodyn: Dyn
+
+  def format: String
 }
 
 object Root {

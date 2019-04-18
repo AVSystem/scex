@@ -12,7 +12,14 @@ class XmlFriendlyTranslatorTest extends FunSuite {
   import com.avsystem.scex.compiler.xmlfriendly.XmlFriendlyTranslator.translate
 
   test("variables test") {
-    assert(" _vars.lol" == translate("#lol", template = false).result)
+    val original = " #lol"
+    val translated = "  _vars.lol"
+    val pstr = translate(original)
+    assert(translated == pstr.result)
+    assert(original.indices.map(pstr.positionMapping.apply) ==
+      Seq(0, 2, 8, 9, 10))
+    assert(translated.indices.map(pstr.positionMapping.reverse.apply) ==
+      Seq(0, 0, 1, 1, 1, 1, 1, 1, 2, 3, 4))
   }
 
   test("variables in template test") {
@@ -21,11 +28,11 @@ class XmlFriendlyTranslatorTest extends FunSuite {
   }
 
   test("negated variable test") {
-    assert("! _vars.costam" == translate("!#costam", template = false).result)
+    assert("! _vars.costam" == translate("!#costam").result)
   }
 
   test("operator translation test") {
-    assert("a || b &&  c" == translate("a or b and c", template = false).result)
+    assert("a || b &&  c" == translate("a or b and c").result)
   }
 
   test("operator translation in template test") {
@@ -51,7 +58,17 @@ class XmlFriendlyTranslatorTest extends FunSuite {
   }
 
   test("unused scala keyword test") {
-    assert("${`type`}" == translate("${type}").result)
+    val original = "${type}"
+    val translated = "${`type`}"
+    val pstr = translate(original)
+    assert(translated == pstr.result)
+    assert(original.indices.map(pstr.positionMapping.apply) ==
+      Seq(0, 1, 3, 4, 5, 6, 8))
+    assert(translated.indices.map(pstr.positionMapping.reverse.apply) ==
+      Seq(0, 1, 2, 2, 3, 4, 5, 5, 6))
+  }
+
+  test("unused scala keyword selection test") {
     assert("${costam.`type`}" == translate("${costam.type}").result)
   }
 }

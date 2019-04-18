@@ -3,9 +3,9 @@ package com.avsystem.scex.parsing
 import scala.collection.immutable.SortedMap
 
 /**
- * Created: 24-10-2013
- * Author: ghik
- */
+  * Created: 24-10-2013
+  * Author: ghik
+  */
 trait PositionMapping {
   def apply(pos: Int): Int
 
@@ -16,72 +16,91 @@ trait PositionMapping {
     else if (other eq EmptyPositionMapping) this
     else ComposedPositionMapping(this, other)
 
-  def andThen(other: PositionMapping) =
+  def andThen(other: PositionMapping): PositionMapping =
     other compose this
 }
 
-case class ShiftInfo(totalPrevShift: Int, added: Int, removed: Int) {
-  def this(totalPrevShift: Int, amount: Int) =
-    this(totalPrevShift, math.max(0, amount), math.max(0, -amount))
+case class ShiftInfo(totalPrevShift: Int, addedLeft: Int, removedLeft: Int, addedRight: Int, removedRight: Int) {
+  def update(amount: Int, binding: Binding): ShiftInfo =
+    if (amount > 0 && binding == Binding.Left)
+      copy(addedLeft = addedLeft + amount)
+    else if (amount < 0 && binding == Binding.Left)
+      copy(removedLeft = removedLeft - amount)
+    else if (amount > 0 && binding == Binding.Right)
+      copy(addedRight = addedRight + amount)
+    else if (amount < 0 && binding == Binding.Right)
+      copy(removedRight = removedRight - amount)
+    else this
 
-  def update(amount: Int) = if (amount > 0)
-    copy(added = added + amount)
-  else if (amount < 0)
-    copy(removed = removed - amount)
-  else this
-
-  def totalShift = totalPrevShift + added - removed
+  def totalShift: Int =
+    totalPrevShift + addedLeft - removedLeft + addedRight - removedRight
 }
 
 object ShiftInfo {
-  def apply(totalPrevShift: Int, amount: Int) =
-    new ShiftInfo(totalPrevShift, amount)
+  def empty(totalPrevShift: Int): ShiftInfo =
+    new ShiftInfo(totalPrevShift, 0, 0, 0, 0)
+
+  def apply(totalPrevShift: Int, amount: Int, binding: Binding): ShiftInfo =
+    empty(totalPrevShift).update(amount, binding)
+
+  def apply(totalPrevShift: Int, added: Int, removed: Int, binding: Binding): ShiftInfo =
+    empty(totalPrevShift).update(added, binding).update(-removed, binding)
 }
 
 class ShiftInfoPositionMapping(
   private val shiftMapping: SortedMap[Int, ShiftInfo],
-  private val reverseShiftMapping: SortedMap[Int, ShiftInfo]) extends PositionMapping {
+  private val reverseShiftMapping: SortedMap[Int, ShiftInfo]
+) extends PositionMapping {
 
-  def apply(pos: Int) = shiftMapping.to(pos).lastOption match {
-    case Some((offset, ShiftInfo(totalPrevShift, added, removed))) =>
-      if (pos - offset < removed)
-        offset + totalPrevShift
+  def apply(pos: Int): Int = shiftMapping.to(pos).lastOption match {
+    case Some((offset, si)) =>
+      // removedleft|removedright
+      //   addedleft|addedright
+      //
+      // All 'removedleft' positions map to the first position of 'addedleft' or last position before it if empty.
+      // All 'removedright' positions map to the first position of 'addedright' or first position after it if empty.
+      val relpos = pos - offset
+      val reloffset = offset + si.totalPrevShift
+      if (relpos < si.removedLeft)
+        reloffset - (if (si.addedLeft == 0 && reloffset > 0) 1 else 0)
+      else if (relpos < si.removedLeft + si.removedRight)
+        reloffset + si.addedLeft
       else
-        pos + totalPrevShift - removed + added
+        pos + si.totalShift
 
     case None =>
       pos
   }
 
-  def reverse =
+  def reverse: PositionMapping =
     new ShiftInfoPositionMapping(reverseShiftMapping, shiftMapping)
 
-  override def equals(other: Any) = other match {
+  override def equals(other: Any): Boolean = other match {
     case op: ShiftInfoPositionMapping => shiftMapping == op.shiftMapping
     case _ => false
   }
 
-  override lazy val hashCode =
+  override lazy val hashCode: Int =
     shiftMapping.hashCode()
 
-  override def toString =
+  override def toString: String =
     s"PositionMapping($shiftMapping)"
 }
 
 case class SingleShiftPositionMapping(amount: Int) extends PositionMapping {
-  def apply(pos: Int) = pos + amount
+  def apply(pos: Int): Int = pos + amount
 
-  def reverse = SingleShiftPositionMapping(-amount)
+  def reverse: PositionMapping = SingleShiftPositionMapping(-amount)
 }
 
 case class ComposedPositionMapping(left: PositionMapping, right: PositionMapping) extends PositionMapping {
-  def apply(pos: Int) = left(right(pos))
+  def apply(pos: Int): Int = left(right(pos))
 
-  def reverse = ComposedPositionMapping(right.reverse, left.reverse)
+  def reverse: PositionMapping = ComposedPositionMapping(right.reverse, left.reverse)
 }
 
 object EmptyPositionMapping extends PositionMapping {
-  def apply(pos: Int) = pos
+  def apply(pos: Int): Int = pos
 
-  def reverse = this
+  def reverse: PositionMapping = this
 }

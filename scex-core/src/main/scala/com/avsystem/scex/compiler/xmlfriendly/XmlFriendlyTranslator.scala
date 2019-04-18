@@ -2,7 +2,7 @@ package com.avsystem.scex
 package compiler.xmlfriendly
 
 import com.avsystem.scex.compiler.CodeGeneration
-import com.avsystem.scex.parsing.{PString, PositionTrackingParsers}
+import com.avsystem.scex.parsing.{Binding, PString, PositionTrackingParsers}
 import com.avsystem.scex.util.CommonUtils._
 
 /**
@@ -13,11 +13,11 @@ import com.avsystem.scex.util.CommonUtils._
   * Author: ghik
   */
 object XmlFriendlyTranslator extends PositionTrackingParsers {
-  val AllowedKeywords = Set(
+  final val AllowedKeywords = Set(
     "case", "else", "false", "if", "match", "new", "null", "true"
   )
 
-  val xmlFriendlyOperators = Map(
+  final val xmlFriendlyOperators = Map(
     "lt" -> "< ",
     "gt" -> "> ",
     "lte" -> "<= ",
@@ -26,23 +26,23 @@ object XmlFriendlyTranslator extends PositionTrackingParsers {
     "or" -> "||"
   ).withDefault(identity)
 
-  def escapeIdent(pstr: PString) =
+  def escapeIdent(pstr: PString): PString =
     if (!AllowedKeywords.contains(pstr.result) && ScalaKeywords.contains(pstr.result))
-      "`" ~+ pstr + "`"
+      "`".bind(Binding.Right) + pstr + "`".bind(Binding.Left)
     else
       pstr.withResult(xmlFriendlyOperators(pstr.result))
 
-  def translate(expr: String, template: Boolean = false) =
+  def translate(expr: String, template: Boolean = false): PString =
     parse(if (template) templateParser else expressionParser, expr).getOrElse(PString(expr, 0, expr.length, Vector.empty))
 
-  val expressionParser = standardExpression ~ arbitraryEnding ^^ concat
-  val templateParser = stringExpression ~ arbitraryEnding ^^ concat
+  val expressionParser: Parser[PString] = standardExpression ~ arbitraryEnding ^^ concat
+  val templateParser: Parser[PString] = stringExpression ~ arbitraryEnding ^^ concat
 
   def literalPart: Parser[PString] =
     rep1("[^$]+".rp) ^^ join
 
   def literalDollar: Parser[PString] =
-    "\\$(?!\\{)".rp ^^ (_ + "$")
+    "\\$(?!\\{)".rp ^^ (_ + "$".bind(Binding.Left))
 
   def stringExpression: Parser[PString] =
     rep(literalPart | literalDollar | interpolatedParam) ^^ join
@@ -71,17 +71,17 @@ object XmlFriendlyTranslator extends PositionTrackingParsers {
   def number: Parser[PString] =
     "[0-9]+".rp
 
-  def block = "{".p ~ standardExpression ~ "}".p ^^ {
+  def block: Parser[PString] = "{".p ~ standardExpression ~ "}".p ^^ {
     case lb ~ contents ~ rb => lb + contents + rb
   }
 
   def operator: Parser[PString] =
     "[\\^\\-\\\\~!@#$%&*=+<>/?|:]".rp
 
-  def delim = "[,;.]".rp
+  def delim: Parser[PString] = "[,;.]".rp
 
-  def variable = "#".p ~> (ident | btident) ^^ { id =>
-    (" " + CodeGeneration.VariablesSymbol + ".") ~+ id
+  def variable: Parser[PString] = "#".p ~ (ident | btident) ^^ { case hash ~ id =>
+    " ".bind(Binding.Left) + hash.replaceWith(CodeGeneration.VariablesSymbol + ".", Binding.Right) + id
   }
 
   def bracket: Parser[PString] =
@@ -95,7 +95,7 @@ object XmlFriendlyTranslator extends PositionTrackingParsers {
 
   override def skipWhitespace = false
 
-  def concat(result: PString ~ PString) = result match {
+  def concat(result: PString ~ PString): PString = result match {
     case first ~ second => first + second
   }
 

@@ -16,7 +16,7 @@ class Translator(val global: ScexGlobal, offset: Int, exprDef: ExpressionDef) ex
 
   private val reverseMapping = exprDef.positionMapping.reverse
 
-  def translateTree(tree: u.Tree) =
+  def translateTree(tree: u.Tree): Tree =
     translateTreeIn[Tree](tree)
 
   private def translateTreeIn[T <: Tree](tree: u.Tree): T = {
@@ -119,7 +119,7 @@ class Translator(val global: ScexGlobal, offset: Int, exprDef: ExpressionDef) ex
     result.asInstanceOf[T]
   }
 
-  def translateConstant(c: u.Constant) =
+  def translateConstant(c: u.Constant): Constant =
     if (c.tpe =:= u.typeOf[u.Type])
       Constant(translateSymbol(c.symbolValue))(c.escapedStringValue)
     else if (c.tpe =:= u.typeOf[u.Symbol])
@@ -127,7 +127,7 @@ class Translator(val global: ScexGlobal, offset: Int, exprDef: ExpressionDef) ex
     else
       Constant(c.value)(c.escapedStringValue)
 
-  def translateType(tpe: u.Type) =
+  def translateType(tpe: u.Type): Type =
     if(tpe == u.NoType) Type.NoType
     else tpe.toOpt.map { tpe =>
       Type(tpe.map(_.dealiasWiden).toString(), u.erasureClass(tpe))
@@ -136,7 +136,7 @@ class Translator(val global: ScexGlobal, offset: Int, exprDef: ExpressionDef) ex
   def translateAttachments(tree: u.Tree) =
     new Attachments(translateType(tree.tpe), translatePosition(tree.pos))
 
-  def translateSymbol(sym: u.Symbol) = sym match {
+  def translateSymbol(sym: u.Symbol): Symbol = sym match {
     case null | u.NoSymbol => null
     case _ =>
       def translateNames(sym: u.Symbol): List[Name] = sym match {
@@ -146,13 +146,13 @@ class Translator(val global: ScexGlobal, offset: Int, exprDef: ExpressionDef) ex
       Symbol(translateNames(sym))
   }
 
-  def translateName(name: u.Name) =
+  def translateName(name: u.Name): Name =
     if (name == null) null
     else if (name.isTermName) translateTermName(name.toTermName)
     else if (name.isTypeName) translateTypeName(name.toTypeName)
     else null
 
-  def translateTermName(name: u.TermName) = name match {
+  def translateTermName(name: u.TermName): TermName = name match {
     case u.nme.EMPTY => TermName.EMPTY
     case u.nme.ERROR => TermName.ERROR
     case u.nme.WILDCARD => TermName.WILDCARD
@@ -162,7 +162,7 @@ class Translator(val global: ScexGlobal, offset: Int, exprDef: ExpressionDef) ex
     case _ => TermName(name.decoded)
   }
 
-  def translateTypeName(name: u.TypeName) = name match {
+  def translateTypeName(name: u.TypeName): TypeName = name match {
     case u.tpnme.EMPTY => TypeName.EMPTY
     case u.tpnme.ERROR => TypeName.ERROR
     case u.tpnme.WILDCARD => TypeName.WILDCARD
@@ -171,7 +171,7 @@ class Translator(val global: ScexGlobal, offset: Int, exprDef: ExpressionDef) ex
     case _ => TypeName(name.decoded)
   }
 
-  def translatePosition(pos: u.Position) = pos match {
+  def translatePosition(pos: u.Position): Position = pos match {
     case u.NoPosition | null => null
     case _ => Position(
       reverseMapping(math.max(pos.start, offset) - offset),

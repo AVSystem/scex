@@ -24,4 +24,8 @@ public class JavaLol {
     public boolean isFoo() {
         return true;
     }
+
+    public String format() {
+        return "";
+    }
 }
