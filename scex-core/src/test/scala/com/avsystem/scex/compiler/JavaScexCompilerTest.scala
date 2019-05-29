@@ -26,6 +26,6 @@ class JavaScexCompilerTest extends FunSuite with CompilationTest {
       .profile(createProfile(acl))
       .get
 
-    assert(180.0 === cexpr(context))
+    assert(180.0 == cexpr(context))
   }
 }

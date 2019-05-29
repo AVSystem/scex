@@ -1,5 +1,6 @@
 package com.avsystem.scex.parsing
 
+import scala.annotation.tailrec
 import scala.collection.immutable.SortedMap
 
 /**
@@ -9,7 +10,7 @@ import scala.collection.immutable.SortedMap
 case class Modification(offset: Int, amount: Int)
 
 case class PString(result: String, beg: Int, end: Int, mods: Vector[Modification]) {
-  lazy val positionMapping = {
+  lazy val positionMapping: PositionMapping = {
     val normalizedMods = if (beg > 0) Modification(0, -beg) :: mods.toList else mods.toList
     val (shiftMapping, reverseShiftMapping) = PString.computeMapping(normalizedMods, Nil, Nil)
     new ShiftInfoPositionMapping(shiftMapping, reverseShiftMapping)
@@ -43,16 +44,17 @@ case class PString(result: String, beg: Int, end: Int, mods: Vector[Modification
       case None => this
     }
 
-  def withResult(newResult: String) =
+  def withResult(newResult: String): PString =
     copy(result = newResult)
 
 }
 
 object PString {
-  private[scex] def computeMapping(
+  @tailrec private[scex] def computeMapping(
     mods: List[Modification],
     acc: List[(Int, ShiftInfo)],
-    racc: List[(Int, ShiftInfo)]): (SortedMap[Int, ShiftInfo], SortedMap[Int, ShiftInfo]) =
+    racc: List[(Int, ShiftInfo)]
+  ): (SortedMap[Int, ShiftInfo], SortedMap[Int, ShiftInfo]) =
 
     (mods, acc, racc) match {
       case (Modification(offset, amount) :: tail, (prevOffset, prevInfo) :: accTail, (rprevOffset, rprevInfo) :: raccTail) =>

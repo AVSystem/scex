@@ -56,25 +56,25 @@ class SetterExpressionsTest extends FunSuite with CompilationTest {
   test("scala variable setter test") {
     val target = new SetterTarget
     applySetter("costam", target, 42, allow(on { st: SetterTarget => st.all.introduced.members }))
-    assert(42 === target.costam)
+    assert(42 == target.costam)
   }
 
   test("scala setter test") {
     val target = new SetterTarget
     applySetter("lol", target, 42, allow(on { st: SetterTarget => st.all.introduced.members }))
-    assert(42 === target.lol)
+    assert(42 == target.lol)
   }
 
   test("direct bean setter test") {
     val target = new JavaSetterTarget
     applySetter("getBeanprop", target, 42, allow(on { st: JavaSetterTarget => st.all.introduced.members }))
-    assert(42 === target.getBeanprop)
+    assert(42 == target.getBeanprop)
   }
 
   test("adapted root bean setter test") {
     val target = new JavaSetterTarget
     applySetter("beanprop", target, 42, allow(on { st: JavaSetterTarget => st.all.introduced.members }))
-    assert(42 === target.getBeanprop)
+    assert(42 == target.getBeanprop)
   }
 
   test("adapted root boolean bean setter test") {
@@ -115,13 +115,13 @@ class SetterExpressionsTest extends FunSuite with CompilationTest {
   test("adapted non-root bean setter test") {
     val target = new JavaSetterTarget
     applySetter("self.beanprop", target, 42, allow(on { st: JavaSetterTarget => st.all.introduced.members }))
-    assert(42 === target.self.getBeanprop)
+    assert(42 == target.self.getBeanprop)
   }
 
   test("adapted non-root template bean setter test") {
     val target = new JavaSetterTarget
     applySetter("${self.beanprop}", target, 42, allow(on { st: JavaSetterTarget => st.all.introduced.members }), template = true)
-    assert(42 === target.self.getBeanprop)
+    assert(42 == target.self.getBeanprop)
   }
 
   test("adapted non-root boolean bean setter test") {
@@ -133,7 +133,7 @@ class SetterExpressionsTest extends FunSuite with CompilationTest {
   test("java field test") {
     val target = new JavaSetterTarget
     applySetter("field", target, 42, allow(on { st: JavaSetterTarget => st.all.introduced.members }))
-    assert(42 === target.field)
+    assert(42 == target.field)
   }
 
   test("dynamic variable setter test") {
@@ -142,7 +142,7 @@ class SetterExpressionsTest extends FunSuite with CompilationTest {
 
     val context = SimpleContext(())
     setterExpression.apply(context).apply("42")
-    assert("42" === context.getVariable("lol"))
+    assert("42" == context.getVariable("lol"))
   }
 
   test("typed dynamic variable setter test") {
@@ -153,7 +153,7 @@ class SetterExpressionsTest extends FunSuite with CompilationTest {
 
     val context = SimpleContext(())
     setterExpression.apply(context).apply(42)
-    assert(42 === context.getTypedVariable[Int]("lol"))
+    assert(42 == context.getTypedVariable[Int]("lol"))
   }
 
   test("accepted type reporting test") {

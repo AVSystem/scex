@@ -2,7 +2,6 @@ package com.avsystem.scex
 package compiler
 
 import java.util.concurrent.TimeUnit
-import java.{lang => jl, util => ju}
 
 import com.avsystem.scex.compiler.ScexCompiler.{CompilationFailedException, CompileError}
 import com.avsystem.scex.compiler.TemplateOptimizingScexCompiler.ConversionSupplier
@@ -41,17 +40,17 @@ trait TemplateOptimizingScexCompiler extends ScexPresentationCompiler {
     literalConversionsCache.get((exprDef.profile, exprDef.resultType, exprDef.header))
 
   private case class LiteralExpression(value: Any)(val debugInfo: ExpressionDebugInfo) extends RawExpression {
-    def apply(ctx: ExpressionContext[_, _]) = value
+    def apply(ctx: ExpressionContext[_, _]): Any = value
   }
 
   private class OptimizedTemplateExpression(parts: List[String], args: List[RawExpression], val debugInfo: ExpressionDebugInfo)
     extends RawExpression {
 
-    def apply(c: ExpressionContext[_, _]) =
+    def apply(c: ExpressionContext[_, _]): String =
       TemplateInterpolations.concatIterator(parts: _*)(args.iterator.map(_.apply(c)))
   }
 
-  import com.avsystem.scex.parsing.TemplateParser.{Success => ParsingSuccess, parseTemplate}
+  import com.avsystem.scex.parsing.TemplateParser.{parseTemplate, Success => ParsingSuccess}
 
   /**
    * Compiles a dummy expression that tests if there is a valid implicit conversion from Literal to expected type
@@ -85,79 +84,82 @@ trait TemplateOptimizingScexCompiler extends ScexPresentationCompiler {
           clazz.getDeclaredClasses // force loading of inner classes
           clazz.newInstance.asInstanceOf[ConversionSupplier[Any]]
         case Right(errors) =>
-          throw new CompilationFailedException(fullCode, errors)
+          throw CompilationFailedException(fullCode, errors)
       }
 
     Try(result)
   }
 
   private def toCompileError(expr: String, resultType: String, throwable: Throwable) =
-    new CompileError(expr, 1, s"Invalid literal value for $resultType: ${throwable.getClass.getName}: ${throwable.getMessage}")
+    CompileError(expr, 1, s"Invalid literal value for $resultType: ${throwable.getClass.getName}: ${throwable.getMessage}")
 
   private def isStringSupertype(tpe: String) =
     JavaTypeParsing.StringSupertypes.contains(tpe)
 
-  override protected def compileExpression(exprDef: ExpressionDef) = if (exprDef.template && !exprDef.setter) {
-    lazy val debugInfo = new ExpressionDebugInfo(exprDef)
+  override protected def compileExpression(exprDef: ExpressionDef): Try[RawExpression] =
+    if (exprDef.template && !exprDef.setter) {
+      lazy val debugInfo = new ExpressionDebugInfo(exprDef)
 
-    parseTemplate(exprDef.expression) match {
-      case ParsingSuccess((List(singlePart), Nil), _) =>
+      parseTemplate(exprDef.expression) match {
+        case ParsingSuccess((List(singlePart), Nil), _) =>
 
-        if (isStringSupertype(exprDef.resultType))
-          Success(LiteralExpression(if (singlePart.nonEmpty) singlePart else null)(debugInfo))
-        else if (validateLiteralConversion(exprDef).isSuccess)
-          getLiteralConversion(exprDef).map { conversion =>
-            try {
-              val convertedValue =
-                if (conversion.isNullable && singlePart.isEmpty) null
-                else conversion.get.apply(Literal(singlePart))
-              LiteralExpression(convertedValue)(debugInfo)
-            } catch {
-              case NonFatal(throwable) =>
-                throw new CompilationFailedException(singlePart, List(toCompileError(singlePart, exprDef.resultType, throwable)))
+          if (isStringSupertype(exprDef.resultType))
+            Success(LiteralExpression(if (singlePart.nonEmpty) singlePart else null)(debugInfo))
+          else if (validateLiteralConversion(exprDef).isSuccess)
+            getLiteralConversion(exprDef).map { conversion =>
+              try {
+                val convertedValue =
+                  if (conversion.isNullable && singlePart.isEmpty) null
+                  else conversion.get.apply(Literal(singlePart))
+                LiteralExpression(convertedValue)(debugInfo)
+              } catch {
+                case NonFatal(throwable) =>
+                  throw CompilationFailedException(singlePart, List(toCompileError(singlePart, exprDef.resultType, throwable)))
+              }
             }
-          }
-        else super.compileExpression(exprDef)
+          else super.compileExpression(exprDef)
 
-      case ParsingSuccess((List("", ""), List(_)), _) =>
-        super.compileExpression(exprDef)
+        case ParsingSuccess((List("", ""), List(_)), _) =>
+          super.compileExpression(exprDef)
 
-      case ParsingSuccess((parts, args), _) if isStringSupertype(exprDef.resultType) =>
-        val argExprTries = args.map { arg =>
-          val shift = new SingleShiftPositionMapping(arg.beg)
-          val reverseMapping = exprDef.positionMapping.reverse
-          val originalArg = exprDef.originalExpression.substring(reverseMapping(arg.beg), reverseMapping(arg.end - 1) + 1)
-          val shiftedMapping = shift andThen exprDef.positionMapping andThen shift.reverse
+        case ParsingSuccess((parts, args), _) if isStringSupertype(exprDef.resultType) =>
+          val argExprTries = args.map { arg =>
+            val shift = SingleShiftPositionMapping(arg.beg)
+            val reverseMapping = exprDef.positionMapping.reverse
+            val originalArg = exprDef.originalExpression.substring(reverseMapping(arg.beg), reverseMapping(arg.end - 1) + 1)
+            val shiftedMapping = shift andThen exprDef.positionMapping andThen shift.reverse
 
-          compileExpression(
-            ExpressionDef(exprDef.profile, template = true, setter = false, arg.result, exprDef.header,
-              exprDef.contextType, "String", exprDef.variableTypes)(originalArg, shiftedMapping, exprDef.rootObjectClass))
-        }
-
-        @tailrec
-        def merge(exprs: List[Try[RawExpression]], successAcc: List[RawExpression], errorsAcc: List[CompileError]): Try[List[RawExpression]] =
-          exprs match {
-            case Success(expr) :: rest =>
-              merge(rest, expr :: successAcc, errorsAcc)
-            case Failure(CompilationFailedException(_, errors)) :: rest =>
-              merge(rest, successAcc, errors ::: errorsAcc)
-            case Failure(throwable) :: _ =>
-              Failure(throwable)
-            case Nil =>
-              if (errorsAcc.nonEmpty)
-                Failure(CompilationFailedException(exprDef.expression, errorsAcc))
-              else
-                Success(successAcc)
+            compileExpression(
+              ExpressionDef(exprDef.profile, template = true, setter = false, arg.result, exprDef.header,
+                exprDef.contextType, "String", exprDef.variableTypes)(originalArg, shiftedMapping, exprDef.rootObjectClass))
           }
 
-        merge(argExprTries.reverse, Nil, Nil).map(new OptimizedTemplateExpression(parts, _, debugInfo))
+          @tailrec
+          def merge(
+            exprs: List[Try[RawExpression]], successAcc: List[RawExpression], errorsAcc: List[CompileError]
+          ): Try[List[RawExpression]] =
+            exprs match {
+              case Success(expr) :: rest =>
+                merge(rest, expr :: successAcc, errorsAcc)
+              case Failure(CompilationFailedException(_, errors)) :: rest =>
+                merge(rest, successAcc, errors ::: errorsAcc)
+              case Failure(throwable) :: _ =>
+                Failure(throwable)
+              case Nil =>
+                if (errorsAcc.nonEmpty)
+                  Failure(CompilationFailedException(exprDef.expression, errorsAcc))
+                else
+                  Success(successAcc)
+            }
 
-      case _ =>
-        super.compileExpression(exprDef)
-    }
-  } else super.compileExpression(exprDef)
+          merge(argExprTries.reverse, Nil, Nil).map(new OptimizedTemplateExpression(parts, _, debugInfo))
 
-  override protected def getErrors(exprDef: ExpressionDef) = super.getErrors(exprDef) match {
+        case _ =>
+          super.compileExpression(exprDef)
+      }
+    } else super.compileExpression(exprDef)
+
+  override protected def getErrors(exprDef: ExpressionDef): List[CompileError] = super.getErrors(exprDef) match {
     case Nil if exprDef.template && !exprDef.setter && !isStringSupertype(exprDef.resultType) =>
       parseTemplate(exprDef.expression) match {
         case ParsingSuccess((List(singlePart), Nil), _) if validateLiteralConversion(exprDef).isSuccess =>
@@ -180,7 +182,7 @@ trait TemplateOptimizingScexCompiler extends ScexPresentationCompiler {
     case errors => errors
   }
 
-  override def reset() = underLock {
+  override def reset(): Unit = underLock {
     super.reset()
     literalConversionsCache.invalidateAll()
   }

@@ -16,8 +16,8 @@ class PStringTest extends FunSuite {
     val (actualShiftMapping, actualReverseShiftMapping) =
       PString.computeMapping(modifications.toList, Nil, Nil)
 
-    assert(actualShiftMapping === SortedMap(shiftMapping: _*), "actual mapping")
-    assert(actualReverseShiftMapping === SortedMap(reverseShiftMapping: _*), "reverse mapping")
+    assert(actualShiftMapping == SortedMap(shiftMapping: _*), "actual mapping")
+    assert(actualReverseShiftMapping == SortedMap(reverseShiftMapping: _*), "reverse mapping")
   }
 
   test("no modifications test")()()()

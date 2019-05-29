@@ -2,7 +2,6 @@ package com.avsystem.scex
 package compiler
 
 import java.lang.annotation.RetentionPolicy
-import java.{lang => jl, util => ju}
 
 import com.avsystem.scex.compiler.ScexCompiler.CompilationFailedException
 import com.avsystem.scex.compiler.TestUtils.CustomBooleanConversionRoot
@@ -18,19 +17,19 @@ class LiteralExpressionsTest extends FunSuite with CompilationTest {
   import com.avsystem.scex.validation.SymbolValidator._
 
   test("string literal test") {
-    assert("trololo dafuq" === evaluateTemplate[String]("trololo dafuq"))
+    assert("trololo dafuq" == evaluateTemplate[String]("trololo dafuq"))
   }
 
   test("string literal with money test") {
-    assert("hajs$hajs" === evaluateTemplate[String]("hajs$$hajs"))
+    assert("hajs$hajs" == evaluateTemplate[String]("hajs$$hajs"))
   }
 
   test("string literal with fancy characters test") {
-    assert( raw"""trololo "" \" \\ '' dafuq\n""" === evaluateTemplate[String]( raw"""trololo "" \" \\ '' dafuq\n"""))
+    assert(raw"""trololo "" \" \\ '' dafuq\n""" == evaluateTemplate[String](raw"""trololo "" \" \\ '' dafuq\n"""))
   }
 
   test("boolean literal test") {
-    assert(true === evaluateTemplate[Boolean]("true"))
+    assert(evaluateTemplate[Boolean]("true"))
   }
 
   test("boolean literal test with surrounding whitespaces") {
@@ -52,7 +51,7 @@ class LiteralExpressionsTest extends FunSuite with CompilationTest {
   }
 
   test("enum literal test") {
-    assert(RetentionPolicy.RUNTIME === evaluateTemplate[RetentionPolicy]("RUNTIME"))
+    assert(RetentionPolicy.RUNTIME == evaluateTemplate[RetentionPolicy]("RUNTIME"))
   }
 
   test("bad enum literal test 1") {
@@ -79,7 +78,7 @@ class LiteralExpressionsTest extends FunSuite with CompilationTest {
     }
 
     val header = "import com.avsystem.scex.compiler.TestUtils.zeroOneLiteralToBoolean"
-    assert(true === evaluateTemplate[Boolean]("1", acl, header))
+    assert(true == evaluateTemplate[Boolean]("1", acl, header))
   }
 
   test("disallowed custom literal conversion test") {
@@ -99,7 +98,7 @@ class LiteralExpressionsTest extends FunSuite with CompilationTest {
     val cexpr = compiler.getCompiledExpression[SimpleContext[CustomBooleanConversionRoot], Boolean](
       createProfile(acl), "TRÓ", template = true, header = "")
 
-    assert(true === cexpr(SimpleContext(new CustomBooleanConversionRoot("ZUO", "TRÓ"))))
+    assert(cexpr(SimpleContext(new CustomBooleanConversionRoot("ZUO", "TRÓ"))))
   }
 
   test("java inner enum test") {
@@ -108,7 +107,7 @@ class LiteralExpressionsTest extends FunSuite with CompilationTest {
         ei.all.members
       }
     }
-    assert(EnumInside.TheEnum.THIS === evaluateTemplate[EnumInside.TheEnum]("THIS", acl))
+    assert(EnumInside.TheEnum.THIS == evaluateTemplate[EnumInside.TheEnum]("THIS", acl))
   }
 
 }

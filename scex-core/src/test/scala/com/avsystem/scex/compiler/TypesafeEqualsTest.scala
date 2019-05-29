@@ -25,43 +25,43 @@ class TypesafeEqualsTest extends FunSuite with CompilationTest {
   }
 
   test("same type equality test") {
-    assert(true === evaluate[Boolean]("\"lol\" == \"lol\""))
-    assert(false === evaluate[Boolean]("\"lol\" == \"lol2\""))
+    assert(true == evaluate[Boolean]("\"lol\" == \"lol\""))
+    assert(false == evaluate[Boolean]("\"lol\" == \"lol2\""))
   }
 
   test("same type inequality test") {
-    assert(false === evaluate[Boolean]("\"lol\" != \"lol\""))
-    assert(true === evaluate[Boolean]("\"lol\" != \"lol2\""))
+    assert(false == evaluate[Boolean]("\"lol\" != \"lol\""))
+    assert(true == evaluate[Boolean]("\"lol\" != \"lol2\""))
   }
 
   test("same hierarchy equality test") {
     val acl = PredefinedAccessSpecs.basicOperations ++ allow(new Object)
 
-    assert(false === evaluate[Boolean]("\"somestring\" == new Object", acl))
-    assert(false === evaluate[Boolean]("new Object == \"somestring\"", acl))
+    assert(false == evaluate[Boolean]("\"somestring\" == new Object", acl))
+    assert(false == evaluate[Boolean]("new Object == \"somestring\"", acl))
   }
 
   test("implicit-conversion based equality test") {
     val acl = PredefinedAccessSpecs.basicOperations ++ allow(intWrapper _)
 
-    assert(true === evaluate[Boolean]("1 == (1: scala.runtime.RichInt)", acl))
-    assert(true === evaluate[Boolean]("(1: scala.runtime.RichInt) == 1", acl))
+    assert(true == evaluate[Boolean]("1 == (1: scala.runtime.RichInt)", acl))
+    assert(true == evaluate[Boolean]("(1: scala.runtime.RichInt) == 1", acl))
   }
 
   test("unrelated types test") {
     val exception = intercept[CompilationFailedException] {
       evaluate[Boolean]("1 == \"somestring\"")
     }
-    assert(exception.errors.head.msg === "Values of types Int and String cannot be compared for equality")
+    assert(exception.errors.head.msg == "Values of types Int and String cannot be compared for equality")
   }
 
   test("literals test") {
-    assert(true === evaluate[Boolean]("com.avsystem.scex.util.Literal(\"42\") == 42"))
-    assert(true === evaluate[Boolean]("42 == com.avsystem.scex.util.Literal(\"42\")"))
+    assert(true == evaluate[Boolean]("com.avsystem.scex.util.Literal(\"42\") == 42"))
+    assert(true == evaluate[Boolean]("42 == com.avsystem.scex.util.Literal(\"42\")"))
   }
 
   test("complex expression test") {
-    assert(true === evaluate[Boolean]( """("fuu" == "lol") || ("dafuq" != "srsly") """))
+    assert(true == evaluate[Boolean]( """("fuu" == "lol") || ("dafuq" != "srsly") """))
   }
 
 }

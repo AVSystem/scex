@@ -13,7 +13,7 @@ import com.avsystem.scex.util.CommonUtils._
  * Author: ghik
  */
 object XmlFriendlyTranslator extends PositionTrackingParsers {
-  val xmlFriendlyOperators = Map(
+  final val XmlFriendlyOperators = Map(
     "lt" -> "< ",
     "gt" -> "> ",
     "lte" -> "<= ",
@@ -22,14 +22,14 @@ object XmlFriendlyTranslator extends PositionTrackingParsers {
     "or" -> "||"
   ).withDefault(identity)
 
-  def xmlFriendly(pstr: PString) =
-    pstr.withResult(xmlFriendlyOperators(pstr.result))
+  def xmlFriendly(pstr: PString): PString =
+    pstr.withResult(XmlFriendlyOperators(pstr.result))
 
-  def translate(expr: String, template: Boolean = false) =
+  def translate(expr: String, template: Boolean = false): PString =
     parse(if (template) templateParser else expressionParser, expr).getOrElse(PString(expr, 0, expr.length, Vector.empty))
 
-  val expressionParser = standardExpression ~ arbitraryEnding ^^ concat
-  val templateParser = stringExpression ~ arbitraryEnding ^^ concat
+  val expressionParser: Parser[PString] = standardExpression ~ arbitraryEnding ^^ concat
+  val templateParser: Parser[PString] = stringExpression ~ arbitraryEnding ^^ concat
 
   def literalPart: Parser[PString] =
     rep1("[^$]+".rp) ^^ join
@@ -64,20 +64,20 @@ object XmlFriendlyTranslator extends PositionTrackingParsers {
   def number: Parser[PString] =
     "[0-9]+".rp
 
-  def block = "{".p ~ standardExpression ~ "}".p ^^ {
+  def block: Parser[PString] = "{".p ~ standardExpression ~ "}".p ^^ {
     case lb ~ contents ~ rb => lb + contents + rb
   }
 
   def operator: Parser[PString] =
     "[\\^\\-\\\\~!@#$%&*=+<>/?|:]".rp
 
-  def delim = "[,;.]".rp
+  def delim: Parser[PString] = "[,;.]".rp
 
-  def identOrKeyword = ident ^^ { id =>
+  def identOrKeyword: Parser[PString] = ident ^^ { id =>
     if (ScalaKeywords.contains(id.result)) "`" ~+ id + "`" else id
   }
 
-  def variable = "#".p ~> (identOrKeyword | btident) ^^ { id =>
+  def variable: Parser[PString] = "#".p ~> (identOrKeyword | btident) ^^ { id =>
     (" " + CodeGeneration.VariablesSymbol + ".") ~+ id
   }
 
@@ -92,7 +92,7 @@ object XmlFriendlyTranslator extends PositionTrackingParsers {
 
   override def skipWhitespace = false
 
-  def concat(result: PString ~ PString) = result match {
+  def concat(result: PString ~ PString): PString = result match {
     case first ~ second => first + second
   }
 
