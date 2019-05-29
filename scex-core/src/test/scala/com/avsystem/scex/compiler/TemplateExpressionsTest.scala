@@ -2,13 +2,11 @@ package com.avsystem.scex
 package compiler
 
 import java.lang.annotation.RetentionPolicy
-import java.{lang => jl, util => ju}
+import java.{lang => jl}
 
 import com.avsystem.scex.compiler.ScexCompiler.CompilationFailedException
 import com.avsystem.scex.util.{PredefinedAccessSpecs, SimpleContext}
 import org.scalatest.FunSuite
-
-import scala.runtime.BoxedUnit
 
 /**
  * Created: 18-11-2013
@@ -135,10 +133,16 @@ class TemplateExpressionsTest extends FunSuite with CompilationTest {
     }
   }
 
-  test("empty block test") {
-    val unit = ()
+  test("empty block") {
+    val unit: Unit = ()
     assert(evaluateTemplate[Any]("${}") === unit)
     assert(evaluateTemplate[AnyRef]("${}") === "()")
     assert(evaluateTemplate[String]("${}") === "()")
+  }
+
+  test("large template") {
+    val longInfix = "a" * 100000
+    val expr = "${123}" + longInfix + "${123}"
+    assert(evaluateTemplate[String](expr) == s"123${longInfix}123")
   }
 }
