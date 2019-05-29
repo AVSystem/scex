@@ -2,6 +2,7 @@ package com.avsystem.scex
 package compiler.xmlfriendly
 
 import com.avsystem.scex.compiler.ScexCompiler
+import com.avsystem.scex.parsing.PositionMapping
 
 /**
  *
@@ -18,7 +19,7 @@ import com.avsystem.scex.compiler.ScexCompiler
  * Author: ghik
  */
 trait XmlFriendlyScexCompiler extends ScexCompiler {
-  override protected def preprocess(expression: String, template: Boolean) = {
+  override protected def preprocess(expression: String, template: Boolean): (String, PositionMapping) = {
     val (superExpression, superMapping) = super.preprocess(expression, template)
     val ps = XmlFriendlyTranslator.translate(superExpression, template)
     (ps.result, ps.positionMapping andThen superMapping)

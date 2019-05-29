@@ -70,7 +70,7 @@ class ClassfileReusingTest extends FunSuite with BeforeAndAfter {
     compiler.reset()
 
     compiler.getCompiledExpression[SimpleContext[Unit], Any](testProfile, expr, template = false)
-    assert(compiler.sourcesCompiled.size === sourcesCompiled - 1)
+    assert(compiler.sourcesCompiled.size == sourcesCompiled - 1)
   }
 
   test("recompilation on binary compatibility breach test") {
@@ -90,7 +90,7 @@ class ClassfileReusingTest extends FunSuite with BeforeAndAfter {
       SymbolAttributes(Nil), "", NamedSource("test", utils1))
     val cexpr1 = compiler.getCompiledExpression[SimpleContext[Unit], String](profile1, expr, template = false)
 
-    assert(cexpr1(SimpleContext(())) === "implicitString1")
+    assert(cexpr1(SimpleContext(())) == "implicitString1")
 
     compiler.reset()
 
@@ -102,7 +102,7 @@ class ClassfileReusingTest extends FunSuite with BeforeAndAfter {
       SymbolAttributes(Nil), "", NamedSource("test", utils2))
     val cexpr2 = compiler.getCompiledExpression[SimpleContext[Unit], String](profile2, expr, template = false)
 
-    assert(cexpr2(SimpleContext(())) === "implicitString2")
+    assert(cexpr2(SimpleContext(())) == "implicitString2")
   }
 
   ignore("recompilation on overloaded method addition") {
@@ -117,7 +117,7 @@ class ClassfileReusingTest extends FunSuite with BeforeAndAfter {
       SymbolAttributes(Nil), "", NamedSource("test", utils1))
     val cexpr1 = compiler.getCompiledExpression[SimpleContext[Unit], Any](profile1, expr, template = false)
 
-    assert(cexpr1(SimpleContext(())) === 42)
+    assert(cexpr1(SimpleContext(())) == 42)
 
     compiler.reset()
 
@@ -130,7 +130,7 @@ class ClassfileReusingTest extends FunSuite with BeforeAndAfter {
       SymbolAttributes(Nil), "", NamedSource("test", utils2))
     val cexpr2 = compiler.getCompiledExpression[SimpleContext[Unit], Any](profile2, expr, template = false)
 
-    assert(cexpr2(SimpleContext(())) === 84)
+    assert(cexpr2(SimpleContext(())) == 84)
 
   }
 

@@ -13,6 +13,6 @@ object TemplateParser extends ScalaParsingCommons with PositionTrackingParsers {
     case pairs ~ lastPart => (pairs.map(_._1) :+ lastPart, pairs.map(_._2))
   }
 
-  def parseTemplate(expr: String) =
+  def parseTemplate(expr: String): ParseResult[(List[String], List[PString])] =
     parseAll(templateParser, expr)
 }

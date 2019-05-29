@@ -1,6 +1,7 @@
 package com.avsystem.scex
 package compiler.xmlfriendly
 
+import com.google.common.io.ByteStreams
 import org.scalatest.FunSuite
 
 /**
@@ -70,5 +71,13 @@ class XmlFriendlyTranslatorTest extends FunSuite {
 
   test("unused scala keyword selection test") {
     assert("${costam.`type`}" == translate("${costam.type}").result)
+  }
+
+  test("literal dollars and newlines test") {
+    val res =
+      """${""}a
+        |a$$b
+        |b$$$$cc""".stripMargin
+    assert(res == translate("${''}a\na$b\nb$$cc", template = true).result)
   }
 }

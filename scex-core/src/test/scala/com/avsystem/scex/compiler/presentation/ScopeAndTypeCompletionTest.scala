@@ -72,7 +72,7 @@ class ScopeAndTypeCompletionTest extends FunSuite with CompilationTest with Comp
     val completer = compiler.getCompleter[SimpleContext[Unit], Any](profile, template = false)
     val completion = completer.getTypeCompletion("\"\".", 2).passTo(c => c.copy(members = c.members.sortBy(_.name)))
 
-    assert(completion.members.map(asPartial) === Vector(
+    assert(completion.members.map(asPartial) == Vector(
       PartialMember("charAt", scexType[Char], List(List(Param("index", scexType[Int]))), doc = "doc of charAt"),
       PartialMember("empty", scexType[Boolean]),
       PartialMember("isEmpty", scexType[Boolean], List(Nil)),
@@ -123,7 +123,7 @@ class ScopeAndTypeCompletionTest extends FunSuite with CompilationTest with Comp
     val completer = compiler.getCompleter[SimpleContext[JavaRootWithGetter], Any](profile, template = false)
     val completion = completer.getTypeCompletion("_root.", 5).passTo(c => c.copy(members = c.members.sortBy(_.name)))
 
-    assert(completion.members.map(asPartial) === Vector(
+    assert(completion.members.map(asPartial) == Vector(
       PartialMember("getName", scexType[String], List(Nil)),
       PartialMember("name", scexType[String])
     ))

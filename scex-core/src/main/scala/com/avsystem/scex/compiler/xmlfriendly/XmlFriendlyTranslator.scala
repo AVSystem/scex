@@ -17,7 +17,7 @@ object XmlFriendlyTranslator extends PositionTrackingParsers {
     "case", "else", "false", "if", "match", "new", "null", "true"
   )
 
-  final val xmlFriendlyOperators = Map(
+  final val XmlFriendlyOperators = Map(
     "lt" -> "< ",
     "gt" -> "> ",
     "lte" -> "<= ",
@@ -30,7 +30,7 @@ object XmlFriendlyTranslator extends PositionTrackingParsers {
     if (!AllowedKeywords.contains(pstr.result) && ScalaKeywords.contains(pstr.result))
       "`".bind(Binding.Right) + pstr + "`".bind(Binding.Left)
     else
-      pstr.withResult(xmlFriendlyOperators(pstr.result))
+      pstr.withResult(XmlFriendlyOperators(pstr.result))
 
   def translate(expr: String, template: Boolean = false): PString =
     parse(if (template) templateParser else expressionParser, expr).getOrElse(PString(expr, 0, expr.length, Vector.empty))

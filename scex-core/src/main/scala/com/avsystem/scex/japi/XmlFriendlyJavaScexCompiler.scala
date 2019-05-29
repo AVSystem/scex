@@ -11,11 +11,11 @@ import com.avsystem.scex.compiler.xmlfriendly.XmlFriendlyScexCompiler
  */
 class XmlFriendlyJavaScexCompiler(val settings: ScexSettings)
   extends ScexCompiler
-  with ScexPresentationCompiler
-  with ClassfileReusingScexCompiler
-  with TemplateOptimizingScexCompiler
-  with XmlFriendlyScexCompiler
-  with CachingScexCompiler
-  with CachingScexPresentationCompiler
-  with WeakReferenceWrappingScexCompiler
-  with JavaScexCompiler
+    with ScexPresentationCompiler
+    with ClassfileReusingScexCompiler
+    with TemplateOptimizingScexCompiler
+    with XmlFriendlyScexCompiler
+    with CachingScexCompiler
+    with CachingScexPresentationCompiler
+    with WeakReferenceWrappingScexCompiler
+    with JavaScexCompiler

@@ -57,8 +57,8 @@ class TypeCompletionPrefixTest extends FunSuite with CompilationTest with Comple
     val prefixPos = prefixAttachments.position
     val prefix = expr.substring(prefixPos.start, prefixPos.end)
 
-    assert(prefix === expectedPrefix)
-    assert(tpe === expectedType)
+    assert(prefix == expectedPrefix)
+    assert(tpe == expectedType)
   }
 
   private def assertNoPrefix(exprWithCaret: String): Unit = {

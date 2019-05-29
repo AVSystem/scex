@@ -16,10 +16,10 @@ class ShiftInfoPositionMappingTest extends FunSuite {
     val reverse = mapping.reverse
 
     for (i <- -5 to 5) {
-      assert(mapping(i) === i)
+      assert(mapping(i) == i)
     }
     for (i <- -5 to 5) {
-      assert(reverse(i) === i)
+      assert(reverse(i) == i)
     }
   }
 
@@ -30,10 +30,10 @@ class ShiftInfoPositionMappingTest extends FunSuite {
     ), null)
 
     for (i <- -5 until 0) {
-      assert(mapping(i) === i)
+      assert(mapping(i) == i)
     }
     for (i <- 0 to 10) {
-      assert(mapping(i) === i + added)
+      assert(mapping(i) == i + added)
     }
   }
 
@@ -44,10 +44,10 @@ class ShiftInfoPositionMappingTest extends FunSuite {
     ), null)
 
     for (i <- -5 until 0) {
-      assert(mapping(i) === i)
+      assert(mapping(i) == i)
     }
     for (i <- 0 to removed) {
-      assert(mapping(i) === 0)
+      assert(mapping(i) == 0)
     }
     for (i <- removed to 10) {
       assert(mapping(i) == i - removed)
@@ -62,10 +62,10 @@ class ShiftInfoPositionMappingTest extends FunSuite {
     ), null)
 
     for (i <- -5 until 0) {
-      assert(mapping(i) === i)
+      assert(mapping(i) == i)
     }
     for (i <- 0 until removed) {
-      assert(mapping(i) === 0)
+      assert(mapping(i) == 0)
     }
     for (i <- removed to 10) {
       assert(mapping(i) == i - removed + added)
@@ -87,10 +87,10 @@ class ShiftInfoPositionMappingTest extends FunSuite {
 
     val results = Array(0, 1, 2, 3, 8, 9, 10, 10, 10, 11, 12, 12, 12, 13, 14, 15, 16, 17, 18)
     for (i <- -5 until 0) {
-      assert(mapping(i) === i)
+      assert(mapping(i) == i)
     }
     for (i <- results.indices) {
-      assert(mapping(i) === results(i))
+      assert(mapping(i) == results(i))
     }
   }
 }

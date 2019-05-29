@@ -1,6 +1,7 @@
 package com.avsystem.scex.parsing
 
 import com.avsystem.commons.misc.{AbstractValueEnum, AbstractValueEnumCompanion, EnumCtx}
+import scala.annotation.tailrec
 
 import scala.collection.immutable.SortedMap
 
@@ -61,7 +62,7 @@ case class PString(result: String, beg: Int, end: Int, mods: Vector[Modification
 }
 
 object PString {
-  private[scex] def computeMapping(
+  @tailrec private[scex] def computeMapping(
     mods: List[Modification],
     acc: List[(Int, ShiftInfo)],
     racc: List[(Int, ShiftInfo)]

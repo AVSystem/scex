@@ -12,16 +12,22 @@ trait ScalaParsingCommons extends RegexParsers {
 
   override def skipWhitespace = false
 
+  def debug[T](msg: String): T => T =
+    v => {
+      println(s"$msg: $v")
+      v
+    }
+
   protected class StringParseable[T] {
-    def toString(t: T) = t.toString
+    def toString(t: T): String = t.toString
   }
 
   protected object StringParseable {
-    implicit val stringStringParseable = new StringParseable[String]
-    implicit val elemStringParseable = new StringParseable[Elem]
+    implicit val stringStringParseable: StringParseable[String] = new StringParseable[String]
+    implicit val elemStringParseable: StringParseable[Char] = new StringParseable[Elem]
 
-    implicit def optionStringParseable[T: StringParseable] = new StringParseable[Option[T]] {
-      override def toString(t: Option[T]) = t.map(implicitly[StringParseable[T]].toString).getOrElse("")
+    implicit def optionStringParseable[T: StringParseable]: StringParseable[Option[T]] = new StringParseable[Option[T]] {
+      override def toString(t: Option[T]): String = t.map(implicitly[StringParseable[T]].toString).getOrElse("")
     }
   }
 
@@ -43,10 +49,10 @@ trait ScalaParsingCommons extends RegexParsers {
     elems.iterator.map(parseable.toString).mkString
   }
 
-  protected def repjoin[T: StringParseable](parser: Parser[T]) =
+  protected def repjoin[T: StringParseable](parser: Parser[T]): Parser[String] =
     rep(parser) ^^ join[T]
 
-  protected def rep1join[T: StringParseable](parser: Parser[T]) =
+  protected def rep1join[T: StringParseable](parser: Parser[T]): Parser[String] =
     rep1(parser) ^^ join[T]
 
   val opchar: Parser[Elem] =
@@ -95,7 +101,7 @@ trait ScalaParsingCommons extends RegexParsers {
     """([^"\p{Cntrl}])+|"{1,2}(?!")""".r
 
   val multilineInterpolationChars: Parser[String] =
-    repjoin( """([^"\p{Cntrl}\$])+|"{1,2}(?!")|\$\$""".r)
+    repjoin( """([^"\p{Cntrl}\$])+|"{1,2}(?!")|\$\$|\s+""".r)
 
   val interpolationArg: Parser[String] =
     "$" ~~ (plainIdent | block)
