@@ -30,22 +30,21 @@ trait ScexCompiler extends LoggingUtils {
   class Reporter(val settings: Settings) extends AbstractReporter {
     private val errorsBuilder = new ListBuffer[CompileError]
 
-    def compileErrors() = {
+    def compileErrors(): List[CompileError] =
       errorsBuilder.result()
-    }
 
-    def includes(pos1: Position, pos2: Position) =
+    def includes(pos1: Position, pos2: Position): Boolean =
       pos1.start <= pos2.start && pos1.end > pos2.end
 
     // standard `lineContent` method fails on last line (wtf?)
-    def lineContent(pos: Position) = if (pos.source ne NoSourceFile) {
+    def lineContent(pos: Position): String = if (pos.source ne NoSourceFile) {
       val start = pos.source.lineToOffset(pos.line - 1)
       var end = start
       while (!pos.source.isEndOfLine(end) && end < pos.source.length) end += 1
       new String(pos.source.content, start, end - start)
     } else ""
 
-    def mapPosition(pos: Position, mapping: PositionMapping) =
+    def mapPosition(pos: Position, mapping: PositionMapping): Position =
       if (pos.isRange) {
         val result = pos
           .withStart(mapping(pos.start))
@@ -93,6 +92,7 @@ trait ScexCompiler extends LoggingUtils {
   }
 
   val settings: ScexSettings
+  protected def compilerSettings: Settings = settings
 
   @volatile private var initialized = false
   private var global: ScexGlobal = _
@@ -108,11 +108,11 @@ trait ScexCompiler extends LoggingUtils {
   protected def setup(): Unit = {
     logger.info("Initializing Scala compiler")
     compilationCount = 0
-    reporter = new Reporter(settings)
-    global = new Global(settings, reporter) with ScexGlobal {
-      override def loadAdditionalPlugins() = loadCompilerPlugins(this)
+    reporter = new Reporter(compilerSettings)
+    global = new Global(compilerSettings, reporter) with ScexGlobal {
+      override def loadAdditionalPlugins(): List[Plugin] = loadCompilerPlugins(this)
 
-      def classLoader = getSharedClassLoader
+      def classLoader: ScexClassLoader = getSharedClassLoader
     }
     sharedClassLoader = new ScexClassLoader(new VirtualDirectory("(scex_shared)", None), getClass.getClassLoader)
   }
@@ -133,7 +133,7 @@ trait ScexCompiler extends LoggingUtils {
 
   protected def loadCompilerPlugins(global: ScexGlobal): List[Plugin] = Nil
 
-  protected def instantiate[T](classLoader: ClassLoader, className: String) =
+  protected def instantiate[T](classLoader: ClassLoader, className: String): T =
     Class.forName(className, true, classLoader).newInstance.asInstanceOf[T]
 
   protected def compileJavaGetterAdapters(profile: ExpressionProfile, name: String, classes: Seq[Class[_]], full: Boolean): Try[Seq[Option[String]]] =
@@ -219,7 +219,7 @@ trait ScexCompiler extends LoggingUtils {
     wrapInSource(expressionCode, offset, pkgName)
   }
 
-  protected final def withGlobal[T](code: ScexGlobal => T) = underLock {
+  protected final def withGlobal[T](code: ScexGlobal => T): T = underLock {
     reporter.reset()
     val global = this.global
     val result = try code(global) finally {
@@ -240,7 +240,6 @@ trait ScexCompiler extends LoggingUtils {
     val classLoader = if (sourceFile.shared) getSharedClassLoader else createNonSharedClassLoader(sourceFile)
     val classfileDirectory = classLoader.classfileDirectory
 
-    settings.outputDirs.setSingleOutput(classfileDirectory)
     reporter.reset()
 
     logger.debug(s"Compiling source file ${sourceFile.path} to $classfileDirectory:\n${new String(sourceFile.content)}")
@@ -253,6 +252,7 @@ trait ScexCompiler extends LoggingUtils {
     // There should not be deadlocks, because nobody locks first over ScexClassLoader and then over ScexCompiler.
     classLoader.synchronized {
       val global = this.global
+      global.settings.outputDirs.setSingleOutput(classfileDirectory)
       runCompiler(global, sourceFile)
     }
 

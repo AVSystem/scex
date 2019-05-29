@@ -95,7 +95,8 @@ lazy val subprojectSettings = Seq(
     "com.github.ghik" %% "silencer-lib" % silencerVersion % Provided,
     "junit" % "junit" % junitVersion % Test,
     "org.scalatest" %% "scalatest" % scalatestVersion % Test
-  )
+  ),
+  (sources in doc in Compile) := Seq.empty
 )
 
 lazy val scex = project.in(file("."))
