@@ -16,13 +16,15 @@ import com.avsystem.scex.{Type => SType}
 
 import scala.collection.JavaConverters._
 import scala.reflect.NameTransformer
+import scala.tools.nsc.Settings
 import scala.reflect.runtime.{universe => ru}
 
 trait ScexPresentationCompiler extends ScexCompiler { compiler =>
 
   private val logger = createLogger[ScexPresentationCompiler]
 
-  protected def isEnabled = !settings.noPresentation.value
+  protected def isEnabled: Boolean = !settings.noPresentation.value
+  protected def presentationCompilerSettings: Settings = settings
 
   private var reporter: Reporter = _
   private var global: IGlobal = _
@@ -31,8 +33,8 @@ trait ScexPresentationCompiler extends ScexCompiler { compiler =>
     super.setup()
     if (isEnabled) {
       logger.info("Initializing Scala presentation compiler")
-      reporter = new Reporter(settings)
-      global = new IGlobal(settings, reporter, getSharedClassLoader)
+      reporter = new Reporter(presentationCompilerSettings)
+      global = new IGlobal(presentationCompilerSettings, reporter, getSharedClassLoader)
     }
   }
 

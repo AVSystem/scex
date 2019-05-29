@@ -3,14 +3,14 @@ package com.avsystem.scex.compiler
 import java.io.{IOException, OutputStreamWriter}
 
 import com.avsystem.scex.compiler.ClassfileReusingScexCompiler.GlobalCacheVersion
-import com.google.common.cache.CacheBuilder
+import com.google.common.cache.{Cache, CacheBuilder}
 
 import scala.collection.mutable
 import scala.reflect.io.AbstractFile
-import scala.tools.nsc.Phase
 import scala.tools.nsc.interpreter.JFile
 import scala.tools.nsc.plugins.{Plugin, PluginComponent}
 import scala.tools.nsc.util.ClassPath
+import scala.tools.nsc.{Phase, Settings}
 import scala.util.Try
 
 object ClassfileReusingScexCompiler {
@@ -46,14 +46,22 @@ trait ClassfileReusingScexCompiler extends ScexCompiler {
   private val logger = createLogger[ClassfileReusingScexCompiler]
 
   private class State(val classfileDir: AbstractFile) {
-    if (!ClassPath.split(settings.classpath.value).contains(classfileDir.path)) {
-      settings.classpath.append(classfileDir.path)
-    }
+    def adjustCompilerSettings(settings: Settings): Settings =
+      if (!ClassPath.split(settings.classpath.value).contains(classfileDir.path)) {
+        val adjustedSettings = new ScexSettings
+        settings.copyInto(adjustedSettings)
+        adjustedSettings.classpath.append(classfileDir.path)
+        adjustedSettings
+      } else settings
 
-    val nonSharedClassLoaders = CacheBuilder.newBuilder.weakValues.build[String, ScexClassLoader]
+    val nonSharedClassLoaders: Cache[String, ScexClassLoader] =
+      CacheBuilder.newBuilder.weakValues.build[String, ScexClassLoader]
   }
 
-  private var _stateOpt: Option[State] = null
+  private var _stateOpt: Option[State] = _
+
+  override protected def compilerSettings: Settings =
+    stateOpt.map(_.adjustCompilerSettings(super.compilerSettings)).getOrElse(super.compilerSettings)
 
   private def stateOpt = {
     if (_stateOpt == null) {
@@ -74,7 +82,7 @@ trait ClassfileReusingScexCompiler extends ScexCompiler {
     }
   }
 
-  override protected def createNonSharedClassLoader(sourceFile: ScexSourceFile) =
+  override protected def createNonSharedClassLoader(sourceFile: ScexSourceFile): ScexClassLoader =
     stateOpt.map { state =>
       import state._
 
@@ -194,7 +202,7 @@ trait ClassfileReusingScexCompiler extends ScexCompiler {
       val global: plugin.global.type = plugin.global
       val runsAfter = List(runsAfterPhase)
 
-      def newPhase(prev: Phase) = new StdPhase(prev) {
+      def newPhase(prev: Phase): StdPhase = new StdPhase(prev) {
         override def apply(unit: CompilationUnit): Unit =
           applyComponentPhase(unit)
       }
@@ -240,6 +248,6 @@ trait ClassfileReusingScexCompiler extends ScexCompiler {
 
   }
 
-  override protected def loadCompilerPlugins(global: ScexGlobal) =
+  override protected def loadCompilerPlugins(global: ScexGlobal): List[Plugin] =
     new SignatureGenerator(global) :: super.loadCompilerPlugins(global)
 }
