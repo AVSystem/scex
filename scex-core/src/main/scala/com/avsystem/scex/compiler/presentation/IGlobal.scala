@@ -2,6 +2,7 @@ package com.avsystem.scex
 package compiler.presentation
 
 import com.avsystem.scex.compiler.ScexGlobal
+import com.github.ghik.silencer.silent
 
 import scala.collection.mutable
 import scala.tools.nsc.Settings
@@ -12,6 +13,7 @@ import scala.tools.nsc.symtab.Flags.{ACCESSOR, PARAMACCESSOR}
 /**
   * I needed to hack a custom implementation of completion, hence this class.
   */
+@silent("deprecated")
 class IGlobal(settings: Settings, reporter: Reporter, val classLoader: ClassLoader)
   extends Global(settings, reporter) with ScexGlobal {
 
@@ -32,7 +34,8 @@ class IGlobal(settings: Settings, reporter: Reporter, val classLoader: ClassLoad
     tpe: Type,
     accessible: Boolean,
     implicitTree: Tree,
-    implicitType: Type) extends ScexMember
+    implicitType: Type
+  ) extends ScexMember
 
   case class ScexScopeMember(
     sym: Symbol,
@@ -270,7 +273,7 @@ class IGlobal(settings: Settings, reporter: Reporter, val classLoader: ClassLoad
      * Create a function application of a given view function to `tree` and typecheck it.
      */
     def viewApply(view: analyzer.SearchResult): Tree = {
-      assert(view.tree != EmptyTree)
+      assert(view.tree != EmptyTree, "")
       analyzer.newTyper(context.makeImplicit(reportAmbiguousErrors = false))
         .typed(Apply(view.tree, List(tree)) setPos tree.pos)
         .onTypeError(EmptyTree)

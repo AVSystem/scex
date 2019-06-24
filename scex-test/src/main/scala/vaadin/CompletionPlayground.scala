@@ -9,6 +9,7 @@ import com.avsystem.scex.util.PredefinedAccessSpecs.basicOperations
 import com.avsystem.scex.util.SimpleContext
 import com.avsystem.scex.validation.{SymbolValidator, SyntaxValidator}
 import com.avsystem.scex.{ExpressionProfile, NamedSource}
+import com.github.ghik.silencer.silent
 import com.vaadin.event.FieldEvents.{TextChangeEvent, TextChangeListener}
 import com.vaadin.terminal.gwt.server.AbstractApplicationServlet
 import com.vaadin.ui.{Label, TextField, Window}
@@ -17,6 +18,7 @@ import org.eclipse.jetty.server.Server
 import org.eclipse.jetty.server.session.SessionHandler
 import org.eclipse.jetty.servlet.{ServletContextHandler, ServletHolder}
 
+@silent("a pure expression does nothing in statement position")
 object CompletionPlayground {
 
   val settings = new ScexSettings

@@ -53,8 +53,8 @@ class Translator(val global: ScexGlobal, offset: Int, exprDef: ExpressionDef) ex
         New(translateTree(tpt))(attachments)
       case u.Annotated(annot, arg) =>
         Annotated(translateTree(annot), translateTree(arg))(attachments)
-      case u.AssignOrNamedArg(lhs, rhs) =>
-        AssignOrNamedArg(translateTree(lhs), translateTree(rhs))(attachments)
+      case CrossNamedArg(lhs, rhs) =>
+        NamedArg(translateTree(lhs), translateTree(rhs))(attachments)
       case u.CaseDef(pat, guard, body) =>
         CaseDef(translateTree(pat), translateTree(guard), translateTree(body))(attachments)
       case u.Bind(name, body) =>

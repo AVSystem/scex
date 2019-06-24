@@ -19,7 +19,7 @@ object CodeGeneration {
       if (method.getParameterTypes.isEmpty && method.getTypeParameters.isEmpty) {
 
         def uncapitalize(str: String) =
-          str.head.toLower + str.tail
+          str.head.toLower.toString + str.tail
         def isBoolOrBoolean(clazz: Class[_]) =
           clazz == classOf[Boolean] || clazz == classOf[jl.Boolean]
 

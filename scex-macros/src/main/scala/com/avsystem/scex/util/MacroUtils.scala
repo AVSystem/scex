@@ -1,9 +1,11 @@
 package com.avsystem.scex.util
 
+import com.github.ghik.silencer.silent
+
 import scala.reflect.api.Universe
 import scala.util.matching.Regex
 
-trait MacroUtils {
+trait MacroUtils extends CrossMacroUtils {
   val universe: Universe
 
   import universe._
@@ -27,6 +29,7 @@ trait MacroUtils {
 
   lazy val any2stringadd: Symbol = symAlternatives(typeOf[Predef.type].member(TermName("any2stringadd")))
     .find(_.isMethod).getOrElse(NoSymbol)
+  @silent("deprecated")
   lazy val stringAddPlus: Symbol = typeOf[any2stringadd[_]].member(TermName("+").encodedName)
   lazy val stringConcat: Symbol = typeOf[String].member(TermName("+").encodedName)
   lazy val safeToString: Symbol = templateInterpolationsType.companion.decl(TermName("safeToString"))

@@ -39,7 +39,7 @@ trait PositionTrackingParsers extends RegexParsers {
       new Bound(str, binding)
   }
 
-  def join(pstrs: Traversable[PString]): PString =
+  def join(pstrs: Iterable[PString]): PString =
     if (pstrs.nonEmpty) pstrs.reduce(_ + _) else PString("", 0, 0, Vector.empty)
 
   def withOffset[T](parser: Parser[T]): Parser[(T, Int)] = new Parser[(T, Int)] {

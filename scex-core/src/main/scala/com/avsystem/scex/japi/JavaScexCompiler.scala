@@ -11,7 +11,7 @@ import com.avsystem.scex.util.Fluent
 import com.google.common.cache.CacheBuilder
 import com.google.common.reflect.TypeToken
 
-import scala.collection.JavaConverters._
+import com.avsystem.commons.jiop.JavaInterop._
 
 trait JavaScexCompiler extends ScexCompiler with ScexPresentationCompiler {
 

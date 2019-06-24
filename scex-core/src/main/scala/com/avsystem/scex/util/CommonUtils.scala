@@ -4,6 +4,7 @@ package util
 import java.lang.reflect.{Method, Modifier}
 import java.util.concurrent.Callable
 
+import com.github.ghik.silencer.silent
 import com.google.common.base.Predicate
 
 import scala.collection.mutable
@@ -30,9 +31,9 @@ object CommonUtils {
   object JavaGetterName {
     def unapply(getterName: String) = getterName match {
       case BeanGetterNamePattern(capitalizedProperty, _) =>
-        Some((capitalizedProperty.head.toLower + capitalizedProperty.tail, false))
+        Some((capitalizedProperty.head.toLower.toString + capitalizedProperty.tail, false))
       case BooleanBeanGetterNamePattern(capitalizedProperty, _) =>
-        Some((capitalizedProperty.head.toLower + capitalizedProperty.tail, true))
+        Some((capitalizedProperty.head.toLower.toString + capitalizedProperty.tail, true))
       case _ => None
     }
   }
@@ -71,7 +72,7 @@ object CommonUtils {
     }
     clazz.getInterfaces.foreach { iface =>
       if (!resultBuilder.exists(iface.isAssignableFrom)) {
-        resultBuilder.retain(c => !c.isAssignableFrom(iface))
+        resultBuilder.retain(c => !c.isAssignableFrom(iface)): @silent("deprecated")
         resultBuilder += iface
       }
     }

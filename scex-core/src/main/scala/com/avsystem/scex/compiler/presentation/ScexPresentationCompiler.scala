@@ -3,6 +3,7 @@ package compiler.presentation
 
 import java.{lang => jl, util => ju}
 
+import com.avsystem.commons.jiop.JavaInterop._
 import com.avsystem.commons.misc.TypeString
 import com.avsystem.scex.compiler.CodeGeneration._
 import com.avsystem.scex.compiler.ScexCompiler.{CompilationFailedException, CompileError}
@@ -14,11 +15,12 @@ import com.avsystem.scex.presentation.{Attributes, SymbolAttributes}
 import com.avsystem.scex.util.CommonUtils._
 import com.avsystem.scex.validation.ValidationContext
 import com.avsystem.scex.{Type => SType}
+import com.github.ghik.silencer.silent
 
-import scala.collection.JavaConverters._
 import scala.reflect.NameTransformer
 import scala.tools.nsc.Settings
 
+@silent("deprecated")
 trait ScexPresentationCompiler extends ScexCompiler { compiler =>
 
   private val logger = createLogger[ScexPresentationCompiler]
@@ -64,7 +66,8 @@ trait ScexPresentationCompiler extends ScexCompiler { compiler =>
     contextType: String,
     rootObjectClass: Class[_],
     resultType: String,
-    variableTypes: Map[String, String]) {
+    variableTypes: Map[String, String]
+  ) {
 
     require(profile != null, "Profile cannot be null")
     require(contextType != null, "Context type cannot be null")
@@ -111,7 +114,8 @@ trait ScexPresentationCompiler extends ScexCompiler { compiler =>
     setter: Boolean = false,
     variableTypes: Map[String, TypeString[_]] = Map.empty,
     header: String = ""
-  )(implicit
+  )(
+    implicit
     cti: ContextTypeInfo[C],
     tts: TypeString[T]
   ): Completer = {
@@ -132,7 +136,8 @@ trait ScexPresentationCompiler extends ScexCompiler { compiler =>
     contextType: String,
     rootObjectClass: Class[_],
     resultType: String,
-    variableTypes: Map[String, String]): Completer = {
+    variableTypes: Map[String, String]
+  ): Completer = {
 
     new Completer(profile, template, setter, header, contextType, rootObjectClass, resultType, variableTypes)
   }
@@ -185,7 +190,7 @@ trait ScexPresentationCompiler extends ScexCompiler { compiler =>
       merge(normalInfos.toStream, implicitInfos.toStream).map(_.info.payload)
 
     def annotValue(annotTree: Tree) = annotTree.children.tail.collectFirst {
-      case AssignOrNamedArg(Ident(TermName("value")), value) => value
+      case CrossNamedArg(Ident(TermName("value")), value) => value
       case _ => None
     }
 
@@ -482,8 +487,10 @@ object ScexPresentationCompiler {
 
   case class MemberFlags(iimplicit: Boolean, javaGetterAdapter: Boolean, inputMember: Boolean)
 
-  case class Member(name: String, params: List[List[Param]], implicitParams: List[Param], ownerType: Type, returnType: Type,
-    flags: MemberFlags, javaMember: Option[jl.reflect.Member], documentation: Option[String]) {
+  case class Member(
+    name: String, params: List[List[Param]], implicitParams: List[Param], ownerType: Type, returnType: Type,
+    flags: MemberFlags, javaMember: Option[jl.reflect.Member], documentation: Option[String]
+  ) {
 
     def paramsAsJava =
       params.map(_.asJava).asJava

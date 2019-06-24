@@ -37,6 +37,7 @@ object CustomBooleanSplicer {
   * Created: 28-11-2013
   * Author: ghik
   */
+@silent("a pure expression does nothing in statement position")
 class SetterExpressionsTest extends FunSuite with CompilationTest {
 
   import com.avsystem.scex.validation.SymbolValidator._

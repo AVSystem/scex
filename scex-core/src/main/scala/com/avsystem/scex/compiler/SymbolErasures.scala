@@ -1,8 +1,8 @@
 package com.avsystem.scex.compiler
 
-import java.lang.reflect.{Member, Constructor, Field, Method}
+import java.lang.reflect.{Constructor, Field, Member, Method}
 import java.security.MessageDigest
-import java.{lang => jl, util => ju}
+import java.{lang => jl}
 
 import scala.io.Codec
 import scala.tools.nsc.Global
@@ -14,8 +14,7 @@ import scala.tools.nsc.Global
  * Created: 27-10-2014
  * Author: ghik
  */
-trait SymbolErasures {
-  this: Global =>
+trait SymbolErasures { this: Global =>
 
   def classLoader: ClassLoader
 
@@ -32,8 +31,8 @@ trait SymbolErasures {
   }
 
   /** The Java class that corresponds to given Scala type.
-    * Pre: Scala type is already transformed to Java level.
-    */
+   * Pre: Scala type is already transformed to Java level.
+   */
   def typeToJavaClass(tpe: Type): Class[_] = tpe match {
     case ExistentialType(_, rtpe) => typeToJavaClass(rtpe)
     case TypeRef(_, ArrayClass, List(elemtpe)) => jArrayClass(typeToJavaClass(elemtpe))
@@ -44,12 +43,13 @@ trait SymbolErasures {
   }
 
   /** The Java class corresponding to given Scala class.
-    * Note: This only works for
-    * - top-level classes
-    * - Scala classes that were generated via jclassToScala
-    * - classes that have a class owner that has a corresponding Java class
-    * @throws A `ClassNotFoundException` for all Scala classes not in one of these categories.
-    */
+   * Note: This only works for
+   * - top-level classes
+   * - Scala classes that were generated via jclassToScala
+   * - classes that have a class owner that has a corresponding Java class
+   *
+   * @throws A `ClassNotFoundException` for all Scala classes not in one of these categories.
+   */
   @throws(classOf[ClassNotFoundException])
   private def classToJava(clazz: ClassSymbol): Class[_] = {
     def noClass = throw new ClassNotFoundException("no Java class corresponding to " + clazz + " found")
@@ -94,44 +94,43 @@ trait SymbolErasures {
   private def javaClass(path: String): Class[_] =
     Class.forName(path, false, classLoader)
 
-  private object compactifier extends (String => String) {
+  private final object compactifier extends (String => String) {
     val md5 = MessageDigest.getInstance("MD5")
 
     /**
      * COMPACTIFY
      *
-     * The hashed name has the form (prefix + marker + md5 + marker + suffix), where
-     * - prefix/suffix.length = MaxNameLength / 4
-     * - md5.length = 32
+     * The maximum length of a filename on some platforms is 240 chars (docker).
+     * Therefore, compactify names that would create a filename longer than that.
+     * A compactified name looks like
+     * prefix + $$$$ + md5 + $$$$ + suffix,
+     * where the prefix and suffix are the first and last quarter of the name,
+     * respectively.
      *
-     * We obtain the formula:
-     *
-     * FileNameLength = 2*(MaxNameLength / 4) + 2.marker.length + 32 + 6
-     *
-     * (+6 for ".class"). MaxNameLength can therefore be computed as follows:
+     * So how long is too long? For a (flattened class) name, the resulting file
+     * will be called "name.class", or, if it's a module class, "name$.class"
+     * (see scala/bug#8199). Therefore the maximum suffix is 7 characters, and
+     * names that are over (240 - 7) characters get compactified.
      */
-    val marker = "$$$$"
-    val maxSuffixLength = "$.class".length + 1
-    val MaxNameLength = math.min(
-      settings.maxClassfileName.value - maxSuffixLength,
-      2 * (settings.maxClassfileName.value - maxSuffixLength - 2 * marker.length - 32)
-    )
+    final val marker = "$$$$"
+    final val MaxSuffixLength = 7 // "$.class".length + 1 // potential module class suffix and file extension
+    final val MaxNameLength = 240 - MaxSuffixLength
 
     def toMD5(s: String, edge: Int): String = {
       val prefix = s take edge
       val suffix = s takeRight edge
 
       val cs = s.toArray
-      val bytes = Codec toUTF8 cs
+      val bytes = Codec.toUTF8(new scala.runtime.ArrayCharSequence(cs, 0, cs.length))
       md5 update bytes
       val md5chars = (md5.digest() map (b => (b & 0xFF).toHexString)).mkString
 
       prefix + marker + md5chars + marker + suffix
     }
-
-    def apply(s: String): String =
+    def apply(s: String): String = (
       if (s.length <= MaxNameLength) s
       else toMD5(s, MaxNameLength / 4)
+      )
   }
 
   private def expandedName(sym: Symbol): String =
@@ -139,8 +138,9 @@ trait SymbolErasures {
     else sym.name.toString
 
   /** The Java field corresponding to a given Scala field.
-    * @param   fld The Scala field.
-    */
+   *
+   * @param   fld The Scala field.
+   */
   def fieldToJava(fld: TermSymbol): Field = {
     val jclazz = classToJava(fld.owner.asClass)
     val jname = fld.name.dropLocal.toString
@@ -151,8 +151,9 @@ trait SymbolErasures {
   }
 
   /** The Java method corresponding to a given Scala method.
-    * @param   meth The Scala method
-    */
+   *
+   * @param   meth The Scala method
+   */
   def methodToJava(meth: MethodSymbol): Method = {
     val jclazz = classToJava(meth.owner.asClass)
     val paramClasses = transformedType(meth).paramTypes map typeToJavaClass
@@ -165,8 +166,9 @@ trait SymbolErasures {
   }
 
   /** The Java constructor corresponding to a given Scala constructor.
-    * @param   constr The Scala constructor
-    */
+   *
+   * @param   constr The Scala constructor
+   */
   def constructorToJava(constr: MethodSymbol): Constructor[_] = {
     val jclazz = classToJava(constr.owner.asClass)
     val paramClasses = transformedType(constr).paramTypes map typeToJavaClass

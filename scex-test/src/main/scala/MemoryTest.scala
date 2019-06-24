@@ -1,13 +1,12 @@
-import java.{lang => jl, util => ju}
-
 import com.avsystem.scex.compiler.ScexSettings
 import com.avsystem.scex.japi.DefaultJavaScexCompiler
 import com.avsystem.scex.presentation.SymbolAttributes
-import com.avsystem.scex.util.{SimpleContext, PredefinedAccessSpecs}
+import com.avsystem.scex.util.{PredefinedAccessSpecs, SimpleContext}
 import com.avsystem.scex.validation.{SymbolValidator, SyntaxValidator}
-import com.avsystem.scex.{ExpressionContext, ExpressionProfile, NamedSource}
+import com.avsystem.scex.{ExpressionProfile, NamedSource}
+import com.github.ghik.silencer.silent
 
-
+@silent("a pure expression does nothing in statement position")
 object MemoryTest {
 
   case class Dummy(costam: Int)

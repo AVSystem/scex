@@ -4,15 +4,15 @@ name := "scex"
 
 inThisBuild(Seq(
   organization := "com.avsystem.scex",
-  scalaVersion := "2.12.8",
-  crossScalaVersions := Seq(scalaVersion.value),
+  scalaVersion := "2.13.0",
+  crossScalaVersions := Seq(scalaVersion.value, "2.12.8"),
 ))
 
 val CompileAndTest = "compile->compile;test->test"
 
-val parserCombinatorsVersion = "1.0.5"
-val silencerVersion = "1.2.1"
-val avsCommonsVersion = "1.34.0"
+val parserCombinatorsVersion = "1.1.2"
+val silencerVersion = "1.4.1"
+val avsCommonsVersion = "2.0.0-M1"
 val jettyVersion = "9.1.0.v20131115"
 val vaadinVersion = "6.8.13"
 val slf4jVersion = "1.6.4"
@@ -23,15 +23,10 @@ val guavaVersion = "23.0"
 val commonsNetVersion = "3.3"
 val jodaTimeVersion = "2.8.2"
 val junitVersion = "4.11"
-val scalatestVersion = "3.0.0"
+val scalatestVersion = "3.0.8"
 
 val noPublishSettings = Seq(
-  publishArtifact := false,
-  publish := {},
-  publishLocal := {},
-  publishM2 := {},
-  publishSigned := {},
-  publishLocalSigned := {}
+  skip in publish := true
 )
 
 sonatypeProfileName := "com.avsystem"
@@ -45,9 +40,8 @@ lazy val subprojectSettings = Seq(
     "-language:existentials",
     "-language:dynamics",
     "-language:experimental.macros",
-    "-Xfuture",
     "-Xfatal-warnings",
-    s"-Xlint:-missing-interpolator,-adapted-args,${if (scalaBinaryVersion.value == "2.12") "-unused," else ""}_"
+    s"-Xlint:-missing-interpolator,-adapted-args,-unused,_"
   ),
 
   sonatypeProfileName := "com.avsystem",

@@ -1,7 +1,7 @@
 package com.avsystem.scex
 package compiler.presentation.ast
 
-import scala.collection.JavaConverters._
+import com.avsystem.commons.jiop.JavaInterop._
 
 sealed trait Tree extends PrettyPrint {
 
@@ -240,7 +240,7 @@ case class Alternative(trees: List[Tree])(attachments: Attachments)
 case class Assign(lhs: Tree, rhs: Tree)(attachments: Attachments)
   extends AbstractTree(attachments) with TermTree
 
-case class AssignOrNamedArg(lhs: Tree, rhs: Tree)(attachments: Attachments)
+case class NamedArg(lhs: Tree, rhs: Tree)(attachments: Attachments)
   extends AbstractTree(attachments) with TermTree
 
 case class Block(stats: List[Tree], expr: Tree)(attachments: Attachments)

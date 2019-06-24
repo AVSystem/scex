@@ -13,7 +13,7 @@ import scala.language.{dynamics, existentials}
 import scala.reflect.macros.Universe
 import scala.runtime.RichInt
 
-
+@silent("a pure expression does nothing in statement position")
 object ValidationTest {
 
   object Foo {
@@ -88,7 +88,7 @@ object ValidationTest {
 
       on {
         sc: StringContext =>
-          sc.s _
+          sc.all.membersNamed("s")
       }
 
       on {
@@ -145,7 +145,7 @@ object ValidationTest {
       on {
         anyRef: AnyRef =>
           anyRef.eq _
-          anyRef.synchronized _
+          anyRef.synchronized(_: Any)
       }
 
     }
