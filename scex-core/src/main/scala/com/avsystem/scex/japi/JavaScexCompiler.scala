@@ -2,13 +2,12 @@ package com.avsystem.scex
 package japi
 
 import java.lang.reflect.Type
-import java.{lang => jl, util => ju}
+import java.{util => ju}
 
 import com.avsystem.scex.compiler.JavaTypeParsing._
 import com.avsystem.scex.compiler.presentation.ScexPresentationCompiler
 import com.avsystem.scex.compiler.{ExpressionDef, ScexCompiler}
 import com.avsystem.scex.util.Fluent
-import com.avsystem.scex.{Type => SType}
 import com.google.common.cache.CacheBuilder
 import com.google.common.reflect.TypeToken
 
@@ -22,22 +21,22 @@ trait JavaScexCompiler extends ScexCompiler with ScexPresentationCompiler {
     .build[Type, String](javaTypeAsScalaType _)
 
   private val rootObjectClassCache = CacheBuilder.newBuilder.weakKeys
-    .build[TypeToken[_ <: JavaExpressionContext[_, _]], Class[_]](getRootObjectClass _)
+    .build[TypeToken[_ <: ExpressionContext[_, _]], Class[_]](getRootObjectClass _)
 
-  private def getRootObjectClass(token: TypeToken[_ <: JavaExpressionContext[_, _]]): Class[_] =
-    token.getSupertype(classOf[JavaExpressionContext[_, _]]).getType match {
+  private def getRootObjectClass(token: TypeToken[_ <: ExpressionContext[_, _]]): Class[_] =
+    token.getSupertype(classOf[ExpressionContext[_, _]]).getType match {
       case ParameterizedType(_, _, Array(rootObjectType, _)) => rootObjectType match {
         case TypeAny | TypeAnyVal => null
         case _ => TypeToken.of(rootObjectType).getRawType
       }
-      case clazz if clazz == classOf[JavaExpressionContext[_, _]] => classOf[Object]
+      case clazz if clazz == classOf[ExpressionContext[_, _]] => classOf[Object]
     }
 
-  def buildExpression: ExpressionBuilder[_ <: JavaExpressionContext[_, _], _] =
-    new ExpressionBuilder[JavaExpressionContext[_, _], Any]
+  def buildExpression: ExpressionBuilder[_ <: ExpressionContext[_, _], _] =
+    new ExpressionBuilder[ExpressionContext[_, _], Any]
 
-  class ExpressionBuilder[C <: JavaExpressionContext[_, _], T] extends Fluent {
-    private var _contextTypeToken: TypeToken[_ <: JavaExpressionContext[_, _]] = _
+  class ExpressionBuilder[C <: ExpressionContext[_, _], T] extends Fluent {
+    private var _contextTypeToken: TypeToken[_ <: ExpressionContext[_, _]] = _
     private var _resultTypeToken: TypeToken[_] = _
     private var _profile: ExpressionProfile = _
     private var _expression: String = _
@@ -65,67 +64,67 @@ trait JavaScexCompiler extends ScexCompiler with ScexPresentationCompiler {
         scalaContextType, scalaResultType, variableTypes)(_expression, positionMapping, rootObjectClass))
     }
 
-    def contextType[NC <: JavaExpressionContext[_, _]](contextTypeToken: TypeToken[NC]) = fluent {
+    def contextType[NC <: ExpressionContext[_, _]](contextTypeToken: TypeToken[NC]): ExpressionBuilder[NC, T] = fluent {
       _contextTypeToken = contextTypeToken
     }.asInstanceOf[ExpressionBuilder[NC, T]]
 
-    def contextType[NC <: JavaExpressionContext[_, _]](contextClass: Class[NC]) = fluent {
+    def contextType[NC <: ExpressionContext[_, _]](contextClass: Class[NC]): ExpressionBuilder[NC, T] = fluent {
       _contextTypeToken = TypeToken.of(contextClass)
     }.asInstanceOf[ExpressionBuilder[NC, T]]
 
-    def resultType[NT](resultTypeToken: TypeToken[NT]) = fluent {
+    def resultType[NT](resultTypeToken: TypeToken[NT]): ExpressionBuilder[C, NT] = fluent {
       _resultTypeToken = resultTypeToken
       _setter = false
     }.asInstanceOf[ExpressionBuilder[C, NT]]
 
-    def resultType[NT](resultClass: Class[NT]) = fluent {
+    def resultType[NT](resultClass: Class[NT]): ExpressionBuilder[C, NT] = fluent {
       _resultTypeToken = TypeToken.of(resultClass)
       _setter = false
     }.asInstanceOf[ExpressionBuilder[C, NT]]
 
-    def setterFor[NT](resultTypeToken: TypeToken[NT]) = fluent {
+    def setterFor[NT](resultTypeToken: TypeToken[NT]): ExpressionBuilder[C, Setter[NT]] = fluent {
       _resultTypeToken = resultTypeToken
       _setter = true
     }.asInstanceOf[ExpressionBuilder[C, Setter[NT]]]
 
-    def setterFor[NT](resultClass: Class[NT]) = fluent {
+    def setterFor[NT](resultClass: Class[NT]): ExpressionBuilder[C, Setter[NT]] = fluent {
       _resultTypeToken = TypeToken.of(resultClass)
       _setter = true
     }.asInstanceOf[ExpressionBuilder[C, Setter[NT]]]
 
-    def profile(profile: ExpressionProfile) = fluent {
+    def profile(profile: ExpressionProfile): this.type = fluent {
       _profile = profile
     }
 
-    def expression(expression: String) = fluent {
+    def expression(expression: String): this.type = fluent {
       _expression = expression
     }
 
-    def template(template: Boolean) = fluent {
+    def template(template: Boolean): this.type = fluent {
       _template = template
     }
 
-    def additionalHeader(header: String) = fluent {
+    def additionalHeader(header: String): this.type = fluent {
       _header = header
     }
 
-    def variableTypes(variableTypes: ju.Map[String, TypeToken[_]]) = fluent {
+    def variableTypes(variableTypes: ju.Map[String, TypeToken[_]]): this.type = fluent {
       _variableTypes.clear()
       _variableTypes.putAll(variableTypes)
     }
 
-    def variableType(name: String, typeToken: TypeToken[_]) = fluent {
+    def variableType(name: String, typeToken: TypeToken[_]): this.type = fluent {
       _variableTypes.put(name, typeToken)
     }
 
-    def variableClasses(variableTypes: ju.Map[String, Class[_]]) = fluent {
+    def variableClasses(variableTypes: ju.Map[String, Class[_]]): this.type = fluent {
       _variableTypes.clear()
       variableTypes.entrySet.iterator.asScala.foreach { e =>
         _variableTypes.put(e.getKey, TypeToken.of(e.getValue))
       }
     }
 
-    def variableClass(name: String, clazz: Class[_]) = fluent {
+    def variableClass(name: String, clazz: Class[_]): this.type = fluent {
       _variableTypes.put(name, TypeToken.of(clazz))
     }
   }
@@ -134,7 +133,7 @@ trait JavaScexCompiler extends ScexCompiler with ScexPresentationCompiler {
     new CompleterBuilder
 
   class CompleterBuilder extends Fluent {
-    private var _contextTypeToken: TypeToken[_ <: JavaExpressionContext[_, _]] = _
+    private var _contextTypeToken: TypeToken[_ <: ExpressionContext[_, _]] = _
     private var _resultTypeToken: TypeToken[_] = _
     private var _profile: ExpressionProfile = _
     private var _template: Boolean = true
@@ -158,63 +157,63 @@ trait JavaScexCompiler extends ScexCompiler with ScexPresentationCompiler {
       getCompleter(_profile, _template, _setter, _header, scalaContextType, rootObjectClass, scalaResultType, variableTypes)
     }
 
-    def contextType(contextTypeToken: TypeToken[_ <: JavaExpressionContext[_, _]]) = fluent {
+    def contextType(contextTypeToken: TypeToken[_ <: ExpressionContext[_, _]]): this.type = fluent {
       _contextTypeToken = contextTypeToken
     }
 
-    def contextType(contextClass: Class[_ <: JavaExpressionContext[_, _]]) = fluent {
+    def contextType(contextClass: Class[_ <: ExpressionContext[_, _]]): this.type = fluent {
       _contextTypeToken = TypeToken.of(contextClass)
     }
 
-    def resultType(resultTypeToken: TypeToken[_]) = fluent {
+    def resultType(resultTypeToken: TypeToken[_]): this.type = fluent {
       _resultTypeToken = resultTypeToken
       _setter = false
     }
 
-    def resultType(resultClass: Class[_]) = fluent {
+    def resultType(resultClass: Class[_]): this.type = fluent {
       _resultTypeToken = TypeToken.of(resultClass)
       _setter = false
     }
 
-    def setterForType(resultTypeToken: TypeToken[_]) = fluent {
+    def setterForType(resultTypeToken: TypeToken[_]): this.type = fluent {
       _resultTypeToken = _resultTypeToken
       _setter = true
     }
 
-    def setterForType(resultClass: Class[_]) = fluent {
+    def setterForType(resultClass: Class[_]): this.type = fluent {
       _resultTypeToken = TypeToken.of(resultClass)
       _setter = true
     }
 
-    def profile(profile: ExpressionProfile) = fluent {
+    def profile(profile: ExpressionProfile): this.type = fluent {
       _profile = profile
     }
 
-    def template(template: Boolean) = fluent {
+    def template(template: Boolean): this.type = fluent {
       _template = template
     }
 
-    def additionalHeader(header: String) = fluent {
+    def additionalHeader(header: String): this.type = fluent {
       _header = header
     }
 
-    def variableTypes(variableTypes: ju.Map[String, TypeToken[_]]) = fluent {
+    def variableTypes(variableTypes: ju.Map[String, TypeToken[_]]): this.type = fluent {
       _variableTypes.clear()
       _variableTypes.putAll(variableTypes)
     }
 
-    def variableType(name: String, typeToken: TypeToken[_]) = fluent {
+    def variableType(name: String, typeToken: TypeToken[_]): this.type = fluent {
       _variableTypes.put(name, typeToken)
     }
 
-    def variableClasses(variableTypes: ju.Map[String, Class[_]]) = fluent {
+    def variableClasses(variableTypes: ju.Map[String, Class[_]]): this.type = fluent {
       _variableTypes.clear()
       variableTypes.entrySet.iterator.asScala.foreach { e =>
         _variableTypes.put(e.getKey, TypeToken.of(e.getValue))
       }
     }
 
-    def variableClass(name: String, clazz: Class[_]) = fluent {
+    def variableClass(name: String, clazz: Class[_]): this.type = fluent {
       _variableTypes.put(name, TypeToken.of(clazz))
     }
   }

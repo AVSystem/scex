@@ -6,11 +6,13 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Author: ghik
- * Created: 11/17/14.
+ * Adds information about parameter names of Java methods.
+ *
+ * @deprecated you should use <tt>-parameters</tt> compiler option for Java instead
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.METHOD, ElementType.CONSTRUCTOR})
+@Deprecated
 public @interface ParameterNames {
     String[] value();
 }
