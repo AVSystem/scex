@@ -32,6 +32,12 @@ val noPublishSettings = Seq(
 sonatypeProfileName := "com.avsystem"
 
 lazy val subprojectSettings = Seq(
+  javacOptions ++= Seq(
+    "-source", "1.8",
+    "-target", "1.8",
+    "-parameters"
+  ),
+  
   scalacOptions ++= Seq(
     "-feature",
     "-deprecation",
@@ -41,7 +47,7 @@ lazy val subprojectSettings = Seq(
     "-language:dynamics",
     "-language:experimental.macros",
     "-Xfatal-warnings",
-    s"-Xlint:-missing-interpolator,-adapted-args,-unused,_"
+    "-Xlint:-missing-interpolator,-adapted-args,-unused,_"
   ),
 
   sonatypeProfileName := "com.avsystem",

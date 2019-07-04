@@ -1,10 +1,10 @@
 import com.avsystem.scex.Expression;
+import com.avsystem.scex.ExpressionContext;
 import com.avsystem.scex.ExpressionProfile;
 import com.avsystem.scex.NamedSource;
 import com.avsystem.scex.compiler.ScexSettings;
 import com.avsystem.scex.compiler.presentation.ScexPresentationCompiler;
 import com.avsystem.scex.japi.DefaultJavaScexCompiler;
-import com.avsystem.scex.japi.JavaExpressionContext;
 import com.avsystem.scex.presentation.Attributes;
 import com.avsystem.scex.presentation.SymbolAttributes;
 import com.avsystem.scex.symboldsl.SymbolInfo;
@@ -38,7 +38,7 @@ public class ScexJavaTest {
         ExpressionProfile profile = new ExpressionProfile("test", syntaxValidator, symbolValidator,
                 symbolAttributes, "", NamedSource.apply("test", ""));
 
-        Class<JavaExpressionContext<?, ?>> aecClass = (Class) JavaExpressionContext.class;
+        Class<ExpressionContext<?, ?>> aecClass = (Class) ExpressionContext.class;
         ScexPresentationCompiler.Completer ctx = compiler.buildCompleter().contextType(aecClass)
                 .resultType(String.class).profile(profile).template(false).get();
 

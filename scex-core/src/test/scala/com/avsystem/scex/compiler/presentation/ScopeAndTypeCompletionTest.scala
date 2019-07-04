@@ -4,7 +4,7 @@ import com.avsystem.scex.compiler.presentation.ScexPresentationCompiler.Param
 import com.avsystem.scex.compiler.presentation.ScopeAndTypeCompletionTest.{DynStr, Root, SvRoot}
 import com.avsystem.scex.compiler.{CompilationTest, JavaRootWithGetter}
 import com.avsystem.scex.presentation.Attributes
-import com.avsystem.scex.presentation.annotation.{Documentation, ParameterNames}
+import com.avsystem.scex.presentation.annotation.Documentation
 import com.avsystem.scex.util.SimpleContext
 import com.github.ghik.silencer.silent
 import org.scalatest.FunSuite
@@ -135,9 +135,8 @@ class ScopeAndTypeCompletionTest extends FunSuite with CompilationTest with Comp
 object ScopeAndTypeCompletionTest {
 
   trait Root {
-    @ParameterNames(Array("annotArg"))
     @Documentation("handles stuff")
-    def method(arg: Any, moar: Any): Any
+    def method(annotArg: Any, moar: Any): Any
     def com: Int
   }
 
