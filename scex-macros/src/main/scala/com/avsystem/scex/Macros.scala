@@ -1,19 +1,21 @@
 package com.avsystem.scex
 
-import com.avsystem.commons.macros.AbstractMacroCommons
 import com.avsystem.scex.util.MacroUtils
 
 import scala.reflect.macros.blackbox
 
 /**
-  * Created: 18-11-2013
-  * Author: ghik
-  */
-class Macros(val ctx: blackbox.Context) extends AbstractMacroCommons(ctx) with MacroUtils {
+ * Created: 18-11-2013
+ * Author: ghik
+ */
+class Macros(val c: blackbox.Context) extends MacroUtils {
 
   lazy val universe: c.universe.type = c.universe
 
   import universe._
+
+  def getType(typeTree: Tree): Type =
+    c.typecheck(typeTree, c.TYPEmode).tpe
 
   lazy val JEnumTpe = typeOf[java.lang.Enum[_]]
   lazy val ScexLiteralTpe = getType(tq"$ScexPkg.util.Literal")

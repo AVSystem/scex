@@ -1,6 +1,5 @@
 package com.avsystem.scex.symboldsl
 
-import com.avsystem.commons.macros.AbstractMacroCommons
 import com.avsystem.scex.util.{MacroUtils, TypeWrapper}
 
 import scala.collection.mutable
@@ -9,16 +8,19 @@ import scala.reflect.internal.Flags
 import scala.reflect.macros.blackbox
 
 /**
-  * Author: ghik
-  * Created: 11/14/14.
-  */
-abstract class SymbolInfoParser[C <: blackbox.Context](override val c: C) extends AbstractMacroCommons(c) with MacroUtils {
+ * Author: ghik
+ * Created: 11/14/14.
+ */
+abstract class SymbolInfoParser[C <: blackbox.Context](val c: C) extends MacroUtils {
   lazy val universe: c.universe.type = c.universe
 
   import c.universe._
 
   def dslObject: Tree
   def defaultPayload: c.Tree
+
+  def getType(typeTree: Tree): Type =
+    c.typecheck(typeTree, c.TYPEmode).tpe
 
   val dslObjectType = getType(tq"$dslObject.type")
   val plusType = getType(tq"$dslObject.plus")
@@ -33,6 +35,12 @@ abstract class SymbolInfoParser[C <: blackbox.Context](override val c: C) extend
   val ScalaMemberSubsetsType = getType(tq"$dslObject.ScalaMemberSubsets")
   val CompleteWildcardSelectorType = getType(tq"$dslObject.CompleteWildcardSelector")
 
+  val ScalaPkg = q"_root_.scala"
+  val CollectionPkg = q"$ScalaPkg.collection"
+  val ListObj = q"$CollectionPkg.immutable.List"
+  val NilObj = q"$CollectionPkg.immutable.Nil"
+  val NoneObj = q"$ScalaPkg.None"
+  val SomeObj = q"$ScalaPkg.Some"
   val TypeInfoCls = tq"$ScexPkg.symboldsl.TypeInfo"
   val SymbolInfoCls = tq"$ScexPkg.symboldsl.SymbolInfo"
   val SymbolInfoObj = q"$ScexPkg.symboldsl.SymbolInfo"
@@ -69,20 +77,20 @@ abstract class SymbolInfoParser[C <: blackbox.Context](override val c: C) extend
   }
 
   /**
-    * Translates this type so that all existential types in this type do not refer to the defining class,
-    * as they do by default. Heavy wizardry.
-    *
-    * The problem is that when you reify an existential type (with `c.reifyType`), for example `Set[_]`, the
-    * wildcard is reified as a Symbol whose owner is the class that used that existential type.
-    * This effectively means that the definition of existential type refers the class that used it.
-    * This means that when the type is finally evaluated in some universe, things will blow up if that class is
-    * not visible to that universe.
-    *
-    * For example, this is exactly what happens if you use some existential type in the SymbolValidator DSL and
-    * the symbol validator is compiled at runtime using `compileSymbolValidator` method of ScexCompiler. That dynamically
-    * compiled class is not visible to the Scala compiler through classpath and when it tries to evaluate the reified
-    * type, we have a nice scala.reflect.internal.MissingRequirementError in our face.
-    */
+   * Translates this type so that all existential types in this type do not refer to the defining class,
+   * as they do by default. Heavy wizardry.
+   *
+   * The problem is that when you reify an existential type (with `c.reifyType`), for example `Set[_]`, the
+   * wildcard is reified as a Symbol whose owner is the class that used that existential type.
+   * This effectively means that the definition of existential type refers the class that used it.
+   * This means that when the type is finally evaluated in some universe, things will blow up if that class is
+   * not visible to that universe.
+   *
+   * For example, this is exactly what happens if you use some existential type in the SymbolValidator DSL and
+   * the symbol validator is compiled at runtime using `compileSymbolValidator` method of ScexCompiler. That dynamically
+   * compiled class is not visible to the Scala compiler through classpath and when it tries to evaluate the reified
+   * type, we have a nice scala.reflect.internal.MissingRequirementError in our face.
+   */
   def detachExistentials(tpe: Type) = tpe.map {
     case ExistentialType(quantified, underlying) =>
       val rootSymbol = rootMirror.RootClass
@@ -104,9 +112,9 @@ abstract class SymbolInfoParser[C <: blackbox.Context](override val c: C) extend
   }
 
   /**
-    * Handles @plus and @minus type annotations.
-    * For example `java.util.List[Number@plus]` is translated to `java.util.List[_ <: Number]`
-    */
+   * Handles @plus and @minus type annotations.
+   * For example `java.util.List[Number@plus]` is translated to `java.util.List[_ <: Number]`
+   */
   def existentialize(tpe: Type) = {
     object PlusOrMinus {
       def unapply(ann: Annotation) =
@@ -199,7 +207,7 @@ abstract class SymbolInfoParser[C <: blackbox.Context](override val c: C) extend
 
     // have one reified type and implicit conversion spec for all MemberAccessSpecs generated from wildcard
     private def reifySymbolInfo(member: TermSymbol) =
-    q"$ListObj($SymbolInfoObj[$PayloadType](prefixTypeInfo, ${memberSignature(member)}, implConvOpt, payload))"
+      q"$ListObj($SymbolInfoObj[$PayloadType](prefixTypeInfo, ${memberSignature(member)}, implConvOpt, payload))"
 
     def reifySymbolInfos =
       q"""

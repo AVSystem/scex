@@ -1,11 +1,10 @@
 package com.avsystem.scex.symboldsl
 
-import com.avsystem.commons.macros.AbstractMacroCommons
 import com.avsystem.scex.util.MacroUtils
 
 import scala.reflect.macros.blackbox
 
-class SymbolDslMacros(ctx: blackbox.Context) extends AbstractMacroCommons(ctx) with MacroUtils { self =>
+class SymbolDslMacros(val c: blackbox.Context) extends MacroUtils { self =>
 
   import c.universe._
 
