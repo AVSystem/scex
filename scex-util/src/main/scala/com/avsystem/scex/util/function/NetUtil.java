@@ -34,4 +34,10 @@ public interface NetUtil {
 
     boolean isMac(String mac);
 
+    String maskFromCidr(String mask);
+
+    String maskToCidr(String mask);
+
+    boolean isValidHostname(String host);
+
 }
