@@ -14,6 +14,8 @@ import com.avsystem.scex.util.CommonUtils._
 import com.avsystem.scex.validation.ValidationContext
 import com.avsystem.scex.{Type => SType}
 
+import com.github.ghik.silencer.silent
+
 import scala.collection.JavaConverters._
 import scala.reflect.NameTransformer
 import scala.tools.nsc.Settings
@@ -195,6 +197,7 @@ trait ScexPresentationCompiler extends ScexCompiler { compiler =>
       case _ => None
     }
 
+    @silent
     def parseAnnotation(ann: Annotation): Attributes = {
       if (ann.tree.tpe <:< typeOf[ParameterNames]) {
         val paramNames = annotValue(ann.tree).map {
