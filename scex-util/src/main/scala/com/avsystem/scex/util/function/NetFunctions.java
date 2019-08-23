@@ -116,7 +116,7 @@ public class NetFunctions {
         }
 
         if (ips != null) {
-            for (String ip : ips.replaceAll(",\\s+", ",").split(",")) {
+            for (String ip : ips.trim().split("\\s*,\\s*")) {
                 if (!isIp(ip)) {
                     return false;
                 }
