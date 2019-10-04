@@ -1,11 +1,9 @@
-import com.typesafe.sbt.SbtPgp.autoImportImpl.PgpKeys._
-
 name := "scex"
 
 inThisBuild(Seq(
   organization := "com.avsystem.scex",
-  scalaVersion := "2.13.0",
-  crossScalaVersions := Seq(scalaVersion.value, "2.12.8"),
+  scalaVersion := "2.13.1",
+  crossScalaVersions := Seq(scalaVersion.value, "2.12.10"),
 ))
 
 val CompileAndTest = "compile->compile;test->test"
@@ -37,7 +35,7 @@ lazy val subprojectSettings = Seq(
     "-target", "1.8",
     "-parameters"
   ),
-  
+
   scalacOptions ++= Seq(
     "-feature",
     "-deprecation",
