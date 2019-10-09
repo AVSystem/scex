@@ -9,7 +9,7 @@ inThisBuild(Seq(
 val CompileAndTest = "compile->compile;test->test"
 
 val parserCombinatorsVersion = "1.1.2"
-val silencerVersion = "1.4.1"
+val silencerVersion = "1.4.4"
 val avsCommonsVersion = "2.0.0-M1"
 val jettyVersion = "9.1.0.v20131115"
 val vaadinVersion = "6.8.13"
@@ -88,9 +88,9 @@ lazy val subprojectSettings = Seq(
     def trace(t: => Throwable): Unit = ()
   })),
   libraryDependencies ++= Seq(
-    compilerPlugin("com.github.ghik" %% "silencer-plugin" % silencerVersion),
+    compilerPlugin("com.github.ghik" % "silencer-plugin" % silencerVersion cross CrossVersion.full),
     compilerPlugin("com.avsystem.commons" %% "commons-analyzer" % avsCommonsVersion),
-    "com.github.ghik" %% "silencer-lib" % silencerVersion % Provided,
+    "com.github.ghik" % "silencer-lib" % silencerVersion % Provided cross CrossVersion.full,
     "junit" % "junit" % junitVersion % Test,
     "org.scalatest" %% "scalatest" % scalatestVersion % Test
   ),

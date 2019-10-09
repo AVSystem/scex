@@ -18,7 +18,6 @@ import scala.reflect.NameTransformer
 import scala.reflect.internal.util._
 import scala.reflect.io.{AbstractFile, VirtualDirectory}
 import scala.tools.nsc.plugins.Plugin
-import scala.tools.nsc.reporters.AbstractReporter
 import scala.tools.nsc.{Global, Settings}
 import scala.util.{Failure, Success, Try}
 
@@ -29,7 +28,7 @@ trait ScexCompiler extends LoggingUtils {
   private val lock = new ReentrantLock
 
   @silent("deprecated")
-  class Reporter(val settings: Settings) extends AbstractReporter {
+  class Reporter(val settings: Settings) extends ReporterBase {
     private val errorsBuilder = new ListBuffer[CompileError]
 
     def compileErrors(): List[CompileError] =
@@ -58,7 +57,7 @@ trait ScexCompiler extends LoggingUtils {
         pos.withPoint(mapping(pos.point))
       else pos
 
-    def display(pos: Position, msg: String, severity: Severity): Unit = {
+    def doReport(pos: Position, msg: String, severity: Severity): Unit = {
       if (severity == ERROR) {
         val actualPos = pos.source match {
           case source: ExpressionSourceFile if includes(source.expressionPos, pos) =>
@@ -101,9 +100,9 @@ trait ScexCompiler extends LoggingUtils {
   private var reporter: Reporter = _
 
   /**
-    * Classloader for stuff that will be never reclaimed after compilation -
-    * profiles, validators, custom util classes, etc.
-    */
+   * Classloader for stuff that will be never reclaimed after compilation -
+   * profiles, validators, custom util classes, etc.
+   */
   private var sharedClassLoader: ScexClassLoader = _
   private var compilationCount: Int = _
 
@@ -136,7 +135,7 @@ trait ScexCompiler extends LoggingUtils {
   protected def loadCompilerPlugins(global: ScexGlobal): List[Plugin] = Nil
 
   protected def instantiate[T](classLoader: ClassLoader, className: String): T =
-    Class.forName(className, true, classLoader).newInstance.asInstanceOf[T]
+    Class.forName(className, true, classLoader).getConstructor().newInstance().asInstanceOf[T]
 
   protected def compileJavaGetterAdapters(profile: ExpressionProfile, name: String, classes: Seq[Class[_]], full: Boolean): Try[Seq[Option[String]]] =
     if (settings.noGetterAdapters.value) Success(classes.map(_ => None))
@@ -386,9 +385,9 @@ trait ScexCompiler extends LoggingUtils {
   }
 
   /**
-    * Compiles arbitrary Scala source file into a dedicated class loader and loads class with given fully qualified name
-    * from that class loader.
-    */
+   * Compiles arbitrary Scala source file into a dedicated class loader and loads class with given fully qualified name
+   * from that class loader.
+   */
   def compileClass(code: String, name: String): Class[_] = underLock {
     val sourceName = ArbitraryClassSourceNamePrefix + DigestUtils.md5Hex(code)
     val sourceFile = new ScexSourceFile(sourceName, code, shared = false)
@@ -402,9 +401,9 @@ trait ScexCompiler extends LoggingUtils {
   }
 
   /**
-    * Resets internal compiler state by creating completely new instance of Scala compiler and invalidating all
-    * internal caches.
-    */
+   * Resets internal compiler state by creating completely new instance of Scala compiler and invalidating all
+   * internal caches.
+   */
   def reset(): Unit =
     underLock(setup())
 }

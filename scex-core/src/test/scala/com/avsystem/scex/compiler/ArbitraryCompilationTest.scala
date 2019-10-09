@@ -26,7 +26,7 @@ class ArbitraryCompilationTest extends FunSuite {
       """.stripMargin
 
     val clazz = compiler.compileClass(code, "com.avsystem.scex.test.Stuff")
-    val callable = clazz.newInstance.asInstanceOf[Callable[String]]
+    val callable = clazz.getConstructor().newInstance().asInstanceOf[Callable[String]]
 
     assert("stuff" == callable.call())
   }
