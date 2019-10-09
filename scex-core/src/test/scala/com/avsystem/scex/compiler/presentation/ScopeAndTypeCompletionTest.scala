@@ -130,6 +130,12 @@ class ScopeAndTypeCompletionTest extends FunSuite with CompilationTest with Comp
       PartialMember("name", scexType[String])
     ))
   }
+
+  test("literal as Any") {
+    val completer = compiler.getCompleter[SimpleContext[Unit], Any](profile, template = true)
+    val errors = completer.getErrors("123")
+    assert(errors.isEmpty)
+  }
 }
 
 object ScopeAndTypeCompletionTest {

@@ -5,9 +5,9 @@ import com.avsystem.scex.util.MacroUtils
 import scala.reflect.macros.blackbox
 
 /**
-  * Created: 18-11-2013
-  * Author: ghik
-  */
+ * Created: 18-11-2013
+ * Author: ghik
+ */
 class Macros(val c: blackbox.Context) extends MacroUtils {
 
   lazy val universe: c.universe.type = c.universe
@@ -30,7 +30,7 @@ class Macros(val c: blackbox.Context) extends MacroUtils {
     val argTrees = args.iterator.map(_.tree).toList
 
     def isStringLiteral(tree: Tree) = tree match {
-      case Literal(Constant(str: String)) => true
+      case Literal(Constant(_: String)) => true
       case _ => false
     }
 
@@ -89,6 +89,8 @@ class Macros(val c: blackbox.Context) extends MacroUtils {
         c.abort(soleArgTree.pos, s"This template (type ${soleArgTree.tpe.widen}) cannot represent value of type $resultType")
       }
 
+    } else if (typeOf[String] <:< resultType) {
+      reifyConcatenation(parts, argTrees)
     } else if (args.isEmpty) {
       literalConv match {
         case EmptyTree =>
@@ -97,9 +99,6 @@ class Macros(val c: blackbox.Context) extends MacroUtils {
         case conversion =>
           q"$conversion($literalTree)"
       }
-
-    } else if (typeOf[String] <:< resultType) {
-      reifyConcatenation(parts, argTrees)
     } else {
       c.abort(c.enclosingPosition, s"This template cannot represent value of type $resultType")
     }
