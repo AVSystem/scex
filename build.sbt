@@ -32,6 +32,8 @@ val noPublishSettings = Seq(
 sonatypeProfileName := "com.avsystem"
 
 lazy val subprojectSettings = Seq(
+  crossVersion := CrossVersion.full,
+
   javacOptions ++= Seq(
     "-source", "1.8",
     "-target", "1.8",
