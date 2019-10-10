@@ -7,7 +7,7 @@ import com.avsystem.commons.jiop.JavaInterop._
 import com.avsystem.scex.presentation.annotation.Documentation
 import org.apache.commons.codec.binary.{Base64, Hex}
 
-import com.avsystem.commons.collection.CollectionAliases._
+import scala.collection.compat.immutable.ArraySeq
 import scala.util.hashing.MurmurHash3
 
 final class Bytes(val bytes: Array[Byte]) extends Comparable[Bytes] {
@@ -48,5 +48,5 @@ final class Bytes(val bytes: Array[Byte]) extends Comparable[Bytes] {
       case e: UnsupportedEncodingException => throw new IllegalArgumentException(e)
     }
 
-  def asList: JList[Byte] = IArraySeq.unsafeWrapArray(bytes).asJava
+  def asList: JList[Byte] = ArraySeq.unsafeWrapArray(bytes).asJava
 }
