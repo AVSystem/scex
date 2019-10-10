@@ -53,13 +53,7 @@ lazy val subprojectSettings = Seq(
   ),
 
   sonatypeProfileName := "com.avsystem",
-  publishTo := {
-    val nexus = "https://oss.sonatype.org/"
-    if (isSnapshot.value)
-      Some("snapshots" at nexus + "content/repositories/snapshots")
-    else
-      Some("releases" at nexus + "service/local/staging/deploy/maven2")
-  },
+  publishTo := sonatypePublishToBundle.value,
 
   projectInfo := ModuleInfo(
     nameFormal = "SCEX",
