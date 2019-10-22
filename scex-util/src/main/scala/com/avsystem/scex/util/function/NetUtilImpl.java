@@ -1,5 +1,6 @@
 package com.avsystem.scex.util.function;
 
+import com.google.common.net.InternetDomainName;
 import org.apache.commons.net.util.SubnetUtils;
 
 import java.net.InetAddress;
@@ -51,6 +52,23 @@ public class NetUtilImpl implements NetUtil {
     }
 
     @Override
+    public String maskFromCidr(String mask) {
+        return getMask(mask);
+    }
+
+    @Override
+    public String maskToCidr(String mask) {
+        if (mask.matches("\\d+\\.\\d+\\.\\d+\\.\\d+"))
+            return "/" + new SubnetUtils("0.0.0.0", mask).getInfo().getCidrSignature().split("/")[1];
+        return null;
+    }
+
+    @Override
+    public boolean isValidHostname(String host) {
+        return InternetDomainName.isValid(host);
+    }
+
+    @Override
     public String networkAddress(String ip, String mask) {
         if (isIpAndMask(ip, mask)) {
             return new SubnetUtils(ip, mask).getInfo().getNetworkAddress();
@@ -86,7 +104,7 @@ public class NetUtilImpl implements NetUtil {
 
     @Override
     public String networkAddress(String subnetWithMask) {
-        return new SubnetUtils(subnetWithMask).getInfo().getHighAddress();
+        return new SubnetUtils(subnetWithMask).getInfo().getNetworkAddress();
     }
 
     @Override

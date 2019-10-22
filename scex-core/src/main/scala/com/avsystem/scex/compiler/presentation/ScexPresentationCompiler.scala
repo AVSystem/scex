@@ -194,6 +194,7 @@ trait ScexPresentationCompiler extends ScexCompiler { compiler =>
       case _ => None
     }
 
+    @silent
     def parseAnnotation(ann: Annotation): Attributes = {
       if (ann.tree.tpe <:< typeOf[ParameterNames]) {
         val paramNames = annotValue(ann.tree).map {
