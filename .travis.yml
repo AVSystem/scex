@@ -1,8 +1,10 @@
 language: scala
 
+dist: trusty
+
 scala:
-  - 2.12.10
   - 2.13.1
+  - 2.12.10
 
 jdk:
   - openjdk8
@@ -13,8 +15,9 @@ script:
 cache:
   directories:
     - $HOME/.ivy2/cache
-    - $HOME/.sbt/boot/
-    - $HOME/.cache/
+    - $HOME/.coursier/cache
+    - $HOME/.sbt
+    - $HOME/.cache
 
 before_cache:
   - find $HOME/.ivy2 -name "ivydata-*.properties" -delete
