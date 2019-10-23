@@ -1,8 +1,5 @@
 package vaadin
 
-import java.{lang => jl, util => ju}
-import javax.servlet.http.HttpServletRequest
-
 import com.avsystem.scex.compiler.ScexSettings
 import com.avsystem.scex.compiler.presentation.ScexPresentationCompiler.Member
 import com.avsystem.scex.japi.XmlFriendlyJavaScexCompiler
@@ -11,14 +8,18 @@ import com.avsystem.scex.util.PredefinedAccessSpecs.basicOperations
 import com.avsystem.scex.util.SimpleContext
 import com.avsystem.scex.validation.{SymbolValidator, SyntaxValidator}
 import com.avsystem.scex.{ExpressionProfile, NamedSource}
+import com.github.ghik.silencer.silent
 import com.vaadin.event.FieldEvents.{TextChangeEvent, TextChangeListener}
 import com.vaadin.terminal.gwt.server.AbstractApplicationServlet
 import com.vaadin.ui.{Label, TextField, Window}
+import javax.servlet.http.HttpServletRequest
 import org.eclipse.jetty.server.Server
 import org.eclipse.jetty.server.session.SessionHandler
 import org.eclipse.jetty.servlet.{ServletContextHandler, ServletHolder}
+
 import scala.reflect.runtime.universe.typeOf
 
+@silent("a pure expression does nothing in statement position")
 object CompletionPlayground {
 
   val settings = new ScexSettings

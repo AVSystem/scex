@@ -7,6 +7,7 @@ import org.joda.time.Hours
 
 import scala.util.matching.Regex.Match
 
+@silent("a pure expression does nothing in statement position")
 object CommonSymbolValidators {
 
   import com.avsystem.scex.validation.SymbolValidator._

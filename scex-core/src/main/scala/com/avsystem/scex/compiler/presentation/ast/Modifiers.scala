@@ -1,7 +1,7 @@
 package com.avsystem.scex
 package compiler.presentation.ast
 
-import scala.collection.JavaConverters._
+import com.avsystem.commons.jiop.JavaInterop._
 
 /**
  * Created: 12-03-2014

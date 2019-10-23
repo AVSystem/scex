@@ -1,18 +1,18 @@
-import com.typesafe.sbt.SbtPgp.autoImportImpl.PgpKeys._
-
 name := "scex"
 
 inThisBuild(Seq(
   organization := "com.avsystem.scex",
-  scalaVersion := "2.12.10",
-  crossScalaVersions := Seq(scalaVersion.value),
+  scalaVersion := "2.13.1",
+  crossScalaVersions := Seq(scalaVersion.value, "2.12.10"),
 ))
 
 val CompileAndTest = "compile->compile;test->test"
 
-val parserCombinatorsVersion = "1.0.7"
+val parserCombinatorsVersion = "1.1.2"
+val collectionCompatVersion = "2.1.2"
 val silencerVersion = "1.4.4"
-val avsCommonsVersion = "1.42.0"
+def avsCommonsVersion: Def.Initialize[String] =
+  Def.setting(if (scalaBinaryVersion.value == "2.13") "2.0.0-M3" else "1.42.0")
 val jettyVersion = "9.4.21.v20190926"
 val vaadinVersion = "6.8.13"
 val slf4jVersion = "1.7.28"
@@ -26,23 +26,20 @@ val junitVersion = "4.12"
 val scalatestVersion = "3.0.8"
 
 val noPublishSettings = Seq(
-  publishArtifact := false,
-  publish := {},
-  publishLocal := {},
-  publishM2 := {},
-  publishSigned := {},
-  publishLocalSigned := {}
+  skip in publish := true
 )
 
 sonatypeProfileName := "com.avsystem"
 
 lazy val subprojectSettings = Seq(
+  crossVersion := CrossVersion.full,
+
   javacOptions ++= Seq(
     "-source", "1.8",
     "-target", "1.8",
     "-parameters"
   ),
-  
+
   scalacOptions ++= Seq(
     "-feature",
     "-deprecation",
@@ -51,19 +48,12 @@ lazy val subprojectSettings = Seq(
     "-language:existentials",
     "-language:dynamics",
     "-language:experimental.macros",
-    "-Xfuture",
     "-Xfatal-warnings",
     "-Xlint:-missing-interpolator,-adapted-args,-unused,_"
   ),
 
   sonatypeProfileName := "com.avsystem",
-  publishTo := {
-    val nexus = "https://oss.sonatype.org/"
-    if (isSnapshot.value)
-      Some("snapshots" at nexus + "content/repositories/snapshots")
-    else
-      Some("releases" at nexus + "service/local/staging/deploy/maven2")
-  },
+  publishTo := sonatypePublishToBundle.value,
 
   projectInfo := ModuleInfo(
     nameFormal = "SCEX",
@@ -97,7 +87,7 @@ lazy val subprojectSettings = Seq(
   })),
   libraryDependencies ++= Seq(
     compilerPlugin("com.github.ghik" % "silencer-plugin" % silencerVersion cross CrossVersion.full),
-    compilerPlugin("com.avsystem.commons" %% "commons-analyzer" % avsCommonsVersion),
+    compilerPlugin("com.avsystem.commons" %% "commons-analyzer" % avsCommonsVersion.value),
     "com.github.ghik" % "silencer-lib" % silencerVersion % Provided cross CrossVersion.full,
     "junit" % "junit" % junitVersion % Test,
     "org.scalatest" %% "scalatest" % scalatestVersion % Test
@@ -113,7 +103,7 @@ lazy val `scex-macros` = project
   .settings(subprojectSettings: _*)
   .settings(
     libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value,
-    libraryDependencies += "com.avsystem.commons" %% "commons-macros" % avsCommonsVersion
+    libraryDependencies += "com.avsystem.commons" %% "commons-macros" % avsCommonsVersion.value
   )
 
 lazy val `scex-core` = project.dependsOn(`scex-macros` % CompileAndTest)
@@ -123,7 +113,8 @@ lazy val `scex-core` = project.dependsOn(`scex-macros` % CompileAndTest)
       "org.scala-lang" % "scala-reflect" % scalaVersion.value,
       "org.scala-lang" % "scala-compiler" % scalaVersion.value,
       "org.scala-lang.modules" %% "scala-parser-combinators" % parserCombinatorsVersion,
-      "com.avsystem.commons" %% "commons-core" % avsCommonsVersion,
+      "org.scala-lang.modules" %% "scala-collection-compat" % collectionCompatVersion,
+      "com.avsystem.commons" %% "commons-core" % avsCommonsVersion.value,
       "org.slf4j" % "slf4j-api" % slf4jVersion,
       "ch.qos.logback" % "logback-core" % logbackVersion,
       "ch.qos.logback" % "logback-classic" % logbackVersion,
@@ -142,7 +133,7 @@ lazy val `scex-util` = project.dependsOn(`scex-core` % CompileAndTest)
     )
   )
 
-lazy val `scex-test` = project.dependsOn(`scex-core`)
+lazy val `scex-test` = project.dependsOn(`scex-core`, `scex-util`)
   .settings(subprojectSettings: _*)
   .settings(noPublishSettings: _*)
   .settings(
@@ -153,7 +144,7 @@ lazy val `scex-test` = project.dependsOn(`scex-core`)
     )
   )
 
-lazy val `scex-java-test` = project.dependsOn(`scex-core`)
+lazy val `scex-java-test` = project.dependsOn(`scex-core`, `scex-util`)
   .settings(subprojectSettings: _*)
   .settings(noPublishSettings: _*)
   .settings(

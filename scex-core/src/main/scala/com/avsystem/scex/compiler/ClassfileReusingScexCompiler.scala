@@ -7,7 +7,7 @@ import com.google.common.cache.{Cache, CacheBuilder}
 
 import scala.collection.mutable
 import scala.reflect.io.AbstractFile
-import scala.tools.nsc.interpreter.JFile
+import scala.tools.nsc.io.JFile
 import scala.tools.nsc.plugins.{Plugin, PluginComponent}
 import scala.tools.nsc.util.ClassPath
 import scala.tools.nsc.{Phase, Settings}
@@ -100,7 +100,7 @@ trait ClassfileReusingScexCompiler extends ScexCompiler {
   override protected def setup(): Unit = {
     _stateOpt = settings.resolvedClassfileDir.map(new State(_))
     stateOpt.foreach { state =>
-      val currentVersion = GlobalCacheVersion + "." + settings.backwardsCompatCacheVersion.value
+      val currentVersion = GlobalCacheVersion.toString + "." + settings.backwardsCompatCacheVersion.value
       val versionFileName = "cacheVersion"
       if (state.classfileDir.exists) {
         val savedVersion = Option(state.classfileDir.lookupName(versionFileName, directory = false))

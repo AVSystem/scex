@@ -12,7 +12,7 @@ import com.avsystem.scex.util.SimpleContext;
 import com.avsystem.scex.validation.SymbolValidator;
 import com.avsystem.scex.validation.SyntaxValidator;
 import com.google.common.reflect.TypeToken;
-import scala.collection.JavaConversions;
+import scala.collection.JavaConverters;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -26,7 +26,7 @@ public class ScexJavaTest {
         SymbolValidator symbolValidator = compiler.compileSymbolValidator(NamedSource.apply("test", readResource("/symbolValidator.scala")));
         SymbolAttributes symbolAttributes = compiler.compileSymbolAttributes(NamedSource.apply("test", readResource("/symbolAttributes.scala")));
 
-        for (SymbolInfo<Attributes> info : JavaConversions.seqAsJavaList(symbolAttributes.infoList())) {
+        for (SymbolInfo<Attributes> info : JavaConverters.seqAsJavaList(symbolAttributes.infoList())) {
             System.out.println(info);
         }
 

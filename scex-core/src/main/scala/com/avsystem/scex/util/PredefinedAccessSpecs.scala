@@ -2,9 +2,12 @@ package com.avsystem.scex.util
 
 import java.{lang => jl}
 
-import scala.math.ScalaNumericAnyConversions
+import com.github.ghik.silencer.silent
+
+import scala.math.ScalaNumericConversions
 import scala.runtime._
 
+@silent("a pure expression does nothing in statement position")
 object PredefinedAccessSpecs {
 
   import com.avsystem.scex.validation.SymbolValidator._
@@ -27,7 +30,7 @@ object PredefinedAccessSpecs {
       anyRef.wait(_: Long, _: Int)
       anyRef.notify()
       anyRef.notifyAll()
-      anyRef.synchronized _
+      anyRef.synchronized(_: Any)
     }
     on { ip: RangedProxy[Any@plus] =>
       ip.to(_: Any)
@@ -38,7 +41,7 @@ object PredefinedAccessSpecs {
     on { p: Proxy =>
       p.self
     }
-    on { snac: ScalaNumericAnyConversions =>
+    on { snac: ScalaNumericConversions =>
       snac.underlying()
     }
   } ++ allow {
@@ -215,8 +218,8 @@ object PredefinedAccessSpecs {
     Predef.Double2double _
     Predef.double2Double _
     Predef.$conforms
-    Predef.=:=.tpEquals
-    Predef.DummyImplicit.dummyImplicit
+
+    DummyImplicit.dummyImplicit
 
     // Array operations
     on { a: Array[_] =>
@@ -227,8 +230,8 @@ object PredefinedAccessSpecs {
     // String related stuff
     StringContext.apply _
     on { sc: StringContext =>
-      sc.s _
-      sc.raw _
+      sc.all.membersNamed("s")
+      sc.all.membersNamed("raw")
     }
     on { s: String =>
       s + (_: Any)

@@ -16,11 +16,12 @@ import com.avsystem.scex.{Type => SType}
 
 import com.github.ghik.silencer.silent
 
-import scala.collection.JavaConverters._
+import com.avsystem.commons.jiop.JavaInterop._
 import scala.reflect.NameTransformer
 import scala.tools.nsc.Settings
 import scala.reflect.runtime.{universe => ru}
 
+@silent("deprecated")
 trait ScexPresentationCompiler extends ScexCompiler { compiler =>
 
   private val logger = createLogger[ScexPresentationCompiler]
@@ -193,11 +194,10 @@ trait ScexPresentationCompiler extends ScexCompiler { compiler =>
       merge(normalInfos.toStream, implicitInfos.toStream).map(_.info.payload)
 
     def annotValue(annotTree: Tree) = annotTree.children.tail.collectFirst {
-      case AssignOrNamedArg(Ident(TermName("value")), value) => value
+      case CrossNamedArg(Ident(TermName("value")), value) => value
       case _ => None
     }
 
-    @silent
     def parseAnnotation(ann: Annotation): Attributes = {
       if (ann.tree.tpe <:< typeOf[ParameterNames]) {
         val paramNames = annotValue(ann.tree).map {

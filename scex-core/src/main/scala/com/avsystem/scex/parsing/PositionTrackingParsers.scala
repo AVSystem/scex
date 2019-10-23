@@ -36,7 +36,7 @@ trait PositionTrackingParsers extends RegexParsers {
       new ParserWithPos(pattern.r)
   }
 
-  def join(pstrs: Traversable[PString]) =
+  def join(pstrs: Iterable[PString]) =
     if (pstrs.nonEmpty) pstrs.reduce(_ + _) else PString("", 0, 0, Vector.empty)
 
   def withOffset[T](parser: Parser[T]): Parser[(T, Int)] = new Parser[(T, Int)] {

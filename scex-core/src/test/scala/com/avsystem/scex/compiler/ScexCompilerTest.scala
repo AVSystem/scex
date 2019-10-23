@@ -7,11 +7,19 @@ import com.avsystem.scex.compiler.ParameterizedClass.StaticInnerGeneric
 import com.avsystem.scex.compiler.ScexCompiler.CompilationFailedException
 import com.avsystem.scex.compiler.overriding.{Base, Klass, Specialized}
 import com.avsystem.scex.util.{PredefinedAccessSpecs, SimpleContext}
+import com.github.ghik.silencer.silent
 import com.google.common.reflect.TypeToken
 import org.scalatest.FunSuite
 
 import scala.collection.immutable.StringOps
 
+object ScexCompilerTest {
+  implicit class JListExt[T](jlist: ju.List[T]) {
+    def apply(i: Int): T = jlist.get(i)
+  }
+}
+
+@silent("a pure expression does nothing in statement position")
 class ScexCompilerTest extends FunSuite with CompilationTest {
 
   import com.avsystem.scex.validation.SymbolValidator._
@@ -212,7 +220,7 @@ class ScexCompilerTest extends FunSuite with CompilationTest {
 
   test("static module access validation test") {
     val acl = allow {
-      Some.apply _
+      Some.apply(_: Any)
     }
     val expr = "Some"
     assertMemberAccessForbidden {
@@ -222,7 +230,7 @@ class ScexCompilerTest extends FunSuite with CompilationTest {
 
   test("static module member validation test 1") {
     val acl = allow {
-      Some.apply _
+      Some.apply(_: Any)
     }
     val expr = "Some(42)"
     val cexpr = compiler.getCompiledExpression[SimpleContext[Unit], Option[Int]](createProfile(acl), expr, template = false)
@@ -257,7 +265,6 @@ class ScexCompilerTest extends FunSuite with CompilationTest {
         any ? (_: Any)
       }
     }
-    acl.foreach(println)
     val expr = "\"bippy\" ? \"fuu\""
     val cexpr = compiler.getCompiledExpression[SimpleContext[Unit], String](
       createProfile(acl, header = "import com.avsystem.scex.compiler.TestExtensions._"), expr, template = false)
@@ -307,13 +314,13 @@ class ScexCompilerTest extends FunSuite with CompilationTest {
   }
 
   test("member by generic implicit conversion on existential type test") {
-    import scala.collection.JavaConversions._
+    import ScexCompilerTest._
     val acl = allow {
       on { l: ju.List[_] =>
         l.apply(_: Int)
       }
     }
-    val header = "import scala.collection.JavaConversions._"
+    val header = "import com.avsystem.scex.compiler.ScexCompilerTest._"
     val expr = "_root(0)"
     val cexpr = compiler.getCompiledExpression[SimpleContext[ju.List[String]], Any](createProfile(acl, header = header), expr, template = false)
     val list = ju.Arrays.asList("0", "1", "2")

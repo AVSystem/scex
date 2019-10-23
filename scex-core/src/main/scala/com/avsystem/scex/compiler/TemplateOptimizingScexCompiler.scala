@@ -82,7 +82,7 @@ trait TemplateOptimizingScexCompiler extends ScexPresentationCompiler {
         case Left(classLoader) =>
           val clazz = Class.forName(s"$pkgName.$ConversionSupplierClassName", true, classLoader)
           clazz.getDeclaredClasses // force loading of inner classes
-          clazz.newInstance.asInstanceOf[ConversionSupplier[Any]]
+          clazz.getConstructor().newInstance().asInstanceOf[ConversionSupplier[Any]]
         case Right(errors) =>
           throw CompilationFailedException(fullCode, errors)
       }

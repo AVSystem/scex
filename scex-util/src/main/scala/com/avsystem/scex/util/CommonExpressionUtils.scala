@@ -4,7 +4,6 @@ import java.text.ParseException
 import java.util.Date
 
 import com.avsystem.commons._
-import com.avsystem.commons.misc.Opt
 import com.avsystem.scex.SetterConversion
 import com.avsystem.scex.compiler.TemplateInterpolations.Splicer
 import com.avsystem.scex.presentation.annotation.Documentation

@@ -4,7 +4,7 @@ import java.util.Collections
 import java.{lang => jl, util => ju}
 
 import scala.collection.mutable
-import scala.collection.JavaConverters._
+import com.avsystem.commons.jiop.JavaInterop._
 import scala.language.dynamics
 
 

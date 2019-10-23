@@ -6,12 +6,14 @@ import com.avsystem.scex.compiler.{CompilationTest, JavaRootWithGetter}
 import com.avsystem.scex.presentation.Attributes
 import com.avsystem.scex.presentation.annotation.Documentation
 import com.avsystem.scex.util.SimpleContext
+import com.github.ghik.silencer.silent
 import org.scalatest.FunSuite
 
 /**
- * Author: ghik
- * Created: 11/18/14.
- */
+  * Author: ghik
+  * Created: 11/18/14.
+  */
+@silent("a pure expression does nothing in statement position")
 class ScopeAndTypeCompletionTest extends FunSuite with CompilationTest with CompletionTest {
 
   import com.avsystem.scex.util.CommonUtils._

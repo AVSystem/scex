@@ -9,6 +9,7 @@ import com.avsystem.scex.parsing.{EmptyPositionMapping, PositionMapping}
 import com.avsystem.scex.util.CommonUtils._
 import com.avsystem.scex.util.LoggingUtils
 import com.avsystem.scex.validation.{SymbolValidator, SyntaxValidator}
+import com.github.ghik.silencer.silent
 import org.apache.commons.codec.digest.DigestUtils
 
 import scala.collection.mutable.ListBuffer
@@ -17,7 +18,6 @@ import scala.reflect.internal.util._
 import scala.reflect.io.{AbstractFile, VirtualDirectory}
 import scala.reflect.runtime.{universe => ru}
 import scala.tools.nsc.plugins.Plugin
-import scala.tools.nsc.reporters.AbstractReporter
 import scala.tools.nsc.{Global, Settings}
 import scala.util.{Failure, Success, Try}
 
@@ -27,7 +27,8 @@ trait ScexCompiler extends LoggingUtils {
 
   private val lock = new ReentrantLock
 
-  class Reporter(val settings: Settings) extends AbstractReporter {
+  @silent("deprecated")
+  class Reporter(val settings: Settings) extends ReporterBase {
     private val errorsBuilder = new ListBuffer[CompileError]
 
     def compileErrors(): List[CompileError] =
@@ -56,7 +57,7 @@ trait ScexCompiler extends LoggingUtils {
         pos.withPoint(mapping(pos.point))
       else pos
 
-    def display(pos: Position, msg: String, severity: Severity): Unit = {
+    def doReport(pos: Position, msg: String, severity: Severity): Unit = {
       if (severity == ERROR) {
         val actualPos = pos.source match {
           case source: ExpressionSourceFile if includes(source.expressionPos, pos) =>
@@ -134,7 +135,7 @@ trait ScexCompiler extends LoggingUtils {
   protected def loadCompilerPlugins(global: ScexGlobal): List[Plugin] = Nil
 
   protected def instantiate[T](classLoader: ClassLoader, className: String): T =
-    Class.forName(className, true, classLoader).newInstance.asInstanceOf[T]
+    Class.forName(className, true, classLoader).getConstructor().newInstance().asInstanceOf[T]
 
   protected def compileJavaGetterAdapters(profile: ExpressionProfile, name: String, classes: Seq[Class[_]], full: Boolean): Try[Seq[Option[String]]] =
     if (settings.noGetterAdapters.value) Success(classes.map(_ => None))
