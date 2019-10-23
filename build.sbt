@@ -12,7 +12,7 @@ val parserCombinatorsVersion = "1.1.2"
 val collectionCompatVersion = "2.1.2"
 val silencerVersion = "1.4.4"
 def avsCommonsVersion: Def.Initialize[String] =
-  Def.setting(if (scalaBinaryVersion.value == "2.13") "2.0.0-M3" else "1.41.0")
+  Def.setting(if (scalaBinaryVersion.value == "2.13") "2.0.0-M3" else "1.42.0")
 val jettyVersion = "9.4.21.v20190926"
 val vaadinVersion = "6.8.13"
 val slf4jVersion = "1.7.28"
