@@ -4,26 +4,26 @@ name := "scex"
 
 inThisBuild(Seq(
   organization := "com.avsystem.scex",
-  scalaVersion := "2.12.8",
+  scalaVersion := "2.12.10",
   crossScalaVersions := Seq(scalaVersion.value),
 ))
 
 val CompileAndTest = "compile->compile;test->test"
 
-val parserCombinatorsVersion = "1.0.5"
-val silencerVersion = "1.4.1"
-val avsCommonsVersion = "1.36.0"
-val jettyVersion = "9.1.0.v20131115"
+val parserCombinatorsVersion = "1.0.7"
+val silencerVersion = "1.4.4"
+val avsCommonsVersion = "1.42.0"
+val jettyVersion = "9.4.21.v20190926"
 val vaadinVersion = "6.8.13"
-val slf4jVersion = "1.6.4"
-val logbackVersion = "1.0.6"
-val commonsLang3Version = "3.4"
-val commonsCodecVersion = "1.7"
+val slf4jVersion = "1.7.28"
+val logbackVersion = "1.2.3"
+val commonsLang3Version = "3.9"
+val commonsCodecVersion = "1.13"
 val guavaVersion = "23.0"
-val commonsNetVersion = "3.3"
-val jodaTimeVersion = "2.8.2"
-val junitVersion = "4.11"
-val scalatestVersion = "3.0.0"
+val commonsNetVersion = "3.6"
+val jodaTimeVersion = "2.10.4"
+val junitVersion = "4.12"
+val scalatestVersion = "3.0.8"
 
 val noPublishSettings = Seq(
   publishArtifact := false,
@@ -96,9 +96,9 @@ lazy val subprojectSettings = Seq(
     def trace(t: => Throwable): Unit = ()
   })),
   libraryDependencies ++= Seq(
-    compilerPlugin("com.github.ghik" %% "silencer-plugin" % silencerVersion),
+    compilerPlugin("com.github.ghik" % "silencer-plugin" % silencerVersion cross CrossVersion.full),
     compilerPlugin("com.avsystem.commons" %% "commons-analyzer" % avsCommonsVersion),
-    "com.github.ghik" %% "silencer-lib" % silencerVersion % Provided,
+    "com.github.ghik" % "silencer-lib" % silencerVersion % Provided cross CrossVersion.full,
     "junit" % "junit" % junitVersion % Test,
     "org.scalatest" %% "scalatest" % scalatestVersion % Test
   ),
