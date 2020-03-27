@@ -3,26 +3,26 @@ name := "scex"
 inThisBuild(Seq(
   organization := "com.avsystem.scex",
   scalaVersion := "2.13.1",
-  crossScalaVersions := Seq(scalaVersion.value, "2.12.10"),
+  crossScalaVersions := Seq(scalaVersion.value, "2.12.11"),
 ))
 
 val CompileAndTest = "compile->compile;test->test"
 
 val parserCombinatorsVersion = "1.1.2"
-val collectionCompatVersion = "2.1.2"
-val silencerVersion = "1.4.4"
+val collectionCompatVersion = "2.1.4"
+val silencerVersion = "1.6.0"
 def avsCommonsVersion: Def.Initialize[String] =
-  Def.setting(if (scalaBinaryVersion.value == "2.13") "2.0.0-M3" else "1.42.0")
+  Def.setting(if (scalaBinaryVersion.value == "2.13") "2.0.0-M5" else "1.43.0")
 val jettyVersion = "9.4.21.v20190926"
 val vaadinVersion = "6.8.13"
-val slf4jVersion = "1.7.28"
+val slf4jVersion = "1.7.30"
 val logbackVersion = "1.2.3"
 val commonsLang3Version = "3.9"
-val commonsCodecVersion = "1.13"
+val commonsCodecVersion = "1.14"
 val guavaVersion = "23.0"
 val commonsNetVersion = "3.6"
-val jodaTimeVersion = "2.10.4"
-val junitVersion = "4.12"
+val jodaTimeVersion = "2.10.5"
+val junitVersion = "4.13"
 val scalatestVersion = "3.0.8"
 
 val noPublishSettings = Seq(
