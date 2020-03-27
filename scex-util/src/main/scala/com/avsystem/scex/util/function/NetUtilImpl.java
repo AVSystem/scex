@@ -58,7 +58,7 @@ public class NetUtilImpl implements NetUtil {
 
     @Override
     public String maskToCidr(String mask) {
-        if (mask.matches("\\d+\\.\\d+\\.\\d+\\.\\d+"))
+        if (mask != null && mask.matches("\\d+\\.\\d+\\.\\d+\\.\\d+"))
             return "/" + new SubnetUtils("0.0.0.0", mask).getInfo().getCidrSignature().split("/")[1];
         return null;
     }
@@ -78,6 +78,8 @@ public class NetUtilImpl implements NetUtil {
 
     @Override
     public String getMask(String cidr) {
+        if(cidr == null)
+            return null;
         if (!cidr.startsWith("/"))
             cidr = "/" + cidr;
         if (cidr.matches("\\/\\d{1,2}")) {
