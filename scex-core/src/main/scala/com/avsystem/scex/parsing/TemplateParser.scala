@@ -6,7 +6,7 @@ package com.avsystem.scex.parsing
  */
 object TemplateParser extends ScalaParsingCommons with PositionTrackingParsers {
 
-  private val part = multilineInterpolationChars ^^ (_.replaceAllLiterally("$$", "$"))
+  private val part = multilineInterpolationChars ^^ (_.replace("$$", "$"))
   private val arg = new ParserWithPos(interpolationArg)
 
   private val templateParser = rep(part ~ arg) ~ part ^^ {
