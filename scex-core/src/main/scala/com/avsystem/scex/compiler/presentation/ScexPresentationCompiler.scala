@@ -365,7 +365,7 @@ trait ScexPresentationCompiler extends ScexCompiler { compiler =>
         inCompilerThread {
           positionFixer.traverse(fullTree)
 
-          val tree = new Locator(sourcePosition).locateIn(fullTree).toOpt
+          val tree = new ScexLocator(sourcePosition).locateIn(fullTree).toOpt
             .filter(t => t.pos != NoPosition && t.pos.start >= offset).getOrElse(EmptyTree)
 
           def fakeIdent(tpe: Type, symbol: Symbol) =

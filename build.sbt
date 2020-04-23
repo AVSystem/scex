@@ -9,7 +9,7 @@ inThisBuild(Seq(
 val CompileAndTest = "compile->compile;test->test"
 
 val parserCombinatorsVersion = "1.1.2"
-val collectionCompatVersion = "2.1.4"
+val collectionCompatVersion = "2.1.6"
 val silencerVersion = "1.6.0"
 def avsCommonsVersion: Def.Initialize[String] =
   Def.setting(if (scalaBinaryVersion.value == "2.13") "2.0.0-M6" else "1.44.1")

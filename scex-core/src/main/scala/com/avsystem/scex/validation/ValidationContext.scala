@@ -3,6 +3,7 @@ package validation
 
 import com.avsystem.scex.util.MacroUtils
 
+import scala.annotation.nowarn
 import scala.reflect.macros.Universe
 
 abstract class ValidationContext protected extends MacroUtils {
@@ -70,6 +71,7 @@ abstract class ValidationContext protected extends MacroUtils {
   def hasNotValidatedAnnotation(symbol: Symbol) =
     symbol != null && annotationsIncludingOverrides(symbol).exists(_.tree.tpe <:< notValidatedAnnotType)
 
+  @nowarn("msg=Recursive call used default arguments")
   def extractAccess(tree: Tree, allowedSelectionPrefix: Boolean = false): MemberAccess = tree match {
     case (_: Select | _: Ident) if hasNotValidatedAnnotation(tree.symbol) =>
       NoMemberAccess
