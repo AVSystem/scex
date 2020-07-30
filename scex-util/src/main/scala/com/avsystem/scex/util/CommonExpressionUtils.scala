@@ -89,12 +89,6 @@ object CommonExpressionUtils {
   @Documentation("Mathematical functions")
   val math = scala.math.`package`
 
-  // https://issues.scala-lang.org/browse/SI-6778
-  implicit class randomWithParens(m: math.type) {
-    def random(): Double =
-      m.random
-  }
-
   @Documentation("Access context variables")
   def getVariable(name: String)(implicit ctx: SimpleContext[_]): String = {
     ctx.getVariable(name)
