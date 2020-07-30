@@ -158,10 +158,10 @@ trait SymbolErasures { this: Global =>
     val jclazz = classToJava(meth.owner.asClass)
     val paramClasses = transformedType(meth).paramTypes map typeToJavaClass
     val jname = meth.name.dropLocal.toString
-    try jclazz getDeclaredMethod(jname, paramClasses: _*)
+    try jclazz.getDeclaredMethod(jname, paramClasses: _*)
     catch {
       case ex: NoSuchMethodException =>
-        jclazz getDeclaredMethod(expandedName(meth), paramClasses: _*)
+        jclazz.getDeclaredMethod(expandedName(meth), paramClasses: _*)
     }
   }
 
