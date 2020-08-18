@@ -97,7 +97,7 @@ abstract class SymbolInfoParser[C <: blackbox.Context](val c: C) extends MacroUt
 
       val symbolMapping = quantified.collect {
         case oldSymbol if oldSymbol.owner != rootSymbol =>
-          (oldSymbol, existentialSymbol(oldSymbol.fullName.replaceAllLiterally(".", "_"), oldSymbol.typeSignature))
+          (oldSymbol, existentialSymbol(oldSymbol.fullName.replace(".", "_"), oldSymbol.typeSignature))
       }.toMap.withDefault(identity)
 
       val newQuantified = quantified.map(symbolMapping)

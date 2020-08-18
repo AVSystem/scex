@@ -92,7 +92,7 @@ object CommonExpressionUtils {
   // https://issues.scala-lang.org/browse/SI-6778
   implicit class randomWithParens(m: math.type) {
     def random(): Double =
-      m.random
+      m.random()
   }
 
   @Documentation("Access context variables")

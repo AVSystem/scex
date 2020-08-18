@@ -85,7 +85,7 @@ abstract class ValidationContext protected extends MacroUtils {
       val accessByImplicit = SimpleMemberAccess(qualifier.tpe, tree.symbol,
         Some(stripTypeApply(fun)), allowedByDefault = false, tree.pos)
 
-      val implicitConversionAccess = extractAccess(fun)
+      val implicitConversionAccess = extractAccess(fun, allowedSelectionPrefix = false)
       val plainAccess = SimpleMemberAccess(apply.tpe, tree.symbol, None, allowedByDefault = false, tree.pos)
       val alternatives = AlternativeMemberAccess(List(accessByImplicit, MultipleMemberAccesses(List(implicitConversionAccess, plainAccess))))
 
@@ -99,7 +99,9 @@ abstract class ValidationContext protected extends MacroUtils {
           MultipleMemberAccesses(List(toStringAccess, stringConcatAccess))
         } else NoMemberAccess
 
-      MultipleMemberAccesses(List(alternatives, toStringAndConcatAccess, extractAccess(qualifier)))
+      MultipleMemberAccesses(List(alternatives,
+        toStringAndConcatAccess,
+        extractAccess(qualifier, allowedSelectionPrefix = false)))
 
     case Select(apply@ImplicitlyConverted(qualifier, fun), _)
       if tree.symbol.isMethod && isAdapterConversion(fun.symbol) && !isAdapterWrappedMember(tree.symbol) =>
@@ -107,7 +109,7 @@ abstract class ValidationContext protected extends MacroUtils {
       val symbol = getJavaGetter(tree.symbol, qualifier.tpe)
       val access = SimpleMemberAccess(qualifier.tpe, symbol, None, allowedByDefault = false, tree.pos)
 
-      MultipleMemberAccesses(List(access, extractAccess(qualifier)))
+      MultipleMemberAccesses(List(access, extractAccess(qualifier, allowedSelectionPrefix = false)))
 
     case Select(qualifier, name) if needsValidation(tree.symbol) =>
       // Direct accesses to enum values are allowed because they compile to constants, so I'm also allowing all
@@ -126,19 +128,23 @@ abstract class ValidationContext protected extends MacroUtils {
 
     // special case for configuration convenience: string concatenation also forces validation of toString on its argument
     case Apply(qualifier, List(arg)) if qualifier.symbol == stringConcat =>
-      MultipleMemberAccesses(List(toStringAccess(arg), extractAccess(qualifier), extractAccess(arg)))
+      MultipleMemberAccesses(List(toStringAccess(arg),
+        extractAccess(qualifier, allowedSelectionPrefix = false),
+        extractAccess(arg, allowedSelectionPrefix = false)))
 
     case Apply(fun, List(arg)) if fun.symbol == safeToString =>
-      MultipleMemberAccesses(List(toStringAccess(arg), extractAccess(arg)))
+      MultipleMemberAccesses(List(toStringAccess(arg), extractAccess(arg, allowedSelectionPrefix = false)))
 
     // special case for configuration convenience: standard string interpolations also force validation of
     // toString on its arguments
     case Apply(qualifier, args) if standardStringInterpolations contains qualifier.symbol =>
       val toStringAccesses = MultipleMemberAccesses(args.map(toStringAccess))
-      MultipleMemberAccesses(toStringAccesses :: extractAccess(qualifier) :: args.map(arg => extractAccess(arg)))
+      MultipleMemberAccesses(toStringAccesses ::
+        extractAccess(qualifier, allowedSelectionPrefix = false) ::
+        args.map(arg => extractAccess(arg, allowedSelectionPrefix = false)))
 
     case _ =>
-      MultipleMemberAccesses(tree.children.map(child => extractAccess(child)))
+      MultipleMemberAccesses(tree.children.map(child => extractAccess(child, allowedSelectionPrefix = false)))
   }
 }
 

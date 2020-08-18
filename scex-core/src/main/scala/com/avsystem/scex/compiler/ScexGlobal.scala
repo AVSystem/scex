@@ -43,7 +43,7 @@ trait ScexGlobal extends Global with MacroUtils with SymbolErasures {
   /**
     * Locator with slightly modified inclusion check.
     */
-  class Locator(pos: Position) extends Traverser {
+  class ScexLocator(pos: Position) extends Traverser {
     var last: Tree = _
 
     def locateIn(root: Tree): Tree = {

@@ -2,17 +2,17 @@ name := "scex"
 
 inThisBuild(Seq(
   organization := "com.avsystem.scex",
-  scalaVersion := "2.13.1",
-  crossScalaVersions := Seq(scalaVersion.value, "2.12.11"),
+  scalaVersion := "2.13.3",
+  crossScalaVersions := Seq(scalaVersion.value, "2.12.12"),
 ))
 
 val CompileAndTest = "compile->compile;test->test"
 
 val parserCombinatorsVersion = "1.1.2"
 val collectionCompatVersion = "2.1.4"
-val silencerVersion = "1.6.0"
+val silencerVersion = "1.7.1"
 def avsCommonsVersion: Def.Initialize[String] =
-  Def.setting(if (scalaBinaryVersion.value == "2.13") "2.0.0-M5" else "1.43.0")
+  Def.setting(if (scalaBinaryVersion.value == "2.13") "2.0.0-M9" else "1.46.2")
 val jettyVersion = "9.4.21.v20190926"
 val vaadinVersion = "6.8.13"
 val slf4jVersion = "1.7.30"
