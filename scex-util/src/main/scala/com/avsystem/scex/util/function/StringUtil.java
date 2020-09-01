@@ -48,4 +48,6 @@ public interface StringUtil {
     String replace(String str, String find, String replacement);
 
     String join(Collection<String> list, String separator);
+
+    String hmacMd5(String str, String key);
 }
