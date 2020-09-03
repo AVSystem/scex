@@ -12,7 +12,7 @@ import com.google.common.base.Splitter
 import com.google.common.collect.Lists
 import org.apache.commons.codec.DecoderException
 import org.apache.commons.codec.binary.{Base64, Hex}
-import org.apache.commons.codec.digest.DigestUtils
+import org.apache.commons.codec.digest.{DigestUtils, HmacAlgorithms, HmacUtils}
 import org.apache.commons.lang3.StringUtils
 
 final class StringMiscOps(private val wrapped: String) extends AnyVal {
@@ -112,6 +112,10 @@ final class StringMiscOps(private val wrapped: String) extends AnyVal {
   @Documentation("Calculates MD5 digest from contents of this string encoded using UTF-8 and " +
     "returns the result as a 32 character hex string.")
   def md5Hex: String = DigestUtils.md5Hex(wrapped.getBytes(StandardCharsets.UTF_8))
+
+  @Documentation("Calculates HMAC MD5 digest from contents of this string and " +
+    "returns the result as a 32 character hex string.")
+  def hmacMD5(key: String): String = new HmacUtils(HmacAlgorithms.HMAC_MD5, key).hmacHex(wrapped)
 
   def toLowerCaseEnglish: String = wrapped.toLowerCase(Locale.ENGLISH)
   def toUpperCaseEnglish: String = wrapped.toUpperCase(Locale.ENGLISH)

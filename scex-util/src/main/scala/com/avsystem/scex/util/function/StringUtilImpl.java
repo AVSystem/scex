@@ -1,5 +1,7 @@
 package com.avsystem.scex.util.function;
 
+import org.apache.commons.codec.digest.HmacAlgorithms;
+import org.apache.commons.codec.digest.HmacUtils;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
 
@@ -169,4 +171,8 @@ public class StringUtilImpl implements StringUtil {
         return StringUtils.contains(source, item);
     }
 
+    @Override
+    public String hmacMD5(String str, String key) {
+        return new HmacUtils(HmacAlgorithms.HMAC_MD5, key).hmacHex(str);
+    }
 }
