@@ -172,7 +172,7 @@ public class StringUtilImpl implements StringUtil {
     }
 
     @Override
-    public String hmacMd5(String str, String key) {
+    public String hmacMD5(String str, String key) {
         return new HmacUtils(HmacAlgorithms.HMAC_MD5, key).hmacHex(str);
     }
 }

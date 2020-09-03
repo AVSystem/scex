@@ -49,5 +49,5 @@ public interface StringUtil {
 
     String join(Collection<String> list, String separator);
 
-    String hmacMd5(String str, String key);
+    String hmacMD5(String str, String key);
 }
