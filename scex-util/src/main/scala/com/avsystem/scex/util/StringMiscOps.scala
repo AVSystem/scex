@@ -115,7 +115,7 @@ final class StringMiscOps(private val wrapped: String) extends AnyVal {
 
   @Documentation("Calculates HMAC MD5 digest from contents of this string and " +
     "returns the result as a 32 character hex string.")
-  def hmacMD5(str: String, key: String): String = new HmacUtils(HmacAlgorithms.HMAC_MD5, key).hmacHex(str)
+  def hmacMD5(key: String): String = new HmacUtils(HmacAlgorithms.HMAC_MD5, key).hmacHex(wrapped)
 
   def toLowerCaseEnglish: String = wrapped.toLowerCase(Locale.ENGLISH)
   def toUpperCaseEnglish: String = wrapped.toUpperCase(Locale.ENGLISH)
