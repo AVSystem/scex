@@ -251,7 +251,7 @@ object PredefinedAccessSpecs {
       s.matches _
       s.all.membersNamed.replace
       s.replaceAll _
-      s.replaceAllLiterally(_: String, _: String)
+      s.replace(_: String, _: String)
       s.replaceFirst _
       s.all.membersNamed.split
       s.startsWith(_: String)
@@ -281,6 +281,7 @@ object PredefinedAccessSpecs {
       s.drop(_: Int)
       s.dropRight(_: Int)
       s.dropWhile(_: Char => Boolean)
+      s.replaceAllLiterally _
     }
 
     // Math functions
