@@ -281,7 +281,7 @@ object PredefinedAccessSpecs {
       s.drop(_: Int)
       s.dropRight(_: Int)
       s.dropWhile(_: Char => Boolean)
-      s.replaceAllLiterally _
+      s.replaceAllLiterally(_: String, _: String)
     }
 
     // Math functions
