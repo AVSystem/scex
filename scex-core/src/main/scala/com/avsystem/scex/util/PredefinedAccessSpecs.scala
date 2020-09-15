@@ -7,7 +7,7 @@ import com.github.ghik.silencer.silent
 import scala.math.ScalaNumericConversions
 import scala.runtime._
 
-@silent("a pure expression does nothing in statement position")
+@silent
 object PredefinedAccessSpecs {
 
   import com.avsystem.scex.validation.SymbolValidator._
@@ -281,6 +281,7 @@ object PredefinedAccessSpecs {
       s.drop(_: Int)
       s.dropRight(_: Int)
       s.dropWhile(_: Char => Boolean)
+      s.replaceAllLiterally _
     }
 
     // Math functions
