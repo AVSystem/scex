@@ -150,7 +150,7 @@ trait ScexPresentationCompiler extends ScexCompiler { compiler =>
     import global._
 
     inCompilerThread {
-      val PackageDef(_, List(ClassDef(_, _, _, Template(List(expressionParent, _), _, _)), _*)) = tree
+      val PackageDef(_, List(_: Import, ClassDef(_, _, _, Template(List(expressionParent, _), _, _)), _*)) = tree
       val TypeRef(_, _, List(contextTpe, _)) = expressionParent.tpe
       contextTpe
     }
