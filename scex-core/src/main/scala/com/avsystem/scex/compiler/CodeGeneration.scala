@@ -87,9 +87,9 @@ object CodeGeneration {
     str.flatMap(escapedChar)
 
   /**
-    * Generates code of implicit view for given Java class that adds Scala-style getters
-    * forwarding to existing Java-style getters of given class.
-    */
+   * Generates code of implicit view for given Java class that adds Scala-style getters
+   * forwarding to existing Java-style getters of given class.
+   */
   def generateJavaGetterAdapter(clazz: Class[_], full: Boolean): Option[String] = {
     // generate scala getters
     val methods =
@@ -200,30 +200,32 @@ object CodeGeneration {
     //comment with profile name ensures that caching distinguishes between profiles
     //_result is needed because: https://groups.google.com/forum/#!topic/scala-user/BAK-mU7o6nM
     val prefix =
-      s"""
-         |// profile: ${profile.name}
-         |final class $ExpressionClassName(
-         |  val debugInfo: com.avsystem.scex.ExpressionDebugInfo,
-         |  val sourceInfo: com.avsystem.scex.compiler.SourceInfo)
-         |
-         |  extends $ScexPkg.AbstractExpression[$contextType, $resultOrSetterType]
-         |  with $CompilerPkg.TemplateInterpolations[$resultType] {
-         |
-         |  def eval($ContextSymbol: $contextType @$AnnotationPkg.Input): $resultOrSetterType = {
-         |    implicit def $ImplicitContextSymbol: $contextType @$AnnotationPkg.Input = $ContextSymbol
-         |    val $RootSymbol = $ContextSymbol.root: @$AnnotationPkg.RootValue
-         |    $profileImport
-         |    $utilsImport
-         |    import $RootSymbol._
-         |    $rootGetterAdapterCode
-         |    $profileHeader
-         |    $additionalHeader
-         |    $variableAccessorClassDef
-         |    val $VariablesSymbol = new $variableAccessorConstr: @$AnnotationPkg.Input
-         |    val _result =
-         |      $processingPrefix
-         |      {
-         |""".stripMargin + interpolationPrefix
+    s"""
+       |// profile: ${profile.name}
+       |
+       |import scala.Predef.{wrapString => _, _}
+       |
+       |final class $ExpressionClassName(
+       |  val debugInfo: com.avsystem.scex.ExpressionDebugInfo,
+       |  val sourceInfo: com.avsystem.scex.compiler.SourceInfo
+       |) extends $ScexPkg.AbstractExpression[$contextType, $resultOrSetterType]
+       |  with $CompilerPkg.TemplateInterpolations[$resultType] {
+       |
+       |  def eval($ContextSymbol: $contextType @$AnnotationPkg.Input): $resultOrSetterType = {
+       |    implicit def $ImplicitContextSymbol: $contextType @$AnnotationPkg.Input = $ContextSymbol
+       |    val $RootSymbol = $ContextSymbol.root: @$AnnotationPkg.RootValue
+       |    $profileImport
+       |    $utilsImport
+       |    import $RootSymbol._
+       |    $rootGetterAdapterCode
+       |    $profileHeader
+       |    $additionalHeader
+       |    $variableAccessorClassDef
+       |    val $VariablesSymbol = new $variableAccessorConstr: @$AnnotationPkg.Input
+       |    val _result =
+       |      $processingPrefix
+       |      {
+       |""".stripMargin + interpolationPrefix
 
     val postfix = interpolationPostfix +
       s"""
@@ -254,7 +256,7 @@ object CodeGeneration {
         """.stripMargin
     }.mkString
 
-    if(adapterConversions.nonEmpty) Some(
+    if (adapterConversions.nonEmpty) Some(
       s"""
          |object $ProfileObjectName extends $MarkersObj.ProfileObject {
          |$adapterConversions
@@ -304,7 +306,7 @@ object CodeGeneration {
     s"""
        |package $pkgName
        |
-      |$code
+       |$code
     """.stripMargin
   }
 
@@ -313,7 +315,7 @@ object CodeGeneration {
       s"""
          |package $pkgName
          |
-      |""".stripMargin
+         |""".stripMargin
 
     (pkgName, prefix + code, prefix.length + offset)
   }
@@ -331,6 +333,8 @@ object CodeGeneration {
     val profileImport = profileObjectPkg.fold("")(pkg => s"import $pkg.$ProfileObjectName._")
     val utilsImport = utilsObjectPkg.fold("")(pkg => s"import $pkg.$UtilsObjectName._")
     s"""
+       |import scala.Predef.{wrapString => _, _}
+       |
        |final class $ConversionSupplierClassName extends $templateOptimizingScexCompiler.ConversionSupplier[$resultType] {
        |  def get = {
        |    $profileImport

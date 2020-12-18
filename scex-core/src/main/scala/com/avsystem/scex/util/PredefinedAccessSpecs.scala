@@ -1,7 +1,6 @@
 package com.avsystem.scex.util
 
 import java.{lang => jl}
-
 import com.github.ghik.silencer.silent
 
 import scala.math.ScalaNumericConversions

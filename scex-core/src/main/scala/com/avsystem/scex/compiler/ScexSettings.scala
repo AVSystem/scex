@@ -17,6 +17,7 @@ class ScexSettings extends Settings {
   // https://github.com/scala/scala/commit/6e4c926b4a4c5e8dd350ae3a150490a794b139ca
   // TODO: maybe try to make it work with MacroExpand.Discard ?
   Ymacroexpand.value = MacroExpand.Normal
+  nopredef.value = true
 
   private val Positive = Some((1, Int.MaxValue))
 

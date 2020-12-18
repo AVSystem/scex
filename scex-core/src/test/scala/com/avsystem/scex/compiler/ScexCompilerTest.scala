@@ -93,6 +93,11 @@ class ScexCompilerTest extends FunSuite with CompilationTest {
     assert("propertytruefalse" == cexpr(SimpleContext(())))
   }
 
+  test("String.empty") {
+    val acl = PredefinedAccessSpecs.basicOperations
+    assert(!evaluate[Boolean]("\"str\".empty", acl))
+  }
+
   test("constructor allow test") {
     val acl = allow {
       new JavaRoot
