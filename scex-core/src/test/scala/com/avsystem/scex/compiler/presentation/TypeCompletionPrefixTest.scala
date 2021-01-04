@@ -44,14 +44,15 @@ class TypeCompletionPrefixTest extends FunSuite with CompilationTest with Comple
     }
   }
 
-  private def createCompleter(acl: List[MemberAccessSpec]) =
-    compiler.getCompleter[SimpleContext[Root], Any](createProfile(acl), template = false, header = header,
+  private def createCompleter(acl: List[MemberAccessSpec], template: Boolean) =
+    compiler.getCompleter[SimpleContext[Root], Any](createProfile(acl), template, header = header,
       variableTypes = Map("someInt" -> typeOf[Int]))
 
-  private def assertPrefix(exprWithCaret: String, expectedPrefix: String, expectedType: Type): Unit = {
-    val completer = createCompleter(acl)
-    val offset = exprWithCaret.indexOf('|') - 1
-    val expr = exprWithCaret.substring(0, offset + 1) + exprWithCaret.substring(offset + 2)
+  private def assertPrefix(exprWithCaret: String, expectedPrefix: String, expectedType: Type, template: Boolean): Unit = {
+    val exprWithSplice = if(!template) exprWithCaret else s"$${$exprWithCaret}"
+    val completer = createCompleter(acl, template)
+    val offset = exprWithSplice.indexOf('|') - 1
+    val expr = exprWithSplice.substring(0, offset + 1) + exprWithSplice.substring(offset + 2)
     val completion = completer.getTypeCompletion(expr, offset)
     val prefixAttachments = completion.typedPrefixTree.attachments
     val tpe = prefixAttachments.tpe
@@ -68,7 +69,8 @@ class TypeCompletionPrefixTest extends FunSuite with CompilationTest with Comple
   private def tests(namePrefix: String, expectedPrefix: String, expectedType: Type)(exprs: String*): Unit = {
     exprs.foreach { exprWithCaret =>
       test(namePrefix + " " + exprWithCaret) {
-        assertPrefix(exprWithCaret, expectedPrefix, expectedType)
+        assertPrefix(exprWithCaret, expectedPrefix, expectedType, template = false)
+        assertPrefix(exprWithCaret, expectedPrefix, expectedType, template = true)
       }
     }
   }
