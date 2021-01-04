@@ -65,7 +65,7 @@ object CodeGeneration {
   val MarkersObj = s"$CompilerPkg.Markers"
   val MacroProcessor = s"$CompilerPkg.ExpressionMacroProcessor"
   val InterpolationOpen = "t\"\"\""
-  val NoMacrosInterpolationOpen = "s\"\"\""
+  val NoMacrosInterpolationOpen = "p\"\"\""
   val InterpolationClose = "\"\"\""
 
   def adapterName(clazz: Class[_], full: Boolean) =
