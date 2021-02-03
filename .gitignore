@@ -2,6 +2,7 @@
 *.log
 *.class
 .idea
+.bsp
 !.idea/vcs.xml
 !.idea/codeStyleSettings.xml
 

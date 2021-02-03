@@ -2,7 +2,7 @@ name := "scex"
 
 inThisBuild(Seq(
   organization := "com.avsystem.scex",
-  scalaVersion := "2.13.3",
+  scalaVersion := "2.13.4",
   crossScalaVersions := Seq(scalaVersion.value, "2.12.12"),
 ))
 
@@ -11,7 +11,7 @@ val CompileAndTest = "compile->compile;test->test"
 val parserCombinatorsVersion = "1.1.2"
 val collectionCompatVersion = "2.1.6"
 val silencerVersion = "1.7.1"
-val avsCommonsVersion = "2.0.0-M15"
+val avsCommonsVersion = "2.0.0-M21"
 val jettyVersion = "9.4.21.v20190926"
 val vaadinVersion = "6.8.13"
 val slf4jVersion = "1.7.30"
@@ -50,6 +50,12 @@ lazy val subprojectSettings = Seq(
     "-Xfatal-warnings",
     "-Xlint:-missing-interpolator,-adapted-args,-unused,_"
   ),
+  Compile / scalacOptions ++= {
+    if (scalaBinaryVersion.value == "2.13") Seq(
+      "-Xnon-strict-patmat-analysis",
+      "-Xlint:-strict-unsealed-patmat"
+    ) else Seq.empty
+  },
 
   sonatypeProfileName := "com.avsystem",
   publishTo := sonatypePublishToBundle.value,

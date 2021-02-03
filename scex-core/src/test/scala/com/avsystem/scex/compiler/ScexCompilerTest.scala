@@ -425,7 +425,7 @@ class ScexCompilerTest extends FunSuite with CompilationTest {
   def lambdaTest(name: String, expr: String) =
     test(name) {
       val acl = allow {
-        List.apply _
+        scala.collection.immutable.List.apply _
         on { l: List[Any] =>
           l.forall _
         }
