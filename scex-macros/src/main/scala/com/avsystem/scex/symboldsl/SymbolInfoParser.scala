@@ -183,7 +183,8 @@ abstract class SymbolInfoParser[C <: blackbox.Context](val c: C) extends MacroUt
     case (Some((requiredSymbol, requiredTpe)), Ident(_))
       if prefix.symbol == requiredSymbol && prefix.tpe <:< requiredTpe =>
       requiredTpe
-    case (None, _) if prefix.symbol.isModule =>
+    case (None, _) if prefix.symbol.isModule ||
+      (prefix.symbol.isStatic && prefix.symbol.isMethod && prefix.symbol.asMethod.isStable) =>
       prefix.tpe
     case _ =>
       c.abort(prefix.pos, "Bad prefix: " + show(prefix))

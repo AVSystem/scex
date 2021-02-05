@@ -4,6 +4,7 @@ package compiler
 import com.avsystem.scex.util.{LoggingUtils, MacroUtils, TypesafeEqualsEnabled}
 import com.avsystem.scex.validation.ValidationContext
 
+import scala.annotation.tailrec
 import scala.language.experimental.macros
 import scala.reflect.macros.whitebox
 
@@ -43,7 +44,7 @@ class ExpressionMacroProcessor(val c: whitebox.Context) extends MacroUtils with 
       case _ => throw new Exception("This is not an expression source file")
     }
 
-    def validateSyntax(trees: List[Tree]): Unit = trees match {
+    @tailrec def validateSyntax(trees: List[Tree]): Unit = trees match {
       case head :: tail =>
         val (allowed, children) = profile.syntaxValidator.validateSyntax(c.universe)(head)
         if (!allowed) {

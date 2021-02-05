@@ -161,7 +161,7 @@ class IGlobal(settings: Settings, reporter: Reporter, val classLoader: ClassLoad
     }
   }
 
-  def typeCompletionContext(typedTree: Tree, pos: Position): TypeCompletionContext = {
+  def typeCompletionContext(typedTree: Tree, pos: Position, isAllowed: Tree => Boolean): TypeCompletionContext = {
     val context = doLocateContext(pos)
     var tree = typedTree
 
@@ -214,6 +214,16 @@ class IGlobal(settings: Settings, reporter: Reporter, val classLoader: ClassLoad
 
     tree = fixDynamicCalls(tree)
 
+    // now, drop incomplete selection
+
+    tree match {
+      case Select(qual, _) if tree.tpe == ErrorType && !(qual.tpe != null && qual.tpe != ErrorType && qual.tpe <:< dynamicTpe) =>
+        tree = qual
+      case SelectDynamic(qual, "<error>") =>
+        tree = qual
+      case _ =>
+    }
+
     // possibly retype to catch up with changes made to the tree
 
     val shouldRetypeQualifier = tree.tpe match {
@@ -224,6 +234,26 @@ class IGlobal(settings: Settings, reporter: Reporter, val classLoader: ClassLoad
 
     if (shouldRetypeQualifier) {
       tree = analyzer.newTyper(context).typedQualifier(tree)
+    }
+
+    // strip selection of forbidden symbol (pretending that it doesn't exist)
+
+    def fakeIdent(tpe: Type, symbol: Symbol) =
+      Ident(nme.EMPTY).setSymbol(Option(symbol).getOrElse(NoSymbol)).setType(tpe)
+
+    val forValidation = tree match {
+      case Select(apply@ImplicitlyConverted(qual, fun), name) =>
+        treeCopy.Select(tree, treeCopy.Apply(apply, fun, List(fakeIdent(qual.tpe, qual.symbol))), name)
+      case Select(qual, name) =>
+        treeCopy.Select(tree, fakeIdent(qual.tpe, qual.symbol), name)
+      case _ =>
+        EmptyTree
+    }
+
+    tree match {
+      case Select(qual, _) if !isAllowed(forValidation) =>
+        tree = qual
+      case _ =>
     }
 
     // remove dangling implicit conversion
