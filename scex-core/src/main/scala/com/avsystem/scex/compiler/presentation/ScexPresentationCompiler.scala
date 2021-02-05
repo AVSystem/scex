@@ -380,31 +380,17 @@ trait ScexPresentationCompiler extends ScexCompiler { compiler =>
           val tree = new ScexLocator(sourcePosition).locateIn(fullTree).toOpt
             .filter(t => t.pos != NoPosition && t.pos.start >= offset).getOrElse(EmptyTree)
 
-          def fakeIdent(tpe: Type, symbol: Symbol) =
-            Ident(nme.EMPTY).setSymbol(Option(symbol).getOrElse(NoSymbol)).setType(tpe)
-
           def isAllowed(tree: Tree) =
             symbolValidator.validateMemberAccess(vc)(extractAccess(tree)).deniedAccesses.isEmpty
 
-          val validated = tree match {
-            case Select(apply@ImplicitlyConverted(qual, fun), name) =>
-              treeCopy.Select(tree, treeCopy.Apply(apply, fun, List(fakeIdent(qual.tpe, qual.symbol))), name)
-            case Select(qual, name) =>
-              treeCopy.Select(tree, fakeIdent(qual.tpe, qual.symbol), name)
-            case _ =>
-              EmptyTree
-          }
-
-          // predent type error on forbidden member selection
-          if (!isAllowed(validated)) {
-            tree.setType(ErrorType)
-          }
-
-          val completionCtx = global.typeCompletionContext(tree, sourcePosition)
+          val completionCtx = global.typeCompletionContext(tree, sourcePosition, isAllowed)
           logger.debug("Prefix tree for type completion:\n" + show(completionCtx.prefixTree, printTypes = true, printPositions = true))
 
           val members = getTypeMembers(global)(exprDef, completionCtx.ownerTpe) {
             val typeMembers = global.typeMembers(completionCtx)
+
+            def fakeIdent(tpe: Type, symbol: Symbol) =
+              Ident(nme.EMPTY).setSymbol(Option(symbol).getOrElse(NoSymbol)).setType(tpe)
 
             val fakeDirectPrefix = fakeIdent(completionCtx.ownerTpe, tree.symbol)
 

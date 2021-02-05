@@ -226,8 +226,8 @@ trait MacroUtils extends CrossMacroUtils {
   def withOverrides(s: Symbol) =
     s :: s.overrides.map(fixOverride)
 
-  def isStaticModule(symbol: Symbol) =
-    symbol != null && symbol.isModule && symbol.isStatic
+  def isStableStatic(symbol: Symbol) =
+    symbol != null && symbol.isStatic && (symbol.isModule || symbol.isMethod && symbol.asMethod.isStable)
 
   def isFromToplevelType(symbol: Symbol) =
     withOverrides(symbol).exists(toplevelSymbols contains _.owner)

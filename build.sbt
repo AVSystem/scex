@@ -2,7 +2,7 @@ name := "scex"
 
 inThisBuild(Seq(
   organization := "com.avsystem.scex",
-  scalaVersion := "2.13.3",
+  scalaVersion := "2.13.4",
   crossScalaVersions := Seq(scalaVersion.value, "2.12.12"),
 
   githubWorkflowTargetTags ++= Seq("v*"),
@@ -64,6 +64,13 @@ lazy val subprojectSettings = Seq(
     "-Xfatal-warnings",
     "-Xlint:-missing-interpolator,-adapted-args,-unused,_"
   ),
+
+  scalacOptions ++= {
+    if (scalaBinaryVersion.value == "2.13") Seq(
+      "-Xnon-strict-patmat-analysis",
+      "-Xlint:-strict-unsealed-patmat"
+    ) else Seq.empty
+  },
 
   sonatypeProfileName := "com.avsystem",
   publishTo := sonatypePublishToBundle.value,

@@ -5,6 +5,7 @@ import com.avsystem.scex.compiler.CompilationTest
 import com.avsystem.scex.compiler.presentation.TypeCompletionPrefixTest._
 import com.avsystem.scex.util.SimpleContext
 import com.github.ghik.silencer.silent
+import org.scalactic.source.Position
 import org.scalatest.FunSuite
 
 import scala.reflect.runtime.universe.typeOf
@@ -66,7 +67,7 @@ class TypeCompletionPrefixTest extends FunSuite with CompilationTest with Comple
 
   private case class TestCase(expr: String, expectedPrefix: String, expectedType: Type)
 
-  private def tests(namePrefix: String, expectedPrefix: String, expectedType: Type)(exprs: String*): Unit = {
+  private def tests(namePrefix: String, expectedPrefix: String, expectedType: Type)(exprs: String*)(implicit pos: Position): Unit = {
     exprs.foreach { exprWithCaret =>
       test(namePrefix + " " + exprWithCaret) {
         assertPrefix(exprWithCaret, expectedPrefix, expectedType, template = false)

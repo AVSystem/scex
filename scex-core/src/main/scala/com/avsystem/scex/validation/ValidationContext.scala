@@ -47,10 +47,15 @@ abstract class ValidationContext protected extends MacroUtils {
 
   case object NoMemberAccess extends MemberAccess
 
-  case class SimpleMemberAccess(tpe: Type, symbol: Symbol, implicitConv: Option[Tree],
-    allowedByDefault: Boolean, pos: Position) extends MemberAccess {
+  case class SimpleMemberAccess(
+    tpe: Type,
+    symbol: Symbol,
+    implicitConv: Option[Tree],
+    allowedByDefault: Boolean,
+    pos: Position
+  ) extends MemberAccess {
 
-    override def toString =
+    override def toString: String =
       s"${memberSignature(symbol)} on type ${tpe.widen}" + implicitConv.map(ic => s" by $ic").getOrElse("")
   }
 
@@ -63,13 +68,13 @@ abstract class ValidationContext protected extends MacroUtils {
 
   case class ValidationResult(priority: Int, deniedAccesses: List[SimpleMemberAccess])
 
-  def toStringAccess(tree: Tree) =
+  def toStringAccess(tree: Tree): SimpleMemberAccess =
     SimpleMemberAccess(tree.tpe, toStringSymbol(tree.tpe), None, allowedByDefault = false, tree.pos)
 
-  def needsValidation(symbol: Symbol) =
+  def needsValidation(symbol: Symbol): Boolean =
     symbol != null && symbol.isTerm && !symbol.isPackage && !isExpressionUtil(symbol) && !isProfileObject(symbol)
 
-  def hasNotValidatedAnnotation(symbol: Symbol) =
+  def hasNotValidatedAnnotation(symbol: Symbol): Boolean =
     symbol != null && annotationsIncludingOverrides(symbol).exists(_.tree.tpe <:< notValidatedAnnotType)
 
   def extractAccess(tree: Tree, allowedSelectionPrefix: Boolean = false): MemberAccess = tree match {
@@ -114,7 +119,7 @@ abstract class ValidationContext protected extends MacroUtils {
     case Select(qualifier, name) if needsValidation(tree.symbol) =>
       // Direct accesses to enum values are allowed because they compile to constants, so I'm also allowing all
       // Enum#valueOf methods for consistency.
-      val staticMember = isStaticModule(qualifier.symbol) && !isFromToplevelType(tree.symbol)
+      val staticMember = isStableStatic(qualifier.symbol) && !isFromToplevelType(tree.symbol)
       lazy val qualCompanion = qualifier.symbol.companion
       lazy val companionType = qualCompanion.asType.toType
       val enumValueOf = staticMember && name == TermName("valueOf") && qualCompanion != NoSymbol && companionType <:< typeOf[Enum[_]] &&
