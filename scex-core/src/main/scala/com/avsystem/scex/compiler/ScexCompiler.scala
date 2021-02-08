@@ -2,7 +2,6 @@ package com.avsystem.scex
 package compiler
 
 import java.util.concurrent.locks.ReentrantLock
-
 import com.avsystem.commons.misc.TypeString
 import com.avsystem.scex.compiler.CodeGeneration._
 import com.avsystem.scex.compiler.ScexCompiler._
@@ -18,6 +17,7 @@ import scala.reflect.NameTransformer
 import scala.reflect.internal.util._
 import scala.reflect.io.{AbstractFile, VirtualDirectory}
 import scala.tools.nsc.plugins.Plugin
+import scala.tools.nsc.reporters.FilteringReporter
 import scala.tools.nsc.{Global, Settings}
 import scala.util.{Failure, Success, Try}
 
@@ -28,7 +28,7 @@ trait ScexCompiler extends LoggingUtils {
   private val lock = new ReentrantLock
 
   @silent("deprecated")
-  class Reporter(val settings: Settings) extends ReporterBase {
+  class Reporter(val settings: Settings) extends FilteringReporter {
     private val errorsBuilder = new ListBuffer[CompileError]
 
     def compileErrors(): List[CompileError] =
