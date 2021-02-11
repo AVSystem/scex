@@ -3,7 +3,7 @@ name := "scex"
 inThisBuild(Seq(
   organization := "com.avsystem.scex",
   scalaVersion := "2.13.4",
-  crossScalaVersions := Seq(scalaVersion.value, "2.12.12"),
+  crossScalaVersions := Seq(scalaVersion.value, "2.12.13"),
 
   githubWorkflowTargetTags ++= Seq("v*"),
   githubWorkflowJavaVersions := Seq("adopt@1.11"),
@@ -23,9 +23,9 @@ inThisBuild(Seq(
 val CompileAndTest = "compile->compile;test->test"
 
 val parserCombinatorsVersion = "1.1.2"
-val collectionCompatVersion = "2.1.4"
-val silencerVersion = "1.7.1"
-val avsCommonsVersion = "2.0.0-M15"
+val collectionCompatVersion = "2.4.1"
+val silencerVersion = "1.7.2"
+val avsCommonsVersion = "2.0.0"
 val jettyVersion = "9.4.21.v20190926"
 val vaadinVersion = "6.8.13"
 val slf4jVersion = "1.7.30"
