@@ -1,12 +1,11 @@
 package com.avsystem.scex.util
 
 import java.{lang => jl}
-import com.github.ghik.silencer.silent
-
+import scala.annotation.nowarn
 import scala.math.ScalaNumericConversions
 import scala.runtime._
 
-@silent
+@nowarn
 object PredefinedAccessSpecs {
 
   import com.avsystem.scex.validation.SymbolValidator._

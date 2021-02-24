@@ -2,7 +2,6 @@ package com.avsystem.scex
 package compiler.presentation
 
 import java.{lang => jl, util => ju}
-
 import com.avsystem.commons.jiop.JavaInterop._
 import com.avsystem.commons.misc.TypeString
 import com.avsystem.scex.compiler.CodeGeneration._
@@ -15,12 +14,12 @@ import com.avsystem.scex.presentation.{Attributes, SymbolAttributes}
 import com.avsystem.scex.util.CommonUtils._
 import com.avsystem.scex.validation.ValidationContext
 import com.avsystem.scex.{Type => SType}
-import com.github.ghik.silencer.silent
 
+import scala.annotation.nowarn
 import scala.reflect.NameTransformer
 import scala.tools.nsc.Settings
 
-@silent("deprecated")
+@nowarn("msg=deprecated")
 trait ScexPresentationCompiler extends ScexCompiler { compiler =>
 
   private val logger = createLogger[ScexPresentationCompiler]

@@ -1,16 +1,15 @@
 package com.avsystem.scex
 package compiler
 
-import java.{util => ju}
-
 import com.avsystem.scex.compiler.ParameterizedClass.StaticInnerGeneric
 import com.avsystem.scex.compiler.ScexCompiler.CompilationFailedException
 import com.avsystem.scex.compiler.overriding.{Base, Klass, Specialized}
 import com.avsystem.scex.util.{PredefinedAccessSpecs, SimpleContext}
-import com.github.ghik.silencer.silent
 import com.google.common.reflect.TypeToken
 import org.scalatest.FunSuite
 
+import java.{util => ju}
+import scala.annotation.nowarn
 import scala.collection.immutable.StringOps
 
 object ScexCompilerTest {
@@ -19,7 +18,7 @@ object ScexCompilerTest {
   }
 }
 
-@silent("a pure expression does nothing in statement position")
+@nowarn("msg=a pure expression does nothing in statement position")
 class ScexCompilerTest extends FunSuite with CompilationTest {
 
   import com.avsystem.scex.validation.SymbolValidator._

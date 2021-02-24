@@ -2,12 +2,12 @@ package com.avsystem.scex.util
 
 import com.avsystem.commons.jiop.JavaInterop._
 import com.avsystem.scex.util.function._
-import com.github.ghik.silencer.silent
 import org.joda.time.Hours
 
+import scala.annotation.nowarn
 import scala.util.matching.Regex.Match
 
-@silent("a pure expression does nothing in statement position")
+@nowarn("msg=a pure expression does nothing in statement position")
 object CommonSymbolValidators {
 
   import com.avsystem.scex.validation.SymbolValidator._
@@ -50,8 +50,8 @@ object CommonSymbolValidators {
       }
       entry _
       on { e: Entry[Any@plus, Any@plus] =>
-        e.key: @silent
-        e.value: @silent
+        e.key
+        e.value
         e.withKey _
         e.withValue _
         e.toString

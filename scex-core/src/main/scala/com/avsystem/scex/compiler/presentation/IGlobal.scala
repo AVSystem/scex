@@ -2,8 +2,8 @@ package com.avsystem.scex
 package compiler.presentation
 
 import com.avsystem.scex.compiler.ScexGlobal
-import com.github.ghik.silencer.silent
 
+import scala.annotation.nowarn
 import scala.collection.mutable
 import scala.tools.nsc.Settings
 import scala.tools.nsc.interactive.Global
@@ -13,7 +13,7 @@ import scala.tools.nsc.symtab.Flags.{ACCESSOR, PARAMACCESSOR}
 /**
   * I needed to hack a custom implementation of completion, hence this class.
   */
-@silent("deprecated")
+@nowarn("msg=deprecated")
 class IGlobal(settings: Settings, reporter: Reporter, val classLoader: ClassLoader)
   extends Global(settings, reporter) with ScexGlobal {
 

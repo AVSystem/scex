@@ -9,9 +9,9 @@ import com.avsystem.scex.parsing.{EmptyPositionMapping, PositionMapping}
 import com.avsystem.scex.util.CommonUtils._
 import com.avsystem.scex.util.LoggingUtils
 import com.avsystem.scex.validation.{SymbolValidator, SyntaxValidator}
-import com.github.ghik.silencer.silent
 import org.apache.commons.codec.digest.DigestUtils
 
+import scala.annotation.nowarn
 import scala.collection.mutable.ListBuffer
 import scala.reflect.NameTransformer
 import scala.reflect.internal.util._
@@ -27,7 +27,7 @@ trait ScexCompiler extends LoggingUtils {
 
   private val lock = new ReentrantLock
 
-  @silent("deprecated")
+  @nowarn("msg=deprecated")
   class Reporter(val settings: Settings) extends FilteringReporter {
     private val errorsBuilder = new ListBuffer[CompileError]
 

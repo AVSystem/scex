@@ -3,10 +3,9 @@ package util
 
 import java.lang.reflect.{Method, Modifier}
 import java.util.concurrent.Callable
-
-import com.github.ghik.silencer.silent
 import com.google.common.base.Predicate
 
+import scala.annotation.nowarn
 import scala.collection.mutable
 import scala.reflect.ClassTag
 
@@ -65,6 +64,7 @@ object CommonUtils {
     (System.nanoTime() - start) / 1000000000.0
   }
 
+  @nowarn("msg=deprecated")
   def directSuperclasses(clazz: Class[_]) = {
     val resultBuilder = new mutable.HashSet[Class[_]]
     if (clazz.getSuperclass != null) {
@@ -72,7 +72,7 @@ object CommonUtils {
     }
     clazz.getInterfaces.foreach { iface =>
       if (!resultBuilder.exists(iface.isAssignableFrom)) {
-        resultBuilder.retain(c => !c.isAssignableFrom(iface)): @silent("deprecated")
+        resultBuilder.retain(c => !c.isAssignableFrom(iface))
         resultBuilder += iface
       }
     }

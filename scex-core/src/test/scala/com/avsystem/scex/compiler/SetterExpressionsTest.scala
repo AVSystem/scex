@@ -5,8 +5,9 @@ import com.avsystem.commons.jiop.JavaInterop._
 import com.avsystem.commons.misc.{JavaClassName, TypeString}
 import com.avsystem.scex.compiler.TemplateInterpolations.Splicer
 import com.avsystem.scex.util.{PredefinedAccessSpecs, SimpleContext}
-import com.github.ghik.silencer.silent
 import org.scalatest.FunSuite
+
+import scala.annotation.nowarn
 
 class SetterTarget {
   var costam = 0
@@ -37,7 +38,7 @@ object CustomBooleanSplicer {
   * Created: 28-11-2013
   * Author: ghik
   */
-@silent("a pure expression does nothing in statement position")
+@nowarn("msg=a pure expression does nothing in statement position")
 class SetterExpressionsTest extends FunSuite with CompilationTest {
 
   import com.avsystem.scex.validation.SymbolValidator._
@@ -103,8 +104,9 @@ class SetterExpressionsTest extends FunSuite with CompilationTest {
   test("adapted root bean setter template test with conversion and splicer") {
     val target = new JavaSetterTarget
     val header = "import SetterConversions._; import CustomBooleanSplicer._"
+    @nowarn
     val acl = PredefinedAccessSpecs.basicOperations ++ allow {
-      CustomBooleanSplicer.jBooleanSplicer: @silent
+      CustomBooleanSplicer.jBooleanSplicer
       on { s: Splicer[JBoolean] => s.toString(_: JBoolean) }
       on { st: JavaSetterTarget => st.all.introduced.members }
     }
