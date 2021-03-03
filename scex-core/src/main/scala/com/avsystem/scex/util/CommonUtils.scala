@@ -4,7 +4,7 @@ package util
 import java.lang.reflect.{Method, Modifier}
 import java.util.concurrent.Callable
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 import com.google.common.base.Predicate
 
 import scala.collection.mutable
@@ -72,7 +72,7 @@ object CommonUtils {
     }
     clazz.getInterfaces.foreach { iface =>
       if (!resultBuilder.exists(iface.isAssignableFrom)) {
-        resultBuilder.retain(c => !c.isAssignableFrom(iface)): @silent("deprecated")
+        resultBuilder.retain(c => !c.isAssignableFrom(iface)): @nowarn("msg=deprecated")
         resultBuilder += iface
       }
     }

@@ -8,7 +8,7 @@ import com.avsystem.scex.util.PredefinedAccessSpecs.basicOperations
 import com.avsystem.scex.util.SimpleContext
 import com.avsystem.scex.validation.{SymbolValidator, SyntaxValidator}
 import com.avsystem.scex.{ExpressionProfile, NamedSource}
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 import com.vaadin.event.FieldEvents.{TextChangeEvent, TextChangeListener}
 import com.vaadin.terminal.gwt.server.AbstractApplicationServlet
 import com.vaadin.ui.{Label, TextField, Window}
@@ -19,7 +19,7 @@ import org.eclipse.jetty.servlet.{ServletContextHandler, ServletHolder}
 
 import scala.reflect.runtime.universe.typeOf
 
-@silent("a pure expression does nothing in statement position")
+@nowarn("msg=a pure expression does nothing in statement position")
 object CompletionPlayground {
 
   val settings = new ScexSettings

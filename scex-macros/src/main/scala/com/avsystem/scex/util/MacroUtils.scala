@@ -1,7 +1,6 @@
 package com.avsystem.scex.util
 
-import com.github.ghik.silencer.silent
-
+import scala.annotation.nowarn
 import scala.reflect.api.Universe
 
 trait MacroUtils extends CrossMacroUtils {
@@ -28,7 +27,7 @@ trait MacroUtils extends CrossMacroUtils {
 
   lazy val any2stringadd = symAlternatives(typeOf[Predef.type].member(TermName("any2stringadd")))
     .find(_.isMethod).getOrElse(NoSymbol)
-  @silent("deprecated")
+  @nowarn("msg=deprecated")
   lazy val stringAddPlus = typeOf[any2stringadd[_]].member(TermName("+").encodedName)
   lazy val stringConcat = typeOf[String].member(TermName("+").encodedName)
   lazy val safeToString = templateInterpolationsType.companion.decl(TermName("safeToString"))

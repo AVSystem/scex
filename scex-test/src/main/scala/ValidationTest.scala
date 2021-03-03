@@ -7,13 +7,13 @@ import com.avsystem.scex.japi.DefaultJavaScexCompiler
 import com.avsystem.scex.presentation.SymbolAttributes
 import com.avsystem.scex.util.{SimpleContext, PredefinedAccessSpecs}
 import com.avsystem.scex.validation._
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 
 import scala.language.{dynamics, existentials}
 import scala.reflect.macros.Universe
 import scala.runtime.RichInt
 
-@silent("a pure expression does nothing in statement position")
+@nowarn("msg=a pure expression does nothing in statement position")
 object ValidationTest {
 
   object Foo {
@@ -48,7 +48,7 @@ object ValidationTest {
 
     import com.avsystem.scex.validation.SymbolValidator._
 
-    @silent
+    @nowarn
     val memberAccessSpecs = allow {
       StringContext.apply _
       ValidationTest.Foo.Bar.c

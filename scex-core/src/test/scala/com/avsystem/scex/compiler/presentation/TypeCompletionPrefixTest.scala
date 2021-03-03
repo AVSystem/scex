@@ -4,7 +4,7 @@ import com.avsystem.scex.Type
 import com.avsystem.scex.compiler.CompilationTest
 import com.avsystem.scex.compiler.presentation.TypeCompletionPrefixTest._
 import com.avsystem.scex.util.SimpleContext
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 import org.scalactic.source.Position
 import org.scalatest.FunSuite
 
@@ -14,7 +14,7 @@ import scala.reflect.runtime.universe.typeOf
   * Created: 07-10-2014
   * Author: ghik
   */
-@silent("a pure expression does nothing in statement position")
+@nowarn("msg=a pure expression does nothing in statement position")
 class TypeCompletionPrefixTest extends FunSuite with CompilationTest with CompletionTest {
 
   import com.avsystem.scex.validation.SymbolValidator._

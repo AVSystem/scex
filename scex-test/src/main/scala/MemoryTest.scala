@@ -4,9 +4,9 @@ import com.avsystem.scex.presentation.SymbolAttributes
 import com.avsystem.scex.util.{PredefinedAccessSpecs, SimpleContext}
 import com.avsystem.scex.validation.{SymbolValidator, SyntaxValidator}
 import com.avsystem.scex.{ExpressionProfile, NamedSource}
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 
-@silent("a pure expression does nothing in statement position")
+@nowarn("msg=a pure expression does nothing in statement position")
 object MemoryTest {
 
   case class Dummy(costam: Int)

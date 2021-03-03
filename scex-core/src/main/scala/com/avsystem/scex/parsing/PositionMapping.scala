@@ -1,6 +1,6 @@
 package com.avsystem.scex.parsing
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 
 import scala.collection.immutable.SortedMap
 
@@ -44,7 +44,7 @@ class ShiftInfoPositionMapping(
   private val shiftMapping: SortedMap[Int, ShiftInfo],
   private val reverseShiftMapping: SortedMap[Int, ShiftInfo]) extends PositionMapping {
 
-  @silent("deprecated")
+  @nowarn("msg=deprecated")
   def apply(pos: Int) = shiftMapping.to(pos).lastOption match {
     case Some((offset, ShiftInfo(totalPrevShift, added, removed))) =>
       if (pos - offset < removed)

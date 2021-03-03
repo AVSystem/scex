@@ -24,7 +24,6 @@ val CompileAndTest = "compile->compile;test->test"
 
 val parserCombinatorsVersion = "1.1.2"
 val collectionCompatVersion = "2.4.1"
-val silencerVersion = "1.7.2"
 val avsCommonsVersion = "2.0.0"
 val jettyVersion = "9.4.21.v20190926"
 val vaadinVersion = "6.8.13"
@@ -106,9 +105,7 @@ lazy val subprojectSettings = Seq(
     def trace(t: => Throwable): Unit = ()
   })),
   libraryDependencies ++= Seq(
-    compilerPlugin("com.github.ghik" % "silencer-plugin" % silencerVersion cross CrossVersion.full),
     compilerPlugin("com.avsystem.commons" %% "commons-analyzer" % avsCommonsVersion),
-    "com.github.ghik" % "silencer-lib" % silencerVersion % Provided cross CrossVersion.full,
     "junit" % "junit" % junitVersion % Test,
     "org.scalatest" %% "scalatest" % scalatestVersion % Test
   ),
