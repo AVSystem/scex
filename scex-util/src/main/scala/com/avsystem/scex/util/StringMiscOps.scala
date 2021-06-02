@@ -24,7 +24,8 @@ final class StringMiscOps(private val wrapped: String) extends AnyVal {
     }
   }
 
-  @Documentation("Converts this string to date by parsing it according to specified date format. " +
+  @Documentation("Converts this string to date by parsing it according to specified date format, " +
+    "defined with Date and Time Patterns of java.text.SimpleDateFormat. " +
     "Example date format is <tt>yyyy.MM.dd HH:mm:ss</tt>")
   def toDate(format: String): JDate = try new SimpleDateFormat(format).parse(wrapped) catch {
     case _: ParseException =>
@@ -32,7 +33,8 @@ final class StringMiscOps(private val wrapped: String) extends AnyVal {
   }
 
   @Documentation("Converts this string to date by parsing it according to specified date format and timezone " +
-    "Example date format is <tt>yyyy.MM.dd HH:mm:ss</tt> and timeZone <tt>GMT+2</tt>")
+    "Example date format is <tt>yyyy.MM.dd HH:mm:ss</tt> and timeZone <tt>GMT+2</tt>" +
+    "Date format has to be defined with Date and Time Patterns of java.text.SimpleDateFormat.")
   def toDate(format: String, timeZone: String): JDate = try {
     val formatter = new SimpleDateFormat(format)
     formatter.setTimeZone(TimeZone.getTimeZone(timeZone))
