@@ -23,10 +23,10 @@ inThisBuild(Seq(
 val CompileAndTest = "compile->compile;test->test"
 
 val parserCombinatorsVersion = "1.1.2"
-val collectionCompatVersion = "2.4.1"
-val avsCommonsVersion = "2.0.0"
-val jettyVersion = "9.4.21.v20190926"
-val vaadinVersion = "6.8.13"
+val collectionCompatVersion = "2.4.4"
+val avsCommonsVersion = "2.2.6"
+val jettyVersion = "9.4.21.v20190926" // Tests only
+val vaadinVersion = "6.8.13" // Tests only
 val slf4jVersion = "1.7.30"
 val logbackVersion = "1.2.3"
 val commonsLang3Version = "3.9"
