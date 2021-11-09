@@ -2,8 +2,8 @@ name := "scex"
 
 inThisBuild(Seq(
   organization := "com.avsystem.scex",
-  scalaVersion := "2.13.6",
-  crossScalaVersions := Seq(scalaVersion.value, "2.13.5", "2.12.13"),
+  scalaVersion := "2.13.7",
+  crossScalaVersions := Seq(scalaVersion.value, "2.12.13"),
 
   githubWorkflowTargetTags ++= Seq("v*"),
   githubWorkflowJavaVersions := Seq("adopt@1.11"),
