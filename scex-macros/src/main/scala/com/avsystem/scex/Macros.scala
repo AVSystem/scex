@@ -131,7 +131,7 @@ class Macros(val c: blackbox.Context) extends MacroUtils {
     val contextTpe = weakTypeOf[C]
     val rootTpe = contextTpe.baseType(ExpressionContextCls).typeArgs.head
     val fullTypeRepr = q"$CommonsPkg.misc.TypeString.of[$contextTpe]"
-    val rootClassName = q"$CommonsPkg.misc.JavaClassName.of[$rootTpe]"
-    q"$ScexPkg.compiler.ContextTypeInfo($fullTypeRepr, $rootClassName)"
+    val rootClass = c.reifyRuntimeClass(rootTpe)
+    q"$ScexPkg.compiler.ContextTypeInfo($fullTypeRepr, $rootClass)"
   }
 }

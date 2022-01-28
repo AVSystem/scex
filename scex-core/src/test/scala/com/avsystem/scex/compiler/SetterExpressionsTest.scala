@@ -8,6 +8,7 @@ import com.avsystem.scex.util.{PredefinedAccessSpecs, SimpleContext}
 import org.scalatest.FunSuite
 
 import scala.annotation.nowarn
+import scala.reflect.ClassTag
 
 class SetterTarget {
   var costam = 0
@@ -43,7 +44,7 @@ class SetterExpressionsTest extends FunSuite with CompilationTest {
 
   import com.avsystem.scex.validation.SymbolValidator._
 
-  def applySetter[R: JavaClassName: TypeString, T: TypeString](
+  def applySetter[R: ClassTag: TypeString, T: TypeString](
     expr: String, root: R, value: T,
     acl: List[MemberAccessSpec] = PredefinedAccessSpecs.basicOperations,
     header: String = "",

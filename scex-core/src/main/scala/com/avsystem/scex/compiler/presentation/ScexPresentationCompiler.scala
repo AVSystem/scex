@@ -120,11 +120,7 @@ trait ScexPresentationCompiler extends ScexCompiler { compiler =>
   ): Completer = {
 
     val strVariableTypes = variableTypes.iterator.map({ case (k, v) => (k, v.value) }).toMap
-    val rootObjectClass = try cti.resolveRootClass() catch {
-      case _: ClassNotFoundException => null
-    }
-
-    getCompleter(profile, template, setter, header, cti.fullTypeString, rootObjectClass, tts.value, strVariableTypes)
+    getCompleter(profile, template, setter, header, cti.fullTypeString, cti.rootObjectClass, tts.value, strVariableTypes)
   }
 
   protected def getCompleter(
