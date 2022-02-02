@@ -14,5 +14,5 @@ object ContextTypeInfo {
 
   @bincompat
   private[compiler] def apply[C](fullTypeString: String, rootObjectClassName: String): ContextTypeInfo[C] =
-    new ContextTypeInfo(fullTypeString, rootObjectClassName)
+    new ContextTypeInfo(fullTypeString, Class.forName(rootObjectClassName))
 }
