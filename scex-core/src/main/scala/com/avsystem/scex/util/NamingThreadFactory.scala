@@ -2,13 +2,15 @@ package com.avsystem.scex.util
 
 import java.util.concurrent.ThreadFactory
 import java.util.concurrent.atomic.AtomicInteger
+import scala.annotation.nowarn
 
 /**
-  * Author: ghik
-  * Created: 25/01/16.
-  */
+ * Author: ghik
+ * Created: 25/01/16.
+ */
 class NamingThreadFactory(prefix: String) extends ThreadFactory {
   private val group: ThreadGroup = {
+    @nowarn("msg=deprecated")
     val s: SecurityManager = System.getSecurityManager
     if (s != null) s.getThreadGroup else Thread.currentThread.getThreadGroup
   }

@@ -322,13 +322,9 @@ trait ScexCompiler extends LoggingUtils {
     require(header != null, "Header cannot be null")
 
     val strVariableTypes = variableTypes.iterator.map({ case (k, v) => (k, v.value) }).toMap
-    val rootObjectClass = try cti.resolveRootClass() catch {
-      case _: ClassNotFoundException => null
-    }
-
     val (actualExpression, positionMapping) = preprocess(expression, template)
     getCompiledExpression(ExpressionDef(profile, template, setter = false, actualExpression,
-      header, cti.fullTypeString, tts.value, strVariableTypes)(expression, positionMapping, rootObjectClass))
+      header, cti.fullTypeString, tts.value, strVariableTypes)(expression, positionMapping, cti.rootObjectClass))
   }
 
   def getCompiledSetterExpression[C <: ExpressionContext[_, _], T](
@@ -347,13 +343,10 @@ trait ScexCompiler extends LoggingUtils {
     require(header != null, "Header cannot be null")
 
     val strVariableTypes = variableTypes.iterator.map({ case (k, v) => (k, v.value) }).toMap
-    val rootObjectClass = try cti.resolveRootClass() catch {
-      case _: ClassNotFoundException => null
-    }
 
     val (actualExpression, positionMapping) = preprocess(expression, template)
     getCompiledExpression(ExpressionDef(profile, template, setter = true, actualExpression,
-      header, cti.fullTypeString, tts.value, strVariableTypes)(expression, positionMapping, rootObjectClass))
+      header, cti.fullTypeString, tts.value, strVariableTypes)(expression, positionMapping, cti.rootObjectClass))
   }
 
   @throws[CompilationFailedException]

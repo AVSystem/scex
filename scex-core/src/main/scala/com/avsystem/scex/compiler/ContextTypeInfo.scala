@@ -1,22 +1,18 @@
 package com.avsystem.scex.compiler
 
+import com.avsystem.commons.annotation.bincompat
 import com.avsystem.scex.{ExpressionContext, Macros}
 
-case class ContextTypeInfo[C](fullTypeString: String, rootObjectClassName: String) {
-  def resolveRootClass(): Class[_] = rootObjectClassName match {
-    case "void" => classOf[Unit]
-    case "boolean" => classOf[Boolean]
-    case "char" => classOf[Char]
-    case "byte" => classOf[Byte]
-    case "short" => classOf[Short]
-    case "int" => classOf[Int]
-    case "long" => classOf[Long]
-    case "float" => classOf[Float]
-    case "double" => classOf[Double]
-    case other => Class.forName(other)
-  }
+case class ContextTypeInfo[C](fullTypeString: String, rootObjectClass: Class[_]) {
+  @bincompat
+  private[compiler] def this(fullTypeString: String, rootObjectClassName: String) =
+    this(fullTypeString, Class.forName(rootObjectClassName))
 }
 object ContextTypeInfo {
   // Scala, seriously, why do I have to do this with a macro?
   implicit def typeInfo[C <: ExpressionContext[_, _]]: ContextTypeInfo[C] = macro Macros.mkContextTypeInfo[C]
+
+  @bincompat
+  private[compiler] def apply[C](fullTypeString: String, rootObjectClassName: String): ContextTypeInfo[C] =
+    new ContextTypeInfo(fullTypeString, Class.forName(rootObjectClassName))
 }
