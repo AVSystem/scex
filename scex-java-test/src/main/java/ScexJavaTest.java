@@ -36,7 +36,7 @@ public class ScexJavaTest {
                 }).resultType(Void.class).get();
 
         ExpressionProfile profile = new ExpressionProfile("test", syntaxValidator, symbolValidator,
-                symbolAttributes, "", NamedSource.apply("test", ""));
+                symbolAttributes, "", NamedSource.apply("test", ""), true);
 
         Class<ExpressionContext<?, ?>> aecClass = (Class) ExpressionContext.class;
         ScexPresentationCompiler.Completer ctx = compiler.buildCompleter().contextType(aecClass)

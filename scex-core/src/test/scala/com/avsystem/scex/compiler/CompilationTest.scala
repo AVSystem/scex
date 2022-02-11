@@ -53,7 +53,7 @@ trait CompilationTest extends BeforeAndAfterAll { this: Suite =>
     val profileName = newProfileName()
     val expressionUtils = NamedSource(profileName, utils)
     new ExpressionProfile(profileName, SyntaxValidator.SimpleExpressions, SymbolValidator(acl),
-      SymbolAttributes(attributes), header, expressionUtils)
+      SymbolAttributes(attributes), header, expressionUtils, true)
   }
 
   def assertMemberAccessForbidden(expr: => Any): Unit = {

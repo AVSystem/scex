@@ -21,7 +21,9 @@ object TemplateOptimizingPerformanceTest {
       SyntaxValidator.SimpleExpressions,
       SymbolValidator(PredefinedAccessSpecs.basicOperations),
       SymbolAttributes(Nil),
-      "", NamedSource("empty", ""))
+      "",
+      NamedSource("empty", ""),
+      true)
 
     val ctx = SimpleContext(())
     compiler.getCompiledExpression[SimpleContext[Unit], String](profile, "${1+2}abc").apply(ctx)

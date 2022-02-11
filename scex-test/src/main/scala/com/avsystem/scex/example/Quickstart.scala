@@ -40,13 +40,18 @@ object Quickstart {
   // * Expression utils - this is meant to be used only in pure Java projects using Scex. It's a Scala source which
   //   will be compiled and imported into every expression. Scala project should always use empty expression profile
   //   because they can simply implement "utils" as part of the project and import them through expression header.
+  // * Dynamic variables flag - if set, enables dynamic access via the DynamicVariableAccessor interface to additional
+  //   variables of the ExpressionContext#V type. If disabled, expression can access only typed additional variables
+  //   carried through the expression context. This flag does not affect visibility of variables provided by the root
+  //   object.
   val profile = new ExpressionProfile(
     "default",
     SyntaxValidator.SimpleExpressions,
     SymbolValidator(PredefinedAccessSpecs.basicOperations ++ CommonSymbolValidators.commonExpressionApi ++ rootAcl),
     SymbolAttributes.empty,
     "import com.avsystem.scex.util.CommonExpressionUtils._",
-    NamedSource("empty", "")
+    NamedSource("empty", ""),
+    true,
   )
 
   // The root object of an expression. It defines the primary API exposed into expressions (apart from "static" utils

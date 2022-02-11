@@ -19,7 +19,8 @@ object ExistentialCase {
     val syntaxValidator = SyntaxValidator.SimpleExpressions
     val symbolAttributes = SymbolAttributes(Nil)
 
-    val profile = new ExpressionProfile("test", syntaxValidator, symbolValidator, symbolAttributes, "", NamedSource("test", ""))
+    val profile = new ExpressionProfile("test", syntaxValidator, symbolValidator, symbolAttributes,
+      "", NamedSource("test", ""), true)
 
     val completion = compiler.getCompleter[SimpleContext[Unit], Int](profile, template = true)
       .getTypeCompletion("${'dafuq'.toInt}", 14)

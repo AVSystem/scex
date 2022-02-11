@@ -164,35 +164,43 @@ object CodeGeneration {
 
     val processingPostfix = if (noMacroProcessing) "" else "))))"
 
-    val variableAccessorConstr =
-      if (variableTypes.nonEmpty) VariableAccessorClassName
-      else s"$ScexPkg.util.DynamicVariableAccessor[$ContextSymbol.type, $ContextSymbol.Var]($ContextSymbol)"
+    val dynamicVariablesDef = {
+      // skip definition if neither typed variables provided nor dynamic variable accessor enabled
+      if (variableTypes.nonEmpty || profile.dynamicVariablesEnabled) {
+        val dynamicVariableAccessorDef =
+          s"$ScexPkg.util.DynamicVariableAccessor[$ContextSymbol.type, $ContextSymbol.Var]($ContextSymbol)"
 
-    val variableAccessorClassDef = if (variableTypes.nonEmpty) {
-      val validatePrefix = if (noMacroProcessing) "" else s"$MacroProcessor.validate("
-      val validatePostfix = if (noMacroProcessing) "" else ")"
+        val variableAccessorClassDef = if (variableTypes.nonEmpty) {
+          val validatePrefix = if (noMacroProcessing) "" else s"$MacroProcessor.validate("
+          val validatePostfix = if (noMacroProcessing) "" else ")"
 
-      val typedVariables = variableTypes.toList.sorted.iterator.map {
-        case (name, tpe) =>
-          s"""
-             |  private def ${name}VarTag = ${validatePrefix}inferVarTag[$tpe]$validatePostfix
-             |
-             |  @$AnnotationPkg.NotValidated def `$name`: $tpe =
-             |    $ContextSymbol.getTypedVariable("${escapeString(name)}")(${name}VarTag)
-             |
-             |  @$AnnotationPkg.NotValidated def `${name}_=`(value: $tpe): Unit =
-             |    $ContextSymbol.setTypedVariable("${escapeString(name)}", value)(${name}VarTag)
-             |
+          val typedVariables = variableTypes.toList.sorted.iterator.map {
+            case (name, tpe) =>
+              s"""
+                 |  private def ${name}VarTag = ${validatePrefix}inferVarTag[$tpe]$validatePostfix
+                 |
+                 |  @$AnnotationPkg.NotValidated def `$name`: $tpe =
+                 |    $ContextSymbol.getTypedVariable("${escapeString(name)}")(${name}VarTag)
+                 |
+                 |  @$AnnotationPkg.NotValidated def `${name}_=`(value: $tpe): Unit =
+                 |    $ContextSymbol.setTypedVariable("${escapeString(name)}", value)(${name}VarTag)
+                 |
          """.stripMargin
-      }.mkString("\n")
+          }.mkString("\n")
 
-      s"""
-         |class $VariableAccessorClassName extends
-         |  $ScexPkg.util.DynamicVariableAccessor[$ContextSymbol.type, $ContextSymbol.Var]($ContextSymbol) {
-         |$typedVariables
-         |}
+          s"""
+             |class $VariableAccessorClassName ${if (profile.dynamicVariablesEnabled) s"extends\n  $dynamicVariableAccessorDef"} {
+             |$typedVariables
+             |}
        """.stripMargin
-    } else ""
+        } else ""
+
+        s"""
+           |    $variableAccessorClassDef
+           |    val $VariablesSymbol = new ${if (variableTypes.nonEmpty) VariableAccessorClassName else dynamicVariableAccessorDef}: @$AnnotationPkg.Input
+           |""".stripMargin
+      } else ""
+    }
 
     val profileImport = profileObjectPkg.fold("")(pkg => s"import $pkg.$ProfileObjectName._")
     val utilsImport = utilsObjectPkg.fold("")(pkg => s"import $pkg.$UtilsObjectName._")
@@ -220,8 +228,7 @@ object CodeGeneration {
        |    $rootGetterAdapterCode
        |    $profileHeader
        |    $additionalHeader
-       |    $variableAccessorClassDef
-       |    val $VariablesSymbol = new $variableAccessorConstr: @$AnnotationPkg.Input
+       |    $dynamicVariablesDef
        |    val _result =
        |      $processingPrefix
        |      {

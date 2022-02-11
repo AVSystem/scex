@@ -46,7 +46,7 @@ class ClassfileReusingTest extends FunSuite with BeforeAndAfter {
   }
 
   val testProfile = new ExpressionProfile("test", SyntaxValidator.SimpleExpressions,
-    SymbolValidator(PredefinedAccessSpecs.basicOperations), SymbolAttributes(Nil), "", NamedSource("<empty>", ""))
+    SymbolValidator(PredefinedAccessSpecs.basicOperations), SymbolAttributes(Nil), "", NamedSource("<empty>", ""), true)
 
   def applyIntExpr(expr: String) =
     compiler.getCompiledExpression[SimpleContext[Unit], Int](testProfile, expr, template = false).apply(SimpleContext(()))
@@ -87,7 +87,7 @@ class ClassfileReusingTest extends FunSuite with BeforeAndAfter {
         |implicit def implicitString1: String = "implicitString1"
       """.stripMargin
     val profile1 = new ExpressionProfile("test", SyntaxValidator.SimpleExpressions, symbolValidator,
-      SymbolAttributes(Nil), "", NamedSource("test", utils1))
+      SymbolAttributes(Nil), "", NamedSource("test", utils1), true)
     val cexpr1 = compiler.getCompiledExpression[SimpleContext[Unit], String](profile1, expr, template = false)
 
     assert(cexpr1(SimpleContext(())) == "implicitString1")
@@ -99,7 +99,7 @@ class ClassfileReusingTest extends FunSuite with BeforeAndAfter {
         |implicit def implicitString2: String = "implicitString2"
       """.stripMargin
     val profile2 = new ExpressionProfile("test", SyntaxValidator.SimpleExpressions, symbolValidator,
-      SymbolAttributes(Nil), "", NamedSource("test", utils2))
+      SymbolAttributes(Nil), "", NamedSource("test", utils2), true)
     val cexpr2 = compiler.getCompiledExpression[SimpleContext[Unit], String](profile2, expr, template = false)
 
     assert(cexpr2(SimpleContext(())) == "implicitString2")
@@ -114,7 +114,7 @@ class ClassfileReusingTest extends FunSuite with BeforeAndAfter {
         |def utilMethod(any: Any): Any = any
       """.stripMargin
     val profile1 = new ExpressionProfile("test", SyntaxValidator.SimpleExpressions, symbolValidator,
-      SymbolAttributes(Nil), "", NamedSource("test", utils1))
+      SymbolAttributes(Nil), "", NamedSource("test", utils1), true)
     val cexpr1 = compiler.getCompiledExpression[SimpleContext[Unit], Any](profile1, expr, template = false)
 
     assert(cexpr1(SimpleContext(())) == 42)
@@ -127,7 +127,7 @@ class ClassfileReusingTest extends FunSuite with BeforeAndAfter {
         |def utilMethod(int: Int): Any = int*2
       """.stripMargin
     val profile2 = new ExpressionProfile("test", SyntaxValidator.SimpleExpressions, symbolValidator,
-      SymbolAttributes(Nil), "", NamedSource("test", utils2))
+      SymbolAttributes(Nil), "", NamedSource("test", utils2), true)
     val cexpr2 = compiler.getCompiledExpression[SimpleContext[Unit], Any](profile2, expr, template = false)
 
     assert(cexpr2(SimpleContext(())) == 84)

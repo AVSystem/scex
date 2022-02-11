@@ -88,7 +88,7 @@ object CompletionPlayground {
         """.stripMargin
 
       val profile = new ExpressionProfile("test", SyntaxValidator.SimpleExpressions, SymbolValidator(acl),
-        SymbolAttributes(Nil), header, NamedSource("test", utils))
+        SymbolAttributes(Nil), header, NamedSource("test", utils), true)
 
       def memberRepr(member: Member) =
         s"${member.name}${member.params.map(_.map(p => s"${p.name}: ${p.tpe}-${p.tpe.erasure}").mkString("(", ", ", ")")).mkString}: " +
