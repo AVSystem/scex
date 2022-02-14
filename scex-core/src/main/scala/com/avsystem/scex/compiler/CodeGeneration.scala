@@ -169,6 +169,8 @@ object CodeGeneration {
       if (variableTypes.nonEmpty || profile.dynamicVariablesEnabled) {
         val dynamicVariableAccessorDef =
           s"$ScexPkg.util.DynamicVariableAccessor[$ContextSymbol.type, $ContextSymbol.Var]($ContextSymbol)"
+        val typedDynamicVariableAccessorDef =
+          s"$ScexPkg.util.TypedDynamicVariableAccessor[$ContextSymbol.type]($ContextSymbol)"
 
         val variableAccessorClassDef = if (variableTypes.nonEmpty) {
           val validatePrefix = if (noMacroProcessing) "" else s"$MacroProcessor.validate("
@@ -184,15 +186,15 @@ object CodeGeneration {
                  |
                  |  @$AnnotationPkg.NotValidated def `${name}_=`(value: $tpe): Unit =
                  |    $ContextSymbol.setTypedVariable("${escapeString(name)}", value)(${name}VarTag)
-                 |
-         """.stripMargin
+              """.stripMargin
           }.mkString("\n")
 
           s"""
-             |class $VariableAccessorClassName ${if (profile.dynamicVariablesEnabled) s"extends\n  $dynamicVariableAccessorDef"} {
+             |class $VariableAccessorClassName extends
+             |  ${if (profile.dynamicVariablesEnabled) dynamicVariableAccessorDef else typedDynamicVariableAccessorDef} {
              |$typedVariables
              |}
-       """.stripMargin
+          """.stripMargin
         } else ""
 
         s"""
