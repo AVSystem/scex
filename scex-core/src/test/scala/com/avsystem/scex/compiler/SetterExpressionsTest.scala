@@ -2,7 +2,8 @@ package com.avsystem.scex
 package compiler
 
 import com.avsystem.commons.jiop.JavaInterop._
-import com.avsystem.commons.misc.{JavaClassName, TypeString}
+import com.avsystem.commons.misc.TypeString
+import com.avsystem.scex.compiler.ScexCompiler.{CompilationFailedException, CompileError}
 import com.avsystem.scex.compiler.TemplateInterpolations.Splicer
 import com.avsystem.scex.util.{PredefinedAccessSpecs, SimpleContext}
 import org.scalatest.FunSuite
@@ -139,6 +140,19 @@ class SetterExpressionsTest extends FunSuite with CompilationTest {
     assert(42 == target.field)
   }
 
+  test("disabled dynamic variables setter test") {
+    val expr = "_vars.lol"
+    try {
+      compiler.getCompiledSetterExpression[SimpleContext[Unit], String](createProfile(Nil, dynamicVariablesEnabled = false),
+        expr, template = false)
+    } catch {
+      case CompilationFailedException(_, List(CompileError(source, column, msg))) =>
+        assert(source == expr)
+        assert(column == 1)
+        assert(msg == "not found: value _vars")
+    }
+  }
+
   test("dynamic variable setter test") {
     val setterExpression = compiler.getCompiledSetterExpression[SimpleContext[Unit], String](
       createProfile(Nil), "_vars.lol", template = false)
@@ -149,13 +163,18 @@ class SetterExpressionsTest extends FunSuite with CompilationTest {
   }
 
   test("typed dynamic variable setter test") {
-
-    val setterExpression = compiler.getCompiledSetterExpression[SimpleContext[Unit], Int](
-      createProfile(Nil), "_vars.lol", template = false, variableTypes = Map("lol" -> TypeString[Int]))
+    def setterExpression(dynamicVariablesEnabled: Boolean) = compiler.getCompiledSetterExpression[SimpleContext[Unit], Int](
+      profile = createProfile(Nil, dynamicVariablesEnabled = dynamicVariablesEnabled),
+      expression = "_vars.lol",
+      template = false,
+      variableTypes = Map("lol" -> TypeString[Int])
+    )
 
     val context = SimpleContext(())
-    setterExpression.apply(context).apply(42)
+    setterExpression(dynamicVariablesEnabled = true).apply(context).apply(42)
     assert(42 == context.getTypedVariable[Int]("lol"))
+    setterExpression(dynamicVariablesEnabled = false).apply(context).apply(43)
+    assert(43 == context.getTypedVariable[Int]("lol"))
   }
 
   test("accepted type reporting test") {
