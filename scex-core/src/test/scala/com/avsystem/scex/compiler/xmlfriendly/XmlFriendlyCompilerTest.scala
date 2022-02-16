@@ -82,7 +82,7 @@ class XmlFriendlyCompilerTest extends FunSuite with CompilationTest {
 
   test("typed and dynamic variables test") {
     val acl = PredefinedAccessSpecs.basicOperations
-    val expr = "#someDouble.toDegrees.toString + #angleUnit"
+    val expr = "#someDouble.toDegrees.toInt.toString + #angleUnit + ' angle'"
     val context = SimpleContext(())
     context.setTypedVariable("someDouble", math.Pi)
     context.setVariable("angleUnit", "deg")
@@ -98,10 +98,10 @@ class XmlFriendlyCompilerTest extends FunSuite with CompilationTest {
       cexpr(dynamicVariablesEnabled = false)(context)
     } catch {
       case CompilationFailedException(_, List(CompileError(source, _, msg))) =>
-        assert(source == expr.replace("#", " _vars."))
+        assert(source == expr)
         assert(msg.startsWith("value angleUnit is not a member of _variableAccessor"))
     }
-    assert("180.0deg" == cexpr(dynamicVariablesEnabled = true)(context))
+    assert("180deg angle" == cexpr(dynamicVariablesEnabled = true)(context))
   }
 
   test("tagged typed variables test") {
