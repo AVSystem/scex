@@ -162,7 +162,7 @@ class SetterExpressionsTest extends FunSuite with CompilationTest {
     assert("42" == context.getVariable("lol"))
   }
 
-  test("typed dynamic variable setter test") {
+  test("typed variable setter test") {
     def setterExpression(dynamicVariablesEnabled: Boolean) = compiler.getCompiledSetterExpression[SimpleContext[Unit], Int](
       profile = createProfile(Nil, dynamicVariablesEnabled = dynamicVariablesEnabled),
       expression = "_vars.lol",

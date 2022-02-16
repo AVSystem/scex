@@ -63,7 +63,7 @@ class XmlFriendlyCompilerTest extends FunSuite with CompilationTest {
     assert("srsly2345" == cexpr(context))
   }
 
-  test("typed dynamic variables test") {
+  test("typed variables test") {
     val acl = PredefinedAccessSpecs.basicOperations
     val expr = "#someDouble.toDegrees"
     val context = SimpleContext(())
@@ -80,7 +80,7 @@ class XmlFriendlyCompilerTest extends FunSuite with CompilationTest {
     assert(180.0 == cexpr(dynamicVariablesEnabled = true)(context))
   }
 
-  test("typed and default dynamic variables test") {
+  test("typed and dynamic variables test") {
     val acl = PredefinedAccessSpecs.basicOperations
     val expr = "#someDouble.toDegrees.toString + #angleUnit"
     val context = SimpleContext(())
