@@ -167,7 +167,7 @@ object ValidationTest {
     val symbolAttributes = SymbolAttributes(Nil)
 
     val utils = NamedSource("test", "val lol = \"dafuq\"; def immaUtil = \"util, lol\"")
-    val profile = new ExpressionProfile("test", syntaxValidator, symbolValidator, symbolAttributes, "", utils, true)
+    val profile = new ExpressionProfile("test", syntaxValidator, symbolValidator, symbolAttributes, "", utils)
     val settings = new ScexSettings
     settings.classfileDirectory.value = "scex_classes"
     val compiler = new DefaultJavaScexCompiler(settings)

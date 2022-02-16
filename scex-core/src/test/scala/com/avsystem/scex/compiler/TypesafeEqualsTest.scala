@@ -18,7 +18,7 @@ class TypesafeEqualsTest extends FunSuite with CompilationTest {
 
   override def evaluate[T: TypeString](expr: String, acl: List[MemberAccessSpec] = PredefinedAccessSpecs.basicOperations) = {
     val profile = new ExpressionProfile(newProfileName(), SyntaxValidator.SimpleExpressions, SymbolValidator(acl),
-      SymbolAttributes(Nil), "import com.avsystem.scex.util.TypesafeEquals._", NamedSource("test", ""), true)
+      SymbolAttributes(Nil), "import com.avsystem.scex.util.TypesafeEquals._", NamedSource("test", ""))
 
     compiler.getCompiledExpression[SimpleContext[Unit], T](profile, expr, template = false).apply(SimpleContext(()))
   }
