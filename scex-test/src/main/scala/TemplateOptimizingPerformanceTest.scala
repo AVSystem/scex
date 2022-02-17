@@ -1,5 +1,3 @@
-import java.{lang => jl, util => ju}
-
 import com.avsystem.scex.compiler.ScexSettings
 import com.avsystem.scex.japi.XmlFriendlyJavaScexCompiler
 import com.avsystem.scex.presentation.SymbolAttributes
@@ -21,7 +19,8 @@ object TemplateOptimizingPerformanceTest {
       SyntaxValidator.SimpleExpressions,
       SymbolValidator(PredefinedAccessSpecs.basicOperations),
       SymbolAttributes(Nil),
-      "", NamedSource("empty", ""))
+      "",
+      NamedSource("empty", ""))
 
     val ctx = SimpleContext(())
     compiler.getCompiledExpression[SimpleContext[Unit], String](profile, "${1+2}abc").apply(ctx)

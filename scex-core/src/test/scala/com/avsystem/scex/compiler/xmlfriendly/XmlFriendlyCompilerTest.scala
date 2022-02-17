@@ -7,7 +7,6 @@ import com.avsystem.scex.compiler.{ClassTaggedContext, CompilationTest, ScexSett
 import com.avsystem.scex.japi.XmlFriendlyJavaScexCompiler
 import com.avsystem.scex.util.{PredefinedAccessSpecs, SimpleContext}
 import com.avsystem.scex.validation.SymbolValidator._
-import com.google.common.io.ByteStreams
 import org.scalatest.FunSuite
 
 import scala.reflect.{ClassTag, classTag}
@@ -42,6 +41,19 @@ class XmlFriendlyCompilerTest extends FunSuite with CompilationTest {
     assert("letters`'\"lol`'{{\"} $srsly and or sqs true" == expr.apply(SimpleContext(())))
   }
 
+  test("disabled dynamic variables test") {
+    val acl = PredefinedAccessSpecs.basicOperations
+    val expr = "#dafuq + 2345"
+    try {
+      compiler.getCompiledExpression[SimpleContext[Unit], String](createProfile(acl, dynamicVariablesEnabled = false), expr, template = false)
+    } catch {
+      case CompilationFailedException(_, List(CompileError(source, column, msg))) =>
+        assert(source == expr)
+        assert(column == 1)
+        assert(msg == "not found: value _vars")
+    }
+  }
+
   test("dynamic variables test") {
     val acl = PredefinedAccessSpecs.basicOperations
     val expr = "#dafuq + 2345"
@@ -51,14 +63,45 @@ class XmlFriendlyCompilerTest extends FunSuite with CompilationTest {
     assert("srsly2345" == cexpr(context))
   }
 
-  test("typed dynamic variables test") {
+  test("typed variables test") {
     val acl = PredefinedAccessSpecs.basicOperations
     val expr = "#someDouble.toDegrees"
     val context = SimpleContext(())
     context.setTypedVariable("someDouble", math.Pi)
-    val cexpr = compiler.getCompiledExpression[SimpleContext[Unit], Double](createProfile(acl), expr, template = false,
-      variableTypes = Map("someDouble" -> TypeString[Double]))
-    assert(180.0 == cexpr(context))
+
+    def cexpr(dynamicVariablesEnabled: Boolean) = compiler.getCompiledExpression[SimpleContext[Unit], Double](
+      profile = createProfile(acl, dynamicVariablesEnabled = dynamicVariablesEnabled),
+      expression = expr,
+      template = false,
+      variableTypes = Map("someDouble" -> TypeString[Double])
+    )
+
+    assert(180.0 == cexpr(dynamicVariablesEnabled = false)(context))
+    assert(180.0 == cexpr(dynamicVariablesEnabled = true)(context))
+  }
+
+  test("typed and dynamic variables test") {
+    val acl = PredefinedAccessSpecs.basicOperations
+    val expr = "#someDouble.toDegrees.toInt.toString + #angleUnit + ' angle'"
+    val context = SimpleContext(())
+    context.setTypedVariable("someDouble", math.Pi)
+    context.setVariable("angleUnit", "deg")
+
+    def cexpr(dynamicVariablesEnabled: Boolean) = compiler.getCompiledExpression[SimpleContext[Unit], String](
+      profile = createProfile(acl, dynamicVariablesEnabled = dynamicVariablesEnabled),
+      expression = expr,
+      template = false,
+      variableTypes = Map("someDouble" -> TypeString[Double])
+    )
+
+    try {
+      cexpr(dynamicVariablesEnabled = false)(context)
+    } catch {
+      case CompilationFailedException(_, List(CompileError(source, _, msg))) =>
+        assert(source == expr)
+        assert(msg.startsWith("value angleUnit is not a member of _variableAccessor"))
+    }
+    assert("180deg angle" == cexpr(dynamicVariablesEnabled = true)(context))
   }
 
   test("tagged typed variables test") {

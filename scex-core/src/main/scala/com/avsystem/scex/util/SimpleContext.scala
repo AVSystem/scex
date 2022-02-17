@@ -16,7 +16,7 @@ case class SimpleContext[R](root: R) extends JavaExpressionContext[R, String] {
   def setVariable(name: String, value: String): Unit =
     variables(name) = value
 
-  def getVariable(name: String) =
+  def getVariable(name: String): String =
     variables(name)
 
   def getTypedVariable[T](name: String)(implicit tag: NoTag): T =
