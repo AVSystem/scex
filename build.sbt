@@ -24,11 +24,11 @@ val CompileAndTest = "compile->compile;test->test"
 
 val parserCombinatorsVersion = "1.1.2"
 val collectionCompatVersion = "2.5.0"
-val avsCommonsVersion = "2.3.0"
+val avsCommonsVersion = "2.6.2"
 val jettyVersion = "9.4.21.v20190926" // Tests only
 val vaadinVersion = "6.8.13" // Tests only
-val slf4jVersion = "1.7.30"
-val logbackVersion = "1.2.3"
+val slf4jVersion = "1.7.32"
+val logbackVersion = "1.2.11"
 val commonsLang3Version = "3.9"
 val commonsCodecVersion = "1.14"
 val guavaVersion = "23.0"
@@ -38,7 +38,7 @@ val junitVersion = "4.13"
 val scalatestVersion = "3.0.8"
 
 val noPublishSettings = Seq(
-  skip in publish := true
+  publish / skip := true
 )
 
 sonatypeProfileName := "com.avsystem"
@@ -97,9 +97,9 @@ lazy val subprojectSettings = Seq(
   publishMavenStyle := true,
   pomIncludeRepository := { _ => false },
 
-  fork in Test := true,
-  javaOptions in Test += "-Xmx1G",
-  outputStrategy in Test := Some(LoggedOutput(new Logger {
+  Test / fork := true,
+  Test / javaOptions += "-Xmx1G",
+  Test / outputStrategy := Some(LoggedOutput(new Logger {
     def log(level: Level.Value, message: => String): Unit = ()
     def success(message: => String): Unit = ()
     def trace(t: => Throwable): Unit = ()
@@ -109,7 +109,7 @@ lazy val subprojectSettings = Seq(
     "junit" % "junit" % junitVersion % Test,
     "org.scalatest" %% "scalatest" % scalatestVersion % Test
   ),
-  (sources in doc in Compile) := Seq.empty
+  Compile / doc / sources := Seq.empty
 )
 
 lazy val scex = project.in(file("."))
