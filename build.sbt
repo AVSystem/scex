@@ -24,17 +24,17 @@ val CompileAndTest = "compile->compile;test->test"
 
 val parserCombinatorsVersion = "1.1.2"
 val collectionCompatVersion = "2.5.0"
-val avsCommonsVersion = "2.6.2"
+val avsCommonsVersion = "2.7.3"
 val jettyVersion = "9.4.21.v20190926" // Tests only
 val vaadinVersion = "6.8.13" // Tests only
-val slf4jVersion = "1.7.32"
+val slf4jVersion = "1.7.36"
 val logbackVersion = "1.2.11"
 val commonsLang3Version = "3.11"
 val commonsCodecVersion = "1.14"
 val guavaVersion = "23.0"
 val commonsNetVersion = "3.6"
 val jodaTimeVersion = "2.10.5"
-val junitVersion = "4.13"
+val junitVersion = "4.13.2"
 val scalatestVersion = "3.0.8"
 
 val noPublishSettings = Seq(
