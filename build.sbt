@@ -28,7 +28,7 @@ val avsCommonsVersion = "2.7.3"
 val jettyVersion = "9.4.21.v20190926" // Tests only
 val vaadinVersion = "6.8.13" // Tests only
 val slf4jVersion = "1.7.36"
-val logbackVersion = "1.2.11"
+val logbackVersion = "1.4.1"
 val commonsLang3Version = "3.11"
 val commonsCodecVersion = "1.14"
 val guavaVersion = "23.0"
@@ -133,10 +133,9 @@ lazy val `scex-core` = project.dependsOn(`scex-macros` % CompileAndTest)
       "org.scala-lang.modules" %% "scala-collection-compat" % collectionCompatVersion,
       "com.avsystem.commons" %% "commons-core" % avsCommonsVersion,
       "org.slf4j" % "slf4j-api" % slf4jVersion,
-      "ch.qos.logback" % "logback-core" % logbackVersion,
-      "ch.qos.logback" % "logback-classic" % logbackVersion,
       "commons-codec" % "commons-codec" % commonsCodecVersion,
-      "com.google.guava" % "guava" % guavaVersion
+      "com.google.guava" % "guava" % guavaVersion,
+      "ch.qos.logback" % "logback-classic" % logbackVersion % Test,
     )
   )
 
@@ -157,7 +156,8 @@ lazy val `scex-test` = project.dependsOn(`scex-core`, `scex-util`)
     libraryDependencies ++= Seq(
       "com.vaadin" % "vaadin" % vaadinVersion,
       "org.eclipse.jetty" % "jetty-server" % jettyVersion,
-      "org.eclipse.jetty" % "jetty-servlet" % jettyVersion
+      "org.eclipse.jetty" % "jetty-servlet" % jettyVersion,
+      "ch.qos.logback" % "logback-classic" % logbackVersion,
     )
   )
 
