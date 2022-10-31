@@ -25,6 +25,7 @@ class IGlobal(settings: Settings, reporter: Reporter, val classLoader: ClassLoad
     def implicitTree: Tree
     def implicitType: Type
 
+    val aliasInfo: Option[ScopeMember] = None
     override def implicitlyAdded: Boolean = implicitTree != EmptyTree
   }
 
