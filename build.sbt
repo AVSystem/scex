@@ -2,11 +2,11 @@ name := "scex"
 
 inThisBuild(Seq(
   organization := "com.avsystem.scex",
-  scalaVersion := "2.13.8",
-  crossScalaVersions := Seq(scalaVersion.value, "2.12.15"),
+  scalaVersion := "2.13.10",
+  crossScalaVersions := Seq(scalaVersion.value, "2.12.17"),
 
   githubWorkflowTargetTags ++= Seq("v*"),
-  githubWorkflowJavaVersions := Seq("adopt@1.11"),
+  githubWorkflowJavaVersions := Seq(JavaSpec.temurin("11")),
   githubWorkflowPublishTargetBranches := Seq(RefPredicate.StartsWith(Ref.Tag("v"))),
 
   githubWorkflowPublish := Seq(WorkflowStep.Sbt(
@@ -23,19 +23,19 @@ inThisBuild(Seq(
 val CompileAndTest = "compile->compile;test->test"
 
 val parserCombinatorsVersion = "1.1.2"
-val collectionCompatVersion = "2.5.0"
-val avsCommonsVersion = "2.7.3"
-val jettyVersion = "9.4.21.v20190926" // Tests only
-val vaadinVersion = "6.8.13" // Tests only
+val collectionCompatVersion = "2.8.1"
+val avsCommonsVersion = "2.7.5"
+val jettyVersion = "9.4.49.v20220914" // Tests only
+val vaadinVersion = "6.8.18" // Tests only
 val slf4jVersion = "1.7.36"
-val logbackVersion = "1.4.1"
-val commonsLang3Version = "3.11"
-val commonsCodecVersion = "1.14"
+val logbackVersion = "1.4.4"
+val commonsLang3Version = "3.12.0"
+val commonsCodecVersion = "1.15"
 val guavaVersion = "23.0"
-val commonsNetVersion = "3.6"
-val jodaTimeVersion = "2.10.5"
+val commonsNetVersion = "3.8.0"
+val jodaTimeVersion = "2.10.14"
 val junitVersion = "4.13.2"
-val scalatestVersion = "3.0.8"
+val scalatestVersion = "3.0.9"
 
 val noPublishSettings = Seq(
   publish / skip := true

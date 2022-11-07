@@ -5,7 +5,7 @@
 
 Extensible, fast and secure Scala expression evaluation engine
 
-Created, developed and maintaned at [AVSystem](http://www.avsystem.com/).
+Created, developed and maintained at [AVSystem](http://www.avsystem.com/).
 
 ## Quickstart
 
