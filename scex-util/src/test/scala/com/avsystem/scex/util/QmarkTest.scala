@@ -23,6 +23,13 @@ class QmarkTest extends FunSuite {
     assert("empty" == expression ? "empty")
   }
 
+  test("recover from UnsupportedOperationException") {
+    def expression = ju.Arrays.asList[Int]().min
+
+    assertThrows[UnsupportedOperationException](expression)
+    assert(0 == expression ? 0)
+  }
+
   test("recover from IndexOutOfBoundsException") {
     def expression = ju.Arrays.asList[String]()(0)
 
