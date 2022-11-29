@@ -20,6 +20,7 @@ object CommonExpressionUtils {
       val result = try value.opt catch {
         case _: NullPointerException |
              _: NoSuchElementException |
+             _: UnsupportedOperationException |
              _: IndexOutOfBoundsException |
              _: NumberFormatException |
              _: IllegalArgumentException |
