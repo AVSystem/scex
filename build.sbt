@@ -2,8 +2,8 @@ name := "scex"
 
 inThisBuild(Seq(
   organization := "com.avsystem.scex",
-  scalaVersion := "2.13.10",
-  crossScalaVersions := Seq(scalaVersion.value, "2.12.17"),
+  scalaVersion := "2.13.11",
+  crossScalaVersions := Seq(scalaVersion.value, "2.12.18"),
 
   githubWorkflowTargetTags ++= Seq("v*"),
   githubWorkflowJavaVersions := Seq(JavaSpec.temurin("11")),
@@ -24,8 +24,8 @@ val CompileAndTest = "compile->compile;test->test"
 
 val parserCombinatorsVersion = "1.1.2"
 val collectionCompatVersion = "2.8.1"
-val avsCommonsVersion = "2.7.5"
-val jettyVersion = "9.4.49.v20220914" // Tests only
+val avsCommonsVersion = "2.10.0"
+val jettyVersion = "9.4.51.v20230217" // Tests only
 val vaadinVersion = "6.8.18" // Tests only
 val slf4jVersion = "1.7.36"
 val logbackVersion = "1.4.4"
