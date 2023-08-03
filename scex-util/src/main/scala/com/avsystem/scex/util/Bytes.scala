@@ -30,19 +30,19 @@ final class Bytes(val bytes: Array[Byte]) extends Comparable[Bytes] {
     loop(0)
   }
 
-  @Documentation("Encodes this sequence of bytes as string with non-ASCII bytes and backslash escaped, e.g. 'hsg\\x7c\\x0dfoo\\\\bar'")
+  @Documentation("Encodes this sequence of bytes as string with non-ASCII bytes and backslash escaped, e.g. 'hsg\\x7c\\x0dfoo\\\\bar'.")
   def escaped: String = EscapedBytes.render(bytes)
 
-  @Documentation("Encodes this sequence of bytes as hexadecimal string")
+  @Documentation("Encodes this sequence of bytes as hexadecimal string.")
   def hex: String = Hex.encodeHexString(bytes)
 
-  @Documentation("Encodes this sequence of bytes as BASE64 string")
+  @Documentation("Encodes this sequence of bytes as BASE64 string.")
   def base64: String = Base64.encodeBase64String(bytes)
 
-  @Documentation("Decodes this sequence of bytes as UTF-8 string")
+  @Documentation("Decodes this sequence of bytes as UTF-8 string.")
   def decodeUTF8: String = new String(bytes, StandardCharsets.UTF_8)
 
-  @Documentation("Decodes this sequence of bytes as string using given charset")
+  @Documentation("Decodes this sequence of bytes as string using given charset.")
   def decode(charset: String): String =
     try new String(bytes, charset) catch {
       case e: UnsupportedEncodingException => throw new IllegalArgumentException(e)
