@@ -3,7 +3,8 @@ package com.avsystem.scex.util.function;
 import com.avsystem.scex.presentation.annotation.Documentation;
 
 public interface NetUtil {
-    @Documentation("Returns true if the value of `ip` argument belongs to the subnet provided as the `subnetWithMask` argument. Use CIDR notation for the `subnetWithMask` argument, e.g. `10.8.0.0/16`.")
+    @Documentation("Returns true if the value of `ip` argument belongs to the subnet provided as the `subnetWithMask` " +
+            "argument. Use CIDR notation for the `subnetWithMask` argument, e.g. `10.8.0.0/16`.")
     boolean isIpInSubnet(String ip, String subnetWithMask);
 
     @Documentation("Returns true if the value of 'ip' argument belongs to the subnet defined by the `subnet` and 'mask' arguments. Use dot-decimal notation for the arguments.")
@@ -27,7 +28,7 @@ public interface NetUtil {
     @Documentation("Returns the `mac` address provided as the argument with any separating characters removed and letters changed to uppercase.")
     String stripMac(String mac);
 
-    @Documentation("Returns 0 if the addresses provided are equal, -1 if `ip1` < `ip2` or 1 if `ip1` > `ip2`.")
+    @Documentation("Returns 0 if this address is equal to the one provided as the argument, -1 if less than, 1 if greater than.")
     Integer compareIp(String ip1, String ip2);
 
     @Documentation("Returns true if the provided string is a valid IP address.")

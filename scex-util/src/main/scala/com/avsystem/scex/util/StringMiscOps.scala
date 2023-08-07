@@ -55,11 +55,11 @@ final class StringMiscOps(private val wrapped: String) extends AnyVal {
   @Documentation("Assumes this string is a hexadecimal number and converts it to a decimal number.")
   def parseHex: Long = java.lang.Long.parseLong(wrapped, 16)
 
-  @Documentation("Prepends this string with given `padding`, repeated or trimmed if needed. Number of characters in the output corresponds to `desiredLength`.")
+  @Documentation("Prepends this string with given `padding`, repeated if needed. Number of characters in the output corresponds to `desiredLength`.")
   def leftPad(desiredLength: Int, padding: String): String =
     StringUtils.leftPad(wrapped, desiredLength, padding)
 
-  @Documentation("Appends given `padding` to this string, repeated or trimmed if needed. Number of characters in the output corresponds to `desiredLength`.")
+  @Documentation("Appends given `padding` to this string, repeated if needed. Number of characters in the output corresponds to `desiredLength`.")
   def rightPad(desiredLength: Int, padding: String): String =
     StringUtils.rightPad(wrapped, desiredLength, padding)
 

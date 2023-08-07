@@ -9,10 +9,13 @@ public interface FormatUtil {
     @Documentation("Returns true if the provided `value` contains only numeric values.")
     boolean isNumeric(String value);
 
-    @Documentation("Transforms the provided `value` into a common scale. `siCompliance` set to `true` means a decimal base is used (1000), otherwise binary (1024). `unitName` is appended to the output.")
+    @Documentation("Transforms the provided `value` into a common scale. `siCompliance` set to `true` means a decimal " +
+            "base is used (1000), otherwise binary (1024). `unitName` is appended to the output.")
     String normalizeValue(long value, boolean siCompliance, String unitName);
 
-    @Documentation("Transforms the provided `value` into a common scale. `siCompliance` set to `true` means a decimal base is used (1000), otherwise binary (1024). Select unit via `inputUnitIndex` integer value corresponding to k, M, G, T, P, E. `unitName` is appended to the output.")
+    @Documentation("Transforms the provided `value` into a common scale. `siCompliance` set to `true` means a decimal " +
+            "base is used (1000), otherwise binary (1024). Select unit via `inputUnitIndex` integer value corresponding" +
+            "to k, M, G, T, P, E. `unitName` is appended to the output.")
     String normalizeValue(long value, int inputUnitIndex, boolean siCompliance, String unitName);
 
     @Documentation("Returns normalized value for the provided number of `bytes`, e.g. `format.normalizeBytes(16777216)` returns 16.8 MB")

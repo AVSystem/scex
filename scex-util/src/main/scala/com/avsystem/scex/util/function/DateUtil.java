@@ -8,7 +8,7 @@ public interface DateUtil {
     @Documentation("Returns current date in `YYYY.MM.DD hh:mm:ss` format.")
     Date now();
 
-    @Documentation("Returns the provided value in milliseconds as a date.")
+    @Documentation("Returns the provided value as a date in milliseconds since 1970.01.01 00:00:00.")
     public abstract Date fromMillis(long millis);
 
     //ADD

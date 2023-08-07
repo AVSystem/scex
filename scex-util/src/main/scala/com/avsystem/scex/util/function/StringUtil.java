@@ -34,7 +34,8 @@ public interface StringUtil {
     @Documentation("Returns all parts of a dot-separated string following the part indicated by `from` value, e.g. string.slice('a.b.c.d.', 2) returns 'c.d.'")
     String slice(String item, int from);
 
-    @Documentation("Returns all parts of a dot-separated string following the part indicated by `from` value. `Dot` boolean value determines if a dot is added to the output, e.g. string.slice('a.b.c.d.', 2, false) returns 'c.d'")
+    @Documentation("Returns all parts of a dot-separated string following the part indicated by `from` and `to` values. " +
+            "`Dot` boolean value determines if a dot is appended to the output, e.g. string.slice('a.b.c.d.', 3, 4, false) returns 'd'")
     String slice(String item, int from, int to, boolean dot);
 
     @Documentation("Returns the `source` string with all non-alphanumeric characters replaced with the `replacement` string.")
@@ -46,16 +47,16 @@ public interface StringUtil {
     @Documentation("Returns the `source` string with it first characters indicated by the `end` string removed.")
     String removeStart(String source, String start);
 
-    @Documentation("Returns the `source` string with `InternetGatewayDevice.` or `Device.` parts removed.")
+    @Documentation("Returns the `source` string with `InternetGatewayDevice.` or `Device.` parts removed from its beginning.")
     String removeTRRoot(String source);
 
     @Documentation("Returns a random alphanumeric string. The `length` argument indicates the number of characters.")
     String random(int length);
 
-    @Documentation("Prepends the `str` string with `padStr` (repeated or trimmed if needed). Number of characters in the output corresponds to `size`.")
+    @Documentation("Prepends the `str` string with `padStr`, repeated if needed. Number of characters in the output corresponds to `size`.")
     String leftPad(String str, int size, String padStr);
 
-    @Documentation("Appends `padStr` (repeated or trimmed if needed) to the `str` string. Number of characters in the output corresponds to `size`.")
+    @Documentation("Appends `padStr` to the `str` string, repeated if needed. Number of characters in the output corresponds to `size`.")
     String rightPad(String str, int size, String padStr);
 
     @Documentation("Returns a substring of `str`. The substring begins at the specified `from` index and extends to the character at the `to` index.")
@@ -64,7 +65,7 @@ public interface StringUtil {
     @Documentation("Returns an array of strings split from `str` with the given `separator`.")
     String[] split(String str, String separator);
 
-    @Documentation("Returns the `str` string with whitespaces removed.")
+    @Documentation("Returns the `str` string with whitespaces removed from both the beginning and end of the string.")
     String trimToEmpty(String str);
 
     @Documentation("Replaces all occurrences of `find` with `replacement` in the `string`.")
