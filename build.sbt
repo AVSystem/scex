@@ -129,7 +129,6 @@ lazy val `scex-core` = project.dependsOn(`scex-macros` % CompileAndTest)
       "org.scala-lang" % "scala-reflect" % scalaVersion.value,
       "org.scala-lang" % "scala-compiler" % scalaVersion.value,
       "org.scala-lang.modules" %% "scala-parser-combinators" % parserCombinatorsVersion,
-      "org.scala-lang.modules" %% "scala-collection-compat" % collectionCompatVersion,
       "com.avsystem.commons" %% "commons-core" % avsCommonsVersion,
       "org.slf4j" % "slf4j-api" % slf4jVersion,
       "commons-codec" % "commons-codec" % commonsCodecVersion,
