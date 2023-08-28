@@ -8,10 +8,10 @@ object MathAttributes {
     on { m: math.`package`.type =>
       m.IEEEremainder _ --> Attributes(documentation = "Returns the remainder resulting from the division of a specified number `x` by another specified number `y`.")
 
-      m.abs(_: Double) --> Attributes(documentation = "Returns absolute value of `x` argument.")
-      m.abs(_: Float) --> Attributes(documentation = "Returns absolute value of `x` argument.")
-      m.abs(_: Int) --> Attributes(documentation = "Returns absolute value of `x` argument.")
-      m.abs(_: Long) --> Attributes(documentation = "Returns absolute value of `x` argument.")
+      m.abs(_: Double) --> Attributes(documentation = "Returns absolute value of the `x` argument.")
+      m.abs(_: Float) --> Attributes(documentation = "Returns absolute value of the `x` argument.")
+      m.abs(_: Int) --> Attributes(documentation = "Returns absolute value of the `x` argument.")
+      m.abs(_: Long) --> Attributes(documentation = "Returns absolute value of the `x` argument.")
 
       m.acos _ --> Attributes(documentation = "Returns the arc cosine of the `x` argument.")
 
@@ -23,6 +23,7 @@ object MathAttributes {
       m.atan2 _ --> Attributes(documentation = "Returns the rectangular coordinates (x, y) converted to polar (r, theta).")
 
       m.cbrt _ --> Attributes(documentation = "Returns the cube root of the `x` argument.")
+
       m.ceil _ --> Attributes(documentation = "Returns the smallest double value that is greater than or equal to the `x` argument and is equal to a mathematical integer.")
 
       m.copySign(_: Double, _: Double) --> Attributes(documentation = "Returns the first argument `magnitude` with the sign of the second argument `sign`.")
@@ -37,9 +38,9 @@ object MathAttributes {
       m.exp _ --> Attributes(documentation = "Returns the Euler's number raised to the power of the `x` argument.")
       m.expm1 _ --> Attributes(documentation = "Returns `exp(x) - 1`, the Euler's number raised to the power of the `x` argument minus one.")
 
-      m.floor _ --> Attributes(documentation = "Returns the largest integer value less than or equal to the `x` argument.")
+      m.floor _ --> Attributes(documentation = "Returns the largest double value less than or equal to the `x` argument.")
       m.floorDiv(_: Int, _: Int) --> Attributes(documentation = "Returns the largest integer value less than or equal to the algebraic quotient, " + "where `x` is the dividend and `y` is the divisor.")
-      m.floorDiv(_: Long, _: Long) --> Attributes(documentation = "Returns the largest integer value less than or equal to the algebraic quotient, " + "where `x` is the dividend and `y` is the divisor.")
+      m.floorDiv(_: Long, _: Long) --> Attributes(documentation = "Returns the largest long value less than or equal to the algebraic quotient, " + "where `x` is the dividend and `y` is the divisor.")
       m.floorMod(_: Int, _: Int) --> Attributes(documentation = "Returns the floor modulus of the provided arguments, " + "where `x` is the dividend and `y` is the divisor.")
       m.floorMod(_: Long, _: Long) --> Attributes(documentation = "Returns the floor modulus of the provided arguments, " + "where `x` is the dividend and `y` is the divisor.")
 
@@ -60,10 +61,10 @@ object MathAttributes {
       m.max(_: Int, _: Int) --> Attributes(documentation = "Returns the greater of the provided `x` and `y` arguments.")
       m.max(_: Long, _: Long) --> Attributes(documentation = "Returns the greater of the provided `x` and `y` arguments.")
 
-      m.min(_: Double, _: Double) --> Attributes(documentation = "Returns the smaller of the provided `x` and `y` arguments.")
-      m.min(_: Float, _: Float) --> Attributes(documentation = "Returns the smaller of the provided `x` and `y` arguments.")
-      m.min(_: Int, _: Int) --> Attributes(documentation = "Returns the smaller of the provided `x` and `y` arguments.")
-      m.min(_: Long, _: Long) --> Attributes(documentation = "Returns the smaller of the provided `x` and `y` arguments.")
+      m.min(_: Double, _: Double) --> Attributes(documentation = "Returns the lesser of the provided `x` and `y` arguments.")
+      m.min(_: Float, _: Float) --> Attributes(documentation = "Returns the lesser of the provided `x` and `y` arguments.")
+      m.min(_: Int, _: Int) --> Attributes(documentation = "Returns the lesser of the provided `x` and `y` arguments.")
+      m.min(_: Long, _: Long) --> Attributes(documentation = "Returns the lesser of the provided `x` and `y` arguments.")
 
       m.multiplyExact(_: Int, _: Int) --> Attributes(documentation = "Returns the product of the `x` and `y` arguments.")
       m.multiplyExact(_: Long, _: Long) --> Attributes(documentation = "Returns the product of the `x` and `y` arguments.")
@@ -79,6 +80,7 @@ object MathAttributes {
       m.nextUp(_: Float) --> Attributes(documentation = "Returns the floating-point value adjacent to the `f` argument in the direction of positive infinity.")
 
       m.pow(_: Double, _: Double) --> Attributes(documentation = "Returns the value of the `x` argument raised to the power of the the `y` argument. ")
+
       m.rint _ --> Attributes(documentation = "Returns the closest floating point value that is equal to a mathematical integer for the `x` argument.")
 
       m.round(_: Double) --> Attributes(documentation = "Returns the `x` argument rounded to the closest integer value.")
@@ -95,6 +97,7 @@ object MathAttributes {
 
       m.sin _ --> Attributes(documentation = "Returns the sine of the `x` argument.")
       m.sinh _ --> Attributes(documentation = "Returns the hyperbolic sine of the `x` argument.")
+
       m.sqrt _ --> Attributes(documentation = "Returns the square root of the `x` argument.")
 
       m.subtractExact(_: Int, _: Int) --> Attributes(documentation = "Returns the difference of the `x` and `y` arguments.")
@@ -106,8 +109,8 @@ object MathAttributes {
       m.toDegrees _ --> Attributes(documentation = "Returns an angle measured in radians `x` converted to an approximately equivalent angle measured in degrees.")
       m.toRadians _ --> Attributes(documentation = "Returns an angle measured in degrees `x` converted to an approximately equivalent angle measured in radians.")
 
-      m.ulp(_: Double) --> Attributes(documentation = "Returns the size of an ulp (unit in the last place) of the `x` argument.")
-      m.ulp(_: Float) --> Attributes(documentation = "Returns the size of an ulp (unit in the last place) of the `x` argument.")
+      m.ulp(_: Double) --> Attributes(documentation = "Returns the size of a unit in the last place of the `x` argument.")
+      m.ulp(_: Float) --> Attributes(documentation = "Returns the size of a unit in the last place of the `x` argument.")
     }
   }
 }
