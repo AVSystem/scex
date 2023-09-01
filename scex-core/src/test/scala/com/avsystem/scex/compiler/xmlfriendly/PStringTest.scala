@@ -2,7 +2,7 @@ package com.avsystem.scex
 package compiler.xmlfriendly
 
 import com.avsystem.scex.parsing.{Binding, Modification, PString, ShiftInfo}
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
 import scala.collection.immutable.SortedMap
 
@@ -10,7 +10,7 @@ import scala.collection.immutable.SortedMap
   * Created: 25-10-2013
   * Author: ghik
   */
-class PStringTest extends FunSuite {
+class PStringTest extends AnyFunSuite {
   def test(name: String)(modifications: Modification*)
     (shiftMapping: (Int, ShiftInfo)*)(reverseShiftMapping: (Int, ShiftInfo)*): Unit = super.test(name) {
     val (actualShiftMapping, actualReverseShiftMapping) =

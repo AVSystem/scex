@@ -2,13 +2,13 @@ package com.avsystem.scex
 package compiler.xmlfriendly
 
 import com.google.common.io.ByteStreams
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
 /**
   * Created: 23-04-2014
   * Author: ghik
   */
-class XmlFriendlyTranslatorTest extends FunSuite {
+class XmlFriendlyTranslatorTest extends AnyFunSuite {
 
   import com.avsystem.scex.compiler.xmlfriendly.XmlFriendlyTranslator.translate
 

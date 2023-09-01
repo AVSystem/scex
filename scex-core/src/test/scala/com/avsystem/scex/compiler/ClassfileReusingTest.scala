@@ -5,7 +5,8 @@ import com.avsystem.scex.presentation.SymbolAttributes
 import com.avsystem.scex.util.{PredefinedAccessSpecs, SimpleContext}
 import com.avsystem.scex.validation.{SymbolValidator, SyntaxValidator}
 import com.avsystem.scex.{ExpressionProfile, NamedSource}
-import org.scalatest.{FunSuite, BeforeAndAfter}
+import org.scalatest.funsuite.AnyFunSuite
+import org.scalatest.BeforeAndAfter
 
 import scala.collection.mutable.ArrayBuffer
 import scala.reflect.internal.util.SourceFile
@@ -16,7 +17,7 @@ import scala.tools.nsc.Global
  * Created: 22-10-2014
  * Author: ghik
  */
-class ClassfileReusingTest extends FunSuite with BeforeAndAfter {
+class ClassfileReusingTest extends AnyFunSuite with BeforeAndAfter {
 
   trait ScexCompilerInterceptor extends InterceptingPluginScexCompiler {
     val sourcesCompiled = new ArrayBuffer[SourceFile]

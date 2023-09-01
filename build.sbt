@@ -22,18 +22,17 @@ inThisBuild(Seq(
 val CompileAndTest = "compile->compile;test->test"
 
 val parserCombinatorsVersion = "1.1.2"
-val avsCommonsVersion = "2.10.0"
+val avsCommonsVersion = "2.12.0"
 val jettyVersion = "9.4.51.v20230217" // Tests only
 val vaadinVersion = "6.8.18" // Tests only
 val slf4jVersion = "1.7.36"
 val logbackVersion = "1.4.4"
 val commonsLang3Version = "3.12.0"
 val commonsCodecVersion = "1.15"
-val guavaVersion = "23.0"
-val commonsNetVersion = "3.8.0"
+val guavaVersion = "32.1.2-jre"
+val commonsNetVersion = "3.9.0"
 val jodaTimeVersion = "2.10.14"
-val junitVersion = "4.13.2"
-val scalatestVersion = "3.0.9"
+val scalatestVersion = "3.2.16"
 
 val noPublishSettings = Seq(
   publish / skip := true
@@ -104,7 +103,6 @@ lazy val subprojectSettings = Seq(
   })),
   libraryDependencies ++= Seq(
     compilerPlugin("com.avsystem.commons" %% "commons-analyzer" % avsCommonsVersion),
-    "junit" % "junit" % junitVersion % Test,
     "org.scalatest" %% "scalatest" % scalatestVersion % Test
   ),
   Compile / doc / sources := Seq.empty

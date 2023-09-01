@@ -2,9 +2,9 @@ package com.avsystem.scex.util
 
 import java.util.{Calendar, Date}
 
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
-class EnrichedDateTest extends FunSuite {
+class EnrichedDateTest extends AnyFunSuite {
   // 2019-04-17 12:55:14.456 UTC
   val testDate: EnrichedDate = new EnrichedDate(new Date(1555505714456L))
 

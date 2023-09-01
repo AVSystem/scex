@@ -3,12 +3,12 @@ package com.avsystem.scex.util
 import com.avsystem.commons.JDate
 import com.avsystem.scex.util.CommonExpressionUtils._
 import com.avsystem.scex.util.JavaCollectionExtensions._
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
 import java.text.ParseException
 import java.{util => ju}
 
-class QmarkTest extends FunSuite {
+class QmarkTest extends AnyFunSuite {
   test("recover from NullPointerException") {
     def expression = (null: String).length
 

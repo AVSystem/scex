@@ -2,12 +2,11 @@ package com.avsystem.scex.util
 
 import java.io.UnsupportedEncodingException
 import java.nio.charset.StandardCharsets
-
 import com.avsystem.commons.jiop.JavaInterop._
 import com.avsystem.scex.presentation.annotation.Documentation
 import org.apache.commons.codec.binary.{Base64, Hex}
 
-import scala.collection.compat.immutable.ArraySeq
+import scala.collection.immutable.ArraySeq
 import scala.util.hashing.MurmurHash3
 
 final class Bytes(val bytes: Array[Byte]) extends Comparable[Bytes] {

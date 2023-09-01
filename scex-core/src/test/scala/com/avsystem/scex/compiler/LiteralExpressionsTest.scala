@@ -2,17 +2,16 @@ package com.avsystem.scex
 package compiler
 
 import java.lang.annotation.RetentionPolicy
-
 import com.avsystem.scex.compiler.ScexCompiler.CompilationFailedException
 import com.avsystem.scex.compiler.TestUtils.CustomBooleanConversionRoot
 import com.avsystem.scex.util.{PredefinedAccessSpecs, SimpleContext}
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
 /**
  * Created: 04-04-2014
  * Author: ghik
  */
-class LiteralExpressionsTest extends FunSuite with CompilationTest {
+class LiteralExpressionsTest extends AnyFunSuite with CompilationTest {
 
   import com.avsystem.scex.validation.SymbolValidator._
 

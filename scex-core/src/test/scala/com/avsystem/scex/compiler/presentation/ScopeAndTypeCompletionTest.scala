@@ -6,7 +6,7 @@ import com.avsystem.scex.compiler.{CompilationTest, JavaRootWithGetter}
 import com.avsystem.scex.presentation.Attributes
 import com.avsystem.scex.presentation.annotation.Documentation
 import com.avsystem.scex.util.SimpleContext
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
 import scala.annotation.nowarn
 
@@ -15,7 +15,7 @@ import scala.annotation.nowarn
   * Created: 11/18/14.
   */
 @nowarn("msg=a pure expression does nothing in statement position")
-class ScopeAndTypeCompletionTest extends FunSuite with CompilationTest with CompletionTest {
+class ScopeAndTypeCompletionTest extends AnyFunSuite with CompilationTest with CompletionTest {
 
   import com.avsystem.scex.util.CommonUtils._
 

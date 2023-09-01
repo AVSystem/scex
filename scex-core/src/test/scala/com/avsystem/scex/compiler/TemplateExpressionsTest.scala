@@ -5,7 +5,7 @@ import java.lang.annotation.RetentionPolicy
 import java.{lang => jl}
 import com.avsystem.scex.compiler.ScexCompiler.CompilationFailedException
 import com.avsystem.scex.util.{PredefinedAccessSpecs, SimpleContext}
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
 import scala.annotation.nowarn
 
@@ -14,7 +14,7 @@ import scala.annotation.nowarn
  * Author: ghik
  */
 @nowarn("msg=a pure expression does nothing in statement position")
-class TemplateExpressionsTest extends FunSuite with CompilationTest {
+class TemplateExpressionsTest extends AnyFunSuite with CompilationTest {
 
   import com.avsystem.scex.validation.SymbolValidator._
 
