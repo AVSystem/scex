@@ -1,13 +1,13 @@
 package com.avsystem.scex.compiler
 
 import com.avsystem.scex.parsing.ScalaParsingCommons
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
 /**
  * Created: 31-10-2014
  * Author: ghik
  */
-class ScalaParsingCommonsTest extends FunSuite {
+class ScalaParsingCommonsTest extends AnyFunSuite {
 
   import com.avsystem.scex.parsing.ScalaParsingCommons._
 

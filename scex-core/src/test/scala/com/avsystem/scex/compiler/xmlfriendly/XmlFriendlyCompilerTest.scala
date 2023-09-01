@@ -7,7 +7,7 @@ import com.avsystem.scex.compiler.{ClassTaggedContext, CompilationTest, ScexSett
 import com.avsystem.scex.japi.XmlFriendlyJavaScexCompiler
 import com.avsystem.scex.util.{PredefinedAccessSpecs, SimpleContext}
 import com.avsystem.scex.validation.SymbolValidator._
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
 import scala.reflect.{ClassTag, classTag}
 
@@ -15,7 +15,7 @@ import scala.reflect.{ClassTag, classTag}
  * Created: 17-09-2013
  * Author: ghik
  */
-class XmlFriendlyCompilerTest extends FunSuite with CompilationTest {
+class XmlFriendlyCompilerTest extends AnyFunSuite with CompilationTest {
 
   override protected def createCompiler = new XmlFriendlyJavaScexCompiler(new ScexSettings)
 

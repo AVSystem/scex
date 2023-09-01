@@ -1,9 +1,9 @@
 package com.avsystem.scex
 package compiler
 
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
-class JavaTypeParsingTest extends FunSuite {
+class JavaTypeParsingTest extends AnyFunSuite {
 
   import com.avsystem.scex.compiler.JavaTypeParsing._
 

@@ -3,14 +3,13 @@ package compiler
 
 import java.util.concurrent.Callable
 import java.{lang => jl, util => ju}
-
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
 /**
  * Created: 17-10-2013
  * Author: ghik
  */
-class ArbitraryCompilationTest extends FunSuite {
+class ArbitraryCompilationTest extends AnyFunSuite {
   val compiler = new DefaultScexCompiler(new ScexSettings)
 
   test("arbitrary source code compilation test") {

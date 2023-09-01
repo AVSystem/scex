@@ -3,13 +3,13 @@ package com.avsystem.scex.compiler
 import com.avsystem.scex.compiler.xmlfriendly.XmlFriendlyTranslator
 import com.avsystem.scex.parsing.TemplateParser
 import com.google.common.io.ByteStreams
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
 /**
  * Created: 03-11-2014
  * Author: ghik
  */
-class TemplateParserTest extends FunSuite {
+class TemplateParserTest extends AnyFunSuite {
   def parse(expr: String): (List[String], List[String]) = {
     val (parts, args) = TemplateParser.parseTemplate(expr).get
     (parts, args.map(_.result))

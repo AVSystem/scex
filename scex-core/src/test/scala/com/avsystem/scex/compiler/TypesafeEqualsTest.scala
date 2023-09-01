@@ -6,13 +6,13 @@ import com.avsystem.scex.compiler.ScexCompiler.CompilationFailedException
 import com.avsystem.scex.presentation.SymbolAttributes
 import com.avsystem.scex.util.{PredefinedAccessSpecs, SimpleContext}
 import com.avsystem.scex.validation.{SymbolValidator, SyntaxValidator}
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
 /**
   * Created: 20-11-2013
   * Author: ghik
   */
-class TypesafeEqualsTest extends FunSuite with CompilationTest {
+class TypesafeEqualsTest extends AnyFunSuite with CompilationTest {
 
   import com.avsystem.scex.validation.SymbolValidator._
 

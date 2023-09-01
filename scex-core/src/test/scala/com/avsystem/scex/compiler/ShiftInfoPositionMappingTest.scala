@@ -2,7 +2,7 @@ package com.avsystem.scex
 package compiler
 
 import com.avsystem.scex.parsing.{Binding, ShiftInfo, ShiftInfoPositionMapping}
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
 import scala.collection.immutable.SortedMap
 
@@ -10,7 +10,7 @@ import scala.collection.immutable.SortedMap
   * Created: 24-10-2013
   * Author: ghik
   */
-class ShiftInfoPositionMappingTest extends FunSuite {
+class ShiftInfoPositionMappingTest extends AnyFunSuite {
   test("empty mapping test") {
     val mapping = new ShiftInfoPositionMapping(SortedMap.empty, SortedMap.empty)
     val reverse = mapping.reverse

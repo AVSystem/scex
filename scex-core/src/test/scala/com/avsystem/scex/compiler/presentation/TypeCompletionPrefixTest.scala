@@ -7,7 +7,7 @@ import com.avsystem.scex.compiler.presentation.TypeCompletionPrefixTest._
 import com.avsystem.scex.compiler.presentation.ast.EmptyTree
 import com.avsystem.scex.util.SimpleContext
 import org.scalactic.source.Position
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
 import scala.annotation.nowarn
 
@@ -16,7 +16,7 @@ import scala.annotation.nowarn
  * Author: ghik
  */
 @nowarn("msg=a pure expression does nothing in statement position")
-class TypeCompletionPrefixTest extends FunSuite with CompilationTest with CompletionTest {
+class TypeCompletionPrefixTest extends AnyFunSuite with CompilationTest with CompletionTest {
 
   import com.avsystem.scex.validation.SymbolValidator._
 

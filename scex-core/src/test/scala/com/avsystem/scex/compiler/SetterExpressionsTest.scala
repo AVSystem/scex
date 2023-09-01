@@ -6,7 +6,7 @@ import com.avsystem.commons.misc.TypeString
 import com.avsystem.scex.compiler.ScexCompiler.{CompilationFailedException, CompileError}
 import com.avsystem.scex.compiler.TemplateInterpolations.Splicer
 import com.avsystem.scex.util.{PredefinedAccessSpecs, SimpleContext}
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
 import scala.annotation.nowarn
 import scala.reflect.ClassTag
@@ -41,7 +41,7 @@ object CustomBooleanSplicer {
   * Author: ghik
   */
 @nowarn("msg=a pure expression does nothing in statement position")
-class SetterExpressionsTest extends FunSuite with CompilationTest {
+class SetterExpressionsTest extends AnyFunSuite with CompilationTest {
 
   import com.avsystem.scex.validation.SymbolValidator._
 

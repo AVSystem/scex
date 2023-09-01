@@ -1,14 +1,14 @@
 package com.avsystem.scex.compiler
 
-import com.avsystem.scex.japi.{XmlFriendlyJavaScexCompiler, ScalaTypeTokens}
-import com.avsystem.scex.util.{SimpleContext, PredefinedAccessSpecs}
-import org.scalatest.FunSuite
+import com.avsystem.scex.japi.{ScalaTypeTokens, XmlFriendlyJavaScexCompiler}
+import com.avsystem.scex.util.{PredefinedAccessSpecs, SimpleContext}
+import org.scalatest.funsuite.AnyFunSuite
 
 /**
   * Author: ghik
   * Created: 26/10/15.
   */
-class JavaScexCompilerTest extends FunSuite with CompilationTest {
+class JavaScexCompilerTest extends AnyFunSuite with CompilationTest {
   override protected def createCompiler = new XmlFriendlyJavaScexCompiler(new ScexSettings)
 
   test("typed variables test") {
