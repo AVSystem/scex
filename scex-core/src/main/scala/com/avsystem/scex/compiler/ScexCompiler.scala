@@ -57,7 +57,7 @@ trait ScexCompiler extends LoggingUtils {
         pos.withPoint(mapping(pos.point))
       else pos
 
-    def doReport(pos: Position, msg: String, severity: Severity): Unit = {
+    override def doReport(pos: Position, msg: String, severity: Severity): Unit =
       if (severity == ERROR) {
         val actualPos = pos.source match {
           case source: ExpressionSourceFile if includes(source.expressionPos, pos) =>
@@ -67,7 +67,6 @@ trait ScexCompiler extends LoggingUtils {
         }
         errorsBuilder += CompileError(lineContent(actualPos), if (actualPos.isDefined) actualPos.column else 1, msg)
       }
-    }
 
     def displayPrompt(): Unit = {}
 
@@ -93,6 +92,7 @@ trait ScexCompiler extends LoggingUtils {
   }
 
   val settings: ScexSettings
+
   protected def compilerSettings: Settings = settings
 
   @volatile private var initialized = false
@@ -307,15 +307,15 @@ trait ScexCompiler extends LoggingUtils {
     compileExpression(exprDef).get.asInstanceOf[Expression[C, T]]
 
   def getCompiledExpression[C <: ExpressionContext[_, _], T](
-    profile: ExpressionProfile,
-    expression: String,
-    variableTypes: Map[String, TypeString[_]] = Map.empty,
-    template: Boolean = true,
-    header: String = ""
-  )(implicit
-    cti: ContextTypeInfo[C],
-    tts: TypeString[T]
-  ): Expression[C, T] = {
+                                                              profile: ExpressionProfile,
+                                                              expression: String,
+                                                              variableTypes: Map[String, TypeString[_]] = Map.empty,
+                                                              template: Boolean = true,
+                                                              header: String = ""
+                                                            )(implicit
+                                                              cti: ContextTypeInfo[C],
+                                                              tts: TypeString[T]
+                                                            ): Expression[C, T] = {
 
     require(profile != null, "Profile cannot be null")
     require(expression != null, "Expression cannot be null")
@@ -328,15 +328,15 @@ trait ScexCompiler extends LoggingUtils {
   }
 
   def getCompiledSetterExpression[C <: ExpressionContext[_, _], T](
-    profile: ExpressionProfile,
-    expression: String,
-    template: Boolean = true,
-    variableTypes: Map[String, TypeString[_]] = Map.empty,
-    header: String = ""
-  )(implicit
-    cti: ContextTypeInfo[C],
-    tts: TypeString[T]
-  ): Expression[C, Setter[T]] = {
+                                                                    profile: ExpressionProfile,
+                                                                    expression: String,
+                                                                    template: Boolean = true,
+                                                                    variableTypes: Map[String, TypeString[_]] = Map.empty,
+                                                                    header: String = ""
+                                                                  )(implicit
+                                                                    cti: ContextTypeInfo[C],
+                                                                    tts: TypeString[T]
+                                                                  ): Expression[C, Setter[T]] = {
 
     require(profile != null, "Profile cannot be null")
     require(expression != null, "Expression cannot be null")
