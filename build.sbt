@@ -2,7 +2,7 @@ name := "scex"
 
 inThisBuild(Seq(
   organization := "com.avsystem.scex",
-  scalaVersion := "2.13.11",
+  scalaVersion := "2.13.12",
 
   githubWorkflowTargetTags ++= Seq("v*"),
   githubWorkflowJavaVersions := Seq(JavaSpec.temurin("11")),
