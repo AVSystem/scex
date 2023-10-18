@@ -22,17 +22,17 @@ inThisBuild(Seq(
 val CompileAndTest = "compile->compile;test->test"
 
 val parserCombinatorsVersion = "1.1.2"
-val avsCommonsVersion = "2.12.0"
+val avsCommonsVersion = "2.13.0"
 val jettyVersion = "9.4.51.v20230217" // Tests only
 val vaadinVersion = "6.8.18" // Tests only
 val slf4jVersion = "1.7.36"
-val logbackVersion = "1.4.4"
-val commonsLang3Version = "3.12.0"
-val commonsCodecVersion = "1.15"
-val guavaVersion = "32.1.2-jre"
-val commonsNetVersion = "3.9.0"
-val jodaTimeVersion = "2.10.14"
-val scalatestVersion = "3.2.16"
+val logbackVersion = "1.4.7" // Tests only
+val commonsLang3Version = "3.13.0"
+val commonsCodecVersion = "1.16.0"
+val guavaVersion = "32.1.3-jre"
+val commonsNetVersion = "3.10.0"
+val jodaTimeVersion = "2.12.5"
+val scalatestVersion = "3.2.17"
 
 val noPublishSettings = Seq(
   publish / skip := true
