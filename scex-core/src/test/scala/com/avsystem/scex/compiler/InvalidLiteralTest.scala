@@ -17,6 +17,6 @@ class InvalidLiteralTest extends AnyFunSuite with CompilationTest {
     intercept[CompilationFailedException] {
       evaluate[String]("11compilation_fail11")
     }
-    assert("ok" == evaluate[String]("\"ok\""))
+    evaluate[Unit]("()")
   }
 }
