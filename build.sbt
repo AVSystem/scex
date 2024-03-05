@@ -2,7 +2,7 @@ name := "scex"
 
 inThisBuild(Seq(
   organization := "com.avsystem.scex",
-  scalaVersion := "2.13.12",
+  scalaVersion := "2.13.13",
 
   githubWorkflowTargetTags ++= Seq("v*"),
   githubWorkflowJavaVersions := Seq(JavaSpec.temurin("11")),
@@ -22,17 +22,17 @@ inThisBuild(Seq(
 val CompileAndTest = "compile->compile;test->test"
 
 val parserCombinatorsVersion = "1.1.2"
-val avsCommonsVersion = "2.13.3"
-val jettyVersion = "9.4.53.v20231009" // Tests only
+val avsCommonsVersion = "2.14.0"
+val jettyVersion = "9.4.54.v20240208" // Tests only
 val vaadinVersion = "6.8.18" // Tests only
-val slf4jVersion = "1.7.36"
-val logbackVersion = "1.4.7" // Tests only
+val slf4jVersion = "2.0.12"
+val logbackVersion = "1.4.14" // Tests only
 val commonsLang3Version = "3.14.0"
 val commonsCodecVersion = "1.16.1"
 val guavaVersion = "33.0.0-jre"
 val commonsNetVersion = "3.10.0"
 val jodaTimeVersion = "2.12.7"
-val scalatestVersion = "3.2.17"
+val scalatestVersion = "3.2.18"
 
 val noPublishSettings = Seq(
   publish / skip := true

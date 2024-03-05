@@ -113,8 +113,8 @@ object CompletionPlayground {
           val parsedTree = completer.parse(event.getText)
           val typedPrefix = completion.typedPrefixTree
           val parsedPrefix = parsedTree.locate(typedPrefix.attachments.position)
-          label.setValue(s"POSITION: $pos\nPARSED:\n${parsedTree.pretty(true, true)}\nERRORS:\n$errors\nPPREFIX:\n${parsedPrefix.pretty(true, true)}\n" +
-            s"TPREFIX:\n${typedPrefix.pretty(true, true)}\nCOMPLETION:\n$members\nSCOPE COMPLETION:\n$scopeMembers")
+          label.setValue(s"POSITION: $pos\nPARSED:\n${parsedTree.pretty(withPositions = true, withTypes = true)}\nERRORS:\n$errors\nPPREFIX:\n${parsedPrefix.pretty(withPositions = true, withTypes = true)}\n" +
+            s"TPREFIX:\n${typedPrefix.pretty(withPositions = true, withTypes = true)}\nCOMPLETION:\n$members\nSCOPE COMPLETION:\n$scopeMembers")
         }
       })
 
