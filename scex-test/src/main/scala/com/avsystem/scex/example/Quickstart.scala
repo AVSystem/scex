@@ -51,7 +51,7 @@ object Quickstart {
     SymbolAttributes.empty,
     "import com.avsystem.scex.util.CommonExpressionUtils._",
     NamedSource("empty", ""),
-    true,
+    dynamicVariablesEnabled = true,
   )
 
   // The root object of an expression. It defines the primary API exposed into expressions (apart from "static" utils
