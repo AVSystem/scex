@@ -21,7 +21,7 @@ inThisBuild(Seq(
 
 val CompileAndTest = "compile->compile;test->test"
 
-val parserCombinatorsVersion = "1.1.2"
+val parserCombinatorsVersion = "2.4.0"
 val avsCommonsVersion = "2.15.0"
 val jettyVersion = "9.4.54.v20240208" // Tests only
 val vaadinVersion = "6.8.18" // Tests only
