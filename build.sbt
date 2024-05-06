@@ -5,7 +5,7 @@ inThisBuild(Seq(
   scalaVersion := "2.13.14",
 
   githubWorkflowTargetTags ++= Seq("v*"),
-  githubWorkflowJavaVersions := Seq(JavaSpec.temurin("11")),
+  githubWorkflowJavaVersions := Seq(JavaSpec.temurin("17"), JavaSpec.temurin("21")),
   githubWorkflowPublishTargetBranches := Seq(RefPredicate.StartsWith(Ref.Tag("v"))),
 
   githubWorkflowPublish := Seq(WorkflowStep.Sbt(
@@ -22,7 +22,7 @@ inThisBuild(Seq(
 val CompileAndTest = "compile->compile;test->test"
 
 val parserCombinatorsVersion = "2.4.0"
-val avsCommonsVersion = "2.15.0"
+val avsCommonsVersion = "2.16.0"
 val jettyVersion = "9.4.54.v20240208" // Tests only
 val vaadinVersion = "6.8.18" // Tests only
 val slf4jVersion = "2.0.13"
@@ -44,8 +44,7 @@ lazy val subprojectSettings = Seq(
   crossVersion := CrossVersion.full,
 
   javacOptions ++= Seq(
-    "-source", "1.8",
-    "-target", "1.8",
+    "--release", "17",
     "-parameters"
   ),
 
@@ -61,12 +60,10 @@ lazy val subprojectSettings = Seq(
     "-Xlint:-missing-interpolator,-adapted-args,-unused,_"
   ),
 
-  scalacOptions ++= {
-    if (scalaBinaryVersion.value == "2.13") Seq(
-      "-Xnon-strict-patmat-analysis",
-      "-Xlint:-strict-unsealed-patmat"
-    ) else Seq.empty
-  },
+  scalacOptions ++= Seq(
+    "-Xnon-strict-patmat-analysis",
+    "-Xlint:-strict-unsealed-patmat"
+  ),
 
   sonatypeProfileName := "com.avsystem",
   publishTo := sonatypePublishToBundle.value,
