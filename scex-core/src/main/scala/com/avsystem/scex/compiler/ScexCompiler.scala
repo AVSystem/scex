@@ -70,8 +70,7 @@ trait ScexCompiler extends LoggingUtils {
 
     def displayPrompt(): Unit = {}
 
-    override def reset(): Unit = {
-      super.reset()
+    def clearErrors(): Unit = {
       errorsBuilder.clear()
     }
   }
@@ -221,9 +220,11 @@ trait ScexCompiler extends LoggingUtils {
 
   protected final def withGlobal[T](code: ScexGlobal => T): T = underLock {
     reporter.reset()
+    reporter.clearErrors()
     val global = this.global
     val result = try code(global) finally {
       reporter.reset()
+      reporter.clearErrors()
     }
     result
   }
@@ -241,6 +242,7 @@ trait ScexCompiler extends LoggingUtils {
     val classfileDirectory = classLoader.classfileDirectory
 
     reporter.reset()
+    reporter.clearErrors()
 
     logger.debug(s"Compiling source file ${sourceFile.path} to $classfileDirectory:\n${new String(sourceFile.content)}")
 

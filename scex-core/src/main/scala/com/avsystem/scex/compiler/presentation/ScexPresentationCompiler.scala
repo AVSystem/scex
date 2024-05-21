@@ -50,9 +50,11 @@ trait ScexPresentationCompiler extends ScexCompiler { compiler =>
 
   protected final def withIGlobal[T](code: IGlobal => T) = underLock {
     reporter.reset()
+    reporter.clearErrors()
     val global = compiler.global
     val result = try code(global) finally {
       reporter.reset()
+      reporter.clearErrors()
     }
     result
   }
