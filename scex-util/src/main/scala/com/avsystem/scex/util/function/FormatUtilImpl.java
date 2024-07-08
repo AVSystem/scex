@@ -1,16 +1,14 @@
 package com.avsystem.scex.util.function;
 
 import org.apache.commons.lang3.StringUtils;
-import org.joda.time.Period;
-import org.joda.time.PeriodType;
-import org.joda.time.format.PeriodFormatter;
-import org.joda.time.format.PeriodFormatterBuilder;
+import org.apache.commons.lang3.time.DurationFormatUtils;
 
 import java.math.BigDecimal;
 import java.math.MathContext;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.Date;
-import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -22,24 +20,11 @@ public class FormatUtilImpl implements FormatUtil {
     private static final Pattern numericPattern = Pattern.compile(NUMERIC_PATTERN);
 
     public static String getPeriodMessage(Date from) {
-        Period period = new Period(from.getTime(), new Date().getTime());
-        String periodMessage = INSTANCE.formatPeriod(period);
-        return StringUtils.substringBefore(periodMessage, " ");
+        return StringUtils.substringBefore(formatDuration(Duration.between(from.toInstant(), Instant.now())), " ");
     }
 
     private FormatUtilImpl() {
     }
-
-    private static final PeriodFormatter PERIOD_FORMATTER = new PeriodFormatterBuilder()
-            .printZeroNever()
-            .appendYears().appendSuffix("y ")
-            .appendMonths().appendSuffix("M ")
-            .appendDays().appendSuffix("d ")
-            .appendHours().appendSuffix("h ")
-            .printZeroAlways()
-            .appendMinutes().appendSuffix("m ")
-            .appendSeconds().appendSuffix("s ")
-            .toFormatter();
 
     private static final String[] Q = new String[] { "", "k", "M", "G", "T", "P", "E" };
     private Long SI = 1000L;
@@ -80,14 +65,13 @@ public class FormatUtilImpl implements FormatUtil {
         return normalizeBytes(bytes).replace(",", ".");
     }
 
-
     @Override
     public String secondsToPeriod(long seconds) {
-        return formatPeriod(new Period(TimeUnit.SECONDS.toMillis(seconds)));
+        return formatDuration(Duration.ofSeconds(seconds));
     }
 
-    public String formatPeriod(Period period) {
-        return PERIOD_FORMATTER.print(period.normalizedStandard(PeriodType.yearMonthDayTime()));
+    public static String formatDuration(Duration duration) {
+        return DurationFormatUtils.formatDuration(duration.toMillis(), "[d'd 'H'h 'm'm ']s's'");
     }
 
     /**

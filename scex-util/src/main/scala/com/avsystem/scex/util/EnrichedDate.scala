@@ -1,14 +1,15 @@
 package com.avsystem.scex.util
 
-import java.text.SimpleDateFormat
-import java.util.{Calendar, Date}
-
 import com.avsystem.scex.presentation.annotation.Documentation
 import org.apache.commons.lang3.time.DateUtils
-import org.joda.time.DateTime
+
+import java.text.SimpleDateFormat
+import java.time.Instant
+import java.time.temporal.ChronoField
+import java.util.{Calendar, Date}
 
 final class EnrichedDate(private val wrapped: Date) extends AnyVal {
-  private def dateTime = new DateTime(wrapped.getTime)
+  private def instant = Instant.ofEpochMilli(wrapped.getTime)
 
   @Documentation("Formats the date using the default date format: <tt>yyyy.MM.dd HH:mm:ss</tt>.")
   def format: String = CommonDateFormat.get.format(wrapped)
@@ -49,27 +50,27 @@ final class EnrichedDate(private val wrapped: Date) extends AnyVal {
   def millis: Long = wrapped.getTime
 
   @Documentation("Returns the seconds field of the date expressed in milliseconds.")
-  def millisOfSecond: Int = dateTime.getMillisOfSecond
+  def millisOfSecond: Int = instant.get(ChronoField.MILLI_OF_SECOND)
   @Documentation("Returns the seconds field of the date.")
-  def secondOfMinute: Int = dateTime.getSecondOfMinute
+  def secondOfMinute: Int = instant.get(ChronoField.SECOND_OF_MINUTE)
   @Documentation("Returns the number of seconds which passed since 00:00 for the date.")
-  def secondOfDay: Int = dateTime.getSecondOfDay
+  def secondOfDay: Int = instant.get(ChronoField.SECOND_OF_DAY)
   @Documentation("Returns the minutes field of the date.")
-  def minuteOfHour: Int = dateTime.getMinuteOfHour
+  def minuteOfHour: Int = instant.get(ChronoField.MINUTE_OF_HOUR)
   @Documentation("Returns the number of minutes which passed since 00:00 for the date.")
-  def minuteOfDay: Int = dateTime.getMinuteOfDay
+  def minuteOfDay: Int = instant.get(ChronoField.MINUTE_OF_DAY)
   @Documentation("Returns the number of hours which passed since 00:00 for the date.")
-  def hourOfDay: Int = dateTime.getHourOfDay
+  def hourOfDay: Int = instant.get(ChronoField.HOUR_OF_DAY)
   @Documentation("Returns the day field of the date.")
-  def dayOfMonth: Int = dateTime.getDayOfMonth
+  def dayOfMonth: Int = instant.get(ChronoField.DAY_OF_MONTH)
 
   @Documentation("Returns a numeric value for day of the week of the date, where 1 - Monday, 7 - Sunday.")
-  def dayOfWeek: Int = dateTime.getDayOfWeek
+  def dayOfWeek: Int = instant.get(ChronoField.DAY_OF_WEEK)
 
   @Documentation("Returns a numeric value for the day of the year.")
-  def dayOfYear: Int = dateTime.getDayOfYear
+  def dayOfYear: Int = instant.get(ChronoField.DAY_OF_YEAR)
 
   @Documentation("Returns a numeric value for the month of the year, where 1 - January, 12 - December.")
-  def monthOfYear: Int = dateTime.getMonthOfYear
+  def monthOfYear: Int = instant.get(ChronoField.MONTH_OF_YEAR)
 }
 

@@ -2,7 +2,6 @@ package com.avsystem.scex.util
 
 import com.avsystem.commons.jiop.JavaInterop._
 import com.avsystem.scex.util.function._
-import org.joda.time.Hours
 
 import scala.annotation.nowarn
 import scala.util.matching.Regex.Match
@@ -131,9 +130,6 @@ object CommonSymbolValidators {
       }
       dateSplicer.toString(_: JDate)
       collectionSplicer.toString(_: JSet[String])
-
-      allStatic[Hours].members
-      on { h: Hours => h.all.introduced.members }
 
       on { so: StringNetworkOps => so.all.introduced.members }
       on { so: StringMiscOps => so.all.introduced.members }

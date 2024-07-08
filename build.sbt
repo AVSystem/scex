@@ -29,7 +29,6 @@ val commonsLang3Version = "3.14.0"
 val commonsCodecVersion = "1.17.0"
 val guavaVersion = "33.2.1-jre"
 val commonsNetVersion = "3.11.1"
-val jodaTimeVersion = "2.12.7"
 val scalatestVersion = "3.2.19"
 
 val noPublishSettings = Seq(
@@ -135,7 +134,6 @@ lazy val `scex-util` = project.dependsOn(`scex-core` % CompileAndTest)
     libraryDependencies ++= Seq(
       "org.apache.commons" % "commons-lang3" % commonsLang3Version,
       "commons-net" % "commons-net" % commonsNetVersion,
-      "joda-time" % "joda-time" % jodaTimeVersion
     )
   )
 
