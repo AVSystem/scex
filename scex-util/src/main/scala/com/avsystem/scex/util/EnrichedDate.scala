@@ -3,7 +3,7 @@ package com.avsystem.scex.util
 import com.avsystem.scex.presentation.annotation.Documentation
 import org.apache.commons.lang3.time.DateUtils
 
-import java.text.SimpleDateFormat
+import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoField
 import java.time.{Clock, Instant, ZoneId, ZonedDateTime}
 import java.util.{Calendar, Date}
@@ -15,7 +15,7 @@ final class EnrichedDate(wrapped: Date, zone: ZoneId = Clock.systemDefaultZone.g
   def format: String = CommonDateFormat.get.format(wrapped)
 
   @Documentation("Formats the date according to provided date format. An example of correct date format is <tt>yyyy.MM.dd HH:mm:ss</tt>.")
-  def format(dateFormat: String): String = new SimpleDateFormat(dateFormat).format(wrapped)
+  def format(dateFormat: String): String = DateTimeFormatter.ofPattern(dateFormat).format(zonedDateTime)
 
   @Documentation("Adds the provided amount of milliseconds to the date.")
   def addMilliseconds(amount: Int): Date = DateUtils.addMilliseconds(wrapped, amount)
