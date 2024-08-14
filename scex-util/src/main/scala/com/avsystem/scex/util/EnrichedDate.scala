@@ -8,11 +8,15 @@ import java.time.temporal.ChronoField
 import java.time.{Clock, Instant, ZoneId, ZonedDateTime}
 import java.util.{Calendar, Date}
 
-final class EnrichedDate(wrapped: Date, zone: ZoneId = Clock.systemDefaultZone.getZone) {
+final class EnrichedDate(wrapped: Date, zone: ZoneId = Clock.systemDefaultZone().getZone) {
   private def zonedDateTime: ZonedDateTime = ZonedDateTime.ofInstant(Instant.ofEpochMilli(wrapped.getTime), zone)
 
   @Documentation("Formats the date using the default date format: <tt>yyyy.MM.dd HH:mm:ss</tt>.")
-  def format: String = CommonDateFormat.get.format(wrapped)
+  def format: String =
+    if (zone == Clock.systemDefaultZone().getZone)
+      CommonDateFormat.get.format(wrapped)
+    else
+      format(CommonDateFormat.get.toPattern)
 
   @Documentation("Formats the date according to provided date format. An example of correct date format is <tt>yyyy.MM.dd HH:mm:ss</tt>.")
   def format(dateFormat: String): String = DateTimeFormatter.ofPattern(dateFormat).format(zonedDateTime)
