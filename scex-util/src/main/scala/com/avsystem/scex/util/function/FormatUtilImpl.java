@@ -6,9 +6,7 @@ import org.apache.commons.lang3.time.DurationFormatUtils;
 import java.math.BigDecimal;
 import java.math.MathContext;
 import java.time.Duration;
-import java.time.Instant;
 import java.util.Collection;
-import java.util.Date;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -18,10 +16,6 @@ public class FormatUtilImpl implements FormatUtil {
     private static final String NUMERIC_PATTERN = "((-|\\+)?[0-9]+(\\.[0-9]+)?)+";
 
     private static final Pattern numericPattern = Pattern.compile(NUMERIC_PATTERN);
-
-    public static String getPeriodMessage(Date from) {
-        return StringUtils.substringBefore(formatDuration(Duration.between(from.toInstant(), Instant.now())), " ");
-    }
 
     private FormatUtilImpl() {
     }
