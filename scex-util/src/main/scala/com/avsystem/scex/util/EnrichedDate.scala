@@ -5,11 +5,11 @@ import org.apache.commons.lang3.time.DateUtils
 
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoField
-import java.time.{Clock, Instant, ZoneId, ZonedDateTime}
+import java.time.{Clock, ZoneId, ZonedDateTime}
 import java.util.{Calendar, Date}
 
 final class EnrichedDate(wrapped: Date, zone: ZoneId = Clock.systemDefaultZone().getZone) {
-  private def zonedDateTime: ZonedDateTime = ZonedDateTime.ofInstant(Instant.ofEpochMilli(wrapped.getTime), zone)
+  private def zonedDateTime: ZonedDateTime = ZonedDateTime.ofInstant(wrapped.toInstant, zone)
 
   @Documentation("Formats the date using the default date format: <tt>yyyy.MM.dd HH:mm:ss</tt>.")
   def format: String =
