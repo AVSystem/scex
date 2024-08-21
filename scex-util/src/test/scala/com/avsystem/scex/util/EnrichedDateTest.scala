@@ -1,13 +1,17 @@
 package com.avsystem.scex.util
 
-import java.util.{Calendar, Date}
 import org.scalatest.funsuite.AnyFunSuite
 
 import java.time.ZoneId
+import java.util.{Calendar, Date}
 
 class EnrichedDateTest extends AnyFunSuite {
+
+  import CommonExpressionUtils.{enrichDate, enrichDateTime}
+
   // 2019-04-17 12:55:14.456 UTC
-  val testDate: EnrichedDate = new EnrichedDate(new Date(1555505714456L), ZoneId.of("Europe/Warsaw"))
+  val testDate = new Date(1555505714456L)
+  val testZonedDate: EnrichedZonedDate = EnrichedZonedDate.fromDate(testDate, ZoneId.of("Europe/Warsaw"))
 
   def localMidnight: Calendar = {
     val time = Calendar.getInstance()

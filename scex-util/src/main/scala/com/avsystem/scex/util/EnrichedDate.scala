@@ -8,19 +8,7 @@ import java.time.temporal.ChronoField
 import java.time.{Clock, ZoneId, ZonedDateTime}
 import java.util.{Calendar, Date}
 
-final class EnrichedDate(wrapped: Date, zone: ZoneId = Clock.systemDefaultZone().getZone) {
-  private def zonedDateTime: ZonedDateTime = ZonedDateTime.ofInstant(wrapped.toInstant, zone)
-
-  @Documentation("Formats the date using the default date format: <tt>yyyy.MM.dd HH:mm:ss</tt>.")
-  def format: String =
-    if (zone == Clock.systemDefaultZone().getZone)
-      CommonDateFormat.get.format(wrapped)
-    else
-      format(CommonDateFormat.get.toPattern)
-
-  @Documentation("Formats the date according to provided date format. An example of correct date format is <tt>yyyy.MM.dd HH:mm:ss</tt>.")
-  def format(dateFormat: String): String = DateTimeFormatter.ofPattern(dateFormat).format(zonedDateTime)
-
+final class EnrichedDate(private val wrapped: Date) extends AnyVal {
   @Documentation("Adds the provided amount of milliseconds to the date.")
   def addMilliseconds(amount: Int): Date = DateUtils.addMilliseconds(wrapped, amount)
   @Documentation("Adds the provided amount of seconds to the date.")
@@ -52,19 +40,34 @@ final class EnrichedDate(wrapped: Date, zone: ZoneId = Clock.systemDefaultZone()
 
   @Documentation("Returns the date as a number of milliseconds since 1970.01.01 00:00:00.")
   def millis: Long = wrapped.getTime
+}
+
+final class EnrichedZonedDate(private val zonedDateTime: ZonedDateTime) extends AnyVal {
+
+  @Documentation("Formats the date using the default date format: <tt>yyyy.MM.dd HH:mm:ss</tt>.")
+  def format: String = DateTimeFormatter.ofPattern(CommonDateFormat.get.toPattern).format(zonedDateTime)
+
+  @Documentation("Formats the date according to provided date format. An example of correct date format is <tt>yyyy.MM.dd HH:mm:ss</tt>.")
+  def format(dateFormat: String): String = DateTimeFormatter.ofPattern(dateFormat).format(zonedDateTime)
 
   @Documentation("Returns the seconds field of the date expressed in milliseconds.")
   def millisOfSecond: Int = zonedDateTime.get(ChronoField.MILLI_OF_SECOND)
+
   @Documentation("Returns the seconds field of the date.")
   def secondOfMinute: Int = zonedDateTime.get(ChronoField.SECOND_OF_MINUTE)
+
   @Documentation("Returns the number of seconds which passed since 00:00 for the date.")
   def secondOfDay: Int = zonedDateTime.get(ChronoField.SECOND_OF_DAY)
+
   @Documentation("Returns the minutes field of the date.")
   def minuteOfHour: Int = zonedDateTime.get(ChronoField.MINUTE_OF_HOUR)
+
   @Documentation("Returns the number of minutes which passed since 00:00 for the date.")
   def minuteOfDay: Int = zonedDateTime.get(ChronoField.MINUTE_OF_DAY)
+
   @Documentation("Returns the number of hours which passed since 00:00 for the date.")
   def hourOfDay: Int = zonedDateTime.get(ChronoField.HOUR_OF_DAY)
+
   @Documentation("Returns the day field of the date.")
   def dayOfMonth: Int = zonedDateTime.get(ChronoField.DAY_OF_MONTH)
 
@@ -76,5 +79,10 @@ final class EnrichedDate(wrapped: Date, zone: ZoneId = Clock.systemDefaultZone()
 
   @Documentation("Returns a numeric value for the month of the year, where 1 - January, 12 - December.")
   def monthOfYear: Int = zonedDateTime.get(ChronoField.MONTH_OF_YEAR)
+}
+
+object EnrichedZonedDate {
+  def fromDate(date: Date, zone: ZoneId = Clock.systemDefaultZone().getZone) =
+    new EnrichedZonedDate(ZonedDateTime.ofInstant(date.toInstant, zone))
 }
 

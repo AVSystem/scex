@@ -134,6 +134,7 @@ object CommonSymbolValidators {
       on { so: StringNetworkOps => so.all.introduced.members }
       on { so: StringMiscOps => so.all.introduced.members }
       on { ed: EnrichedDate => ed.all.introduced.members }
+      on { ed: EnrichedZonedDate => ed.all.introduced.members }
       on { ea: EnrichedArray[_] => ea.all.introduced.members }
 
       on { su: StringUtil => su.all.members }

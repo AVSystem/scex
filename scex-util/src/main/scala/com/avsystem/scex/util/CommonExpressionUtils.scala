@@ -1,13 +1,13 @@
 package com.avsystem.scex.util
 
-import java.text.ParseException
-import java.util.Date
-
 import com.avsystem.commons._
 import com.avsystem.scex.SetterConversion
 import com.avsystem.scex.compiler.TemplateInterpolations.Splicer
 import com.avsystem.scex.presentation.annotation.Documentation
 import com.avsystem.scex.util.function._
+
+import java.text.ParseException
+import java.util.Date
 
 /**
   * Author: ghik
@@ -46,6 +46,9 @@ object CommonExpressionUtils {
   implicit def enrichDate(date: JDate): EnrichedDate =
     new EnrichedDate(date)
 
+  implicit def enrichDateTime(date: JDate): EnrichedZonedDate =
+    EnrichedZonedDate.fromDate(date)
+
   implicit def stringNetworkOps(str: String): StringNetworkOps =
     new StringNetworkOps(str)
 
@@ -65,7 +68,7 @@ object CommonExpressionUtils {
     new String(byteArray)
 
   implicit object dateSplicer extends Splicer[JDate] {
-    def toString(date: Date) =
+    def toString(date: Date): String =
       if (date != null) date.format else null
   }
 
