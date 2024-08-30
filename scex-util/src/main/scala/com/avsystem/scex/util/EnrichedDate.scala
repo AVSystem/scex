@@ -45,7 +45,7 @@ final class EnrichedDate(private val wrapped: Date) extends AnyVal {
 final class EnrichedZonedDate(private val zonedDateTime: ZonedDateTime) extends AnyVal {
 
   @Documentation("Formats the date using the default date format: <tt>yyyy.MM.dd HH:mm:ss</tt>.")
-  def format: String = DateTimeFormatter.ofPattern(CommonDateFormat.get.toPattern).format(zonedDateTime)
+  def format: String = CommonDateFormat.Formatter.format(zonedDateTime)
 
   @Documentation("Formats the date according to provided date format. An example of correct date format is <tt>yyyy.MM.dd HH:mm:ss</tt>.")
   def format(dateFormat: String): String = DateTimeFormatter.ofPattern(dateFormat).format(zonedDateTime)
