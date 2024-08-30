@@ -7,10 +7,12 @@ import java.util.{Calendar, Date}
 
 class EnrichedDateTest extends AnyFunSuite {
 
-  import CommonExpressionUtils.{enrichDate, enrichDateTime}
+  import CommonExpressionUtils.enrichDate
 
   // 2019-04-17 12:55:14.456 UTC
   val testDate = new Date(1555505714456L)
+
+  // enrichZonedDate tested explicitly to provide stable zone for tests
   val testZonedDate: EnrichedZonedDate = EnrichedZonedDate.fromDate(testDate, ZoneId.of("Europe/Warsaw"))
 
   def localMidnight: Calendar = {
@@ -20,14 +22,6 @@ class EnrichedDateTest extends AnyFunSuite {
     time.set(Calendar.SECOND, 0)
     time.set(Calendar.MILLISECOND, 0)
     time
-  }
-
-  test("format with default format") {
-    assert(testDate.format == "2019.04.17 14:55:14")
-  }
-
-  test("format with custom format") {
-    assert(testDate.format("yyyy-MM-dd") == "2019-04-17")
   }
 
   test("addMilliseconds") {
@@ -100,44 +94,52 @@ class EnrichedDateTest extends AnyFunSuite {
     assert(testDate.millis == 1555505714456L)
   }
 
+  test("format with default format") {
+    assert(testZonedDate.format == "2019.04.17 14:55:14")
+  }
+
+  test("format with custom format") {
+    assert(testZonedDate.format("yyyy-MM-dd") == "2019-04-17")
+  }
+
   test("millisOfSecond") {
-    assert(testDate.millisOfSecond == 456)
+    assert(testZonedDate.millisOfSecond == 456)
   }
 
   test("secondOfMinute") {
-    assert(testDate.secondOfMinute == 14)
+    assert(testZonedDate.secondOfMinute == 14)
   }
 
   test("secondOfDay") {
-    assert(testDate.secondOfDay == 53714)
+    assert(testZonedDate.secondOfDay == 53714)
   }
 
   test("minuteOfHour") {
-    assert(testDate.minuteOfHour == 55)
+    assert(testZonedDate.minuteOfHour == 55)
   }
 
   test("minuteOfDay") {
-    assert(testDate.minuteOfDay == 895)
+    assert(testZonedDate.minuteOfDay == 895)
   }
 
   test("hourOfDay") {
-    assert(testDate.hourOfDay == 14)
+    assert(testZonedDate.hourOfDay == 14)
   }
 
   test("dayOfMonth") {
-    assert(testDate.dayOfMonth == 17)
+    assert(testZonedDate.dayOfMonth == 17)
   }
 
   test("dayOfWeek") {
-    assert(testDate.dayOfWeek == 3)
+    assert(testZonedDate.dayOfWeek == 3)
   }
 
   test("dayOfYear") {
-    assert(testDate.dayOfYear == 107)
+    assert(testZonedDate.dayOfYear == 107)
   }
 
   test("monthOfYear") {
-    assert(testDate.monthOfYear == 4)
+    assert(testZonedDate.monthOfYear == 4)
   }
 
 }
