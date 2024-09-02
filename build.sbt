@@ -22,17 +22,14 @@ inThisBuild(Seq(
 val CompileAndTest = "compile->compile;test->test"
 
 val parserCombinatorsVersion = "2.4.0"
-val avsCommonsVersion = "2.16.0"
-val jettyVersion = "9.4.54.v20240208" // Tests only
-val vaadinVersion = "6.8.18" // Tests only
-val slf4jVersion = "2.0.13"
-val logbackVersion = "1.5.6" // Tests only
-val commonsLang3Version = "3.14.0"
-val commonsCodecVersion = "1.17.0"
-val guavaVersion = "33.2.0-jre"
-val commonsNetVersion = "3.10.0"
-val jodaTimeVersion = "2.12.7"
-val scalatestVersion = "3.2.18"
+val avsCommonsVersion = "2.18.0"
+val slf4jVersion = "2.0.16"
+val logbackVersion = "1.5.7" // Tests only
+val commonsLang3Version = "3.17.0"
+val commonsCodecVersion = "1.17.1"
+val guavaVersion = "33.3.0-jre"
+val commonsNetVersion = "3.11.1"
+val scalatestVersion = "3.2.19"
 
 val noPublishSettings = Seq(
   publish / skip := true
@@ -106,7 +103,7 @@ lazy val subprojectSettings = Seq(
 )
 
 lazy val scex = project.in(file("."))
-  .aggregate(`scex-macros`, `scex-core`, `scex-util`, `scex-test`, `scex-java-test`)
+  .aggregate(`scex-macros`, `scex-core`, `scex-util`, `scex-test`)
   .settings(noPublishSettings: _*)
 
 lazy val `scex-macros` = project
@@ -137,25 +134,9 @@ lazy val `scex-util` = project.dependsOn(`scex-core` % CompileAndTest)
     libraryDependencies ++= Seq(
       "org.apache.commons" % "commons-lang3" % commonsLang3Version,
       "commons-net" % "commons-net" % commonsNetVersion,
-      "joda-time" % "joda-time" % jodaTimeVersion
     )
   )
 
-lazy val `scex-test` = project.dependsOn(`scex-core`, `scex-util`)
+lazy val `scex-test` = project.dependsOn(`scex-core` % CompileAndTest, `scex-util`)
   .settings(subprojectSettings: _*)
   .settings(noPublishSettings: _*)
-  .settings(
-    libraryDependencies ++= Seq(
-      "com.vaadin" % "vaadin" % vaadinVersion,
-      "org.eclipse.jetty" % "jetty-server" % jettyVersion,
-      "org.eclipse.jetty" % "jetty-servlet" % jettyVersion,
-      "ch.qos.logback" % "logback-classic" % logbackVersion,
-    )
-  )
-
-lazy val `scex-java-test` = project.dependsOn(`scex-core`, `scex-util`)
-  .settings(subprojectSettings: _*)
-  .settings(noPublishSettings: _*)
-  .settings(
-    compileOrder := CompileOrder.JavaThenScala
-  )
