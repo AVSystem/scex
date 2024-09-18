@@ -1,14 +1,14 @@
 package com.avsystem.scex
 package compiler
 
-import java.util.concurrent.{ExecutionException, TimeUnit}
-
 import com.avsystem.scex.parsing.PositionMapping
 import com.avsystem.scex.validation.{SymbolValidator, SyntaxValidator}
 import com.google.common.cache.CacheBuilder
-import com.google.common.util.concurrent.ExecutionError
+import com.google.common.util.concurrent.{ExecutionError, UncheckedExecutionException}
 
-import scala.util.Try
+import java.io.IOException
+import java.util.concurrent.{ExecutionException, TimeUnit}
+import scala.util.{Failure, Success, Try}
 
 trait CachingScexCompiler extends ScexCompiler {
 
@@ -54,9 +54,18 @@ trait CachingScexCompiler extends ScexCompiler {
     unwrapExecutionException(underLock(
       profileCompilationResultsCache.get(profile, callable(super.compileProfileObject(profile)))))
 
-  override protected def compileExpressionUtils(source: NamedSource) =
-    unwrapExecutionException(underLock(
+  override protected def compileExpressionUtils(source: NamedSource) = {
+    val result = unwrapExecutionException(underLock(
       utilsCompilationResultsCache.get(source.name, callable(super.compileExpressionUtils(source)))))
+
+    if (!settings.cacheCompilationNPE.value)
+      result match {
+        case Failure(_: NullPointerException) => utilsCompilationResultsCache.invalidate(source.name)
+        case _ =>
+      }
+
+    result
+  }
 
   override protected def compileJavaGetterAdapters(profile: ExpressionProfile, name: String, classes: Seq[Class[_]], full: Boolean) =
     unwrapExecutionException(underLock(
