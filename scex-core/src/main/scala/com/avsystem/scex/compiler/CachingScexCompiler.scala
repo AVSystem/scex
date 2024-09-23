@@ -1,12 +1,12 @@
 package com.avsystem.scex
 package compiler
 
+import com.avsystem.scex.compiler.ScexCompiler.CompilationFailedException
 import com.avsystem.scex.parsing.PositionMapping
 import com.avsystem.scex.validation.{SymbolValidator, SyntaxValidator}
 import com.google.common.cache.CacheBuilder
-import com.google.common.util.concurrent.{ExecutionError, UncheckedExecutionException}
+import com.google.common.util.concurrent.ExecutionError
 
-import java.io.IOException
 import java.util.concurrent.{ExecutionException, TimeUnit}
 import scala.util.{Failure, Success, Try}
 
@@ -42,27 +42,37 @@ trait CachingScexCompiler extends ScexCompiler {
   private val symbolValidatorsCache =
     CacheBuilder.newBuilder.build[String, SymbolValidator]
 
+  private def invalidateCache(result: Try[_], invalidate: () => Unit): Unit = {
+    if (!settings.cacheUnexpectedCompilationExceptions.value)
+      result match {
+        case Failure(_: CompilationFailedException) | Success(_) =>
+        case Failure(_) => invalidate()
+      }
+  }
+
   override protected def preprocess(expression: String, template: Boolean) =
     unwrapExecutionException(
       preprocessingCache.get((expression, template), callable(super.preprocess(expression, template))))
 
-  override protected def compileExpression(exprDef: ExpressionDef) =
-    unwrapExecutionException(
-      expressionCache.get(exprDef, callable(super.compileExpression(exprDef))))
+  override protected def compileExpression(exprDef: ExpressionDef) = {
+    val result = unwrapExecutionException(expressionCache.get(exprDef, callable(super.compileExpression(exprDef))))
+    invalidateCache(result, () => expressionCache.invalidate(exprDef))
 
-  override protected def compileProfileObject(profile: ExpressionProfile) =
-    unwrapExecutionException(underLock(
+    result
+  }
+
+  override protected def compileProfileObject(profile: ExpressionProfile) = {
+    val result = unwrapExecutionException(underLock(
       profileCompilationResultsCache.get(profile, callable(super.compileProfileObject(profile)))))
+    invalidateCache(result, () => profileCompilationResultsCache.invalidate(profile))
+
+    result
+  }
 
   override protected def compileExpressionUtils(source: NamedSource) = {
     val result = unwrapExecutionException(underLock(
       utilsCompilationResultsCache.get(source.name, callable(super.compileExpressionUtils(source)))))
-
-    if (!settings.cacheCompilationNPE.value)
-      result match {
-        case Failure(_: NullPointerException) => utilsCompilationResultsCache.invalidate(source.name)
-        case _ =>
-      }
+    invalidateCache(result, () => utilsCompilationResultsCache.invalidate(source.name))
 
     result
   }

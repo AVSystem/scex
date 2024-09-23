@@ -54,8 +54,8 @@ class ScexSettings extends Settings {
   final val backwardsCompatCacheVersion = StringSetting("-SCEXbackwards-compat-cache-version", "versionString",
     "Additional version string for controlling invalidation of classfile cache", "0")
 
-  final val cacheCompilationNPE = BooleanSetting("-SCEXcache-compilation-null-pointer",
-    "Disables caching of NullPointerExceptions that are thrown during the expression compilation", default = true)
+  final val cacheUnexpectedCompilationExceptions = BooleanSetting("-SCEXcache-unexpected-compilation-exceptions",
+    "Disables the caching of unexpected exceptions thrown during the expression compilation", default = true)
 
   def resolvedClassfileDir: Option[PlainDirectory] = Option(classfileDirectory.value)
     .filter(_.trim.nonEmpty).map(path => new PlainDirectory(new Directory(new File(path))))
