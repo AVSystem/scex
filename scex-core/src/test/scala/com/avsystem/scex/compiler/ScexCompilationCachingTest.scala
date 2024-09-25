@@ -51,25 +51,25 @@ final class ScexCompilationCachingTest extends AnyFunSuite with CompilationTest 
       .get
   }
 
-  test("Unexpected exceptions should be cached by default") {
+  test("Unexpected exceptions shouldn't be cached by default") {
     compilationCount = 0
     val compiler = createFailingCompiler
-
-    assertThrows[UncheckedExecutionException](compileExpression(compiler))
-    assert(compilationCount == 1)
-    assertThrows[UncheckedExecutionException](compileExpression(compiler))
-    assert(compilationCount == 1) // result fetched from cache
-  }
-
-  test("Unexpected exceptions shouldn't be cached when disabled using ScexSettings") {
-    compilationCount = 0
-    val compiler = createFailingCompiler
-    compiler.settings.cacheUnexpectedCompilationExceptions.value = false
 
     assertThrows[UncheckedExecutionException](compileExpression(compiler))
     assert(compilationCount == 1) // utils compilation ended with NPE
     compileExpression(compiler)
     assert(compilationCount == 3) // 2x utils compilation + 1x final expression compilation
+  }
+
+  test("Unexpected exceptions should be cached when enabled using ScexSetting") {
+    compilationCount = 0
+    val compiler = createFailingCompiler
+    compiler.settings.cacheUnexpectedCompilationExceptions.value = true
+
+    assertThrows[UncheckedExecutionException](compileExpression(compiler))
+    assert(compilationCount == 1)
+    assertThrows[UncheckedExecutionException](compileExpression(compiler))
+    assert(compilationCount == 1) // result fetched from cache
   }
 
   test("CompilationFailedExceptions should always be cached") {

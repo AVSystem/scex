@@ -56,7 +56,7 @@ class ScexSettings extends Settings {
 
   final val cacheUnexpectedCompilationExceptions = BooleanSetting("-SCEXcache-unexpected-compilation-exceptions",
     "Enables the caching of unexpected exceptions (such as NPE when accessing scex_classes) thrown during the expression compilation. " +
-      "Doesn't apply to CompilationFailedExceptions caused by e.g. syntax errors - they are always cached.", default = true)
+      "Doesn't apply to CompilationFailedExceptions caused by e.g. syntax errors - they are always cached.", default = false)
 
   def resolvedClassfileDir: Option[PlainDirectory] = Option(classfileDirectory.value)
     .filter(_.trim.nonEmpty).map(path => new PlainDirectory(new Directory(new File(path))))

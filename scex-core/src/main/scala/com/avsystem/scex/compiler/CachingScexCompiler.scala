@@ -42,13 +42,13 @@ trait CachingScexCompiler extends ScexCompiler {
   private val symbolValidatorsCache =
     CacheBuilder.newBuilder.build[String, SymbolValidator]
 
-  private def invalidateCache(result: Try[_], invalidate: () => Unit): Unit = {
+  // used to avoid unexpected exceptions caching, such as a random NPE thrown during a machine I/O error
+  private def invalidateCacheEntry(result: Try[_], invalidate: () => Unit): Unit =
     if (!settings.cacheUnexpectedCompilationExceptions.value)
       result match {
         case Failure(_: CompilationFailedException) | Success(_) =>
         case Failure(_) => invalidate()
       }
-  }
 
   override protected def preprocess(expression: String, template: Boolean) =
     unwrapExecutionException(
@@ -56,7 +56,7 @@ trait CachingScexCompiler extends ScexCompiler {
 
   override protected def compileExpression(exprDef: ExpressionDef) = {
     val result = unwrapExecutionException(expressionCache.get(exprDef, callable(super.compileExpression(exprDef))))
-    invalidateCache(result, () => expressionCache.invalidate(exprDef))
+    invalidateCacheEntry(result, () => expressionCache.invalidate(exprDef))
 
     result
   }
@@ -64,7 +64,7 @@ trait CachingScexCompiler extends ScexCompiler {
   override protected def compileProfileObject(profile: ExpressionProfile) = {
     val result = unwrapExecutionException(underLock(
       profileCompilationResultsCache.get(profile, callable(super.compileProfileObject(profile)))))
-    invalidateCache(result, () => profileCompilationResultsCache.invalidate(profile))
+    invalidateCacheEntry(result, () => profileCompilationResultsCache.invalidate(profile))
 
     result
   }
@@ -72,7 +72,7 @@ trait CachingScexCompiler extends ScexCompiler {
   override protected def compileExpressionUtils(source: NamedSource) = {
     val result = unwrapExecutionException(underLock(
       utilsCompilationResultsCache.get(source.name, callable(super.compileExpressionUtils(source)))))
-    invalidateCache(result, () => utilsCompilationResultsCache.invalidate(source.name))
+    invalidateCacheEntry(result, () => utilsCompilationResultsCache.invalidate(source.name))
 
     result
   }
