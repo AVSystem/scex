@@ -1,14 +1,14 @@
 package com.avsystem.scex
 package compiler
 
-import java.util.concurrent.{ExecutionException, TimeUnit}
-
+import com.avsystem.scex.compiler.ScexCompiler.CompilationFailedException
 import com.avsystem.scex.parsing.PositionMapping
 import com.avsystem.scex.validation.{SymbolValidator, SyntaxValidator}
 import com.google.common.cache.CacheBuilder
 import com.google.common.util.concurrent.ExecutionError
 
-import scala.util.Try
+import java.util.concurrent.{ExecutionException, TimeUnit}
+import scala.util.{Failure, Success, Try}
 
 trait CachingScexCompiler extends ScexCompiler {
 
@@ -42,21 +42,40 @@ trait CachingScexCompiler extends ScexCompiler {
   private val symbolValidatorsCache =
     CacheBuilder.newBuilder.build[String, SymbolValidator]
 
+  // used to avoid unexpected exceptions caching, such as a random NPE thrown during a machine I/O error
+  private def invalidateCacheEntry(result: Try[_], invalidate: () => Unit): Unit =
+    if (!settings.cacheUnexpectedCompilationExceptions.value)
+      result match {
+        case Failure(_: CompilationFailedException) | Success(_) =>
+        case Failure(_) => invalidate()
+      }
+
   override protected def preprocess(expression: String, template: Boolean) =
     unwrapExecutionException(
       preprocessingCache.get((expression, template), callable(super.preprocess(expression, template))))
 
-  override protected def compileExpression(exprDef: ExpressionDef) =
-    unwrapExecutionException(
-      expressionCache.get(exprDef, callable(super.compileExpression(exprDef))))
+  override protected def compileExpression(exprDef: ExpressionDef) = {
+    val result = unwrapExecutionException(expressionCache.get(exprDef, callable(super.compileExpression(exprDef))))
+    invalidateCacheEntry(result, () => expressionCache.invalidate(exprDef))
 
-  override protected def compileProfileObject(profile: ExpressionProfile) =
-    unwrapExecutionException(underLock(
+    result
+  }
+
+  override protected def compileProfileObject(profile: ExpressionProfile) = {
+    val result = unwrapExecutionException(underLock(
       profileCompilationResultsCache.get(profile, callable(super.compileProfileObject(profile)))))
+    invalidateCacheEntry(result, () => profileCompilationResultsCache.invalidate(profile))
 
-  override protected def compileExpressionUtils(source: NamedSource) =
-    unwrapExecutionException(underLock(
+    result
+  }
+
+  override protected def compileExpressionUtils(source: NamedSource) = {
+    val result = unwrapExecutionException(underLock(
       utilsCompilationResultsCache.get(source.name, callable(super.compileExpressionUtils(source)))))
+    invalidateCacheEntry(result, () => utilsCompilationResultsCache.invalidate(source.name))
+
+    result
+  }
 
   override protected def compileJavaGetterAdapters(profile: ExpressionProfile, name: String, classes: Seq[Class[_]], full: Boolean) =
     unwrapExecutionException(underLock(
