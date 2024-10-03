@@ -48,7 +48,7 @@ class QmarkTest extends AnyFunSuite {
     def expression = ju.Arrays.asList[Int]().mean
 
     assertThrows[IllegalArgumentException](ju.Arrays.asList[Int]().mean)
-    assert(0 == expression ? 0)
+    assert(0.0 == expression ? 0.0)
   }
 
   test("recover from ParseException") {
