@@ -27,7 +27,7 @@ val slf4jVersion = "2.0.16"
 val logbackVersion = "1.5.15" // Tests only
 val commonsLang3Version = "3.17.0"
 val commonsCodecVersion = "1.17.1"
-val guavaVersion = "33.3.1-jre"
+val guavaVersion = "33.4.0-jre"
 val commonsNetVersion = "3.11.1"
 val scalatestVersion = "3.2.19"
 
