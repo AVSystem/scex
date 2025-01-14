@@ -22,7 +22,7 @@ inThisBuild(Seq(
 val CompileAndTest = "compile->compile;test->test"
 
 val parserCombinatorsVersion = "2.4.0"
-val avsCommonsVersion = "2.20.0"
+val avsCommonsVersion = "2.21.0"
 val slf4jVersion = "2.0.16"
 val logbackVersion = "1.5.16" // Tests only
 val commonsLang3Version = "3.17.0"
