@@ -1,12 +1,11 @@
 package com.avsystem.scex
 package compiler
 
-import java.lang.reflect.{Method, Modifier}
-import java.{lang => jl, util => ju}
-
 import com.avsystem.scex.compiler.JavaTypeParsing._
 import com.avsystem.scex.util.CommonUtils._
 
+import java.lang.reflect.{Method, Modifier}
+import java.{lang => jl, util => ju}
 import scala.annotation.switch
 import scala.language.existentials
 import scala.reflect.NameTransformer
@@ -19,7 +18,8 @@ object CodeGeneration {
       if (method.getParameterTypes.isEmpty && method.getTypeParameters.isEmpty) {
 
         def uncapitalize(str: String) =
-          str.head.toLower.toString + str.tail
+          str.head.toLower.toString + str.slice(1, str.length)
+
         def isBoolOrBoolean(clazz: Class[_]) =
           clazz == classOf[Boolean] || clazz == classOf[jl.Boolean]
 

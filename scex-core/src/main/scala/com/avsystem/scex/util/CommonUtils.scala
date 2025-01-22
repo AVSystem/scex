@@ -30,9 +30,9 @@ object CommonUtils {
   object JavaGetterName {
     def unapply(getterName: String) = getterName match {
       case BeanGetterNamePattern(capitalizedProperty, _) =>
-        Some((capitalizedProperty.head.toLower.toString + capitalizedProperty.tail, false))
+        Some((capitalizedProperty.head.toLower.toString + capitalizedProperty.slice(1, capitalizedProperty.length), false))
       case BooleanBeanGetterNamePattern(capitalizedProperty, _) =>
-        Some((capitalizedProperty.head.toLower.toString + capitalizedProperty.tail, true))
+        Some((capitalizedProperty.head.toLower.toString + capitalizedProperty.slice(1, capitalizedProperty.length), true))
       case _ => None
     }
   }
