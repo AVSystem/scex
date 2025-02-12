@@ -86,6 +86,14 @@ object CodeGeneration {
   def escapeString(str: String) =
     str.flatMap(escapedChar)
 
+  object TypedVariables {
+    /**
+     * Use this to validate variable names in your code - vars with these characters in names are guaranteed to fail
+     * due to compilation error.
+     */
+    val IllegalCharsInVarName: Set[Char] = Set('\n', '\r', '`', '\\')
+  }
+
   /**
    * Generates code of implicit view for given Java class that adds Scala-style getters
    * forwarding to existing Java-style getters of given class.
@@ -178,14 +186,15 @@ object CodeGeneration {
 
           val typedVariables = variableTypes.toList.sorted.iterator.map {
             case (name, tpe) =>
+              val escapedName = escapeString(name)
               s"""
-                 |  private def ${name}VarTag = ${validatePrefix}inferVarTag[$tpe]$validatePostfix
+                 |  private def `${escapedName}VarTag` = ${validatePrefix}inferVarTag[$tpe]$validatePostfix
                  |
                  |  @$AnnotationPkg.NotValidated def `$name`: $tpe =
-                 |    $ContextSymbol.getTypedVariable("${escapeString(name)}")(${name}VarTag)
+                 |    $ContextSymbol.getTypedVariable("$escapedName")(`${escapedName}VarTag`)
                  |
                  |  @$AnnotationPkg.NotValidated def `${name}_=`(value: $tpe): Unit =
-                 |    $ContextSymbol.setTypedVariable("${escapeString(name)}", value)(${name}VarTag)
+                 |    $ContextSymbol.setTypedVariable("$escapedName", value)(`${escapedName}VarTag`)
               """.stripMargin
           }.mkString("\n")
 
