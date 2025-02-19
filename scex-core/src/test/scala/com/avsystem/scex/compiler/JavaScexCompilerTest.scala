@@ -65,27 +65,24 @@ class JavaScexCompilerTest extends AnyFunSuite with CompilationTest {
     }
   }
 
-  private def initContextWithTypedVariable(
-                                            variableName: String,
-                                            value: Double
-                                          ): SimpleContext[Unit] = {
+  private def initContextWithTypedVariable(variableName: String, value: Double): SimpleContext[Unit] = {
     val ctx = SimpleContext(())
     ctx.setTypedVariable(variableName, value)
     ctx
   }
 
   private def compileExpression(
-                                 expr: String,
-                                 variableName: String,
-                                 acl: List[MemberAccessSpec] = PredefinedAccessSpecs.basicOperations
-                               ): Expression[SimpleContext[Unit], Double] =
+    expr: String,
+    variableName: String,
+    accessControlList: List[MemberAccessSpec] = PredefinedAccessSpecs.basicOperations
+  ): Expression[SimpleContext[Unit], Double] =
     compiler.buildExpression
       .contextType(ScalaTypeTokens.create[SimpleContext[Unit]])
       .resultType(classOf[Double])
       .expression(expr)
       .template(false)
       .variableClass(variableName, classOf[Double])
-      .profile(createProfile(acl))
+      .profile(createProfile(accessControlList))
       .get
 }
 
