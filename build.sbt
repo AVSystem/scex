@@ -3,7 +3,7 @@ name := "scex"
 inThisBuild(Seq(
   organization := "com.avsystem.scex",
   scalaVersion := "2.13.16",
-
+  sonatypeCredentialHost := Sonatype.sonatypeCentralHost,
   githubWorkflowTargetTags ++= Seq("v*"),
   githubWorkflowJavaVersions := Seq(JavaSpec.temurin("17"), JavaSpec.temurin("21")),
   githubWorkflowPublishTargetBranches := Seq(RefPredicate.StartsWith(Ref.Tag("v"))),
@@ -62,9 +62,6 @@ lazy val subprojectSettings = Seq(
     "-Xlint:-strict-unsealed-patmat"
   ),
 
-  sonatypeProfileName := "com.avsystem",
-  publishTo := sonatypePublishToBundle.value,
-
   projectInfo := ModuleInfo(
     nameFormal = "SCEX",
     description = "Extensible, fast and secure Scala expression evaluation engine",
@@ -77,12 +74,10 @@ lazy val subprojectSettings = Seq(
       connection = "scm:git:git@github.com:AVSystem/scex.git",
       devConnection = Some("scm:git:git@github.com:AVSystem/scex.git")
     )),
-    licenses = Vector(
-      ("The MIT License", url("https://opensource.org/licenses/MIT"))
-    ),
+    licenses = Vector(License.MIT),
     developers = Vector(
-      Developer("ghik", "Roman Janusz", "romeqjanoosh@gmail.com", url("https://github.com/ghik"))
-    )
+      Developer("ddworak", "Dawid Dworak", "d.dworak@avsystem.com", url("https://github.com/ddworak")),
+    ),
   ),
 
   publishMavenStyle := true,
