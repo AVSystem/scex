@@ -3,7 +3,6 @@ name := "scex"
 inThisBuild(Seq(
   organization := "com.avsystem.scex",
   scalaVersion := "2.13.16",
-  sonatypeCredentialHost := Sonatype.sonatypeCentralHost,
   githubWorkflowTargetTags ++= Seq("v*"),
   githubWorkflowJavaVersions := Seq(JavaSpec.temurin("17"), JavaSpec.temurin("21")),
   githubWorkflowPublishTargetBranches := Seq(RefPredicate.StartsWith(Ref.Tag("v"))),
@@ -34,8 +33,6 @@ val scalatestVersion = "3.2.19"
 val noPublishSettings = Seq(
   publish / skip := true
 )
-
-sonatypeProfileName := "com.avsystem"
 
 lazy val subprojectSettings = Seq(
   crossVersion := CrossVersion.full,
