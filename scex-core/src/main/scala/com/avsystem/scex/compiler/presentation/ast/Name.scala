@@ -9,7 +9,7 @@ sealed trait Name {
   def isType = false
 }
 
-case class TermName(name: String) extends Name {
+final case class TermName(name: String) extends Name {
   override def isTerm = true
 }
 
@@ -22,7 +22,7 @@ object TermName {
   final val ROOTPKG = TermName("_root_")
 }
 
-case class TypeName(name: String) extends Name {
+final case class TypeName(name: String) extends Name {
   override def isType = true
 }
 

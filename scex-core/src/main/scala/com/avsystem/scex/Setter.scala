@@ -14,10 +14,9 @@ trait Setter[-T] extends (T => Unit) {
 abstract class AbstractSetter[-T] extends Setter[T]
 
 @implicitNotFound("Property being set has type ${B}, but value has type ${A} and no conversion is available")
-case class SetterConversion[-A, +B](fun: A => B) extends AnyVal
+final case class SetterConversion[-A, +B](fun: A => B) extends AnyVal
 object SetterConversion {
-  def convert[A, B](a: A)(implicit sc: SetterConversion[A, B]): B =
-    sc.fun(a)
+  def convert[A, B](a: A)(implicit sc: SetterConversion[A, B]): B = sc.fun(a)
 
   implicit def fallbackConversion[A]: SetterConversion[A, A] =
     SetterConversion(identity)

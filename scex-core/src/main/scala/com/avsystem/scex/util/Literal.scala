@@ -7,26 +7,26 @@ import java.{lang => jl}
  * Created: 18-11-2013
  * Author: ghik
  */
-case class Literal(literalString: String) extends AnyVal {
+final case class Literal(literalString: String) extends AnyVal {
   override def toString = literalString
 
-  def toBoolean = literalString.toBoolean
+  def toBoolean: Boolean = literalString.toBoolean
 
-  def toChar =
+  def toChar: Char =
     if (literalString.length == 1) literalString.charAt(0)
     else throw new IllegalArgumentException(s"Expected string with exactly one character, got ${'"'}$literalString${'"'}")
 
-  def toByte = literalString.toByte
+  def toByte: Byte = literalString.toByte
 
-  def toShort = literalString.toShort
+  def toShort: Short = literalString.toShort
 
-  def toInt = literalString.toInt
+  def toInt: Int = literalString.toInt
 
-  def toLong = literalString.toLong
+  def toLong: Long = literalString.toLong
 
-  def toFloat = literalString.toFloat
+  def toFloat: Float = literalString.toFloat
 
-  def toDouble = literalString.toDouble
+  def toDouble: Double = literalString.toDouble
 }
 
 object Literal {
@@ -81,5 +81,4 @@ object Literal {
 
   implicit def literalToJDouble(lit: Literal): jl.Double =
     lit.toDouble
-
 }

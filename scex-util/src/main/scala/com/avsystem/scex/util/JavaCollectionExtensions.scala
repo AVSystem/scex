@@ -10,7 +10,7 @@ object JavaCollectionExtensions {
   private type GFunction[F, T] = com.google.common.base.Function[F, T]
   private type JMapEntry[K, V] = java.util.Map.Entry[K, V]
 
-  implicit class CollectionOps[A](private val coll: JCollection[A]) extends AnyVal {
+  implicit final class CollectionOps[A](private val coll: JCollection[A]) extends AnyVal {
     def ++(other: JCollection[A]): JCollection[A] =
       (coll.asScala ++ other.asScala).asJavaCollection
 
@@ -82,7 +82,7 @@ object JavaCollectionExtensions {
       coll.asScala.headOption.getOrElse(default)
   }
 
-  implicit class StringCollectionOps(private val coll: JCollection[String]) extends AnyVal {
+  implicit final class StringCollectionOps(private val coll: JCollection[String]) extends AnyVal {
     def join(sep: String): String =
       coll.asScala.mkString(sep)
 
@@ -90,7 +90,7 @@ object JavaCollectionExtensions {
       join("")
   }
 
-  implicit class ListOps[A](private val list: JList[A]) extends AnyVal {
+  implicit final class ListOps[A](private val list: JList[A]) extends AnyVal {
     def ++(other: JList[A]): JList[A] =
       (list.asScala ++ other.asScala).asJava
 
@@ -147,7 +147,7 @@ object JavaCollectionExtensions {
       Lists.reverse(list)
   }
 
-  implicit class SetOps[A](private val set: JSet[A]) extends AnyVal {
+  implicit final class SetOps[A](private val set: JSet[A]) extends AnyVal {
     def ++(other: JSet[A]): JSet[A] =
       (set.asScala ++ other.asScala).asJava
 
@@ -164,7 +164,7 @@ object JavaCollectionExtensions {
       (set.asScala diff other.asScala).asJava
   }
 
-  case class Entry[K, V](key: K, value: V) {
+  final case class Entry[K, V](key: K, value: V) {
     def withKey[NK](newKey: NK): Entry[NK, V] =
       copy(key = newKey)
 
@@ -177,7 +177,7 @@ object JavaCollectionExtensions {
     def update(key: K, value: V): Unit = map.put(key, value)
   }
 
-  implicit class MapOps[K, V](val map: JMap[K, V]) extends MapOpsExtended[K, V] {
+  implicit final class MapOps[K, V](val map: JMap[K, V]) extends AnyVal with MapOpsExtended[K, V] {
     def ++(other: JMap[K, V]): JMap[K, V] =
       (map.asScala ++ other.asScala).asJava
 
@@ -209,12 +209,12 @@ object JavaCollectionExtensions {
       !map.isEmpty
   }
 
-  implicit class EntryCollectionOps[K, V](private val entries: JCollection[Entry[K, V]]) extends AnyVal {
+  implicit final class EntryCollectionOps[K, V](private val entries: JCollection[Entry[K, V]]) extends AnyVal {
     def toMap: JMap[K, V] =
       entries.iterator.asScala.map(e => (e.key, e.value)).toJMap
   }
 
-  implicit class PairCollectionOps[K, V](private val entries: JCollection[(K, V)]) extends AnyVal {
+  implicit final class PairCollectionOps[K, V](private val entries: JCollection[(K, V)]) extends AnyVal {
     def toMap: JMap[K, V] =
       entries.iterator.asScala.toJMap
   }

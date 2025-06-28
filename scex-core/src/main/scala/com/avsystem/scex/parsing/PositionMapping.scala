@@ -21,7 +21,7 @@ trait PositionMapping {
     other compose this
 }
 
-case class ShiftInfo(totalPrevShift: Int, addedLeft: Int, removedLeft: Int, addedRight: Int, removedRight: Int) {
+final case class ShiftInfo(totalPrevShift: Int, addedLeft: Int, removedLeft: Int, addedRight: Int, removedRight: Int) {
   def update(amount: Int, binding: Binding): ShiftInfo =
     if (amount > 0 && binding == Binding.Left)
       copy(addedLeft = addedLeft + amount)
@@ -89,13 +89,13 @@ class ShiftInfoPositionMapping(
     s"PositionMapping($shiftMapping)"
 }
 
-case class SingleShiftPositionMapping(amount: Int) extends PositionMapping {
+final case class SingleShiftPositionMapping(amount: Int) extends PositionMapping {
   def apply(pos: Int): Int = pos + amount
 
   def reverse: PositionMapping = SingleShiftPositionMapping(-amount)
 }
 
-case class ComposedPositionMapping(left: PositionMapping, right: PositionMapping) extends PositionMapping {
+final case class ComposedPositionMapping(left: PositionMapping, right: PositionMapping) extends PositionMapping {
   def apply(pos: Int): Int = left(right(pos))
 
   def reverse: PositionMapping = ComposedPositionMapping(right.reverse, left.reverse)
