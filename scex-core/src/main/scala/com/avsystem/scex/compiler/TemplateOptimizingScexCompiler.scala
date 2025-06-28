@@ -171,8 +171,8 @@ trait TemplateOptimizingScexCompiler extends ScexPresentationCompiler {
                 conversion.get.apply(literal)
                 Nil
               } catch {
-                case throwable: Throwable =>
-                  List(toCompileError(singlePart, exprDef.resultType, throwable))
+                case NonFatal(ex) =>
+                  List(toCompileError(singlePart, exprDef.resultType, ex))
               }
             }
           }.getOrElse(Nil)

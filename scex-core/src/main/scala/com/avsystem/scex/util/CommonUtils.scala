@@ -17,15 +17,15 @@ import scala.reflect.ClassTag
  * Time: 21:03
  */
 object CommonUtils {
-  val ScalaKeywords = Set(
+  final val ScalaKeywords = Set(
     "abstract", "case", "catch", "class", "def", "do", "else", "extends", "false", "final", "finally", "for", "forSome",
     "if", "implicit", "import", "lazy", "match", "new", "null", "object", "override", "package", "private", "protected",
     "return", "sealed", "super", "this", "throw", "trait", "try", "true", "type", "val", "var", "while", "with", "yield"
   )
 
-  val BeanGetterNamePattern = "get(([A-Z][a-z0-9_]*)+)".r
-  val BooleanBeanGetterNamePattern = "is(([A-Z][a-z0-9_]*)+)".r
-  val BeanSetterNamePattern = "set(([A-Z][a-z0-9_]*)+)".r
+  final val BeanGetterNamePattern = "get(([A-Z][a-z0-9_]*)+)".r
+  final val BooleanBeanGetterNamePattern = "is(([A-Z][a-z0-9_]*)+)".r
+  final val BeanSetterNamePattern = "set(([A-Z][a-z0-9_]*)+)".r
 
   object JavaGetterName {
     def unapply(getterName: String) = getterName match {
@@ -37,7 +37,7 @@ object CommonUtils {
     }
   }
 
-  implicit class EnhancedInt(val i: Int) extends AnyVal {
+  implicit final class EnhancedInt(val i: Int) extends AnyVal {
     def times(expr: => Any): Unit = {
       var c = 0
       while (c < i) {
@@ -47,15 +47,15 @@ object CommonUtils {
     }
   }
 
-  implicit class EnhancedString(val str: String) extends AnyVal {
-    def leftPad(w: Int) =
+  implicit final class EnhancedString(val str: String) extends AnyVal {
+    def leftPad(w: Int): String =
       if (str.length >= w)
         str.substring(0, w)
       else {
         str + " " * (str.length - w)
       }
 
-    def isAlphaNumeric = str.forall(_.isLetterOrDigit)
+    def isAlphaNumeric: Boolean = str.forall(_.isLetterOrDigit)
   }
 
   def benchmark(expr: => Any): Double = {
@@ -104,7 +104,7 @@ object CommonUtils {
     resultBuilder.result()
   }
 
-  def pluralize(count: Int, noun: String) =
+  def pluralize(count: Int, noun: String): String =
     s"$count $noun" + (if (count != 1) "s" else "")
 
   def callable[T](expr: => T) =
@@ -124,18 +124,17 @@ object CommonUtils {
       def apply(input: A): Boolean = p(input)
     }
 
-  implicit class universalOps[A](val a: A) {
-    def toOpt = Option(a)
+  implicit final class universalOps[A](val a: A) extends AnyVal {
+    def toOpt: Option[A] = Option(a)
 
     def passTo[B](f: A => B): B = f(a)
   }
 
-  implicit class optionOps[A](private val opt: Option[A]) extends AnyVal {
+  implicit final class optionOps[A](private val opt: Option[A]) extends AnyVal {
     def filterByClass[T: ClassTag]: Option[T] =
       opt match {
         case Some(t: T) => Some(t)
         case _ => None
       }
   }
-
 }

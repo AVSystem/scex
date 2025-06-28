@@ -14,14 +14,14 @@ object Binding extends AbstractValueEnumCompanion[Binding] {
   * Created: 24-10-2013
   * Author: ghik
   */
-case class Modification(offset: Int, amount: Int, binding: Binding)
+final case class Modification(offset: Int, amount: Int, binding: Binding)
 
-case class Bound(str: String, binding: Binding) {
+final case class Bound(str: String, binding: Binding) {
   def +(pstr: PString): PString =
     PString(str, pstr.beg, pstr.beg, Vector(Modification(pstr.beg, str.length, binding))) + pstr
 }
 
-case class PString(result: String, beg: Int, end: Int, mods: Vector[Modification]) {
+final case class PString(result: String, beg: Int, end: Int, mods: Vector[Modification]) {
   lazy val positionMapping: PositionMapping = {
     val normalizedMods = if (beg > 0) Modification(0, -beg, Binding.Right) :: mods.toList else mods.toList
     val (shiftMapping, reverseShiftMapping) = PString.computeMapping(normalizedMods, Nil, Nil)

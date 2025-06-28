@@ -99,7 +99,7 @@ object Quickstart {
 
   // Now that we have the expression compiled, we can finally *evaluate* it.
   // For that we will need a root object implementation.
-  case class RootImpl(someString: String, someInt: Int) extends Root
+  final case class RootImpl(someString: String, someInt: Int) extends Root
 
   def main(args: Array[String]): Unit = {
     // In order to evaluate an expression, we have to create the root object and wrap it into an expression context.

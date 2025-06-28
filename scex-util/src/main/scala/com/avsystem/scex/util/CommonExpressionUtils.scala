@@ -8,6 +8,7 @@ import com.avsystem.scex.util.function._
 
 import java.text.ParseException
 import java.util.Date
+import scala.annotation.nowarn
 
 /**
   * Author: ghik
@@ -15,6 +16,7 @@ import java.util.Date
   */
 object CommonExpressionUtils {
   // a replacement for safe dereference operator (?.) and elvis operator (?:)
+  @nowarn("msg=Implicit classes")
   implicit class any2qmark[A](value: => A) {
     def ?[B >: A](default: => B): B = {
       val result = try value.opt catch {
@@ -31,11 +33,11 @@ object CommonExpressionUtils {
     }
   }
 
-  implicit class exprUniversalOps[A](private val a: A) extends AnyVal {
+  implicit final class exprUniversalOps[A](private val a: A) extends AnyVal {
     def useAs[B](f: A => B): B = f(a)
   }
 
-  implicit class charOps(private val c: Char) extends AnyVal {
+  implicit final class charOps(private val c: Char) extends AnyVal {
     def isHexDigit: Boolean =
       c.isDigit || (c >= 'A' && c <= 'F') || (c >= 'a' && c <= 'f')
   }
@@ -100,7 +102,7 @@ object CommonExpressionUtils {
 
   def bytes(bs: Byte*): Bytes = new Bytes(bs.toArray)
 
-  implicit class byteListOps(private val l: JList[Byte]) extends AnyVal {
+  implicit final class byteListOps(private val l: JList[Byte]) extends AnyVal {
     def toBytes: Bytes = new Bytes(l.asScala.toArray)
   }
 

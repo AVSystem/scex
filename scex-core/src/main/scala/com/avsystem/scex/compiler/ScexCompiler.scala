@@ -402,11 +402,10 @@ trait ScexCompiler extends LoggingUtils {
 
 object ScexCompiler {
 
-  case class CompilationFailedException(source: String, errors: List[CompileError])
+  final case class CompilationFailedException(source: String, errors: List[CompileError])
     extends RuntimeException(s"Compilation failed with ${pluralize(errors.size, "error")}:\n${errors.mkString("\n")}")
 
-  case class CompileError(line: String, column: Int, msg: String) {
+  final case class CompileError(line: String, column: Int, msg: String) {
     override def toString = s"$msg:\n${line.stripLineEnd}\n${" " * (column - 1)}^"
   }
-
 }

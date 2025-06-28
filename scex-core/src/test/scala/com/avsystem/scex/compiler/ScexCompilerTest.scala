@@ -13,7 +13,7 @@ import scala.annotation.nowarn
 import scala.collection.immutable.StringOps
 
 object ScexCompilerTest {
-  implicit class JListExt[T](jlist: ju.List[T]) {
+  implicit final class JListExt[T](private val jlist: ju.List[T]) extends AnyVal {
     def apply(i: Int): T = jlist.get(i)
   }
 }

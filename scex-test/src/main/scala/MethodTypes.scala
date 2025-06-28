@@ -18,7 +18,7 @@ object MethodTypes {
 
   class C extends G[Int]
 
-  implicit class IA(a: A) {
+  implicit final class IA(private val a: A) extends AnyVal {
     def a(cos: String): String = "jfkdjdfk"
   }
 

@@ -464,11 +464,11 @@ trait ScexPresentationCompiler extends ScexCompiler { compiler =>
 
 object ScexPresentationCompiler {
 
-  case class Param(name: String, tpe: Type)
+  final case class Param(name: String, tpe: Type)
 
-  case class MemberFlags(iimplicit: Boolean, javaGetterAdapter: Boolean, inputMember: Boolean)
+  final case class MemberFlags(iimplicit: Boolean, javaGetterAdapter: Boolean, inputMember: Boolean)
 
-  case class Member(
+  final case class Member(
     name: String, params: List[List[Param]], implicitParams: List[Param], ownerType: Type, returnType: Type,
     flags: MemberFlags, javaMember: Option[jl.reflect.Member], documentation: Option[String]
   ) {
@@ -486,7 +486,7 @@ object ScexPresentationCompiler {
     def javaConstructor = javaMember.filterByClass[jl.reflect.Constructor[_]]
   }
 
-  case class Completion(typedPrefixTree: ast.Tree, members: Vector[Member]) {
+  final case class Completion(typedPrefixTree: ast.Tree, members: Vector[Member]) {
     def membersAsJava = members.asJava
 
     def withMembers(newMembers: ju.Collection[Member]) =

@@ -14,16 +14,16 @@ import scala.language.existentials
  */
 object JavaTypeParsing {
 
-  case class ScalaTypeVariable(name: String, upperBounds: Array[Type], lowerBounds: Array[Type]) extends Type
+  final case class ScalaTypeVariable(name: String, upperBounds: Array[Type], lowerBounds: Array[Type]) extends Type
 
-  case class RawClass(clazz: Class[_]) extends Type
+  final case class RawClass(clazz: Class[_]) extends Type
 
-  case class ExistentialType(polyType: Type, typeVars: List[Type]) extends Type
+  final case class ExistentialType(polyType: Type, typeVars: List[Type]) extends Type
 
-  case class WrappedParameterizedType(rawType: Type, ownerType: Type, typeArgs: Array[Type]) extends Type
+  final case class WrappedParameterizedType(rawType: Type, ownerType: Type, typeArgs: Array[Type]) extends Type
 
   // extending ParameterizedType so that Guava's TypeToken#getRawType works properly
-  case class ScalaSpecialType(rawClass: Class[_]) extends ParameterizedType {
+  class ScalaSpecialType(val rawClass: Class[_]) extends ParameterizedType {
     def getActualTypeArguments = Array.empty
 
     def getRawType = rawClass
