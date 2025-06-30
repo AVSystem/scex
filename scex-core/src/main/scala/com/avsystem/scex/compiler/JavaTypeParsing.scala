@@ -23,7 +23,7 @@ object JavaTypeParsing {
   final case class WrappedParameterizedType(rawType: Type, ownerType: Type, typeArgs: Array[Type]) extends Type
 
   // extending ParameterizedType so that Guava's TypeToken#getRawType works properly
-  class ScalaSpecialType(val rawClass: Class[_]) extends ParameterizedType {
+  sealed class ScalaSpecialType(val rawClass: Class[_]) extends ParameterizedType {
     def getActualTypeArguments = Array.empty
 
     def getRawType = rawClass

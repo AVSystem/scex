@@ -173,11 +173,11 @@ object JavaCollectionExtensions {
   }
 
   trait MapOpsExtended[K, V] extends Any {
-    def map: JMap[K, V]
+    protected def map: JMap[K, V]
     def update(key: K, value: V): Unit = map.put(key, value)
   }
 
-  implicit final class MapOps[K, V](val map: JMap[K, V]) extends AnyVal with MapOpsExtended[K, V] {
+  implicit final class MapOps[K, V](protected val map: JMap[K, V]) extends AnyVal with MapOpsExtended[K, V] {
     def ++(other: JMap[K, V]): JMap[K, V] =
       (map.asScala ++ other.asScala).asJava
 
@@ -205,7 +205,7 @@ object JavaCollectionExtensions {
         (ne.key, ne.value)
       }.toJMap
 
-    def nonEmpty =
+    def nonEmpty: Boolean =
       !map.isEmpty
   }
 

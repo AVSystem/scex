@@ -37,7 +37,7 @@ object CommonUtils {
     }
   }
 
-  implicit final class EnhancedInt(val i: Int) extends AnyVal {
+  implicit final class EnhancedInt(private val i: Int) extends AnyVal {
     def times(expr: => Any): Unit = {
       var c = 0
       while (c < i) {
@@ -47,7 +47,7 @@ object CommonUtils {
     }
   }
 
-  implicit final class EnhancedString(val str: String) extends AnyVal {
+  implicit final class EnhancedString(private val str: String) extends AnyVal {
     def leftPad(w: Int): String =
       if (str.length >= w)
         str.substring(0, w)
@@ -124,7 +124,7 @@ object CommonUtils {
       def apply(input: A): Boolean = p(input)
     }
 
-  implicit final class universalOps[A](val a: A) extends AnyVal {
+  implicit final class universalOps[A](private val a: A) extends AnyVal {
     def toOpt: Option[A] = Option(a)
 
     def passTo[B](f: A => B): B = f(a)

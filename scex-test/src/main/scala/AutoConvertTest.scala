@@ -9,7 +9,7 @@ import scala.annotation.nowarn
  */
 object AutoConvertTest {
 
-  implicit final class stringAutoConvert(val str: String) extends AnyVal {
+  implicit final class stringAutoConvert(private val str: String) extends AnyVal {
     @nowarn("msg=Implicit parameters")
     def autoConvert[T](implicit conv: Literal => T): T =
       conv(Literal(str))

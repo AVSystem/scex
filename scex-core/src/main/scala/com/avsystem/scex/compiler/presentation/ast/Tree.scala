@@ -47,7 +47,7 @@ sealed trait Tree extends PrettyPrint {
     } else EmptyTree
   }
 
-  def pretty(withPositions: Boolean, withTypes: Boolean) = {
+  def pretty(withPositions: Boolean, withTypes: Boolean): String = {
     val sb = new StringBuilder
     def pretty(indent: Int, obj: Any): Unit = {
       val newline = "\n" + "  " * indent
