@@ -12,6 +12,7 @@ import com.avsystem.scex.validation.{SymbolValidator, SyntaxValidator}
 import org.scalatest.{BeforeAndAfterAll, Suite}
 
 import scala.reflect.io.AbstractFile
+import scala.util.control.NonFatal
 
 /**
   * Created: 18-11-2013
@@ -34,11 +35,10 @@ trait CompilationTest extends BeforeAndAfterAll { this: Suite =>
     }
   }
 
-  def catchAndPrint(code: => Any): Unit = {
+  def catchAndPrint(code: => Any): Unit =
     try code catch {
-      case t: Throwable => t.printStackTrace(System.out)
+      case NonFatal(ex) => ex.printStackTrace(System.out)
     }
-  }
 
   private var profileId = 0
 

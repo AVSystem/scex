@@ -7,13 +7,12 @@ import com.avsystem.commons.jiop.JavaInterop._
  * Created: 12-03-2014
  * Author: ghik
  */
-case class Attachments(tpe: Type, position: Position)
-
+final case class Attachments(tpe: Type, position: Position)
 object Attachments {
   val empty = new Attachments(Type.NoType, null)
 }
 
-case class Symbol(names: List[Name]) {
+final case class Symbol(names: List[Name]) {
   def name = names.head.name
 
   def isTerm = names.head.isTerm
@@ -25,7 +24,7 @@ case class Symbol(names: List[Name]) {
   def namesAsJava = names.asJava
 }
 
-case class Position(start: Int, end: Int, transparent: Boolean) {
+final case class Position(start: Int, end: Int, transparent: Boolean) {
   def includes(other: Position) =
     other != null && start <= other.start && end >= other.end && end > other.start
 

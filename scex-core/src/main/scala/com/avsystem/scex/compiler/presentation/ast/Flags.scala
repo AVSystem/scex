@@ -7,7 +7,7 @@ import scala.reflect.internal.ModifierFlags
  * Created: 12-03-2014
  * Author: ghik
  */
-case class Flags(flags: Long)(flagString: String) {
+final case class Flags(flags: Long)(flagString: String) {
   private def hasFlag(flag: Long) = (flags & flag) != 0
 
   override def toString =

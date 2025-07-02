@@ -1,9 +1,10 @@
-package com.avsystem.scex.compiler
+package com.avsystem.scex
+package compiler
 
 import com.avsystem.commons.annotation.bincompat
 import com.avsystem.scex.{ExpressionContext, Macros}
 
-case class ContextTypeInfo[C](fullTypeString: String, rootObjectClass: Class[_]) {
+final case class ContextTypeInfo[C](fullTypeString: String, rootObjectClass: Class[_]) {
   @bincompat
   private[compiler] def this(fullTypeString: String, rootObjectClassName: String) =
     this(fullTypeString, Class.forName(rootObjectClassName))

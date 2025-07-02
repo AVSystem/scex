@@ -10,7 +10,7 @@ import scala.annotation.nowarn
 @nowarn("msg=a pure expression does nothing in statement position")
 object MemoryTest {
 
-  case class Dummy(costam: Int)
+  final case class Dummy(costam: Int)
 
   def main(args: Array[String]): Unit = {
     val compiler = new DefaultJavaScexCompiler(new ScexSettings)

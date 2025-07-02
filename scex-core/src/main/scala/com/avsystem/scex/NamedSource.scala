@@ -6,4 +6,4 @@ package com.avsystem.scex
  * Created: 29-10-2014
  * Author: ghik
  */
-case class NamedSource(name: String, code: String)
+final case class NamedSource(name: String, code: String)

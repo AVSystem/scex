@@ -1,6 +1,7 @@
 import java.{lang => jl, util => ju}
-
 import com.avsystem.scex.util.Literal
+
+import scala.annotation.nowarn
 
 /**
  * Created: 30-05-2014
@@ -8,7 +9,8 @@ import com.avsystem.scex.util.Literal
  */
 object AutoConvertTest {
 
-  implicit class stringAutoConvert(val str: String) extends AnyVal {
+  implicit final class stringAutoConvert(private val str: String) extends AnyVal {
+    @nowarn("msg=Implicit parameters")
     def autoConvert[T](implicit conv: Literal => T): T =
       conv(Literal(str))
   }
@@ -19,5 +21,4 @@ object AutoConvertTest {
     println(int)
     println(123 + "22".toByte)
   }
-
 }
