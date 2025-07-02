@@ -14,7 +14,9 @@ import scala.language.existentials
  */
 object JavaTypeParsing {
 
-  final case class ScalaTypeVariable(name: String, upperBounds: Array[Type], lowerBounds: Array[Type]) extends Type
+  final case class ScalaTypeVariable(name: String, upperBounds: Array[Type], lowerBounds: Array[Type]) extends Type {
+    override def getTypeName: String = name
+  }
 
   final case class RawClass(clazz: Class[_]) extends Type
 
