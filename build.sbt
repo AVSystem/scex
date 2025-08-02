@@ -27,7 +27,7 @@ val logbackVersion = "1.5.18" // Tests only
 val commonsLang3Version = "3.18.0"
 val commonsCodecVersion = "1.19.0"
 val guavaVersion = "33.4.8-jre"
-val commonsNetVersion = "3.11.1"
+val commonsNetVersion = "3.12.0"
 val scalatestVersion = "3.2.19"
 
 val noPublishSettings = Seq(
