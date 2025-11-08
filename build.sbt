@@ -4,7 +4,7 @@ inThisBuild(Seq(
   organization := "com.avsystem.scex",
   scalaVersion := "2.13.16",
   githubWorkflowTargetTags ++= Seq("v*"),
-  githubWorkflowJavaVersions := Seq(JavaSpec.temurin("17"), JavaSpec.temurin("21")),
+  githubWorkflowJavaVersions := Seq(JavaSpec.temurin("17"), JavaSpec.temurin("21"), JavaSpec.temurin("25")),
   githubWorkflowPublishTargetBranches := Seq(RefPredicate.StartsWith(Ref.Tag("v"))),
 
   githubWorkflowPublish := Seq(WorkflowStep.Sbt(
@@ -84,7 +84,9 @@ lazy val subprojectSettings = Seq(
   Test / javaOptions += "-Xmx1G",
   Test / outputStrategy := Some(LoggedOutput(new Logger {
     def log(level: Level.Value, message: => String): Unit = ()
+
     def success(message: => String): Unit = ()
+
     def trace(t: => Throwable): Unit = ()
   })),
   libraryDependencies ++= Seq(
