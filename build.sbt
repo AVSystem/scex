@@ -4,11 +4,7 @@ inThisBuild(Seq(
   organization := "com.avsystem.scex",
   scalaVersion := "2.13.16",
   githubWorkflowTargetTags ++= Seq("v*"),
-  githubWorkflowJavaVersions := Seq(
-    JavaSpec.temurin("25"),
-    JavaSpec.zulu("25"),
-    JavaSpec.corretto("25"),
-  ),
+  githubWorkflowJavaVersions := Seq(JavaSpec.temurin("17"), JavaSpec.temurin("21"), JavaSpec.temurin("25")),
   githubWorkflowPublishTargetBranches := Seq(RefPredicate.StartsWith(Ref.Tag("v"))),
 
   githubWorkflowPublish := Seq(WorkflowStep.Sbt(
