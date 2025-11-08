@@ -11,13 +11,8 @@ import com.avsystem.scex.validation.SymbolValidator.MemberAccessSpec
 import com.avsystem.scex.validation.{SymbolValidator, SyntaxValidator}
 import org.scalatest.{BeforeAndAfterAll, Suite}
 
-import scala.reflect.io.AbstractFile
 import scala.util.control.NonFatal
 
-/**
-  * Created: 18-11-2013
-  * Author: ghik
-  */
 trait CompilationTest extends BeforeAndAfterAll { this: Suite =>
 
   val compiler = createCompiler
@@ -28,11 +23,8 @@ trait CompilationTest extends BeforeAndAfterAll { this: Suite =>
     new DefaultJavaScexCompiler(settings)
   }
 
-  override protected def beforeAll() = {
-    val classfileDir = AbstractFile.getDirectory(compiler.settings.classfileDirectory.value)
-    if (classfileDir != null) {
-      classfileDir.delete()
-    }
+  override protected def beforeAll(): Unit = {
+    compiler.settings.resolvedClassfileDir.foreach(_.delete())
   }
 
   def catchAndPrint(code: => Any): Unit =
