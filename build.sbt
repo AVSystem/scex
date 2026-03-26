@@ -28,7 +28,7 @@ val commonsLang3Version = "3.20.0"
 val commonsCodecVersion = "1.21.0"
 val guavaVersion = "33.5.0-jre"
 val commonsNetVersion = "3.13.0"
-val scalatestVersion = "3.2.19"
+val scalatestVersion = "3.2.20"
 
 val noPublishSettings = Seq(
   publish / skip := true
