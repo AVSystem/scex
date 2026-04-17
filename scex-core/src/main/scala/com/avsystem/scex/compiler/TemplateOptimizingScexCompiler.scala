@@ -1,7 +1,7 @@
 package com.avsystem.scex
 package compiler
 
-import java.util.concurrent.TimeUnit
+import java.time.Duration
 
 import com.avsystem.scex.compiler.ScexCompiler.{CompilationFailedException, CompileError}
 import com.avsystem.scex.compiler.TemplateOptimizingScexCompiler.ConversionSupplier
@@ -33,7 +33,7 @@ trait TemplateOptimizingScexCompiler extends ScexPresentationCompiler {
   import com.avsystem.scex.util.CacheImplicits._
 
   private val literalConversionsCache = CacheBuilder.newBuilder
-    .expireAfterAccess(settings.expressionExpirationTime.value, TimeUnit.SECONDS)
+    .expireAfterAccess(Duration.ofSeconds(settings.expressionExpirationTime.value))
     .build[(ExpressionProfile, String, String), Try[ConversionSupplier[Any]]]((compileLiteralConversion _).tupled)
 
   private def getLiteralConversion(exprDef: ExpressionDef) =
