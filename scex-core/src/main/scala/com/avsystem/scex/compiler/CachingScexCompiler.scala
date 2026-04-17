@@ -7,7 +7,8 @@ import com.avsystem.scex.validation.{SymbolValidator, SyntaxValidator}
 import com.google.common.cache.CacheBuilder
 import com.google.common.util.concurrent.ExecutionError
 
-import java.util.concurrent.{ExecutionException, TimeUnit}
+import java.time.Duration
+import java.util.concurrent.ExecutionException
 import scala.util.{Failure, Success, Try}
 
 trait CachingScexCompiler extends ScexCompiler {
@@ -15,12 +16,12 @@ trait CachingScexCompiler extends ScexCompiler {
   import com.avsystem.scex.util.CommonUtils._
 
   private val preprocessingCache = CacheBuilder.newBuilder
-    .expireAfterAccess(settings.expressionExpirationTime.value, TimeUnit.SECONDS)
+    .expireAfterAccess(Duration.ofSeconds(settings.expressionExpirationTime.value))
     .maximumSize(settings.expressionCacheSize.value)
     .build[(String, Boolean), (String, PositionMapping)]
 
   private val expressionCache = CacheBuilder.newBuilder
-    .expireAfterAccess(settings.expressionExpirationTime.value, TimeUnit.SECONDS)
+    .expireAfterAccess(Duration.ofSeconds(settings.expressionExpirationTime.value))
     .maximumSize(settings.expressionCacheSize.value)
     .build[ExpressionDef, Try[RawExpression]]
 

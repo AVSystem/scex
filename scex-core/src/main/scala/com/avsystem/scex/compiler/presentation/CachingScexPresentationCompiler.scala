@@ -1,7 +1,8 @@
 package com.avsystem.scex
 package compiler.presentation
 
-import java.util.concurrent.{ExecutionException, TimeUnit}
+import java.time.Duration
+import java.util.concurrent.ExecutionException
 import java.{lang => jl, util => ju}
 
 import com.avsystem.scex.compiler.ExpressionDef
@@ -21,19 +22,19 @@ trait CachingScexPresentationCompiler extends ScexPresentationCompiler {
   import com.avsystem.scex.util.CommonUtils._
 
   private val errorsCache = CacheBuilder.newBuilder
-    .expireAfterAccess(settings.completionExpirationTime.value, TimeUnit.SECONDS)
+    .expireAfterAccess(Duration.ofSeconds(settings.completionExpirationTime.value))
     .maximumSize(settings.errorsCacheSize.value)
     .build[ExpressionDef, List[CompileError]]
 
   private val scopeCompletionCache = CacheBuilder.newBuilder
-    .expireAfterAccess(settings.completionExpirationTime.value, TimeUnit.SECONDS)
+    .expireAfterAccess(Duration.ofSeconds(settings.completionExpirationTime.value))
     .maximumSize(settings.scopeCompletionCacheSize.value)
     .build[ExpressionDef, Completion]
 
   case class TypeMembersCacheKey(profile: ExpressionProfile, contextType: String, ownerType: TypeWrapper)
 
   private val typeMembersCache = CacheBuilder.newBuilder
-    .expireAfterAccess(settings.completionExpirationTime.value, TimeUnit.SECONDS)
+    .expireAfterAccess(Duration.ofSeconds(settings.completionExpirationTime.value))
     .maximumSize(settings.typeMembersCacheSize.value)
     .build[TypeMembersCacheKey, Vector[Member]]
 
