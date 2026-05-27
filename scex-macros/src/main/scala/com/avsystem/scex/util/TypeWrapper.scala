@@ -6,10 +6,9 @@ import java.{lang => jl, util => ju}
 import scala.collection.mutable.ListBuffer
 import scala.reflect.api.Universe
 
-/**
- * The purpose of this class is to have meaningful equals/hashCode semantics for Type objects
- */
-class TypeWrapper(universeWithTpe: (u.type, u.Type) forSome {val u: Universe}) {
+/** The purpose of this class is to have meaningful equals/hashCode semantics for Type objects
+  */
+class TypeWrapper(universeWithTpe: (u.type, u.Type) forSome { val u: Universe }) {
   private val u = universeWithTpe._1
   private val tpe = universeWithTpe._2.asInstanceOf[u.Type]
 

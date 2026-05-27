@@ -1,10 +1,8 @@
 package com.avsystem.scex
 package compiler
 
-/**
- * Created: 12-12-2013
- * Author: ghik
- */
+/** Created: 12-12-2013 Author: ghik
+  */
 object Markers {
 
   trait Synthetic extends Any

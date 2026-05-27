@@ -6,7 +6,7 @@ import com.avsystem.commons.jiop.JavaInterop._
 import com.avsystem.commons.misc.TypeString
 import com.avsystem.scex.compiler.CodeGeneration._
 import com.avsystem.scex.compiler.ScexCompiler.{CompilationFailedException, CompileError}
-import com.avsystem.scex.compiler.presentation.ScexPresentationCompiler.{Completion, MemberFlags, Param, Member => SMember}
+import com.avsystem.scex.compiler.presentation.ScexPresentationCompiler.{Completion, Member => SMember, MemberFlags, Param}
 import com.avsystem.scex.compiler.{ExpressionDef, _}
 import com.avsystem.scex.parsing.EmptyPositionMapping
 import com.avsystem.scex.presentation.annotation.{Documentation, ParameterNames}
@@ -44,16 +44,17 @@ trait ScexPresentationCompiler extends ScexCompiler { compiler =>
     case Right(t) => throw t
   }
 
-  private def inCompilerThread[T](code: => T) = {
+  private def inCompilerThread[T](code: => T) =
     getOrThrow(global.askForResponse(() => code))
-  }
 
   protected final def withIGlobal[T](code: IGlobal => T) = underLock {
     reporter.reset()
     val global = compiler.global
-    val result = try code(global) finally {
-      reporter.reset()
-    }
+    val result =
+      try code(global)
+      finally {
+        reporter.reset()
+      }
     result
   }
 
@@ -65,7 +66,7 @@ trait ScexPresentationCompiler extends ScexCompiler { compiler =>
     contextType: String,
     rootObjectClass: Class[_],
     resultType: String,
-    variableTypes: Map[String, String]
+    variableTypes: Map[String, String],
   ) {
 
     require(profile != null, "Profile cannot be null")
@@ -77,15 +78,24 @@ trait ScexPresentationCompiler extends ScexCompiler { compiler =>
       val (actualExpression, positionMapping) =
         if (bare) (expression, EmptyPositionMapping) else preprocess(expression, template)
 
-      ExpressionDef(profile, template && !bare, setter && !bare, actualExpression, header, contextType,
-        if (bare) "Any" else resultType, variableTypes)(expression, positionMapping, rootObjectClass)
+      ExpressionDef(
+        profile,
+        template && !bare,
+        setter && !bare,
+        actualExpression,
+        header,
+        contextType,
+        if (bare) "Any" else resultType,
+        variableTypes,
+      )(expression, positionMapping, rootObjectClass)
     }
 
     // sometimes presentation compiler just fails to typecheck things and crashes
     // until we know what's happening it's better to return some default value (e.g. empty completion)
     // instead of crashing
     private def workaroundAssertionError[T](expr: => T, default: T): T =
-      try expr catch {
+      try expr
+      catch {
         case e: AssertionError =>
           logger.error(s"Presentation compiler crashed, returning $default", e)
           default
@@ -112,14 +122,13 @@ trait ScexPresentationCompiler extends ScexCompiler { compiler =>
     template: Boolean = true,
     setter: Boolean = false,
     variableTypes: Map[String, TypeString[_]] = Map.empty,
-    header: String = ""
-  )(
-    implicit
+    header: String = "",
+  )(implicit
     cti: ContextTypeInfo[C],
-    tts: TypeString[T]
+    tts: TypeString[T],
   ): Completer = {
 
-    val strVariableTypes = variableTypes.iterator.map({ case (k, v) => (k, v.value) }).toMap
+    val strVariableTypes = variableTypes.iterator.map { case (k, v) => (k, v.value) }.toMap
     getCompleter(profile, template, setter, header, cti.fullTypeString, cti.rootObjectClass, tts.value, strVariableTypes)
   }
 
@@ -131,11 +140,10 @@ trait ScexPresentationCompiler extends ScexCompiler { compiler =>
     contextType: String,
     rootObjectClass: Class[_],
     resultType: String,
-    variableTypes: Map[String, String]
-  ): Completer = {
+    variableTypes: Map[String, String],
+  ): Completer =
 
     new Completer(profile, template, setter, header, contextType, rootObjectClass, resultType, variableTypes)
-  }
 
   private def getContextTpe(global: IGlobal)(tree: global.Tree): global.Type = {
     import global._
@@ -189,21 +197,20 @@ trait ScexPresentationCompiler extends ScexCompiler { compiler =>
       case _ => None
     }
 
-    def parseAnnotation(ann: Annotation): Attributes = {
+    def parseAnnotation(ann: Annotation): Attributes =
       if (ann.tree.tpe <:< typeOf[ParameterNames]) {
-        val paramNames = annotValue(ann.tree).map {
-          case Apply(_, paramNameLiterals) => paramNameLiterals.map {
-            case LiteralString(name) => name
+        val paramNames = annotValue(ann.tree).map { case Apply(_, paramNameLiterals) =>
+          paramNameLiterals.map { case LiteralString(name) =>
+            name
           }
         }
         new Attributes(paramNames, None)
       } else if (ann.tree.tpe <:< typeOf[Documentation]) {
-        val documentation = annotValue(ann.tree).map {
-          case LiteralString(doc) => doc
+        val documentation = annotValue(ann.tree).map { case LiteralString(doc) =>
+          doc
         }
         new Attributes(None, documentation)
       } else Attributes.empty
-    }
 
     def attributesFromAnnotations =
       withOverrides(m.sym).iterator.flatMap(s => annotations(s)).map(parseAnnotation).toStream
@@ -213,7 +220,7 @@ trait ScexPresentationCompiler extends ScexCompiler { compiler =>
       case Stream.Empty => Attributes.empty
     }
 
-    foldAttributes(attributesFromInfos append attributesFromAnnotations)
+    foldAttributes(attributesFromInfos.append(attributesFromAnnotations))
   }
 
   private def translateMember(global: IGlobal, attrs: SymbolAttributes)(member: global.ScexMember) = {
@@ -221,9 +228,12 @@ trait ScexPresentationCompiler extends ScexCompiler { compiler =>
 
     def translateType(tpe: Type) =
       if (tpe == NoType) SType.NoType
-      else tpe.toOpt.map { tpe =>
-        SType(tpe.map(_.dealiasWiden).toString(), erasureClass(tpe))
-      }.getOrElse(SType.NoType)
+      else
+        tpe.toOpt
+          .map { tpe =>
+            SType(tpe.map(_.dealiasWiden).toString(), erasureClass(tpe))
+          }
+          .getOrElse(SType.NoType)
 
     val attributes = getAttributes(global, attrs)(member)
     val (params, implParams) = paramsOf(member.tpe)
@@ -239,14 +249,16 @@ trait ScexPresentationCompiler extends ScexCompiler { compiler =>
     val javaMember = memberToJava(if (adapter) getJavaGetter(member.sym, adaptedType) else member.sym)
     val rootMember = isAnnotatedWith(member.ownerTpe.widen, rootValueAnnotType)
 
-    SMember(member.sym.decodedName,
+    SMember(
+      member.sym.decodedName,
       params.map(_.map(symbolToParam)),
       implParams.map(symbolToParam),
       translateType(member.ownerTpe),
       translateType(member.tpe.finalResultType),
       MemberFlags(member.sym.isImplicit, adapter, rootMember),
       javaMember,
-      attributes.documentation)
+      attributes.documentation,
+    )
   }
 
   protected def getErrors(exprDef: ExpressionDef) = withIGlobal { global =>
@@ -291,7 +303,7 @@ trait ScexPresentationCompiler extends ScexCompiler { compiler =>
         val scope: Vector[ScexScopeMember] = scopeMembers(pos)
         val membersIterator = scope.iterator.filter { m =>
           m.viaImport != EmptyTree && m.sym.isTerm && !m.sym.hasPackageFlag && !isFromProfileObject(m.sym) &&
-            symbolValidator.validateMemberAccess(vc)(accessFromScopeMember(m)).deniedAccesses.isEmpty
+          symbolValidator.validateMemberAccess(vc)(accessFromScopeMember(m)).deniedAccesses.isEmpty
         } map translateMember(global, symbolAttributes)
 
         Completion(ast.EmptyTree, membersIterator.toVector)
@@ -323,12 +335,12 @@ trait ScexPresentationCompiler extends ScexCompiler { compiler =>
           // treat keywords incorrectly typed after dot as part of the Select tree
           case Select(_, termNames.ERROR) =>
             val chars = sourceFile.content
-            val newEnd = tree.pos.end + Iterator.range(tree.pos.end, chars.length)
-              .takeWhile(i => chars(i).isLetter).length
+            val newEnd = tree.pos.end +
+              Iterator.range(tree.pos.end, chars.length).takeWhile(i => chars(i).isLetter).length
             tree.setPos(tree.pos.withEnd(newEnd))
           // fix selectDynamic positions, which scalac computes incorrectly...
-          case tree@Apply(Select(_, TermName("selectDynamic")), List(lit@Literal(Constant(_: String))))
-            if lit.pos.isTransparent && lit.pos.end >= tree.pos.end =>
+          case tree @ Apply(Select(_, TermName("selectDynamic")), List(lit @ Literal(Constant(_: String))))
+              if lit.pos.isTransparent && lit.pos.end >= tree.pos.end =>
             tree.setPos(tree.pos.withEnd(lit.pos.end))
           case _ =>
         }
@@ -346,7 +358,7 @@ trait ScexPresentationCompiler extends ScexCompiler { compiler =>
       }
     }
 
-    val result = {
+    val result =
       try {
         val sourcePosition = sourceFile.position(offset + exprDef.positionMapping(position))
 
@@ -360,14 +372,20 @@ trait ScexPresentationCompiler extends ScexCompiler { compiler =>
         inCompilerThread {
           positionFixer.traverse(fullTree)
 
-          val tree = new ScexLocator(sourcePosition).locateIn(fullTree).toOpt
-            .filter(t => t.pos != NoPosition && t.pos.start >= offset).getOrElse(EmptyTree)
+          val tree = new ScexLocator(sourcePosition)
+            .locateIn(fullTree)
+            .toOpt
+            .filter(t => t.pos != NoPosition && t.pos.start >= offset)
+            .getOrElse(EmptyTree)
 
           def isAllowed(tree: Tree) =
             symbolValidator.validateMemberAccess(vc)(extractAccess(tree)).deniedAccesses.isEmpty
 
           val completionCtx = global.typeCompletionContext(tree, sourcePosition, isAllowed)
-          logger.debug("Prefix tree for type completion:\n" + show(completionCtx.prefixTree, printTypes = true, printPositions = true))
+          logger.debug(
+            "Prefix tree for type completion:\n" +
+              show(completionCtx.prefixTree, printTypes = true, printPositions = true)
+          )
 
           val members = getTypeMembers(global)(exprDef, completionCtx.ownerTpe) {
             val typeMembers = global.typeMembers(completionCtx)
@@ -380,14 +398,18 @@ trait ScexPresentationCompiler extends ScexCompiler { compiler =>
             def fakeSelect(member: ScexTypeMember) = {
               val fakePrefix =
                 if (!member.implicitlyAdded) fakeDirectPrefix
-                else Apply(member.implicitTree, List(fakeDirectPrefix))
-                  .setSymbol(member.implicitTree.symbol).setType(member.implicitType)
+                else
+                  Apply(member.implicitTree, List(fakeDirectPrefix))
+                    .setSymbol(member.implicitTree.symbol)
+                    .setType(member.implicitType)
               Select(fakePrefix, member.sym)
             }
 
             typeMembers.collect {
-              case m if m.sym.isTerm && m.sym.isPublic && !m.sym.isConstructor
-                && !isAdapterWrappedMember(m.sym) && isAllowed(fakeSelect(m)) => translateMember(global, symbolAttributes)(m)
+              case m
+                  if m.sym.isTerm && m.sym.isPublic && !m.sym.isConstructor && !isAdapterWrappedMember(m.sym) &&
+                    isAllowed(fakeSelect(m)) =>
+                translateMember(global, symbolAttributes)(m)
             }
           }
 
@@ -402,7 +424,6 @@ trait ScexPresentationCompiler extends ScexCompiler { compiler =>
         global.askFilesDeleted(List(sourceFile), resp)
         getOrThrow(resp)
       }
-    }
 
     val duration = System.nanoTime() - startTime
     logger.debug(s"Completion took ${duration / 1000000}ms")
@@ -411,8 +432,14 @@ trait ScexPresentationCompiler extends ScexCompiler { compiler =>
   }
 
   // method extracted in order to make it possible to cache results by some other trait
-  protected def getTypeMembers(global: IGlobal)(exprDef: ExpressionDef, ownerTpe: global.Type)
-    (computeMembers: => Vector[SMember]): Vector[SMember] = computeMembers
+  protected def getTypeMembers(
+    global: IGlobal
+  )(
+    exprDef: ExpressionDef,
+    ownerTpe: global.Type,
+  )(
+    computeMembers: => Vector[SMember]
+  ): Vector[SMember] = computeMembers
 
   protected def parse(exprDef: ExpressionDef) = withIGlobal { global =>
     inCompilerThread {
@@ -469,8 +496,14 @@ object ScexPresentationCompiler {
   final case class MemberFlags(iimplicit: Boolean, javaGetterAdapter: Boolean, inputMember: Boolean)
 
   final case class Member(
-    name: String, params: List[List[Param]], implicitParams: List[Param], ownerType: Type, returnType: Type,
-    flags: MemberFlags, javaMember: Option[jl.reflect.Member], documentation: Option[String]
+    name: String,
+    params: List[List[Param]],
+    implicitParams: List[Param],
+    ownerType: Type,
+    returnType: Type,
+    flags: MemberFlags,
+    javaMember: Option[jl.reflect.Member],
+    documentation: Option[String],
   ) {
 
     def paramsAsJava =

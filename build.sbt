@@ -1,22 +1,26 @@
 name := "scex"
 
-inThisBuild(Seq(
-  organization := "com.avsystem.scex",
-  scalaVersion := "2.13.18",
-  githubWorkflowTargetTags ++= Seq("v*"),
-  githubWorkflowJavaVersions := Seq(JavaSpec.temurin("17"), JavaSpec.temurin("21"), JavaSpec.temurin("25")),
-  githubWorkflowPublishTargetBranches := Seq(RefPredicate.StartsWith(Ref.Tag("v"))),
+inThisBuild(
+  Seq(
+    organization := "com.avsystem.scex",
+    scalaVersion := "2.13.18",
+    githubWorkflowTargetTags ++= Seq("v*"),
+    githubWorkflowJavaVersions := Seq(JavaSpec.temurin("17"), JavaSpec.temurin("21"), JavaSpec.temurin("25")),
+    githubWorkflowPublishTargetBranches := Seq(RefPredicate.StartsWith(Ref.Tag("v"))),
 
-  githubWorkflowPublish := Seq(WorkflowStep.Sbt(
-    List("ci-release"),
-    env = Map(
-      "PGP_PASSPHRASE" -> "${{ secrets.PGP_PASSPHRASE }}",
-      "PGP_SECRET" -> "${{ secrets.PGP_SECRET }}",
-      "SONATYPE_PASSWORD" -> "${{ secrets.SONATYPE_PASSWORD }}",
-      "SONATYPE_USERNAME" -> "${{ secrets.SONATYPE_USERNAME }}"
-    )
-  )),
-))
+    githubWorkflowPublish := Seq(
+      WorkflowStep.Sbt(
+        List("ci-release"),
+        env = Map(
+          "PGP_PASSPHRASE" -> "${{ secrets.PGP_PASSPHRASE }}",
+          "PGP_SECRET" -> "${{ secrets.PGP_SECRET }}",
+          "SONATYPE_PASSWORD" -> "${{ secrets.SONATYPE_PASSWORD }}",
+          "SONATYPE_USERNAME" -> "${{ secrets.SONATYPE_USERNAME }}",
+        ),
+      )
+    ),
+  )
+)
 
 val CompileAndTest = "compile->compile;test->test"
 
@@ -38,8 +42,9 @@ lazy val subprojectSettings = Seq(
   crossVersion := CrossVersion.full,
 
   javacOptions ++= Seq(
-    "--release", "17",
-    "-parameters"
+    "--release",
+    "17",
+    "-parameters",
   ),
 
   scalacOptions ++= Seq(
@@ -51,12 +56,12 @@ lazy val subprojectSettings = Seq(
     "-language:dynamics",
     "-language:experimental.macros",
     "-Xfatal-warnings",
-    "-Xlint:-missing-interpolator,-adapted-args,-unused,_"
+    "-Xlint:-missing-interpolator,-adapted-args,-unused,_",
   ),
 
   scalacOptions ++= Seq(
     "-Xnon-strict-patmat-analysis",
-    "-Xlint:-strict-unsealed-patmat"
+    "-Xlint:-strict-unsealed-patmat",
   ),
 
   projectInfo := ModuleInfo(
@@ -66,14 +71,16 @@ lazy val subprojectSettings = Seq(
     startYear = Some(2015),
     organizationName = "AVSystem",
     organizationHomepage = Some(url("http://www.avsystem.com/")),
-    scmInfo = Some(ScmInfo(
-      browseUrl = url("https://github.com/AVSystem/scex.git"),
-      connection = "scm:git:git@github.com:AVSystem/scex.git",
-      devConnection = Some("scm:git:git@github.com:AVSystem/scex.git")
-    )),
+    scmInfo = Some(
+      ScmInfo(
+        browseUrl = url("https://github.com/AVSystem/scex.git"),
+        connection = "scm:git:git@github.com:AVSystem/scex.git",
+        devConnection = Some("scm:git:git@github.com:AVSystem/scex.git"),
+      )
+    ),
     licenses = Vector(License.MIT),
     developers = Vector(
-      Developer("ddworak", "Dawid Dworak", "d.dworak@avsystem.com", url("https://github.com/ddworak")),
+      Developer("ddworak", "Dawid Dworak", "d.dworak@avsystem.com", url("https://github.com/ddworak"))
     ),
   ),
 
@@ -91,23 +98,23 @@ lazy val subprojectSettings = Seq(
   })),
   libraryDependencies ++= Seq(
     compilerPlugin("com.avsystem.commons" %% "commons-analyzer" % avsCommonsVersion),
-    "org.scalatest" %% "scalatest" % scalatestVersion % Test
+    "org.scalatest" %% "scalatest" % scalatestVersion % Test,
   ),
-  Compile / doc / sources := Seq.empty
+  Compile / doc / sources := Seq.empty,
 )
 
-lazy val scex = project.in(file("."))
-  .aggregate(`scex-macros`, `scex-core`, `scex-util`, `scex-test`)
-  .settings(noPublishSettings: _*)
+lazy val scex =
+  project.in(file(".")).aggregate(`scex-macros`, `scex-core`, `scex-util`, `scex-test`).settings(noPublishSettings: _*)
 
 lazy val `scex-macros` = project
   .settings(subprojectSettings: _*)
   .settings(
     libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value,
-    libraryDependencies += "com.avsystem.commons" %% "commons-macros" % avsCommonsVersion
+    libraryDependencies += "com.avsystem.commons" %% "commons-macros" % avsCommonsVersion,
   )
 
-lazy val `scex-core` = project.dependsOn(`scex-macros` % CompileAndTest)
+lazy val `scex-core` = project
+  .dependsOn(`scex-macros` % CompileAndTest)
   .settings(subprojectSettings: _*)
   .settings(
     libraryDependencies ++= Seq(
@@ -122,7 +129,8 @@ lazy val `scex-core` = project.dependsOn(`scex-macros` % CompileAndTest)
     )
   )
 
-lazy val `scex-util` = project.dependsOn(`scex-core` % CompileAndTest)
+lazy val `scex-util` = project
+  .dependsOn(`scex-core` % CompileAndTest)
   .settings(subprojectSettings: _*)
   .settings(
     libraryDependencies ++= Seq(
@@ -131,6 +139,7 @@ lazy val `scex-util` = project.dependsOn(`scex-core` % CompileAndTest)
     )
   )
 
-lazy val `scex-test` = project.dependsOn(`scex-core` % CompileAndTest, `scex-util`)
+lazy val `scex-test` = project
+  .dependsOn(`scex-core` % CompileAndTest, `scex-util`)
   .settings(subprojectSettings: _*)
   .settings(noPublishSettings: _*)

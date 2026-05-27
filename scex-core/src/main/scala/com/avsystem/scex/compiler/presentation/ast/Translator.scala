@@ -4,10 +4,8 @@ package compiler.presentation.ast
 import com.avsystem.scex.compiler.{ExpressionDef, ScexGlobal}
 import com.avsystem.scex.util.MacroUtils
 
-/**
- * Created: 12-03-2014
- * Author: ghik
- */
+/** Created: 12-03-2014 Author: ghik
+  */
 class Translator(val global: ScexGlobal, offset: Int, exprDef: ExpressionDef) extends MacroUtils {
   val universe: global.type = global
   val u: universe.type = universe
@@ -62,16 +60,32 @@ class Translator(val global: ScexGlobal, offset: Int, exprDef: ExpressionDef) ex
       case u.LabelDef(name, params, rhs) =>
         LabelDef(translateTermName(name), params.map(translateTreeIn[Ident]), translateTree(rhs))(attachments)
       case u.ClassDef(mods, name, tparams, impl) =>
-        ClassDef(translateModifiers(mods), translateTypeName(name), tparams.map(translateTreeIn[TypeDef]), translateTreeIn[Template](impl))(attachments)
+        ClassDef(
+          translateModifiers(mods),
+          translateTypeName(name),
+          tparams.map(translateTreeIn[TypeDef]),
+          translateTreeIn[Template](impl),
+        )(attachments)
       case u.ModuleDef(mods, name, impl) =>
         ModuleDef(translateModifiers(mods), translateTermName(name), translateTreeIn[Template](tree))(attachments)
       case u.PackageDef(pid, stats) =>
         PackageDef(translateTreeIn[RefTree](pid), stats.map(translateTree))(attachments)
       case u.TypeDef(mods, name, tparams, rhs) =>
-        TypeDef(translateModifiers(mods), translateTypeName(name), tparams.map(translateTreeIn[TypeDef]), translateTree(rhs))(attachments)
+        TypeDef(
+          translateModifiers(mods),
+          translateTypeName(name),
+          tparams.map(translateTreeIn[TypeDef]),
+          translateTree(rhs),
+        )(attachments)
       case u.DefDef(mods, name, tparams, vparamss, tpt, rhs) =>
-        DefDef(translateModifiers(mods), translateName(name), tparams.map(translateTreeIn[TypeDef]),
-          vparamss.map(_.map(translateTreeIn[ValDef])), translateTree(tpt), translateTree(rhs))(attachments)
+        DefDef(
+          translateModifiers(mods),
+          translateName(name),
+          tparams.map(translateTreeIn[TypeDef]),
+          vparamss.map(_.map(translateTreeIn[ValDef])),
+          translateTree(tpt),
+          translateTree(rhs),
+        )(attachments)
       case u.Import(expr, selectors) =>
         Import(translateTree(expr), selectors.map(translateImportSelector))(attachments)
       case u.Return(expr) =>
@@ -110,7 +124,7 @@ class Translator(val global: ScexGlobal, offset: Int, exprDef: ExpressionDef) ex
         SingletonTypeTree(translateTree(ref))(attachments)
       case u.TypeBoundsTree(lo, hi) =>
         TypeBoundsTree(translateTree(lo), translateTree(hi))(attachments)
-      case tt@u.TypeTree() =>
+      case tt @ u.TypeTree() =>
         TypeTree()(translateTree(tt.original), attachments)
       case _ =>
         throw new IllegalArgumentException(s"Unknown tree: ${u.showRaw(tree)}")
@@ -128,10 +142,13 @@ class Translator(val global: ScexGlobal, offset: Int, exprDef: ExpressionDef) ex
       Constant(c.value)(c.escapedStringValue)
 
   def translateType(tpe: u.Type): Type =
-    if(tpe == u.NoType) Type.NoType
-    else tpe.toOpt.map { tpe =>
-      Type(tpe.map(_.dealiasWiden).toString(), u.erasureClass(tpe))
-    }.getOrElse(Type.NoType)
+    if (tpe == u.NoType) Type.NoType
+    else
+      tpe.toOpt
+        .map { tpe =>
+          Type(tpe.map(_.dealiasWiden).toString(), u.erasureClass(tpe))
+        }
+        .getOrElse(Type.NoType)
 
   def translateAttachments(tree: u.Tree) =
     new Attachments(translateType(tree.tpe), translatePosition(tree.pos))
@@ -173,10 +190,12 @@ class Translator(val global: ScexGlobal, offset: Int, exprDef: ExpressionDef) ex
 
   def translatePosition(pos: u.Position): Position = pos match {
     case u.NoPosition | null => null
-    case _ => Position(
-      reverseMapping(math.max(pos.start, offset) - offset),
-      reverseMapping(math.min(pos.end, offset + exprDef.expression.length) - offset - 1) + 1,
-      pos.isTransparent)
+    case _ =>
+      Position(
+        reverseMapping(math.max(pos.start, offset) - offset),
+        reverseMapping(math.min(pos.end, offset + exprDef.expression.length) - offset - 1) + 1,
+        pos.isTransparent,
+      )
   }
 
   def translateModifiers(mods: u.Modifiers) =

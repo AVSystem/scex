@@ -3,10 +3,8 @@ package compiler
 
 import com.avsystem.scex.util.Literal
 
-/**
- * Created: 04-04-2014
- * Author: ghik
- */
+/** Created: 04-04-2014 Author: ghik
+  */
 object TestUtils {
   implicit def zeroOneLiteralToBoolean(lit: Literal): Boolean = lit.literalString match {
     case "0" => false

@@ -5,10 +5,8 @@ import java.util.concurrent.Callable
 import java.{lang => jl, util => ju}
 import org.scalatest.funsuite.AnyFunSuite
 
-/**
- * Created: 17-10-2013
- * Author: ghik
- */
+/** Created: 17-10-2013 Author: ghik
+  */
 class ArbitraryCompilationTest extends AnyFunSuite {
   val compiler = new DefaultScexCompiler(new ScexSettings)
 

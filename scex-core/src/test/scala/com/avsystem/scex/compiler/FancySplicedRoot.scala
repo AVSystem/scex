@@ -3,10 +3,8 @@ package compiler
 
 import com.avsystem.scex.compiler.TemplateInterpolations.Splicer
 
-/**
- * Created: 31-03-2014
- * Author: ghik
- */
+/** Created: 31-03-2014 Author: ghik
+  */
 class FancySplicedRoot {
   def self = this
 }

@@ -3,9 +3,7 @@ package compiler
 
 import com.avsystem.scex.parsing.PositionMapping
 
-/**
-  * Created: 14-11-2013
-  * Author: ghik
+/** Created: 14-11-2013 Author: ghik
   */
 final case class ExpressionDef(
   profile: ExpressionProfile,

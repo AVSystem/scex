@@ -3,10 +3,8 @@ package com.avsystem.scex.compiler
 import com.avsystem.scex.parsing.ScalaParsingCommons
 import org.scalatest.funsuite.AnyFunSuite
 
-/**
- * Created: 31-10-2014
- * Author: ghik
- */
+/** Created: 31-10-2014 Author: ghik
+  */
 class ScalaParsingCommonsTest extends AnyFunSuite {
 
   import com.avsystem.scex.parsing.ScalaParsingCommons._

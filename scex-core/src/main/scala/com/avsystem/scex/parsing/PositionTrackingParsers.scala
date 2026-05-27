@@ -2,13 +2,11 @@ package com.avsystem.scex.parsing
 
 import scala.util.parsing.combinator.RegexParsers
 
-/**
-  * Extensions for Scala parser combinators that allow to turn Parser[String] instances into Parser[PString] instances
+/** Extensions for Scala parser combinators that allow to turn Parser[String] instances into Parser[PString] instances
   * that hold information about differences between original and transformed string that later allow to map cursor
   * positions between the two.
   *
-  * Created: 21-10-2013
-  * Author: ghik
+  * Created: 21-10-2013 Author: ghik
   */
 trait PositionTrackingParsers extends RegexParsers {
 
@@ -20,7 +18,8 @@ trait PositionTrackingParsers extends RegexParsers {
 
   class ReplacingParser(parser: Parser[String], replacement: String, binding: Binding) extends Parser[PString] {
     def apply(in: Input): ParseResult[PString] = parser(in).map { str =>
-      val mods = Vector(Modification(in.offset, -str.length, binding), Modification(in.offset, replacement.length, binding))
+      val mods =
+        Vector(Modification(in.offset, -str.length, binding), Modification(in.offset, replacement.length, binding))
       PString(replacement, in.offset, in.offset + str.length, mods)
     }
   }

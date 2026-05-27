@@ -24,7 +24,7 @@ object CodeGeneration {
           clazz == classOf[Boolean] || clazz == classOf[jl.Boolean]
 
         method.getName match {
-          case name@BeanGetterNamePattern(capitalizedName, _) if name != "getClass" =>
+          case name @ BeanGetterNamePattern(capitalizedName, _) if name != "getClass" =>
             Some((uncapitalize(capitalizedName), false))
           case BooleanBeanGetterNamePattern(capitalizedName, _) if isBoolOrBoolean(method.getReturnType) =>
             Some((uncapitalize(capitalizedName), true))
@@ -87,17 +87,16 @@ object CodeGeneration {
     str.flatMap(escapedChar)
 
   object TypedVariables {
-    /**
-     * Use this to validate variable names in your code - vars with these characters in names are guaranteed to fail
-     * due to compilation error.
-     */
+
+    /** Use this to validate variable names in your code - vars with these characters in names are guaranteed to fail
+      * due to compilation error.
+      */
     val IllegalCharsInVarName: Set[Char] = Set('\n', '\r', '`', '\\')
   }
 
-  /**
-   * Generates code of implicit view for given Java class that adds Scala-style getters
-   * forwarding to existing Java-style getters of given class.
-   */
+  /** Generates code of implicit view for given Java class that adds Scala-style getters forwarding to existing
+    * Java-style getters of given class.
+    */
   def generateJavaGetterAdapter(clazz: Class[_], full: Boolean): Option[String] = {
     // generate scala getters
     val methods =
@@ -105,8 +104,8 @@ object CodeGeneration {
       else clazz.getMethods.filter(m => m.getDeclaringClass == clazz || isMultipleInherited(clazz, m))
 
     val scalaGetters = methods.collect {
-      case method@JavaGetter(propName, _) if !method.isSynthetic &&
-        Modifier.isPublic(method.getModifiers) && !Modifier.isStatic(method.getModifiers) =>
+      case method @ JavaGetter(propName, _)
+          if !method.isSynthetic && Modifier.isPublic(method.getModifiers) && !Modifier.isStatic(method.getModifiers) =>
         s"def `$propName` = _wrapped.${method.getName}\n"
     }
 
@@ -114,7 +113,8 @@ object CodeGeneration {
       val classBody = scalaGetters.sorted.mkString
 
       val ExistentialType(polyTpe, typeVariables) = classToExistential(clazz)
-      val generics = if (typeVariables.nonEmpty) typeVariableDeclarations(typeVariables).mkString("[", ", ", "]") else ""
+      val generics =
+        if (typeVariables.nonEmpty) typeVariableDeclarations(typeVariables).mkString("[", ", ", "]") else ""
       val wrappedTpe = javaTypeAsScalaType(polyTpe)
       val adapterWithGenerics = adapterName(clazz, full) + generics
 
@@ -138,7 +138,8 @@ object CodeGeneration {
     fullAdapterClassNameOpt: Option[String],
     profileObjectPkg: Option[String],
     utilsObjectPkg: Option[String],
-    noMacroProcessing: Boolean) = {
+    noMacroProcessing: Boolean,
+  ) = {
 
     val ExpressionDef(profile, template, setter, expression, header, contextType, resultType, variableTypes) = exprDef
 
@@ -157,13 +158,15 @@ object CodeGeneration {
         ""
     }
 
-    val interpolationPrefix = if (template) if (!noMacroProcessing) InterpolationOpen else NoMacrosInterpolationOpen else ""
+    val interpolationPrefix =
+      if (template) if (!noMacroProcessing) InterpolationOpen else NoMacrosInterpolationOpen else ""
     val interpolationPostfix = if (template) InterpolationClose else ""
     val setterConversion = if (setter) s"$MacroProcessor.asSetter[$resultType]" else ""
 
-    val processingPrefix = if (noMacroProcessing) ""
-    else
-      s"""
+    val processingPrefix =
+      if (noMacroProcessing) ""
+      else
+        s"""
          |      $MacroProcessor.markExpression(
          |      $setterConversion(
          |      $MacroProcessor.validate[$contextType, ${if (setter) "Any" else resultType}](
@@ -172,7 +175,7 @@ object CodeGeneration {
 
     val processingPostfix = if (noMacroProcessing) "" else "))))"
 
-    val dynamicVariablesDef = {
+    val dynamicVariablesDef =
       // skip definition if neither typed variables provided nor dynamic variable accessor enabled
       if (variableTypes.nonEmpty || profile.dynamicVariablesEnabled) {
         val dynamicVariableAccessorDef =
@@ -184,8 +187,8 @@ object CodeGeneration {
           val validatePrefix = if (noMacroProcessing) "" else s"$MacroProcessor.validate("
           val validatePostfix = if (noMacroProcessing) "" else ")"
 
-          val typedVariables = variableTypes.toList.sorted.iterator.map {
-            case (name, tpe) =>
+          val typedVariables = variableTypes.toList.sorted.iterator
+            .map { case (name, tpe) =>
               val escapedName = escapeString(name)
               s"""
                  |  private def `${escapedName}VarTag` = ${validatePrefix}inferVarTag[$tpe]$validatePostfix
@@ -196,7 +199,8 @@ object CodeGeneration {
                  |  @$AnnotationPkg.NotValidated def `${name}_=`(value: $tpe): Unit =
                  |    $ContextSymbol.setTypedVariable("$escapedName", value)(`${escapedName}VarTag`)
               """.stripMargin
-          }.mkString("\n")
+            }
+            .mkString("\n")
 
           s"""
              |class $VariableAccessorClassName extends
@@ -208,18 +212,18 @@ object CodeGeneration {
 
         s"""
            |    $variableAccessorClassDef
-           |    val $VariablesSymbol = new ${if (variableTypes.nonEmpty) VariableAccessorClassName else dynamicVariableAccessorDef}: @$AnnotationPkg.Input
+           |    val $VariablesSymbol = new ${if (variableTypes.nonEmpty) VariableAccessorClassName
+          else dynamicVariableAccessorDef}: @$AnnotationPkg.Input
            |""".stripMargin
       } else ""
-    }
 
     val profileImport = profileObjectPkg.fold("")(pkg => s"import $pkg.$ProfileObjectName._")
     val utilsImport = utilsObjectPkg.fold("")(pkg => s"import $pkg.$UtilsObjectName._")
 
-    //comment with profile name ensures that caching distinguishes between profiles
-    //_result is needed because: https://groups.google.com/forum/#!topic/scala-user/BAK-mU7o6nM
+    // comment with profile name ensures that caching distinguishes between profiles
+    // _result is needed because: https://groups.google.com/forum/#!topic/scala-user/BAK-mU7o6nM
     val prefix =
-    s"""
+      s"""
        |// profile: ${profile.name}
        |
        |import scala.Predef.{wrapString => _, _}
@@ -245,8 +249,7 @@ object CodeGeneration {
        |      {
        |""".stripMargin + interpolationPrefix
 
-    val postfix = interpolationPostfix +
-      s"""
+    val postfix = interpolationPostfix + s"""
          |    }
          |    $processingPostfix
          |    _result
@@ -265,7 +268,8 @@ object CodeGeneration {
     val adapterConversions = adapters.iterator.map { case (clazz, adapterName) =>
       val ExistentialType(polyTpe, typeVariables) = classToExistential(clazz)
       val wrappedTpe = javaTypeAsScalaType(polyTpe)
-      val generics = if (typeVariables.nonEmpty) typeVariableDeclarations(typeVariables).mkString("[", ", ", "]") else ""
+      val generics =
+        if (typeVariables.nonEmpty) typeVariableDeclarations(typeVariables).mkString("[", ", ", "]") else ""
       val adapterWithGenerics = adapterName + generics
 
       s"""
@@ -274,23 +278,24 @@ object CodeGeneration {
         """.stripMargin
     }.mkString
 
-    if (adapterConversions.nonEmpty) Some(
-      s"""
+    if (adapterConversions.nonEmpty)
+      Some(
+        s"""
          |object $ProfileObjectName extends $MarkersObj.ProfileObject {
          |$adapterConversions
          |}
          |
       """.stripMargin
-    ) else None
+      )
+    else None
   }
 
-  def generateExpressionUtils(code: String) = {
+  def generateExpressionUtils(code: String) =
     s"""
        |object Utils extends $MarkersObj.ExpressionUtil {
        |$code
        |}
      """.stripMargin
-  }
 
   def wrapForParsing(code: String, template: Boolean): (String, Int) = {
     val prefix = "object o {" + (if (template) InterpolationOpen else "")
@@ -298,35 +303,31 @@ object CodeGeneration {
     (s"$prefix$code$postfix", prefix.length)
   }
 
-  def generateSyntaxValidator(code: String) = {
+  def generateSyntaxValidator(code: String) =
     s"""
        |final class $SyntaxValidatorClassName extends $ScexPkg.validation.SyntaxValidator {
        |$code
        |}
     """.stripMargin
-  }
 
-  def generateSymbolValidator(accessSpecs: String) = {
+  def generateSymbolValidator(accessSpecs: String) =
     s"""
        |final class $SymbolValidatorClassName extends $ScexPkg.validation.SymbolValidator {
        |  val infoList = {$accessSpecs}
        |}
     """.stripMargin
-  }
 
-  def generateSymbolAttributes(attributes: String) = {
+  def generateSymbolAttributes(attributes: String) =
     s"""
        |final class $SymbolAttributesClassName extends $ScexPkg.presentation.SymbolAttributes({$attributes})
     """.stripMargin
-  }
 
-  def wrapInSource(code: String, pkgName: String): String = {
+  def wrapInSource(code: String, pkgName: String): String =
     s"""
        |package $pkgName
        |
        |$code
     """.stripMargin
-  }
 
   def wrapInSource(code: String, offset: Int, pkgName: String): (String, String, Int) = {
     val prefix =
@@ -346,7 +347,13 @@ object CodeGeneration {
     s"$templateOptimizingObj.checkConstant($templateOptimizingObj.reifyImplicitView[$resultType](_dummy_literal))\n"
   }
 
-  def implicitLiteralConversionClass(profileObjectPkg: Option[String], utilsObjectPkg: Option[String], profileHeader: String, header: String, resultType: String) = {
+  def implicitLiteralConversionClass(
+    profileObjectPkg: Option[String],
+    utilsObjectPkg: Option[String],
+    profileHeader: String,
+    header: String,
+    resultType: String,
+  ) = {
     val templateOptimizingScexCompiler = s"$ScexPkg.compiler.TemplateOptimizingScexCompiler"
     val profileImport = profileObjectPkg.fold("")(pkg => s"import $pkg.$ProfileObjectName._")
     val utilsImport = utilsObjectPkg.fold("")(pkg => s"import $pkg.$UtilsObjectName._")

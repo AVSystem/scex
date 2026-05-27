@@ -10,8 +10,7 @@ import scala.tools.nsc.interactive.Global
 import scala.tools.nsc.reporters.Reporter
 import scala.tools.nsc.symtab.Flags.{ACCESSOR, PARAMACCESSOR}
 
-/**
-  * I needed to hack a custom implementation of completion, hence this class.
+/** I needed to hack a custom implementation of completion, hence this class.
   */
 @nowarn("msg=deprecated")
 class IGlobal(settings: Settings, reporter: Reporter, val classLoader: ClassLoader)
@@ -35,14 +34,14 @@ class IGlobal(settings: Settings, reporter: Reporter, val classLoader: ClassLoad
     tpe: Type,
     accessible: Boolean,
     implicitTree: Tree,
-    implicitType: Type
+    implicitType: Type,
   ) extends ScexMember
 
   case class ScexScopeMember(
     sym: Symbol,
     tpe: Type,
     accessible: Boolean,
-    viaImport: Tree
+    viaImport: Tree,
   ) extends ScexMember {
     def prefix: Type = viaImport.tpe
     def implicitTree: Tree = EmptyTree
@@ -53,7 +52,7 @@ class IGlobal(settings: Settings, reporter: Reporter, val classLoader: ClassLoad
     override def default(key: Name) = Set()
 
     private def matching(sym: Symbol, symtpe: Type, ms: Set[T]): Option[T] = ms.find { m =>
-      (m.sym.name == sym.name) && (m.sym.isType || (m.tpe matches symtpe))
+      (m.sym.name == sym.name) && (m.sym.isType || (m.tpe.matches(symtpe)))
     }
 
     private def keepSecond(m: T, sym: Symbol, implicitTree: Tree): Boolean = {
@@ -63,7 +62,8 @@ class IGlobal(settings: Settings, reporter: Reporter, val classLoader: ClassLoad
         if (symbol.isType) symbol.asType.toType.baseClasses match {
           case _ :: tail => tail.toSet
           case Nil => Set.empty
-        } else Set.empty
+        }
+        else Set.empty
 
       def argumentType(tpe: Type) = tpe match {
         case MethodType(List(param), _) => param.typeSignature
@@ -75,7 +75,8 @@ class IGlobal(settings: Settings, reporter: Reporter, val classLoader: ClassLoad
 
       lazy val higherPriorityImplicit = m.implicitlyAdded && implicitlyAdded && {
         val specificityPoints = compare(argumentType(implicitTree.tpe), argumentType(m.implicitTree.tpe))(_ <:< _)
-        val priorityPoints = compare(implicitTree.symbol.owner, m.implicitTree.symbol.owner)((s1, s2) => superclasses(s1).contains(s2))
+        val priorityPoints =
+          compare(implicitTree.symbol.owner, m.implicitTree.symbol.owner)((s1, s2) => superclasses(s1).contains(s2))
         specificityPoints + priorityPoints > 0
       }
 
@@ -87,21 +88,21 @@ class IGlobal(settings: Settings, reporter: Reporter, val classLoader: ClassLoad
       if (sym.hasGetter) {
         add(sym.getterIn(sym.owner), pre, implicitTree)(toMember)
       } else if (!sym.name.decodedName.containsName("$") && !sym.isError && !sym.isArtifact && sym.hasRawInfo) {
-        val symtpe = pre.memberType(sym) onTypeError ErrorType
-        matching(sym, symtpe, this (sym.name)) match {
+        val symtpe = pre.memberType(sym).onTypeError(ErrorType)
+        matching(sym, symtpe, this(sym.name)) match {
           case Some(m) =>
             if (keepSecond(m, sym, implicitTree)) {
-              this (sym.name) = this (sym.name) - m + toMember(sym, symtpe)
+              this(sym.name) = this(sym.name) - m + toMember(sym, symtpe)
             }
           case None =>
-            this (sym.name) = this (sym.name) + toMember(sym, symtpe)
+            this(sym.name) = this(sym.name) + toMember(sym, symtpe)
         }
       }
     }
 
     def addNonShadowed(other: Members[T]): Unit = {
       for ((name, ms) <- other)
-        if (ms.nonEmpty && this (name).isEmpty) this (name) = ms
+        if (ms.nonEmpty && this(name).isEmpty) this(name) = ms
     }
 
     def allMembers: Vector[T] = values.toVector.flatten
@@ -153,8 +154,9 @@ class IGlobal(settings: Settings, reporter: Reporter, val classLoader: ClassLoad
   object ErroneousSelectDynamic {
     def unapply(tree: Tree): Option[(Tree, Literal)] = tree match {
       case Select(qual, name)
-        if (tree.tpe == ErrorType || tree.tpe == null) && qual.tpe != null && qual.tpe != ErrorType && qual.tpe <:< dynamicTpe =>
-        val literalPos = tree.pos.withStart(tree.pos.end min (qual.pos.end + 1)).makeTransparent
+          if (tree.tpe == ErrorType || tree.tpe == null) && qual.tpe != null && qual.tpe != ErrorType &&
+            qual.tpe <:< dynamicTpe =>
+        val literalPos = tree.pos.withStart(tree.pos.end.min(qual.pos.end + 1)).makeTransparent
         val literal = Literal(Constant(name.decoded)).setPos(literalPos)
         Some((qual, literal))
       case _ =>
@@ -206,7 +208,9 @@ class IGlobal(settings: Settings, reporter: Reporter, val classLoader: ClassLoad
 
         preFixed match {
           case ErroneousSelectDynamic(newQual, literal) =>
-            retypeQual(Apply(Select(newQual, TermName("selectDynamic")).setPos(newQual.pos), List(literal)).setPos(tree.pos))
+            retypeQual(
+              Apply(Select(newQual, TermName("selectDynamic")).setPos(newQual.pos), List(literal)).setPos(tree.pos)
+            )
           case _ =>
             preFixed
         }
@@ -218,7 +222,8 @@ class IGlobal(settings: Settings, reporter: Reporter, val classLoader: ClassLoad
     // now, drop incomplete selection
 
     tree match {
-      case Select(qual, _) if tree.tpe == ErrorType && !(qual.tpe != null && qual.tpe != ErrorType && qual.tpe <:< dynamicTpe) =>
+      case Select(qual, _)
+          if tree.tpe == ErrorType && !(qual.tpe != null && qual.tpe != ErrorType && qual.tpe <:< dynamicTpe) =>
         tree = qual
       case SelectDynamic(qual, "<error>") =>
         tree = qual
@@ -243,7 +248,7 @@ class IGlobal(settings: Settings, reporter: Reporter, val classLoader: ClassLoad
       Ident(nme.EMPTY).setSymbol(Option(symbol).getOrElse(NoSymbol)).setType(tpe)
 
     val forValidation = tree match {
-      case Select(apply@ImplicitlyConverted(qual, fun), name) =>
+      case Select(apply @ ImplicitlyConverted(qual, fun), name) =>
         treeCopy.Select(tree, treeCopy.Apply(apply, fun, List(fakeIdent(qual.tpe, qual.symbol))), name)
       case Select(qual, name) =>
         treeCopy.Select(tree, fakeIdent(qual.tpe, qual.symbol), name)
@@ -277,13 +282,10 @@ class IGlobal(settings: Settings, reporter: Reporter, val classLoader: ClassLoad
     TypeCompletionContext(context, tree, pre, ownerTpe)
   }
 
-  /**
-    * Reimplementation of `scala.tools.interactive.Global.typeMembers` method, adjusted to SCEX needs:
-    * <ul>
-    * <li>returned completion members contain more information (e.g. implicit view tree instead of just symbol)</li>
-    * <li>there is a number of hacks and workarounds for scalac inability to properly handle dynamic invocations</li>
-    * <li>all members are returned at once, instead of returning a stream</li>
-    * </ul>
+  /** Reimplementation of `scala.tools.interactive.Global.typeMembers` method, adjusted to SCEX needs: <ul> <li>returned
+    * completion members contain more information (e.g. implicit view tree instead of just symbol)</li> <li>there is a
+    * number of hacks and workarounds for scalac inability to properly handle dynamic invocations</li> <li>all members
+    * are returned at once, instead of returning a stream</li> </ul>
     */
   def typeMembers(completionContext: TypeCompletionContext): Vector[ScexTypeMember] = {
     val TypeCompletionContext(context, tree, pre, ownerTpe) = completionContext
@@ -294,9 +296,14 @@ class IGlobal(settings: Settings, reporter: Reporter, val classLoader: ClassLoad
     def addTypeMember(sym: Symbol, pre: Type, implicitTree: Tree, implicitType: Type): Unit = {
       val implicitlyAdded = implicitTree != EmptyTree
       members.add(sym, pre, implicitTree) { (s, st) =>
-        ScexTypeMember(ownerTpe, s, st,
+        ScexTypeMember(
+          ownerTpe,
+          s,
+          st,
           context.isAccessible(if (s.hasGetter) s.getterIn(s.owner) else s, pre, superAccess && !implicitlyAdded),
-          implicitTree, implicitType)
+          implicitTree,
+          implicitType,
+        )
       }
     }
 
@@ -305,8 +312,9 @@ class IGlobal(settings: Settings, reporter: Reporter, val classLoader: ClassLoad
      */
     def viewApply(view: analyzer.SearchResult): Tree = {
       assert(view.tree != EmptyTree, "")
-      analyzer.newTyper(context.makeImplicit(reportAmbiguousErrors = false))
-        .typed(Apply(view.tree, List(tree)) setPos tree.pos)
+      analyzer
+        .newTyper(context.makeImplicit(reportAmbiguousErrors = false))
+        .typed(Apply(view.tree, List(tree)).setPos(tree.pos))
         .onTypeError(EmptyTree)
     }
 
@@ -315,9 +323,13 @@ class IGlobal(settings: Settings, reporter: Reporter, val classLoader: ClassLoad
 
     val applicableViews: List[analyzer.SearchResult] =
       if (ownerTpe.isErroneous || ownerTpe <:< NullTpe || ownerTpe <:< NothingTpe) List()
-      else new analyzer.ImplicitSearch(
-        tree, functionType(List(ownerTpe), AnyClass.tpe), isView = true,
-        context0 = context.makeImplicit(reportAmbiguousErrors = false)).allImplicits
+      else
+        new analyzer.ImplicitSearch(
+          tree,
+          functionType(List(ownerTpe), AnyClass.tpe),
+          isView = true,
+          context0 = context.makeImplicit(reportAmbiguousErrors = false),
+        ).allImplicits
 
     for (view <- applicableViews) {
       val vtree = viewApply(view)

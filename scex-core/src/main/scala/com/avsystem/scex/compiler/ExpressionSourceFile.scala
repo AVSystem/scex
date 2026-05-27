@@ -3,15 +3,14 @@ package compiler
 
 import scala.reflect.internal.util.Position
 
-/**
- * Created: 13-12-2013
- * Author: ghik
- */
+/** Created: 13-12-2013 Author: ghik
+  */
 class ExpressionSourceFile(
   val exprDef: ExpressionDef,
   sourceName: String,
   val code: String,
-  startOffset: Int) extends ScexSourceFile(sourceName, code, shared = false) {
+  startOffset: Int,
+) extends ScexSourceFile(sourceName, code, shared = false) {
 
   require(exprDef != null, "Expression definition cannot be null")
 

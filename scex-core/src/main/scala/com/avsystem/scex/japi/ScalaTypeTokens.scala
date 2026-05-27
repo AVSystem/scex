@@ -4,10 +4,8 @@ package japi
 import com.avsystem.scex.compiler.JavaTypeParsing
 import com.google.common.reflect.TypeToken
 
-/**
- * Created: 18-11-2013
- * Author: ghik
- */
+/** Created: 18-11-2013 Author: ghik
+  */
 object ScalaTypeTokens {
   def any = TypeToken.of(JavaTypeParsing.TypeAny).asInstanceOf[TypeToken[Any]]
 

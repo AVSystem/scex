@@ -11,10 +11,8 @@ import org.scalatest.funsuite.AnyFunSuite
 
 import scala.annotation.nowarn
 
-/**
- * Created: 07-10-2014
- * Author: ghik
- */
+/** Created: 07-10-2014 Author: ghik
+  */
 @nowarn("msg=a pure expression does nothing in statement position")
 class TypeCompletionPrefixTest extends AnyFunSuite with CompilationTest with CompletionTest {
 
@@ -47,11 +45,15 @@ class TypeCompletionPrefixTest extends AnyFunSuite with CompilationTest with Com
   }
 
   private def createCompleter(acl: List[MemberAccessSpec], template: Boolean) =
-    compiler.getCompleter[SimpleContext[Root], Any](createProfile(acl), template, header = header,
-      variableTypes = Map("someInt" -> TypeString[Int]))
+    compiler.getCompleter[SimpleContext[Root], Any](
+      createProfile(acl),
+      template,
+      header = header,
+      variableTypes = Map("someInt" -> TypeString[Int]),
+    )
 
   private def assertPrefix(exprWithCaret: String, expectedPrefix: String, expectedType: Type, template: Boolean): Unit = {
-    val exprWithSplice = if(!template) exprWithCaret else s"$${$exprWithCaret}"
+    val exprWithSplice = if (!template) exprWithCaret else s"$${$exprWithCaret}"
     val completer = createCompleter(acl, template)
     val offset = exprWithSplice.indexOf('|') - 1
     val expr = exprWithSplice.substring(0, offset + 1) + exprWithSplice.substring(offset + 2)
@@ -75,7 +77,14 @@ class TypeCompletionPrefixTest extends AnyFunSuite with CompilationTest with Com
     assert(completion.members.isEmpty)
   }
 
-  private def tests(namePrefix: String, expectedPrefix: String, expectedType: Type)(exprs: String*)(implicit pos: Position): Unit = {
+  private def tests(
+    namePrefix: String,
+    expectedPrefix: String,
+    expectedType: Type,
+  )(
+    exprs: String*
+  )(implicit pos: Position
+  ): Unit = {
     exprs.foreach { exprWithCaret =>
       test(namePrefix + " " + exprWithCaret) {
         assertPrefix(exprWithCaret, expectedPrefix, expectedType, template = false)
@@ -94,31 +103,31 @@ class TypeCompletionPrefixTest extends AnyFunSuite with CompilationTest with Com
 
   tests("literal")(
     "123|",
-    "1|23"
+    "1|23",
   )
 
   tests("plain identifier")(
     "api|",
-    "ap|i"
+    "ap|i",
   )
 
   tests("variable reference")(
     "#|",
     "#lo|",
     "#lo|l",
-    "#|lol"
+    "#|lol",
   )
 
   tests("space after selection")(
     "api. |",
-    "api.co |"
+    "api.co |",
   )
 
   tests("inside argument list")(
     "api.aaa.substring(|",
     "api.aaa.substring(32|",
     "api.aaa.substring(32,|",
-    "api.aaa.substring(32, |"
+    "api.aaa.substring(32, |",
   )
 
   tests("plain selection", "api", scexType[Api])(
@@ -128,32 +137,32 @@ class TypeCompletionPrefixTest extends AnyFunSuite with CompilationTest with Com
     "api.|aaa",
     "api.aaa|.inc",
     "api.aa|a.inc",
-    "api.|aaa.inc"
+    "api.|aaa.inc",
   )
 
   tests("plain selection with dangling dot", "api.aaa", scexType[String])(
     "api.aaa.inc|",
     "api.aaa.in|c",
-    "api.aaa.|inc"
+    "api.aaa.|inc",
   )
 
   tests("incomplete selection", "api", scexType[Api])(
     "api.inc|",
     "api.i|nc",
-    "api.|inc"
+    "api.|inc",
   )
 
   tests("incomplete selection accidentally keyword", "api", scexType[Api])(
     "api.type|",
     "api.typ|e",
     "api.t|ype",
-    "api.|type"
+    "api.|type",
   )
 
   tests("forbidden selection", "api", scexType[Api])(
     "api.zuo|",
     "api.z|uo",
-    "api.|zuo"
+    "api.|zuo",
   )
 
   tests("plain select dynamic", "dyn", scexType[Dyn])(
@@ -166,35 +175,35 @@ class TypeCompletionPrefixTest extends AnyFunSuite with CompilationTest with Com
     "dyn.|whatevs.",
     "dyn.whatevs|.inc",
     "dyn.whatev|s.inc",
-    "dyn.|whatevs.inc"
+    "dyn.|whatevs.inc",
   )
 
   tests("select dynamic incomplete selection", "dyn.whatevs", scexType[Api])(
     "dyn.whatevs.|",
     "dyn.whatevs.inc|",
     "dyn.whatevs.i|nc",
-    "dyn.whatevs.|inc"
+    "dyn.whatevs.|inc",
   )
 
   tests("select dynamic incomplete subselection", "api.dynStr.lol", scexType[String])(
     "api.dynStr.lol.|",
     "api.dynStr.lol.is|",
     "api.dynStr.lol.i|s",
-    "api.dynStr.lol.|is"
+    "api.dynStr.lol.|is",
   )
 
   tests("argument-positioned select dynamic incomplete subselection", "api.dynStr.lol", scexType[String])(
     "api.dynStr.fuu + api.dynStr.lol.|",
     "api.dynStr.fuu + api.dynStr.lol.is|",
     "api.dynStr.fuu + api.dynStr.lol.i|s",
-    "api.dynStr.fuu + api.dynStr.lol.|is"
+    "api.dynStr.fuu + api.dynStr.lol.|is",
   )
 
   tests("select dynamic complete subselection", "api.dynStr.lol", scexType[String])(
     "api.dynStr.lol.isEmpty|",
     "api.dynStr.lol.isEmpt|y",
     "api.dynStr.lol.isEmpty|.",
-    "api.dynStr.lol.isEm|pty."
+    "api.dynStr.lol.isEm|pty.",
   )
 
   tests("select dynamic sub-subselection", "dyn.abc.aaa", scexType[String])(
@@ -202,67 +211,67 @@ class TypeCompletionPrefixTest extends AnyFunSuite with CompilationTest with Com
     "dyn.abc.aaa.i|",
     "dyn.abc.aaa.i|s",
     "dyn.abc.aaa.|is",
-    "dyn.abc.aaa.is|"
+    "dyn.abc.aaa.is|",
   )
 
   tests("double select dynamic", "api.dyn.fuu.dynStr", scexType[DynStr])(
     "api.dyn.fuu.dynStr.|",
     "api.dyn.fuu.dynStr.i|s",
     "api.dyn.fuu.dynStr.is|",
-    "api.dyn.fuu.dynStr.|is"
+    "api.dyn.fuu.dynStr.|is",
   )
 
   tests("double select dynamic subselection", "api.dyn.fuu.dynStr.krap", scexType[String])(
     "api.dyn.fuu.dynStr.krap.|",
     "api.dyn.fuu.dynStr.krap.i|s",
     "api.dyn.fuu.dynStr.krap.is|",
-    "api.dyn.fuu.dynStr.krap.|is"
+    "api.dyn.fuu.dynStr.krap.|is",
   )
 
   tests("argument-positioned select dynamic complete subselection", "api.dynStr.lol", scexType[String])(
     "api.dynStr.fuu + api.dynStr.lol.isEmpty|",
     "api.dynStr.fuu + api.dynStr.lol.isEmpt|y",
     "api.dynStr.fuu + api.dynStr.lol.isEmpty|.",
-    "api.dynStr.fuu + api.dynStr.lol.isEm|pty."
+    "api.dynStr.fuu + api.dynStr.lol.isEm|pty.",
   )
 
   tests("argument-positioned double select dynamic", "api.dyn.fuu.dynStr", scexType[DynStr])(
     "api.dynStr.fuu + api.dyn.fuu.dynStr.|",
     "api.dynStr.fuu + api.dyn.fuu.dynStr.i|s",
     "api.dynStr.fuu + api.dyn.fuu.dynStr.is|",
-    "api.dynStr.fuu + api.dyn.fuu.dynStr.|is"
+    "api.dynStr.fuu + api.dyn.fuu.dynStr.|is",
   )
 
   tests("argument-positioned double select dynamic subselection", "api.dyn.fuu.dynStr.krap", scexType[String])(
     "api.dynStr.fuu + api.dyn.fuu.dynStr.krap.|",
     "api.dynStr.fuu + api.dyn.fuu.dynStr.krap.i|s",
     "api.dynStr.fuu + api.dyn.fuu.dynStr.krap.is|",
-    "api.dynStr.fuu + api.dyn.fuu.dynStr.krap.|is"
+    "api.dynStr.fuu + api.dyn.fuu.dynStr.krap.|is",
   )
 
   tests("select dynamic forbidden selection", "dyn.whatevs", scexType[Api])(
     "dyn.whatevs.zuo|",
     "dyn.whatevs.z|uo",
-    "dyn.whatevs.|zuo"
+    "dyn.whatevs.|zuo",
   )
 
   tests("empty param list method selection", "api", scexType[Api])(
     "api.ccc|.",
     "api.ccc|",
     "api.cc|c",
-    "api.|ccc"
+    "api.|ccc",
   )
 
   tests("forbidden implicit member selection", "api", scexType[Api])(
     "api.zle|",
     "api.zl|e",
-    "api.|zle"
+    "api.|zle",
   )
 
   tests("typed dynamic variable member selection", "_vars.someInt", scexType[Int])(
     "_vars.someInt.|",
     "_vars.someInt.|lol",
-    "_vars.someInt.l|ol"
+    "_vars.someInt.l|ol",
   )
 
 }

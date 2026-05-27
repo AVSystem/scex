@@ -15,19 +15,15 @@ import scala.annotation.tailrec
 import scala.util.control.NonFatal
 import scala.util.{Failure, Success, Try}
 
-/**
- * An extension of ScexCompiler which:
- *
- * <ul>
- * <li>Avoids actual compilation of most simple template literal expressions by trying to parse them
- * immediately into resulting values. This also means that conversion of literal values to expected result type
- * is performed immediately during compilation and conversion errors will be reported as compilation errors.</li>
- * <li>Manually parses template expressions and compiles each template argument as a separate expression.</li>
- * </ul>
- *
- * Created: 01-04-2014
- * Author: ghik
- */
+/** An extension of ScexCompiler which:
+  *
+  * <ul> <li>Avoids actual compilation of most simple template literal expressions by trying to parse them immediately
+  * into resulting values. This also means that conversion of literal values to expected result type is performed
+  * immediately during compilation and conversion errors will be reported as compilation errors.</li> <li>Manually
+  * parses template expressions and compiles each template argument as a separate expression.</li> </ul>
+  *
+  * Created: 01-04-2014 Author: ghik
+  */
 trait TemplateOptimizingScexCompiler extends ScexPresentationCompiler {
 
   import com.avsystem.scex.util.CacheImplicits._
@@ -43,8 +39,11 @@ trait TemplateOptimizingScexCompiler extends ScexPresentationCompiler {
     def apply(ctx: ExpressionContext[_, _]): Any = value
   }
 
-  private class OptimizedTemplateExpression(parts: List[String], args: List[RawExpression], val debugInfo: ExpressionDebugInfo)
-    extends RawExpression {
+  private class OptimizedTemplateExpression(
+    parts: List[String],
+    args: List[RawExpression],
+    val debugInfo: ExpressionDebugInfo,
+  ) extends RawExpression {
 
     def apply(c: ExpressionContext[_, _]): String =
       TemplateInterpolations.concatIterator(parts: _*)(args.iterator.map(_.apply(c)))
@@ -52,19 +51,25 @@ trait TemplateOptimizingScexCompiler extends ScexPresentationCompiler {
 
   import com.avsystem.scex.parsing.TemplateParser.{parseTemplate, Success => ParsingSuccess}
 
-  /**
-   * Compiles a dummy expression that tests if there is a valid implicit conversion from Literal to expected type
-   * that is not a macro and does not reference context or root object (and thus is independent of expression input).
-   * If there is no such conversion, <code>LiteralsOptimizingScexCompiler</code> will not attempt to optimize the
-   * compilation and simply pass it to <code>super.compileExpression</code>.
-   */
+  /** Compiles a dummy expression that tests if there is a valid implicit conversion from Literal to expected type that
+    * is not a macro and does not reference context or root object (and thus is independent of expression input). If
+    * there is no such conversion, <code>LiteralsOptimizingScexCompiler</code> will not attempt to optimize the
+    * compilation and simply pass it to <code>super.compileExpression</code>.
+    */
   private def validateLiteralConversion(exprDef: ExpressionDef) = {
     import com.avsystem.scex.compiler.CodeGeneration._
     val actualHeader = implicitLiteralViewHeader(exprDef.header)
     val validationExpression = implicitLiteralViewExpression(exprDef.resultType)
-    val validationExprDef = ExpressionDef(exprDef.profile, template = false, setter = false, validationExpression,
-      actualHeader, exprDef.contextType, exprDef.resultType, Map.empty)(
-      validationExpression, EmptyPositionMapping, exprDef.rootObjectClass)
+    val validationExprDef = ExpressionDef(
+      exprDef.profile,
+      template = false,
+      setter = false,
+      validationExpression,
+      actualHeader,
+      exprDef.contextType,
+      exprDef.resultType,
+      Map.empty,
+    )(validationExpression, EmptyPositionMapping, exprDef.rootObjectClass)
     super.compileExpression(validationExprDef)
   }
 
@@ -73,7 +78,8 @@ trait TemplateOptimizingScexCompiler extends ScexPresentationCompiler {
 
     val profileObjectPkg = compileProfileObject(profile).get
     val utilsObjectPkg = compileExpressionUtils(profile.expressionUtils).get
-    val conversionClassCode = implicitLiteralConversionClass(profileObjectPkg, utilsObjectPkg, profile.expressionHeader, header, resultType)
+    val conversionClassCode =
+      implicitLiteralConversionClass(profileObjectPkg, utilsObjectPkg, profile.expressionHeader, header, resultType)
     val pkgName = ConversionSupplierPkgPrefix + DigestUtils.md5Hex(conversionClassCode)
     val fullCode = wrapInSource(conversionClassCode, pkgName)
 
@@ -91,7 +97,11 @@ trait TemplateOptimizingScexCompiler extends ScexPresentationCompiler {
   }
 
   private def toCompileError(expr: String, resultType: String, throwable: Throwable) =
-    CompileError(expr, 1, s"Invalid literal value for $resultType: ${throwable.getClass.getName}: ${throwable.getMessage}")
+    CompileError(
+      expr,
+      1,
+      s"Invalid literal value for $resultType: ${throwable.getClass.getName}: ${throwable.getMessage}",
+    )
 
   private def isStringSupertype(tpe: String) =
     JavaTypeParsing.StringSupertypes.contains(tpe)
@@ -114,7 +124,10 @@ trait TemplateOptimizingScexCompiler extends ScexPresentationCompiler {
                 LiteralExpression(convertedValue)(debugInfo)
               } catch {
                 case NonFatal(throwable) =>
-                  throw CompilationFailedException(singlePart, List(toCompileError(singlePart, exprDef.resultType, throwable)))
+                  throw CompilationFailedException(
+                    singlePart,
+                    List(toCompileError(singlePart, exprDef.resultType, throwable)),
+                  )
               }
             }
           else super.compileExpression(exprDef)
@@ -126,17 +139,29 @@ trait TemplateOptimizingScexCompiler extends ScexPresentationCompiler {
           val argExprTries = args.map { arg =>
             val shift = SingleShiftPositionMapping(arg.beg)
             val reverseMapping = exprDef.positionMapping.reverse
-            val originalArg = exprDef.originalExpression.substring(reverseMapping(arg.beg), reverseMapping(arg.end - 1) + 1)
-            val shiftedMapping = shift andThen exprDef.positionMapping andThen shift.reverse
+            val originalArg =
+              exprDef.originalExpression.substring(reverseMapping(arg.beg), reverseMapping(arg.end - 1) + 1)
+            val shiftedMapping = shift.andThen(exprDef.positionMapping).andThen(shift.reverse)
 
             compileExpression(
-              ExpressionDef(exprDef.profile, template = true, setter = false, arg.result, exprDef.header,
-                exprDef.contextType, "String", exprDef.variableTypes)(originalArg, shiftedMapping, exprDef.rootObjectClass))
+              ExpressionDef(
+                exprDef.profile,
+                template = true,
+                setter = false,
+                arg.result,
+                exprDef.header,
+                exprDef.contextType,
+                "String",
+                exprDef.variableTypes,
+              )(originalArg, shiftedMapping, exprDef.rootObjectClass)
+            )
           }
 
           @tailrec
           def merge(
-            exprs: List[Try[RawExpression]], successAcc: List[RawExpression], errorsAcc: List[CompileError]
+            exprs: List[Try[RawExpression]],
+            successAcc: List[RawExpression],
+            errorsAcc: List[CompileError],
           ): Try[List[RawExpression]] =
             exprs match {
               case Success(expr) :: rest =>
@@ -163,19 +188,21 @@ trait TemplateOptimizingScexCompiler extends ScexPresentationCompiler {
     case Nil if exprDef.template && !exprDef.setter && !isStringSupertype(exprDef.resultType) =>
       parseTemplate(exprDef.expression) match {
         case ParsingSuccess((List(singlePart), Nil), _) if validateLiteralConversion(exprDef).isSuccess =>
-          getLiteralConversion(exprDef).map { conversion =>
-            if (conversion.isNullable && singlePart.isEmpty) Nil
-            else {
-              val literal = Literal(singlePart)
-              try {
-                conversion.get.apply(literal)
-                Nil
-              } catch {
-                case NonFatal(ex) =>
-                  List(toCompileError(singlePart, exprDef.resultType, ex))
+          getLiteralConversion(exprDef)
+            .map { conversion =>
+              if (conversion.isNullable && singlePart.isEmpty) Nil
+              else {
+                val literal = Literal(singlePart)
+                try {
+                  conversion.get.apply(literal)
+                  Nil
+                } catch {
+                  case NonFatal(ex) =>
+                    List(toCompileError(singlePart, exprDef.resultType, ex))
+                }
               }
             }
-          }.getOrElse(Nil)
+            .getOrElse(Nil)
 
         case _ => Nil
       }

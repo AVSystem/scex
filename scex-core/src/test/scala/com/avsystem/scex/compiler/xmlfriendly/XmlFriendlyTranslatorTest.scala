@@ -4,9 +4,7 @@ package compiler.xmlfriendly
 import com.google.common.io.ByteStreams
 import org.scalatest.funsuite.AnyFunSuite
 
-/**
-  * Created: 23-04-2014
-  * Author: ghik
+/** Created: 23-04-2014 Author: ghik
   */
 class XmlFriendlyTranslatorTest extends AnyFunSuite {
 
@@ -17,15 +15,15 @@ class XmlFriendlyTranslatorTest extends AnyFunSuite {
     val translated = "  _vars.lol"
     val pstr = translate(original)
     assert(translated == pstr.result)
-    assert(original.indices.map(pstr.positionMapping.apply) ==
-      Seq(0, 2, 8, 9, 10))
-    assert(translated.indices.map(pstr.positionMapping.reverse.apply) ==
-      Seq(0, 0, 1, 1, 1, 1, 1, 1, 2, 3, 4))
+    assert(original.indices.map(pstr.positionMapping.apply) == Seq(0, 2, 8, 9, 10))
+    assert(translated.indices.map(pstr.positionMapping.reverse.apply) == Seq(0, 0, 1, 1, 1, 1, 1, 1, 2, 3, 4))
   }
 
   test("variables in template test") {
-    assert("fuu #lol $$lol ${fuu} haha ${ _vars.dafuq + 5} ss" ==
-      translate("fuu #lol $lol ${fuu} haha ${#dafuq + 5} ss", template = true).result)
+    assert(
+      "fuu #lol $$lol ${fuu} haha ${ _vars.dafuq + 5} ss" ==
+        translate("fuu #lol $lol ${fuu} haha ${#dafuq + 5} ss", template = true).result
+    )
   }
 
   test("negated variable test") {
@@ -63,10 +61,8 @@ class XmlFriendlyTranslatorTest extends AnyFunSuite {
     val translated = "${`type`}"
     val pstr = translate(original)
     assert(translated == pstr.result)
-    assert(original.indices.map(pstr.positionMapping.apply) ==
-      Seq(0, 1, 3, 4, 5, 6, 8))
-    assert(translated.indices.map(pstr.positionMapping.reverse.apply) ==
-      Seq(0, 1, 2, 2, 3, 4, 5, 5, 6))
+    assert(original.indices.map(pstr.positionMapping.apply) == Seq(0, 1, 3, 4, 5, 6, 8))
+    assert(translated.indices.map(pstr.positionMapping.reverse.apply) == Seq(0, 1, 2, 2, 3, 4, 5, 5, 6))
   }
 
   test("unused scala keyword selection test") {
