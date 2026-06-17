@@ -4,20 +4,16 @@ package compiler
 import scala.ref.WeakReference
 import scala.util.Try
 
-/**
- * Wraps compiled expression into a wrapper that only holds weak reference to underlying expression.
- * This is to allow actually compiled expression classes to be GCed after the compiler is reset.
- * This trait should be used together with CachingScexCompiler to avoid recompilation of expressions
- * every time GC wipes out the weak reference.
- *
- * Created: 02-04-2014
- * Author: ghik
- */
+/** Wraps compiled expression into a wrapper that only holds weak reference to underlying expression. This is to allow
+  * actually compiled expression classes to be GCed after the compiler is reset. This trait should be used together with
+  * CachingScexCompiler to avoid recompilation of expressions every time GC wipes out the weak reference.
+  *
+  * Created: 02-04-2014 Author: ghik
+  */
 trait WeakReferenceWrappingScexCompiler extends ScexCompiler {
 
-  /**
-   * Wrapper that avoids holding strong reference to actual compiled expression.
-   */
+  /** Wrapper that avoids holding strong reference to actual compiled expression.
+    */
   private class WeakExpressionWrapper(exprDef: ExpressionDef, initiallyWrapped: RawExpression) extends RawExpression {
     var expressionRef = new WeakReference(initiallyWrapped)
 

@@ -17,18 +17,18 @@ trait JavaScexCompiler extends ScexCompiler with ScexPresentationCompiler {
 
   import com.avsystem.scex.util.CacheImplicits._
 
-  private val typesCache = CacheBuilder.newBuilder.weakKeys
-    .build[Type, String](javaTypeAsScalaType _)
+  private val typesCache = CacheBuilder.newBuilder.weakKeys.build[Type, String](javaTypeAsScalaType _)
 
-  private val rootObjectClassCache = CacheBuilder.newBuilder.weakKeys
-    .build[TypeToken[_ <: ExpressionContext[_, _]], Class[_]](getRootObjectClass _)
+  private val rootObjectClassCache =
+    CacheBuilder.newBuilder.weakKeys.build[TypeToken[_ <: ExpressionContext[_, _]], Class[_]](getRootObjectClass _)
 
   private def getRootObjectClass(token: TypeToken[_ <: ExpressionContext[_, _]]): Class[_] =
     token.getSupertype(classOf[ExpressionContext[_, _]]).getType match {
-      case ParameterizedType(_, _, Array(rootObjectType, _)) => rootObjectType match {
-        case TypeAny | TypeAnyVal => null
-        case _ => TypeToken.of(rootObjectType).getRawType
-      }
+      case ParameterizedType(_, _, Array(rootObjectType, _)) =>
+        rootObjectType match {
+          case TypeAny | TypeAnyVal => null
+          case _ => TypeToken.of(rootObjectType).getRawType
+        }
       case clazz if clazz == classOf[ExpressionContext[_, _]] => classOf[Object]
     }
 
@@ -55,13 +55,23 @@ trait JavaScexCompiler extends ScexCompiler with ScexPresentationCompiler {
       val scalaContextType = typesCache.get(_contextTypeToken.getType)
       val scalaResultType = typesCache.get(_resultTypeToken.getType)
       val rootObjectClass = rootObjectClassCache.get(_contextTypeToken)
-      val variableTypes = _variableTypes.asScala.iterator.map {
-        case (key, value) => (key, typesCache.get(value.getType))
+      val variableTypes = _variableTypes.asScala.iterator.map { case (key, value) =>
+        (key, typesCache.get(value.getType))
       }.toMap
 
       val (actualExpression, positionMapping) = preprocess(_expression, _template)
-      getCompiledExpression[C, T](ExpressionDef(_profile, _template, _setter, actualExpression, _header,
-        scalaContextType, scalaResultType, variableTypes)(_expression, positionMapping, rootObjectClass))
+      getCompiledExpression[C, T](
+        ExpressionDef(
+          _profile,
+          _template,
+          _setter,
+          actualExpression,
+          _header,
+          scalaContextType,
+          scalaResultType,
+          variableTypes,
+        )(_expression, positionMapping, rootObjectClass)
+      )
     }
 
     def contextType[NC <: ExpressionContext[_, _]](contextTypeToken: TypeToken[NC]): ExpressionBuilder[NC, T] = fluent {
@@ -150,11 +160,20 @@ trait JavaScexCompiler extends ScexCompiler with ScexPresentationCompiler {
       val scalaContextType = typesCache.get(_contextTypeToken.getType)
       val scalaResultType = typesCache.get(_resultTypeToken.getType)
       val rootObjectClass = rootObjectClassCache.get(_contextTypeToken)
-      val variableTypes = _variableTypes.asScala.iterator.map {
-        case (key, value) => (key, typesCache.get(value.getType))
+      val variableTypes = _variableTypes.asScala.iterator.map { case (key, value) =>
+        (key, typesCache.get(value.getType))
       }.toMap
 
-      getCompleter(_profile, _template, _setter, _header, scalaContextType, rootObjectClass, scalaResultType, variableTypes)
+      getCompleter(
+        _profile,
+        _template,
+        _setter,
+        _header,
+        scalaContextType,
+        rootObjectClass,
+        scalaResultType,
+        variableTypes,
+      )
     }
 
     def contextType(contextTypeToken: TypeToken[_ <: ExpressionContext[_, _]]): this.type = fluent {

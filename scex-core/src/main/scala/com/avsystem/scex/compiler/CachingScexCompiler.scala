@@ -53,7 +53,8 @@ trait CachingScexCompiler extends ScexCompiler {
 
   override protected def preprocess(expression: String, template: Boolean) =
     unwrapExecutionException(
-      preprocessingCache.get((expression, template), callable(super.preprocess(expression, template))))
+      preprocessingCache.get((expression, template), callable(super.preprocess(expression, template)))
+    )
 
   override protected def compileExpression(exprDef: ExpressionDef) = {
     val result = unwrapExecutionException(expressionCache.get(exprDef, callable(super.compileExpression(exprDef))))
@@ -63,32 +64,43 @@ trait CachingScexCompiler extends ScexCompiler {
   }
 
   override protected def compileProfileObject(profile: ExpressionProfile) = {
-    val result = unwrapExecutionException(underLock(
-      profileCompilationResultsCache.get(profile, callable(super.compileProfileObject(profile)))))
+    val result = unwrapExecutionException(
+      underLock(profileCompilationResultsCache.get(profile, callable(super.compileProfileObject(profile))))
+    )
     invalidateCacheEntry(result, () => profileCompilationResultsCache.invalidate(profile))
 
     result
   }
 
   override protected def compileExpressionUtils(source: NamedSource) = {
-    val result = unwrapExecutionException(underLock(
-      utilsCompilationResultsCache.get(source.name, callable(super.compileExpressionUtils(source)))))
+    val result = unwrapExecutionException(
+      underLock(utilsCompilationResultsCache.get(source.name, callable(super.compileExpressionUtils(source))))
+    )
     invalidateCacheEntry(result, () => utilsCompilationResultsCache.invalidate(source.name))
 
     result
   }
 
-  override protected def compileJavaGetterAdapters(profile: ExpressionProfile, name: String, classes: Seq[Class[_]], full: Boolean) =
-    unwrapExecutionException(underLock(
-      javaGetterAdaptersCache.get((profile.name, name, classes, full), callable(super.compileJavaGetterAdapters(profile, name, classes, full)))))
+  override protected def compileJavaGetterAdapters(
+    profile: ExpressionProfile,
+    name: String,
+    classes: Seq[Class[_]],
+    full: Boolean,
+  ) =
+    unwrapExecutionException(
+      underLock(
+        javaGetterAdaptersCache.get(
+          (profile.name, name, classes, full),
+          callable(super.compileJavaGetterAdapters(profile, name, classes, full)),
+        )
+      )
+    )
 
   override def compileSyntaxValidator(source: NamedSource) =
-    unwrapExecutionException(
-      syntaxValidatorsCache.get(source.name, callable(super.compileSyntaxValidator(source))))
+    unwrapExecutionException(syntaxValidatorsCache.get(source.name, callable(super.compileSyntaxValidator(source))))
 
   override def compileSymbolValidator(source: NamedSource) =
-    unwrapExecutionException(
-      symbolValidatorsCache.get(source.name, callable(super.compileSymbolValidator(source))))
+    unwrapExecutionException(symbolValidatorsCache.get(source.name, callable(super.compileSymbolValidator(source))))
 
   override def reset(): Unit = underLock {
     super.reset()
@@ -101,7 +113,8 @@ trait CachingScexCompiler extends ScexCompiler {
   }
 
   private def unwrapExecutionException[T](code: => T) =
-    try code catch {
+    try code
+    catch {
       case e: ExecutionException => throw e.getCause
       case e: ExecutionError => throw e.getCause
     }

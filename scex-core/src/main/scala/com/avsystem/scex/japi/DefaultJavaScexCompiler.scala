@@ -4,16 +4,14 @@ package japi
 import com.avsystem.scex.compiler._
 import com.avsystem.scex.compiler.presentation.{CachingScexPresentationCompiler, ScexPresentationCompiler}
 
-/**
- * Created: 17-09-2013
- * Author: ghik
- */
+/** Created: 17-09-2013 Author: ghik
+  */
 class DefaultJavaScexCompiler(val settings: ScexSettings)
   extends ScexCompiler
-  with ScexPresentationCompiler
-  with ClassfileReusingScexCompiler
-  with TemplateOptimizingScexCompiler
-  with CachingScexCompiler
-  with CachingScexPresentationCompiler
-  with WeakReferenceWrappingScexCompiler
-  with JavaScexCompiler
+    with ScexPresentationCompiler
+    with ClassfileReusingScexCompiler
+    with TemplateOptimizingScexCompiler
+    with CachingScexCompiler
+    with CachingScexPresentationCompiler
+    with WeakReferenceWrappingScexCompiler
+    with JavaScexCompiler

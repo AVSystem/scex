@@ -9,9 +9,8 @@ import scala.Array
 import scala.collection.mutable.ListBuffer
 import scala.language.existentials
 
-/**
- * Utils for conversions of Java types into string representations of their Scala counterparts.
- */
+/** Utils for conversions of Java types into string representations of their Scala counterparts.
+  */
 object JavaTypeParsing {
 
   final case class ScalaTypeVariable(name: String, upperBounds: Array[Type], lowerBounds: Array[Type]) extends Type
@@ -77,7 +76,7 @@ object JavaTypeParsing {
     classOf[Int] -> "Int",
     classOf[Long] -> "Long",
     classOf[Float] -> "Float",
-    classOf[Double] -> "Double"
+    classOf[Double] -> "Double",
   )
 
   def javaTypeAsScalaType(tpe: Type): String = tpe match {
@@ -107,7 +106,8 @@ object JavaTypeParsing {
 
     case WrappedParameterizedType(rawType, ownerType, typeArguments) =>
       val clazz = rawType.asInstanceOf[Class[_]]
-      val typeArgumentsRepr = if (typeArguments.nonEmpty) typeArguments.map(javaTypeAsScalaType).mkString("[", ", ", "]") else ""
+      val typeArgumentsRepr =
+        if (typeArguments.nonEmpty) typeArguments.map(javaTypeAsScalaType).mkString("[", ", ", "]") else ""
 
       if (ownerType != null) {
         javaTypeAsScalaType(ownerType) + "#" + clazz.getSimpleName + typeArgumentsRepr
@@ -158,12 +158,11 @@ object JavaTypeParsing {
       throw new IllegalArgumentException(s"Type $tpe does not have erasure")
   }
 
-  /**
-   * Example: transforms java type <tt>A<? extends B, C>.D<? super E></tt> into Scala type
-   * <tt>A[T1,C]#D[T2] forSome {type T1 <: B; type T2 >: E}</tt>
-   * @param paramType
-   * @return
-   */
+  /** Example: transforms java type <tt>A<? extends B, C>.D<? super E></tt> into Scala type <tt>A[T1,C]#D[T2] forSome
+    * {type T1 <: B; type T2 >: E}</tt>
+    * @param paramType
+    * @return
+    */
   def parameterizedTypeToExistential(paramType: ParameterizedType): ExistentialType = {
     var i = 0
     def newTypeVarName() = {
@@ -229,9 +228,8 @@ object JavaTypeParsing {
   }
 
   def typeVariableDeclarations(typeVars: List[Type]): List[String] =
-    typeVars.map {
-      case TypeVariable(name, upperBounds, lowerBounds) =>
-        name + bounds(upperBounds, lowerBounds)
+    typeVars.map { case TypeVariable(name, upperBounds, lowerBounds) =>
+      name + bounds(upperBounds, lowerBounds)
     }
 
   val StringSupertypes = Set("String", "Object", "Comparable[String]") ++ Set(
@@ -241,7 +239,7 @@ object JavaTypeParsing {
     classOf[java.io.Serializable],
     classOf[CharSequence],
     WrappedParameterizedType(classOf[Comparable[_]], null, Array(classOf[String])),
-    classOf[String]
+    classOf[String],
   ).map(javaTypeAsScalaType)
 
 }

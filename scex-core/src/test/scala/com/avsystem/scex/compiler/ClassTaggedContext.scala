@@ -5,9 +5,7 @@ import com.avsystem.scex.ExpressionContext
 import scala.collection.mutable
 import scala.reflect.ClassTag
 
-/**
-  * Author: ghik
-  * Created: 22/10/15.
+/** Author: ghik Created: 22/10/15.
   */
 class ClassTaggedContext extends ExpressionContext[Unit, Unit] {
   type VarTag[T] = ClassTag[T]

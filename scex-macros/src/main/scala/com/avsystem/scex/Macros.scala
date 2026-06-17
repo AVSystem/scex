@@ -4,10 +4,8 @@ import com.avsystem.scex.util.MacroUtils
 
 import scala.reflect.macros.blackbox
 
-/**
- * Created: 18-11-2013
- * Author: ghik
- */
+/** Created: 18-11-2013 Author: ghik
+  */
 class Macros(val c: blackbox.Context) extends MacroUtils {
 
   lazy val universe: c.universe.type = c.universe
@@ -34,7 +32,7 @@ class Macros(val c: blackbox.Context) extends MacroUtils {
       case _ => false
     }
 
-    assert(parts forall isStringLiteral)
+    assert(parts.forall(isStringLiteral))
     assert(parts.size == args.size + 1)
 
     val resultType = weakTypeOf[T]
@@ -86,7 +84,10 @@ class Macros(val c: blackbox.Context) extends MacroUtils {
       } else if (typeOf[String] <:< resultType) {
         reifyConcatenation(parts, argTrees)
       } else {
-        c.abort(soleArgTree.pos, s"This template (type ${soleArgTree.tpe.widen}) cannot represent value of type $resultType")
+        c.abort(
+          soleArgTree.pos,
+          s"This template (type ${soleArgTree.tpe.widen}) cannot represent value of type $resultType",
+        )
       }
 
     } else if (typeOf[String] <:< resultType) {

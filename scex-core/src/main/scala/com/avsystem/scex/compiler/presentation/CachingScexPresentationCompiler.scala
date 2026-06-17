@@ -7,16 +7,14 @@ import java.{lang => jl, util => ju}
 
 import com.avsystem.scex.compiler.ExpressionDef
 import com.avsystem.scex.compiler.ScexCompiler.{CompilationFailedException, CompileError}
-import com.avsystem.scex.compiler.presentation.ScexPresentationCompiler.{Member, Completion}
+import com.avsystem.scex.compiler.presentation.ScexPresentationCompiler.{Completion, Member}
 import com.avsystem.scex.presentation.SymbolAttributes
 import com.avsystem.scex.util.TypeWrapper
 import com.google.common.cache.CacheBuilder
 import com.google.common.util.concurrent.ExecutionError
 
-/**
- * Created: 12-12-2013
- * Author: ghik
- */
+/** Created: 12-12-2013 Author: ghik
+  */
 trait CachingScexPresentationCompiler extends ScexPresentationCompiler {
 
   import com.avsystem.scex.util.CommonUtils._
@@ -38,8 +36,7 @@ trait CachingScexPresentationCompiler extends ScexPresentationCompiler {
     .maximumSize(settings.typeMembersCacheSize.value)
     .build[TypeMembersCacheKey, Vector[Member]]
 
-  private val symbolAttributesCache = CacheBuilder.newBuilder
-    .build[String, SymbolAttributes]
+  private val symbolAttributesCache = CacheBuilder.newBuilder.build[String, SymbolAttributes]
 
   override protected def getErrors(exprDef: ExpressionDef) =
     unwrapExecutionException(errorsCache.get(exprDef, callable(super.getErrors(exprDef))))
@@ -47,8 +44,14 @@ trait CachingScexPresentationCompiler extends ScexPresentationCompiler {
   override protected def getScopeCompletion(exprDef: ExpressionDef) =
     unwrapExecutionException(scopeCompletionCache.get(exprDef, callable(super.getScopeCompletion(exprDef))))
 
-  override protected def getTypeMembers(global: IGlobal)(exprDef: ExpressionDef, ownerTpe: global.Type)
-    (computeMembers: => Vector[Member]): Vector[Member] = {
+  override protected def getTypeMembers(
+    global: IGlobal
+  )(
+    exprDef: ExpressionDef,
+    ownerTpe: global.Type,
+  )(
+    computeMembers: => Vector[Member]
+  ): Vector[Member] = {
 
     val key = TypeMembersCacheKey(exprDef.profile, exprDef.contextType, TypeWrapper(global)(ownerTpe.map(_.widen)))
     unwrapExecutionException(typeMembersCache.get(key, callable(computeMembers)))
@@ -66,7 +69,8 @@ trait CachingScexPresentationCompiler extends ScexPresentationCompiler {
   }
 
   private def unwrapExecutionException[T](code: => T) =
-    try code catch {
+    try code
+    catch {
       case e: ExecutionException => throw e.getCause
       case e: ExecutionError => throw e.getCause
     }

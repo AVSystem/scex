@@ -8,17 +8,24 @@ import com.avsystem.scex.util.{PredefinedAccessSpecs, SimpleContext}
 import com.avsystem.scex.validation.{SymbolValidator, SyntaxValidator}
 import org.scalatest.funsuite.AnyFunSuite
 
-/**
-  * Created: 20-11-2013
-  * Author: ghik
+/** Created: 20-11-2013 Author: ghik
   */
 class TypesafeEqualsTest extends AnyFunSuite with CompilationTest {
 
   import com.avsystem.scex.validation.SymbolValidator._
 
-  override def evaluate[T: TypeString](expr: String, acl: List[MemberAccessSpec] = PredefinedAccessSpecs.basicOperations) = {
-    val profile = new ExpressionProfile(newProfileName(), SyntaxValidator.SimpleExpressions, SymbolValidator(acl),
-      SymbolAttributes(Nil), "import com.avsystem.scex.util.TypesafeEquals._", NamedSource("test", ""))
+  override def evaluate[T: TypeString](
+    expr: String,
+    acl: List[MemberAccessSpec] = PredefinedAccessSpecs.basicOperations,
+  ) = {
+    val profile = new ExpressionProfile(
+      newProfileName(),
+      SyntaxValidator.SimpleExpressions,
+      SymbolValidator(acl),
+      SymbolAttributes(Nil),
+      "import com.avsystem.scex.util.TypesafeEquals._",
+      NamedSource("test", ""),
+    )
 
     compiler.getCompiledExpression[SimpleContext[Unit], T](profile, expr, template = false).apply(SimpleContext(()))
   }
@@ -60,7 +67,7 @@ class TypesafeEqualsTest extends AnyFunSuite with CompilationTest {
   }
 
   test("complex expression test") {
-    assert(true == evaluate[Boolean]( """("fuu" == "lol") || ("dafuq" != "srsly") """))
+    assert(true == evaluate[Boolean]("""("fuu" == "lol") || ("dafuq" != "srsly") """))
   }
 
 }

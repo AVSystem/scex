@@ -3,9 +3,7 @@ package com.avsystem.scex.parsing
 import scala.annotation.nowarn
 import scala.collection.immutable.SortedMap
 
-/**
-  * Created: 24-10-2013
-  * Author: ghik
+/** Created: 24-10-2013 Author: ghik
   */
 trait PositionMapping {
   def apply(pos: Int): Int
@@ -18,7 +16,7 @@ trait PositionMapping {
     else ComposedPositionMapping(this, other)
 
   def andThen(other: PositionMapping): PositionMapping =
-    other compose this
+    other.compose(this)
 }
 
 final case class ShiftInfo(totalPrevShift: Int, addedLeft: Int, removedLeft: Int, addedRight: Int, removedRight: Int) {
@@ -50,7 +48,7 @@ object ShiftInfo {
 
 class ShiftInfoPositionMapping(
   private val shiftMapping: SortedMap[Int, ShiftInfo],
-  private val reverseShiftMapping: SortedMap[Int, ShiftInfo]
+  private val reverseShiftMapping: SortedMap[Int, ShiftInfo],
 ) extends PositionMapping {
 
   @nowarn("msg=deprecated")

@@ -1,9 +1,7 @@
 package com.avsystem.scex
 package util
 
-/**
-  * Created: 14-11-2013
-  * Author: ghik
+/** Created: 14-11-2013 Author: ghik
   */
 trait Fluent {
   @inline

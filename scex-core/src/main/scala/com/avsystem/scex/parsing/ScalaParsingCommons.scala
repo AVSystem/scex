@@ -3,11 +3,8 @@ package com.avsystem.scex.parsing
 import scala.reflect.internal.Chars
 import scala.util.parsing.combinator.RegexParsers
 
-
-/**
- * Created: 30-10-2014
- * Author: ghik
- */
+/** Created: 30-10-2014 Author: ghik
+  */
 trait ScalaParsingCommons extends RegexParsers {
 
   override def skipWhitespace = false
@@ -26,9 +23,10 @@ trait ScalaParsingCommons extends RegexParsers {
     implicit val stringStringParseable: StringParseable[String] = new StringParseable[String]
     implicit val elemStringParseable: StringParseable[Char] = new StringParseable[Elem]
 
-    implicit def optionStringParseable[T: StringParseable]: StringParseable[Option[T]] = new StringParseable[Option[T]] {
-      override def toString(t: Option[T]): String = t.map(implicitly[StringParseable[T]].toString).getOrElse("")
-    }
+    implicit def optionStringParseable[T: StringParseable]: StringParseable[Option[T]] =
+      new StringParseable[Option[T]] {
+        override def toString(t: Option[T]): String = t.map(implicitly[StringParseable[T]].toString).getOrElse("")
+      }
   }
 
   protected implicit class StringParseableParserOps[L: StringParseable](parser: Parser[L]) {
@@ -95,13 +93,13 @@ trait ScalaParsingCommons extends RegexParsers {
     """([^"\p{Cntrl}\\])+""".r
 
   val quotedInterpolationChars: Parser[String] =
-    repjoin( """([^"\p{Cntrl}\$])+|\$\$""".r)
+    repjoin("""([^"\p{Cntrl}\$])+|\$\$""".r)
 
   val multilineChars: Parser[String] =
     """([^"\p{Cntrl}])+|"{1,2}(?!")""".r
 
   val multilineInterpolationChars: Parser[String] =
-    repjoin( """([^"\p{Cntrl}\$])+|"{1,2}(?!")|\$\$|\s+""".r)
+    repjoin("""([^"\p{Cntrl}\$])+|"{1,2}(?!")|\$\$|\s+""".r)
 
   val interpolationArg: Parser[String] =
     "$" ~~ (plainIdent | block)
@@ -125,7 +123,8 @@ trait ScalaParsingCommons extends RegexParsers {
     "\"\"\"" ~~ repjoin(multilineChars) ~~ multilineEnd
 
   val multilineInterpolation: Parser[String] =
-    ident ~~ "\"\"\"" ~~ repjoin(multilineInterpolationChars ~~ interpolationArg) ~~ multilineInterpolationChars ~~ multilineEnd
+    ident ~~ "\"\"\"" ~~ repjoin(multilineInterpolationChars ~~ interpolationArg) ~~ multilineInterpolationChars ~~
+      multilineEnd
 
   val whitespace: Parser[String] =
     """\s+""".r
@@ -140,8 +139,10 @@ trait ScalaParsingCommons extends RegexParsers {
     "(" ~~ expr ~~ ")"
 
   def expr: Parser[String] =
-    repjoin(whitespace | block | brackets | parens | delim | multilineInterpolation | multilineString |
-      stringInterpolation | stringLiteral | charLiteral | symbolLiteral | number | delim | ident | btident | operator)
+    repjoin(
+      whitespace | block | brackets | parens | delim | multilineInterpolation | multilineString | stringInterpolation |
+        stringLiteral | charLiteral | symbolLiteral | number | delim | ident | btident | operator
+    )
 
 }
 

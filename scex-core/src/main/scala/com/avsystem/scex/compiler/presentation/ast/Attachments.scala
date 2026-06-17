@@ -3,10 +3,8 @@ package compiler.presentation.ast
 
 import com.avsystem.commons.jiop.JavaInterop._
 
-/**
- * Created: 12-03-2014
- * Author: ghik
- */
+/** Created: 12-03-2014 Author: ghik
+  */
 final case class Attachments(tpe: Type, position: Position)
 object Attachments {
   val empty = new Attachments(Type.NoType, null)

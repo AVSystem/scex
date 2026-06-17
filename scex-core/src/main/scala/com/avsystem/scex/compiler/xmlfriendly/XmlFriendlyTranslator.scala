@@ -5,16 +5,21 @@ import com.avsystem.scex.compiler.CodeGeneration
 import com.avsystem.scex.parsing.{Binding, PString, PositionTrackingParsers}
 import com.avsystem.scex.util.CommonUtils._
 
-/**
-  * Parser that translates XML-friendly expressions into correct scala code.
-  * Implemented using Scala parser combinators (recursive descent parser).
+/** Parser that translates XML-friendly expressions into correct scala code. Implemented using Scala parser combinators
+  * (recursive descent parser).
   *
-  * Created: 17-09-2013
-  * Author: ghik
+  * Created: 17-09-2013 Author: ghik
   */
 object XmlFriendlyTranslator extends PositionTrackingParsers {
   final val AllowedKeywords = Set(
-    "case", "else", "false", "if", "match", "new", "null", "true"
+    "case",
+    "else",
+    "false",
+    "if",
+    "match",
+    "new",
+    "null",
+    "true",
   )
 
   final val XmlFriendlyOperators = Map(
@@ -23,7 +28,7 @@ object XmlFriendlyTranslator extends PositionTrackingParsers {
     "lte" -> "<= ",
     "gte" -> ">= ",
     "and" -> "&& ",
-    "or" -> "||"
+    "or" -> "||",
   ).withDefault(identity)
 
   def escapeIdent(pstr: PString): PString =
@@ -71,8 +76,8 @@ object XmlFriendlyTranslator extends PositionTrackingParsers {
   def number: Parser[PString] =
     "[0-9]+".rp
 
-  def block: Parser[PString] = "{".p ~ standardExpression ~ "}".p ^^ {
-    case lb ~ contents ~ rb => lb + contents + rb
+  def block: Parser[PString] = "{".p ~ standardExpression ~ "}".p ^^ { case lb ~ contents ~ rb =>
+    lb + contents + rb
   }
 
   def operator: Parser[PString] =

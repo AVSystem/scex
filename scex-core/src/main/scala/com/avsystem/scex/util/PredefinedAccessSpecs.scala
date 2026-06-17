@@ -30,7 +30,7 @@ object PredefinedAccessSpecs {
       anyRef.notifyAll()
       anyRef.synchronized(_: Any)
     }
-    on { ip: RangedProxy[Any@plus] =>
+    on { ip: RangedProxy[Any @plus] =>
       ip.to(_: Any)
       ip.to(_: Any, _: Any)
       ip.until(_: Any)

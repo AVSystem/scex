@@ -4,9 +4,7 @@ import com.avsystem.scex.compiler.annotation.NotValidated
 
 import scala.language.higherKinds
 
-/**
-  * Created: 23-09-2013
-  * Author: ghik
+/** Created: 23-09-2013 Author: ghik
   */
 trait ExpressionContext[R, V] {
   type Root = R

@@ -17,26 +17,21 @@ object ClassfileReusingScexCompiler {
   final val GlobalCacheVersion = 2
 }
 
-/**
-  * An adaptation of ScexCompiler which compiles non-shared classes to disk instead of memory (assuming that classfile
+/** An adaptation of ScexCompiler which compiles non-shared classes to disk instead of memory (assuming that classfile
   * directory is configured). Class files are never being deleted automatically and thus are reused even if the entire
   * process is restarted.
   *
-  * The decision about need for recompilation is made based on signature file generated every time an expression is compiled
-  * Signature file contains typed and erased (bytecode) signatures of all symbols (methods, fields, etc.) used by
-  * the expression. In order to reuse previously compiled classfiles, all symbols listed in the signature file must
+  * The decision about need for recompilation is made based on signature file generated every time an expression is
+  * compiled Signature file contains typed and erased (bytecode) signatures of all symbols (methods, fields, etc.) used
+  * by the expression. In order to reuse previously compiled classfiles, all symbols listed in the signature file must
   * exist and have the same signature they had at the time the expression was originally compiled.
   *
-  * This strategy is unfortunately unable to detect some binary compatibility breaches which are source compatible:
-  * <ul>
-  * <li>Changes to any implicit symbols visible inside expressions (e.g. adding new implicit) that could
-  * change the way some implicit parameter or conversion is resolved.</li>
-  * <li>Adding or removing overloaded variants to methods used in expressions which could cause the overloaded
-  * variant used by expression to change.</li>
-  * </ul>
+  * This strategy is unfortunately unable to detect some binary compatibility breaches which are source compatible: <ul>
+  * <li>Changes to any implicit symbols visible inside expressions (e.g. adding new implicit) that could change the way
+  * some implicit parameter or conversion is resolved.</li> <li>Adding or removing overloaded variants to methods used
+  * in expressions which could cause the overloaded variant used by expression to change.</li> </ul>
   *
-  * Created: 21-10-2014
-  * Author: ghik
+  * Created: 21-10-2014 Author: ghik
   */
 trait ClassfileReusingScexCompiler extends ScexCompiler {
 
@@ -114,7 +109,8 @@ trait ClassfileReusingScexCompiler extends ScexCompiler {
       }
       ensureDirectoryExists(state.classfileDir.file)
       val os = state.classfileDir.fileNamed(versionFileName).output
-      try os.write(currentVersion.getBytes) finally os.close()
+      try os.write(currentVersion.getBytes)
+      finally os.close()
     }
     super.setup()
   }
@@ -132,14 +128,16 @@ trait ClassfileReusingScexCompiler extends ScexCompiler {
           nameParts match {
             case namePart :: rest if owner.isClass || owner.isModule =>
               val ownerType = owner.toType
-              val members = Iterator(ownerType.member(TypeName(namePart))) ++ symAlternatives(ownerType.member(TermName(namePart)))
+              val members = Iterator(ownerType.member(TypeName(namePart))) ++
+                symAlternatives(ownerType.member(TermName(namePart)))
               members.filter(_ != NoSymbol).flatMap(symbolsWithName(_, rest))
             case Nil => Iterator(owner)
             case _ => Iterator.empty
           }
 
         symbolsWithName(RootClass, fullName.split("\\.").toList)
-          .filter(_.isTerm).flatMap(s => s :: s.overrides)
+          .filter(_.isTerm)
+          .flatMap(s => s :: s.overrides)
           .map(s => (typedSignature(global)(s.asTerm), erasedSignature(global)(s.asTerm)))
           .contains((typedSig, erasedSig))
       }
@@ -150,7 +148,9 @@ trait ClassfileReusingScexCompiler extends ScexCompiler {
       outDir <- global.settings.outputDirs.getSingleOutput
       sigFile <- Option(outDir.lookupName(sigFileName, directory = false)) if isValid(new String(sigFile.toCharArray))
     } yield {
-      logger.debug(s"Expression source file ${sourceFile.file.name} has already been compiled and bytecode is compatible.")
+      logger.debug(
+        s"Expression source file ${sourceFile.file.name} has already been compiled and bytecode is compatible."
+      )
     }
 
     // If we're about to recompile expression, then we need to make the compiler forget about the old, cached one that
@@ -239,9 +239,11 @@ trait ClassfileReusingScexCompiler extends ScexCompiler {
       } {
         logger.debug(s"Saving source and signatures file for ${unit.source.file.name}:\n$sig")
         val sourceWriter = new OutputStreamWriter(outDir.fileNamed(unit.source.file.name + ".scala").output)
-        try sourceWriter.write(unit.source.content) finally sourceWriter.close()
+        try sourceWriter.write(unit.source.content)
+        finally sourceWriter.close()
         val sigOutputStream = outDir.fileNamed(unit.source.file.name + ".sig").output
-        try sigOutputStream.write(sig.getBytes) finally sigOutputStream.close()
+        try sigOutputStream.write(sig.getBytes)
+        finally sigOutputStream.close()
         sigs.remove(unit)
       }
     }

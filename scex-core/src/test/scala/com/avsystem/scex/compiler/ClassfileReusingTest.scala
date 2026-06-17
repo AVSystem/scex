@@ -13,10 +13,8 @@ import scala.reflect.internal.util.SourceFile
 import scala.reflect.io.AbstractFile
 import scala.tools.nsc.Global
 
-/**
- * Created: 22-10-2014
- * Author: ghik
- */
+/** Created: 22-10-2014 Author: ghik
+  */
 class ClassfileReusingTest extends AnyFunSuite with BeforeAndAfter {
 
   trait ScexCompilerInterceptor extends InterceptingPluginScexCompiler {
@@ -37,17 +35,20 @@ class ClassfileReusingTest extends AnyFunSuite with BeforeAndAfter {
   }
 
   object compiler
-    extends ScexCompiler
-    with ScexCompilerInterceptor
-    with ScexPresentationCompiler
-    with ClassfileReusingScexCompiler {
+    extends ScexCompiler with ScexCompilerInterceptor with ScexPresentationCompiler with ClassfileReusingScexCompiler {
 
     val settings = new ScexSettings
     settings.classfileDirectory.value = "testClassfileCache"
   }
 
-  val testProfile = new ExpressionProfile("test", SyntaxValidator.SimpleExpressions,
-    SymbolValidator(PredefinedAccessSpecs.basicOperations), SymbolAttributes(Nil), "", NamedSource("<empty>", ""))
+  val testProfile = new ExpressionProfile(
+    "test",
+    SyntaxValidator.SimpleExpressions,
+    SymbolValidator(PredefinedAccessSpecs.basicOperations),
+    SymbolAttributes(Nil),
+    "",
+    NamedSource("<empty>", ""),
+  )
 
   def applyIntExpr(expr: String) =
     compiler.getCompiledExpression[SimpleContext[Unit], Int](testProfile, expr, template = false).apply(SimpleContext(()))
@@ -87,8 +88,14 @@ class ClassfileReusingTest extends AnyFunSuite with BeforeAndAfter {
       """
         |implicit def implicitString1: String = "implicitString1"
       """.stripMargin
-    val profile1 = new ExpressionProfile("test", SyntaxValidator.SimpleExpressions, symbolValidator,
-      SymbolAttributes(Nil), "", NamedSource("test", utils1))
+    val profile1 = new ExpressionProfile(
+      "test",
+      SyntaxValidator.SimpleExpressions,
+      symbolValidator,
+      SymbolAttributes(Nil),
+      "",
+      NamedSource("test", utils1),
+    )
     val cexpr1 = compiler.getCompiledExpression[SimpleContext[Unit], String](profile1, expr, template = false)
 
     assert(cexpr1(SimpleContext(())) == "implicitString1")
@@ -99,8 +106,14 @@ class ClassfileReusingTest extends AnyFunSuite with BeforeAndAfter {
       """
         |implicit def implicitString2: String = "implicitString2"
       """.stripMargin
-    val profile2 = new ExpressionProfile("test", SyntaxValidator.SimpleExpressions, symbolValidator,
-      SymbolAttributes(Nil), "", NamedSource("test", utils2))
+    val profile2 = new ExpressionProfile(
+      "test",
+      SyntaxValidator.SimpleExpressions,
+      symbolValidator,
+      SymbolAttributes(Nil),
+      "",
+      NamedSource("test", utils2),
+    )
     val cexpr2 = compiler.getCompiledExpression[SimpleContext[Unit], String](profile2, expr, template = false)
 
     assert(cexpr2(SimpleContext(())) == "implicitString2")
@@ -114,8 +127,14 @@ class ClassfileReusingTest extends AnyFunSuite with BeforeAndAfter {
       """
         |def utilMethod(any: Any): Any = any
       """.stripMargin
-    val profile1 = new ExpressionProfile("test", SyntaxValidator.SimpleExpressions, symbolValidator,
-      SymbolAttributes(Nil), "", NamedSource("test", utils1))
+    val profile1 = new ExpressionProfile(
+      "test",
+      SyntaxValidator.SimpleExpressions,
+      symbolValidator,
+      SymbolAttributes(Nil),
+      "",
+      NamedSource("test", utils1),
+    )
     val cexpr1 = compiler.getCompiledExpression[SimpleContext[Unit], Any](profile1, expr, template = false)
 
     assert(cexpr1(SimpleContext(())) == 42)
@@ -127,8 +146,14 @@ class ClassfileReusingTest extends AnyFunSuite with BeforeAndAfter {
         |def utilMethod(any: Any): Any = any
         |def utilMethod(int: Int): Any = int*2
       """.stripMargin
-    val profile2 = new ExpressionProfile("test", SyntaxValidator.SimpleExpressions, symbolValidator,
-      SymbolAttributes(Nil), "", NamedSource("test", utils2))
+    val profile2 = new ExpressionProfile(
+      "test",
+      SyntaxValidator.SimpleExpressions,
+      symbolValidator,
+      SymbolAttributes(Nil),
+      "",
+      NamedSource("test", utils2),
+    )
     val cexpr2 = compiler.getCompiledExpression[SimpleContext[Unit], Any](profile2, expr, template = false)
 
     assert(cexpr2(SimpleContext(())) == 84)

@@ -10,25 +10,21 @@ import java.text.ParseException
 import java.util.Date
 import scala.annotation.nowarn
 
-/**
-  * Author: ghik
-  * Created: 16/10/15.
+/** Author: ghik Created: 16/10/15.
   */
 object CommonExpressionUtils {
   // a replacement for safe dereference operator (?.) and elvis operator (?:)
   @nowarn("msg=Implicit classes")
   implicit class any2qmark[A](value: => A) {
     def ?[B >: A](default: => B): B = {
-      val result = try value.opt catch {
-        case _: NullPointerException |
-             _: NoSuchElementException |
-             _: UnsupportedOperationException |
-             _: IndexOutOfBoundsException |
-             _: NumberFormatException |
-             _: IllegalArgumentException |
-             _: ParseException |
-             _: ExpressionRecoverableException => Opt.Empty
-      }
+      val result =
+        try value.opt
+        catch {
+          case _: NullPointerException | _: NoSuchElementException | _: UnsupportedOperationException |
+              _: IndexOutOfBoundsException | _: NumberFormatException | _: IllegalArgumentException |
+              _: ParseException | _: ExpressionRecoverableException =>
+            Opt.Empty
+        }
       result getOrElse default
     }
   }
@@ -96,9 +92,8 @@ object CommonExpressionUtils {
   val math = scala.math.`package`
 
   @Documentation("Access context variables")
-  def getVariable(name: String)(implicit ctx: SimpleContext[_]): String = {
+  def getVariable(name: String)(implicit ctx: SimpleContext[_]): String =
     ctx.getVariable(name)
-  }
 
   def bytes(bs: Byte*): Bytes = new Bytes(bs.toArray)
 

@@ -5,10 +5,8 @@ import com.avsystem.scex.util.{PredefinedAccessSpecs, SimpleContext}
 import com.avsystem.scex.validation.{SymbolValidator, SyntaxValidator}
 import com.avsystem.scex.{ExpressionProfile, NamedSource}
 
-/**
- * Created: 04-12-2013
- * Author: ghik
- */
+/** Created: 04-12-2013 Author: ghik
+  */
 object ExistentialCase {
   def main(args: Array[String]): Unit = {
     val compiler = new XmlFriendlyJavaScexCompiler(new ScexSettings)
@@ -17,11 +15,12 @@ object ExistentialCase {
     val syntaxValidator = SyntaxValidator.SimpleExpressions
     val symbolAttributes = SymbolAttributes(Nil)
 
-    val profile = new ExpressionProfile("test", syntaxValidator, symbolValidator, symbolAttributes, "", NamedSource("test", ""))
+    val profile =
+      new ExpressionProfile("test", syntaxValidator, symbolValidator, symbolAttributes, "", NamedSource("test", ""))
 
-    val completion = compiler.getCompleter[SimpleContext[Unit], Int](profile, template = true)
-      .getTypeCompletion("${'dafuq'.toInt}", 14)
+    val completion =
+      compiler.getCompleter[SimpleContext[Unit], Int](profile, template = true).getTypeCompletion("${'dafuq'.toInt}", 14)
 
-    completion.members foreach println
+    completion.members.foreach(println)
   }
 }
