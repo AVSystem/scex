@@ -22,7 +22,7 @@ val CompileAndTest = "compile->compile;test->test"
 
 val parserCombinatorsVersion = "2.4.0"
 val avsCommonsVersion = "2.29.0"
-val slf4jVersion = "2.0.18"
+val slf4jVersion = "2.0.19"
 val logbackVersion = "1.5.38" // Tests only
 val commonsLang3Version = "3.20.0"
 val commonsCodecVersion = "1.22.1"
