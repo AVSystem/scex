@@ -18,6 +18,11 @@ class IGlobal(settings: Settings, reporter: Reporter, val classLoader: ClassLoad
 
   import definitions._
 
+  // Don't service interrupts (askForResponse) while parsing. Background compile resets a stale unit (clearing its
+  // synthetics) and only then re-parses and re-enters it, so an interrupt run from the parser could force a lazy
+  // accessor symbol left over from an aborted pass and crash with "no synthetic tree found for bean accessor".
+  override def signalParseProgress(pos: Position): Unit = ()
+
   abstract class ScexMember extends Member {
     def prefix: Type
     def ownerTpe: Type = prefix
