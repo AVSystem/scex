@@ -28,8 +28,14 @@ object MemoryTest {
     )
     val symbolAttributes = SymbolAttributes(Nil)
 
-    val profile = new ExpressionProfile("test", SyntaxValidator.SimpleExpressions, symbolValidator,
-      symbolAttributes, "", NamedSource("test", ""))
+    val profile = new ExpressionProfile(
+      "test",
+      SyntaxValidator.SimpleExpressions,
+      symbolValidator,
+      symbolAttributes,
+      "",
+      NamedSource("test", ""),
+    )
 
     var i = 0
     while (true) {

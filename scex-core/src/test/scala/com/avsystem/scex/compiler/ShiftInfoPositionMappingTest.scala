@@ -6,9 +6,7 @@ import org.scalatest.funsuite.AnyFunSuite
 
 import scala.collection.immutable.SortedMap
 
-/**
-  * Created: 24-10-2013
-  * Author: ghik
+/** Created: 24-10-2013 Author: ghik
   */
 class ShiftInfoPositionMappingTest extends AnyFunSuite {
   test("empty mapping test") {
@@ -25,9 +23,12 @@ class ShiftInfoPositionMappingTest extends AnyFunSuite {
 
   test("something was added at the beginning") {
     val added = 5
-    val mapping = new ShiftInfoPositionMapping(SortedMap(
-      0 -> ShiftInfo(0, added, Binding.Left)
-    ), null)
+    val mapping = new ShiftInfoPositionMapping(
+      SortedMap(
+        0 -> ShiftInfo(0, added, Binding.Left)
+      ),
+      null,
+    )
 
     for (i <- -5 until 0) {
       assert(mapping(i) == i)
@@ -39,9 +40,12 @@ class ShiftInfoPositionMappingTest extends AnyFunSuite {
 
   test("something was removed at the beginning") {
     val removed = 5
-    val mapping = new ShiftInfoPositionMapping(SortedMap(
-      0 -> ShiftInfo(0, -removed, Binding.Right)
-    ), null)
+    val mapping = new ShiftInfoPositionMapping(
+      SortedMap(
+        0 -> ShiftInfo(0, -removed, Binding.Right)
+      ),
+      null,
+    )
 
     for (i <- -5 until 0) {
       assert(mapping(i) == i)
@@ -57,9 +61,12 @@ class ShiftInfoPositionMappingTest extends AnyFunSuite {
   test("something was added and removed at the beginning") {
     val added = 3
     val removed = 5
-    val mapping = new ShiftInfoPositionMapping(SortedMap(
-      0 -> ShiftInfo(0, added, removed, Binding.Right)
-    ), null)
+    val mapping = new ShiftInfoPositionMapping(
+      SortedMap(
+        0 -> ShiftInfo(0, added, removed, Binding.Right)
+      ),
+      null,
+    )
 
     for (i <- -5 until 0) {
       assert(mapping(i) == i)
@@ -77,13 +84,16 @@ class ShiftInfoPositionMappingTest extends AnyFunSuite {
     0123     45678 901234567
     oooraaaaaoorrraorroooooo
     012334567890000122234567
-    */
+     */
 
-    val mapping = new ShiftInfoPositionMapping(SortedMap(
-      3 -> ShiftInfo(0, 5, 1, Binding.Left),
-      6 -> ShiftInfo(4, 1, 3, Binding.Left),
-      10 -> ShiftInfo(2, 0, 2, Binding.Right)
-    ), null)
+    val mapping = new ShiftInfoPositionMapping(
+      SortedMap(
+        3 -> ShiftInfo(0, 5, 1, Binding.Left),
+        6 -> ShiftInfo(4, 1, 3, Binding.Left),
+        10 -> ShiftInfo(2, 0, 2, Binding.Right),
+      ),
+      null,
+    )
 
     val results = Array(0, 1, 2, 3, 8, 9, 10, 10, 10, 11, 12, 12, 12, 13, 14, 15, 16, 17, 18)
     for (i <- -5 until 0) {

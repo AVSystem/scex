@@ -3,10 +3,8 @@ package compiler.presentation.ast
 
 import scala.reflect.internal.ModifierFlags
 
-/**
- * Created: 12-03-2014
- * Author: ghik
- */
+/** Created: 12-03-2014 Author: ghik
+  */
 final case class Flags(flags: Long)(flagString: String) {
   private def hasFlag(flag: Long) = (flags & flag) != 0
 

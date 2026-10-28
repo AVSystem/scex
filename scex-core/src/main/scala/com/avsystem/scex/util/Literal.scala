@@ -3,10 +3,8 @@ package util
 
 import java.{lang => jl}
 
-/**
- * Created: 18-11-2013
- * Author: ghik
- */
+/** Created: 18-11-2013 Author: ghik
+  */
 final case class Literal(literalString: String) extends AnyVal {
   override def toString = literalString
 
@@ -14,7 +12,8 @@ final case class Literal(literalString: String) extends AnyVal {
 
   def toChar: Char =
     if (literalString.length == 1) literalString.charAt(0)
-    else throw new IllegalArgumentException(s"Expected string with exactly one character, got ${'"'}$literalString${'"'}")
+    else
+      throw new IllegalArgumentException(s"Expected string with exactly one character, got ${'"'}$literalString${'"'}")
 
   def toByte: Byte = literalString.toByte
 

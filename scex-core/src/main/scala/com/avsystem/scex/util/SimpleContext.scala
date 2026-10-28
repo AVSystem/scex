@@ -5,10 +5,8 @@ import com.avsystem.scex.japi.JavaExpressionContext
 
 import scala.collection.mutable
 
-/**
- * Created: 23-09-2013
- * Author: ghik
- */
+/** Created: 23-09-2013 Author: ghik
+  */
 final case class SimpleContext[R](root: R) extends JavaExpressionContext[R, String] {
   private val variables = new mutable.HashMap[String, String]
   private val typedVariables = new mutable.HashMap[String, Any]

@@ -48,7 +48,9 @@ class JavaTypeParsingTest extends AnyFunSuite {
 
   test("deeply nested parameterized classes") {
     assertResult("com.avsystem.scex.compiler.ParameterizedClass.StaticInnerGeneric[A]#DeeplyInnerGeneric[B] forSome {type A <: java.lang.Cloneable; type B}") {
-      javaTypeAsScalaType(classOf[ParameterizedClass.StaticInnerGeneric[A]#DeeplyInnerGeneric[B] forSome {type A; type B}])
+      javaTypeAsScalaType(
+        classOf[ParameterizedClass.StaticInnerGeneric[A]#DeeplyInnerGeneric[B] forSome { type A; type B }]
+      )
     }
   }
 

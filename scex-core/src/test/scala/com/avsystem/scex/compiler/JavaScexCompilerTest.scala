@@ -1,7 +1,7 @@
 package com.avsystem.scex.compiler
 
 import com.avsystem.scex.Expression
-import com.avsystem.scex.compiler.CodeGeneration.{TypedVariables, escapedChar}
+import com.avsystem.scex.compiler.CodeGeneration.{escapedChar, TypedVariables}
 import com.avsystem.scex.compiler.JavaScexCompilerTest.SuspiciousCharsAllowedInVariableNames
 import com.avsystem.scex.compiler.ScexCompiler.CompilationFailedException
 import com.avsystem.scex.japi.{ScalaTypeTokens, XmlFriendlyJavaScexCompiler}
@@ -9,10 +9,8 @@ import com.avsystem.scex.util.{PredefinedAccessSpecs, SimpleContext}
 import com.avsystem.scex.validation.SymbolValidator.MemberAccessSpec
 import org.scalatest.funsuite.AnyFunSuite
 
-/**
- * Author: ghik
- * Created: 26/10/15.
- */
+/** Author: ghik Created: 26/10/15.
+  */
 class JavaScexCompilerTest extends AnyFunSuite with CompilationTest {
   override protected def createCompiler = new XmlFriendlyJavaScexCompiler(new ScexSettings)
 
@@ -74,7 +72,7 @@ class JavaScexCompilerTest extends AnyFunSuite with CompilationTest {
   private def compileExpression(
     expr: String,
     variableName: String,
-    accessControlList: List[MemberAccessSpec] = PredefinedAccessSpecs.basicOperations
+    accessControlList: List[MemberAccessSpec] = PredefinedAccessSpecs.basicOperations,
   ): Expression[SimpleContext[Unit], Double] =
     compiler.buildExpression
       .contextType(ScalaTypeTokens.create[SimpleContext[Unit]])

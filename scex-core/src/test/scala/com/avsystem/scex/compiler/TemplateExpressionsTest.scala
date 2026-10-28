@@ -9,10 +9,8 @@ import org.scalatest.funsuite.AnyFunSuite
 
 import scala.annotation.nowarn
 
-/**
- * Created: 18-11-2013
- * Author: ghik
- */
+/** Created: 18-11-2013 Author: ghik
+  */
 @nowarn("msg=a pure expression does nothing in statement position")
 class TemplateExpressionsTest extends AnyFunSuite with CompilationTest {
 
@@ -61,7 +59,10 @@ class TemplateExpressionsTest extends AnyFunSuite with CompilationTest {
       FancySplicedRoot.fancySplicer.toString(_: FancySplicedRoot)
     }
     val cexpr = compiler.getCompiledExpression[SimpleContext[FancySplicedRoot], String](
-      createProfile(acl), "${self}stuff", template = true)
+      createProfile(acl),
+      "${self}stuff",
+      template = true,
+    )
     assert("FANCYstuff" == cexpr.apply(SimpleContext(new FancySplicedRoot)))
   }
 
@@ -78,11 +79,15 @@ class TemplateExpressionsTest extends AnyFunSuite with CompilationTest {
   }
 
   test("enum from string test") {
-    assert(RetentionPolicy.RUNTIME == evaluateTemplate[RetentionPolicy]("${\"RUNTIME\"}", allow(RetentionPolicy.valueOf _)))
+    assert(
+      RetentionPolicy.RUNTIME == evaluateTemplate[RetentionPolicy]("${\"RUNTIME\"}", allow(RetentionPolicy.valueOf _))
+    )
   }
 
   test("enum literally test") {
-    assert(RetentionPolicy.RUNTIME == evaluateTemplate[RetentionPolicy]("${java.lang.annotation.RetentionPolicy.RUNTIME}"))
+    assert(
+      RetentionPolicy.RUNTIME == evaluateTemplate[RetentionPolicy]("${java.lang.annotation.RetentionPolicy.RUNTIME}")
+    )
   }
 
   test("interpolation argument inference test") {
@@ -92,7 +97,10 @@ class TemplateExpressionsTest extends AnyFunSuite with CompilationTest {
       }
     }
     val cexpr = compiler.getCompiledExpression[SimpleContext[ValueRoot[String]], String](
-      createProfile(acl), "${if(value.endsWith(\"lol\")) value + \"lol\" else value}", template = true)
+      createProfile(acl),
+      "${if(value.endsWith(\"lol\")) value + \"lol\" else value}",
+      template = true,
+    )
 
     assert("fuulollol" == cexpr(SimpleContext(new ValueRoot("fuulol"))))
   }
@@ -104,7 +112,10 @@ class TemplateExpressionsTest extends AnyFunSuite with CompilationTest {
       }
     }
     val cexpr = compiler.getCompiledExpression[SimpleContext[ValueRoot[String]], String](
-      createProfile(acl), "${if(value.endsWith(\"lol\")) value + \"lol\" else value}${123}", template = true)
+      createProfile(acl),
+      "${if(value.endsWith(\"lol\")) value + \"lol\" else value}${123}",
+      template = true,
+    )
 
     assert("fuulollol123" == cexpr(SimpleContext(new ValueRoot("fuulol"))))
   }

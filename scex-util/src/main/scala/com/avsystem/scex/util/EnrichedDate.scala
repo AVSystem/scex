@@ -85,4 +85,3 @@ object EnrichedZonedDate {
   def fromDate(date: Date, zone: ZoneId = Clock.systemDefaultZone().getZone) =
     new EnrichedZonedDate(ZonedDateTime.ofInstant(date.toInstant, zone))
 }
-

@@ -43,7 +43,8 @@ final class Bytes(val bytes: Array[Byte]) extends Comparable[Bytes] {
 
   @Documentation("Decodes this sequence of bytes as string using given charset.")
   def decode(charset: String): String =
-    try new String(bytes, charset) catch {
+    try new String(bytes, charset)
+    catch {
       case e: UnsupportedEncodingException => throw new IllegalArgumentException(e)
     }
 

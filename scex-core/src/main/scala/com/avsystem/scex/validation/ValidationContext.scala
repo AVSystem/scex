@@ -51,7 +51,7 @@ abstract class ValidationContext protected extends MacroUtils {
     symbol: Symbol,
     implicitConv: Option[Tree],
     allowedByDefault: Boolean,
-    pos: Position
+    pos: Position,
   ) extends MemberAccess {
 
     override def toString: String =
@@ -86,30 +86,33 @@ abstract class ValidationContext protected extends MacroUtils {
 
       SimpleMemberAccess(rootTpe, symbol, None, allowedByDefault = false, tree.pos)
 
-    case Select(apply@ImplicitlyConverted(qualifier, fun), _) if !isScexSynthetic(fun.symbol) =>
-      val accessByImplicit = SimpleMemberAccess(qualifier.tpe, tree.symbol,
-        Some(stripTypeApply(fun)), allowedByDefault = false, tree.pos)
+    case Select(apply @ ImplicitlyConverted(qualifier, fun), _) if !isScexSynthetic(fun.symbol) =>
+      val accessByImplicit =
+        SimpleMemberAccess(qualifier.tpe, tree.symbol, Some(stripTypeApply(fun)), allowedByDefault = false, tree.pos)
 
       val implicitConversionAccess = extractAccess(fun, allowedSelectionPrefix = false)
       val plainAccess = SimpleMemberAccess(apply.tpe, tree.symbol, None, allowedByDefault = false, tree.pos)
-      val alternatives = AlternativeMemberAccess(List(accessByImplicit, MultipleMemberAccesses(List(implicitConversionAccess, plainAccess))))
+      val alternatives = AlternativeMemberAccess(
+        List(accessByImplicit, MultipleMemberAccesses(List(implicitConversionAccess, plainAccess)))
+      )
 
       // special case for configuration convenience: 'any + <string>' (using any2stringadd) is also validated as
       // combination of toString and string concatenation
       lazy val toStringMember = toStringSymbol(qualifier.tpe)
       val toStringAndConcatAccess =
         if (fun.symbol == any2stringadd && tree.symbol == stringAddPlus && toStringMember != NoSymbol) {
-          val toStringAccess = SimpleMemberAccess(qualifier.tpe, toStringMember, None, allowedByDefault = false, tree.pos)
+          val toStringAccess =
+            SimpleMemberAccess(qualifier.tpe, toStringMember, None, allowedByDefault = false, tree.pos)
           val stringConcatAccess = SimpleMemberAccess(stringTpe, stringConcat, None, allowedByDefault = false, tree.pos)
           MultipleMemberAccesses(List(toStringAccess, stringConcatAccess))
         } else NoMemberAccess
 
-      MultipleMemberAccesses(List(alternatives,
-        toStringAndConcatAccess,
-        extractAccess(qualifier, allowedSelectionPrefix = false)))
+      MultipleMemberAccesses(
+        List(alternatives, toStringAndConcatAccess, extractAccess(qualifier, allowedSelectionPrefix = false))
+      )
 
-    case Select(apply@ImplicitlyConverted(qualifier, fun), _)
-      if tree.symbol.isMethod && isAdapterConversion(fun.symbol) && !isAdapterWrappedMember(tree.symbol) =>
+    case Select(apply @ ImplicitlyConverted(qualifier, fun), _)
+        if tree.symbol.isMethod && isAdapterConversion(fun.symbol) && !isAdapterWrappedMember(tree.symbol) =>
 
       val symbol = getJavaGetter(tree.symbol, qualifier.tpe)
       val access = SimpleMemberAccess(qualifier.tpe, symbol, None, allowedByDefault = false, tree.pos)
@@ -122,8 +125,9 @@ abstract class ValidationContext protected extends MacroUtils {
       val staticMember = isStableStatic(qualifier.symbol) && !isFromToplevelType(tree.symbol)
       lazy val qualCompanion = qualifier.symbol.companion
       lazy val companionType = qualCompanion.asType.toType
-      val enumValueOf = staticMember && name == TermName("valueOf") && qualCompanion != NoSymbol && companionType <:< typeOf[Enum[_]] &&
-        tree.symbol.isMethod && tree.symbol.asMethod.paramLists.flatten.map(_.typeSignature).corresponds(List(typeOf[String]))(_ =:= _)
+      val enumValueOf = staticMember && name == TermName("valueOf") && qualCompanion != NoSymbol &&
+        companionType <:< typeOf[Enum[_]] && tree.symbol.isMethod &&
+        tree.symbol.asMethod.paramLists.flatten.map(_.typeSignature).corresponds(List(typeOf[String]))(_ =:= _)
 
       val access = SimpleMemberAccess(qualifier.tpe, tree.symbol, None, allowedSelectionPrefix || enumValueOf, tree.pos)
       // When accessing member of static module (that includes Java statics), excluding getClass/equals/hashCode/toString/etc.
@@ -133,9 +137,13 @@ abstract class ValidationContext protected extends MacroUtils {
 
     // special case for configuration convenience: string concatenation also forces validation of toString on its argument
     case Apply(qualifier, List(arg)) if qualifier.symbol == stringConcat =>
-      MultipleMemberAccesses(List(toStringAccess(arg),
-        extractAccess(qualifier, allowedSelectionPrefix = false),
-        extractAccess(arg, allowedSelectionPrefix = false)))
+      MultipleMemberAccesses(
+        List(
+          toStringAccess(arg),
+          extractAccess(qualifier, allowedSelectionPrefix = false),
+          extractAccess(arg, allowedSelectionPrefix = false),
+        )
+      )
 
     case Apply(fun, List(arg)) if fun.symbol == safeToString =>
       MultipleMemberAccesses(List(toStringAccess(arg), extractAccess(arg, allowedSelectionPrefix = false)))
@@ -144,9 +152,10 @@ abstract class ValidationContext protected extends MacroUtils {
     // toString on its arguments
     case Apply(qualifier, args) if standardStringInterpolations contains qualifier.symbol =>
       val toStringAccesses = MultipleMemberAccesses(args.map(toStringAccess))
-      MultipleMemberAccesses(toStringAccesses ::
-        extractAccess(qualifier, allowedSelectionPrefix = false) ::
-        args.map(arg => extractAccess(arg, allowedSelectionPrefix = false)))
+      MultipleMemberAccesses(
+        toStringAccesses :: extractAccess(qualifier, allowedSelectionPrefix = false) ::
+          args.map(arg => extractAccess(arg, allowedSelectionPrefix = false))
+      )
 
     case _ =>
       MultipleMemberAccesses(tree.children.map(child => extractAccess(child, allowedSelectionPrefix = false)))

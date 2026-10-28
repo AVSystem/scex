@@ -3,16 +3,14 @@ package com.avsystem.scex.util
 import com.avsystem.commons.jiop.JavaInterop._
 import com.google.common.collect.{Collections2, Lists, Sets}
 
-/**
-  * Java collection API extensions for SCEX expressions.
+/** Java collection API extensions for SCEX expressions.
   */
 object JavaCollectionExtensions {
   private type GFunction[F, T] = com.google.common.base.Function[F, T]
   private type JMapEntry[K, V] = java.util.Map.Entry[K, V]
 
   implicit final class CollectionOps[A](private val coll: JCollection[A]) extends AnyVal {
-    def ++(other: JCollection[A]): JCollection[A] =
-      (coll.asScala ++ other.asScala).asJavaCollection
+    def ++(other: JCollection[A]): JCollection[A] = (coll.asScala ++ other.asScala).asJavaCollection
 
     def filter(p: A => Boolean): JCollection[A] =
       coll.asScala.filter(p).asJavaCollection
@@ -91,8 +89,7 @@ object JavaCollectionExtensions {
   }
 
   implicit final class ListOps[A](private val list: JList[A]) extends AnyVal {
-    def ++(other: JList[A]): JList[A] =
-      (list.asScala ++ other.asScala).asJava
+    def ++(other: JList[A]): JList[A] = (list.asScala ++ other.asScala).asJava
 
     def filter(p: A => Boolean): JList[A] =
       list.asScala.filter(p).asJava
@@ -135,7 +132,7 @@ object JavaCollectionExtensions {
     }
 
     def slice(from: Int, until: Int): JList[A] =
-      list.subList(0 max from min list.size, 0 max until min list.size)
+      list.subList(0.max(from).min(list.size), 0.max(until).min(list.size))
 
     def sorted(implicit ord: Ordering[A]): JList[A] =
       list.asScala.sorted.asJava
@@ -148,8 +145,7 @@ object JavaCollectionExtensions {
   }
 
   implicit final class SetOps[A](private val set: JSet[A]) extends AnyVal {
-    def ++(other: JSet[A]): JSet[A] =
-      (set.asScala ++ other.asScala).asJava
+    def ++(other: JSet[A]): JSet[A] = (set.asScala ++ other.asScala).asJava
 
     def filter(p: A => Boolean): JSet[A] =
       set.asScala.filter(p).asJava
@@ -158,10 +154,10 @@ object JavaCollectionExtensions {
       set ++ other
 
     def intersect(other: JSet[A]): JSet[A] =
-      (set.asScala intersect other.asScala).asJava
+      (set.asScala.intersect(other.asScala)).asJava
 
     def diff(other: JSet[A]): JSet[A] =
-      (set.asScala diff other.asScala).asJava
+      (set.asScala.diff(other.asScala)).asJava
   }
 
   final case class Entry[K, V](key: K, value: V) {
@@ -178,8 +174,7 @@ object JavaCollectionExtensions {
   }
 
   implicit final class MapOps[K, V](protected val map: JMap[K, V]) extends AnyVal with MapOpsExtended[K, V] {
-    def ++(other: JMap[K, V]): JMap[K, V] =
-      (map.asScala ++ other.asScala).asJava
+    def ++(other: JMap[K, V]): JMap[K, V] = (map.asScala ++ other.asScala).asJava
 
     def apply(key: K): V =
       map.get(key)
@@ -191,10 +186,12 @@ object JavaCollectionExtensions {
     }
 
     def entries: JCollection[Entry[K, V]] =
-      Collections2.transform(map.entrySet,
+      Collections2.transform(
+        map.entrySet,
         new GFunction[JMapEntry[K, V], Entry[K, V]] {
           def apply(e: JMapEntry[K, V]): Entry[K, V] = Entry(e.getKey, e.getValue)
-        })
+        },
+      )
 
     def filter(p: Entry[K, V] => Boolean): JMap[K, V] =
       map.asScala.iterator.filter(e => p(Entry(e._1, e._2))).toJMap

@@ -5,10 +5,8 @@ import com.avsystem.scex.util.MacroUtils
 import scala.collection.immutable.{SortedSet, TreeSet}
 import scala.reflect.api.Universe
 
-/**
- * Author: ghik
- * Created: 11/17/14.
- */
+/** Author: ghik Created: 11/17/14.
+  */
 trait SymbolInfoList[T] {
   case class InfoWithIndex(info: SymbolInfo[T], index: Int)
 
@@ -17,13 +15,18 @@ trait SymbolInfoList[T] {
   lazy val size = infoList.length
 
   lazy val bySignaturesMap: Map[String, List[InfoWithIndex]] =
-    infoList.zipWithIndex.map {
-      case (info, index) => InfoWithIndex(info, index)
-    }.groupBy(_.info.memberSignature).map {
-      case (signature, infos) => (signature, infos.sortBy(_.index))
-    }.withDefaultValue(Nil)
+    infoList.zipWithIndex
+      .map { case (info, index) =>
+        InfoWithIndex(info, index)
+      }
+      .groupBy(_.info.memberSignature)
+      .map { case (signature, infos) =>
+        (signature, infos.sortBy(_.index))
+      }
+      .withDefaultValue(Nil)
 
-  def matchingInfos(u: Universe)(prefixTpe: u.Type, symbol: u.Symbol, implicitConv: Option[u.Tree]): List[InfoWithIndex] = {
+  def matchingInfos(u: Universe)(prefixTpe: u.Type, symbol: u.Symbol, implicitConv: Option[u.Tree])
+    : List[InfoWithIndex] = {
     val macroUtils = MacroUtils(u)
     import macroUtils._
 
@@ -34,9 +37,8 @@ trait SymbolInfoList[T] {
 
     signatures.flatMap { signature =>
       bySignaturesMap(signature).filter { case InfoWithIndex(symbolInfo, _) =>
-        signature == symbolInfo.memberSignature &&
-          prefixTpe <:< symbolInfo.typeInfo.typeIn(u) &&
-          implicitConvPath == symbolInfo.implicitConv
+        signature == symbolInfo.memberSignature && prefixTpe <:< symbolInfo.typeInfo.typeIn(u) &&
+        implicitConvPath == symbolInfo.implicitConv
       }
     }
   }

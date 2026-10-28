@@ -1,18 +1,17 @@
 package com.avsystem.scex.presentation
 
-/**
- * Author: ghik
- * Created: 11/17/14.
- */
+/** Author: ghik Created: 11/17/14.
+  */
 final class Attributes(
   val paramNames: Option[List[String]],
-  val documentation: Option[String]) {
+  val documentation: Option[String],
+) {
 
   def orElse(attrs: => Attributes): Attributes = {
     lazy val otherAttrs = attrs
     new Attributes(
       paramNames orElse otherAttrs.paramNames,
-      documentation orElse otherAttrs.documentation
+      documentation orElse otherAttrs.documentation,
     )
   }
 

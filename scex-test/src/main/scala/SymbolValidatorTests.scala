@@ -2,13 +2,12 @@ import java.{lang => jl, util => ju}
 
 import com.avsystem.scex.validation.SymbolValidator._
 
-
 object SymbolValidatorTests {
 
   def main(args: Array[String]): Unit = {
     var specs: List[MemberAccessSpec] = null
     def printSpecs(): Unit = {
-      specs foreach println
+      specs.foreach(println)
       println()
     }
 

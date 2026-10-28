@@ -18,9 +18,8 @@ class SetterTarget {
 
   def lol = _lol
 
-  def lol_=(lol: Int) = {
+  def lol_=(lol: Int) =
     _lol = lol
-  }
 
 }
 
@@ -36,9 +35,7 @@ object CustomBooleanSplicer {
     }
 }
 
-/**
-  * Created: 28-11-2013
-  * Author: ghik
+/** Created: 28-11-2013 Author: ghik
   */
 @nowarn("msg=a pure expression does nothing in statement position")
 class SetterExpressionsTest extends AnyFunSuite with CompilationTest {
@@ -46,13 +43,16 @@ class SetterExpressionsTest extends AnyFunSuite with CompilationTest {
   import com.avsystem.scex.validation.SymbolValidator._
 
   def applySetter[R: ClassTag: TypeString, T: TypeString](
-    expr: String, root: R, value: T,
+    expr: String,
+    root: R,
+    value: T,
     acl: List[MemberAccessSpec] = PredefinedAccessSpecs.basicOperations,
     header: String = "",
-    template: Boolean = false) = {
+    template: Boolean = false,
+  ) = {
 
-    val setterExpression = compiler.getCompiledSetterExpression[SimpleContext[R], T](
-      createProfile(acl), expr, template, header = header)
+    val setterExpression =
+      compiler.getCompiledSetterExpression[SimpleContext[R], T](createProfile(acl), expr, template, header = header)
     setterExpression.apply(SimpleContext(root)).apply(value)
   }
 
@@ -89,7 +89,13 @@ class SetterExpressionsTest extends AnyFunSuite with CompilationTest {
   test("adapted root bean setter test with conversion") {
     val target = new JavaSetterTarget
     val header = "import SetterConversions._"
-    applySetter("awesome", target, "true", allow(on { st: JavaSetterTarget => st.all.introduced.members }), header = header)
+    applySetter(
+      "awesome",
+      target,
+      "true",
+      allow(on { st: JavaSetterTarget => st.all.introduced.members }),
+      header = header,
+    )
     assert(target.isAwesome)
   }
 
@@ -124,7 +130,13 @@ class SetterExpressionsTest extends AnyFunSuite with CompilationTest {
 
   test("adapted non-root template bean setter test") {
     val target = new JavaSetterTarget
-    applySetter("${self.beanprop}", target, 42, allow(on { st: JavaSetterTarget => st.all.introduced.members }), template = true)
+    applySetter(
+      "${self.beanprop}",
+      target,
+      42,
+      allow(on { st: JavaSetterTarget => st.all.introduced.members }),
+      template = true,
+    )
     assert(42 == target.self.getBeanprop)
   }
 
@@ -143,8 +155,11 @@ class SetterExpressionsTest extends AnyFunSuite with CompilationTest {
   test("disabled dynamic variables setter test") {
     val expr = "_vars.lol"
     try {
-      compiler.getCompiledSetterExpression[SimpleContext[Unit], String](createProfile(Nil, dynamicVariablesEnabled = false),
-        expr, template = false)
+      compiler.getCompiledSetterExpression[SimpleContext[Unit], String](
+        createProfile(Nil, dynamicVariablesEnabled = false),
+        expr,
+        template = false,
+      )
     } catch {
       case CompilationFailedException(_, List(CompileError(source, column, msg))) =>
         assert(source == expr)
@@ -154,8 +169,8 @@ class SetterExpressionsTest extends AnyFunSuite with CompilationTest {
   }
 
   test("dynamic variable setter test") {
-    val setterExpression = compiler.getCompiledSetterExpression[SimpleContext[Unit], String](
-      createProfile(Nil), "_vars.lol", template = false)
+    val setterExpression = compiler
+      .getCompiledSetterExpression[SimpleContext[Unit], String](createProfile(Nil), "_vars.lol", template = false)
 
     val context = SimpleContext(())
     setterExpression.apply(context).apply("42")
@@ -163,12 +178,13 @@ class SetterExpressionsTest extends AnyFunSuite with CompilationTest {
   }
 
   test("typed variable setter test") {
-    def setterExpression(dynamicVariablesEnabled: Boolean) = compiler.getCompiledSetterExpression[SimpleContext[Unit], Int](
-      profile = createProfile(Nil, dynamicVariablesEnabled = dynamicVariablesEnabled),
-      expression = "_vars.lol",
-      template = false,
-      variableTypes = Map("lol" -> TypeString[Int])
-    )
+    def setterExpression(dynamicVariablesEnabled: Boolean) =
+      compiler.getCompiledSetterExpression[SimpleContext[Unit], Int](
+        profile = createProfile(Nil, dynamicVariablesEnabled = dynamicVariablesEnabled),
+        expression = "_vars.lol",
+        template = false,
+        variableTypes = Map("lol" -> TypeString[Int]),
+      )
 
     val context = SimpleContext(())
     setterExpression(dynamicVariablesEnabled = true).apply(context).apply(42)
@@ -180,7 +196,9 @@ class SetterExpressionsTest extends AnyFunSuite with CompilationTest {
   test("accepted type reporting test") {
     val acl = allow(on { st: JavaSetterTarget => st.all.introduced.members })
     val setterExpression = compiler.getCompiledSetterExpression[SimpleContext[JavaSetterTarget], Nothing](
-      createProfile(acl), "beanprop", template = false
+      createProfile(acl),
+      "beanprop",
+      template = false,
     )
     val setter = setterExpression.apply(SimpleContext(new JavaSetterTarget))
     assert(setter.acceptedType == Type("Int", classOf[Int]))

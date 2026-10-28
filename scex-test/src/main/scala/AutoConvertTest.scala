@@ -3,10 +3,8 @@ import com.avsystem.scex.util.Literal
 
 import scala.annotation.nowarn
 
-/**
- * Created: 30-05-2014
- * Author: ghik
- */
+/** Created: 30-05-2014 Author: ghik
+  */
 object AutoConvertTest {
 
   implicit final class stringAutoConvert(private val str: String) extends AnyVal {

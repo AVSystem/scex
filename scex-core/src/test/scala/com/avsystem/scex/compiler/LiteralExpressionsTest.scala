@@ -7,10 +7,8 @@ import com.avsystem.scex.compiler.TestUtils.CustomBooleanConversionRoot
 import com.avsystem.scex.util.{PredefinedAccessSpecs, SimpleContext}
 import org.scalatest.funsuite.AnyFunSuite
 
-/**
- * Created: 04-04-2014
- * Author: ghik
- */
+/** Created: 04-04-2014 Author: ghik
+  */
 class LiteralExpressionsTest extends AnyFunSuite with CompilationTest {
 
   import com.avsystem.scex.validation.SymbolValidator._
@@ -95,7 +93,11 @@ class LiteralExpressionsTest extends AnyFunSuite with CompilationTest {
     }
 
     val cexpr = compiler.getCompiledExpression[SimpleContext[CustomBooleanConversionRoot], Boolean](
-      createProfile(acl), "TRÓ", template = true, header = "")
+      createProfile(acl),
+      "TRÓ",
+      template = true,
+      header = "",
+    )
 
     assert(cexpr(SimpleContext(new CustomBooleanConversionRoot("ZUO", "TRÓ"))))
   }

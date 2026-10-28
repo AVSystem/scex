@@ -7,9 +7,7 @@ import scala.collection.mutable.ListBuffer
 import scala.reflect.internal.Flags
 import scala.reflect.macros.blackbox
 
-/**
-  * Author: ghik
-  * Created: 11/14/14.
+/** Author: ghik Created: 11/14/14.
   */
 abstract class SymbolInfoParser[C <: blackbox.Context](val c: C) extends MacroUtils {
   lazy val universe: c.universe.type = c.universe
@@ -53,13 +51,12 @@ abstract class SymbolInfoParser[C <: blackbox.Context](val c: C) extends MacroUt
 
   // transforms list of expressions of type List[SymbolInfo[T]] to single expression
   // of type List[SymbolInfo[T]] that represents flattened original list of lists
-  def reifyFlattenLists(listExprs: List[Tree]) = {
+  def reifyFlattenLists(listExprs: List[Tree]) =
     q"""
       val b = new $CollectionPkg.mutable.ListBuffer[$SymbolInfoCls[$PayloadType]]
       ..${listExprs.map(listExpr => q"b ++= $listExpr")}
       b.result()
     """
-  }
 
   def reifyRuntimeClassOpt(tpe: Type): Tree =
     if (tpe == NoType || isJavaStaticType(tpe)) {
@@ -71,34 +68,36 @@ abstract class SymbolInfoParser[C <: blackbox.Context](val c: C) extends MacroUt
   def existentialSymbol(name: String, typeSignature: Type) = {
     val typeName = TypeName(name)
     val flags = internal.reificationSupport.FlagsRepr(Flags.DEFERRED | Flags.EXISTENTIAL)
-    val result = internal.reificationSupport.newNestedSymbol(rootMirror.RootClass, typeName, NoPosition, flags, isClass = false)
+    val result =
+      internal.reificationSupport.newNestedSymbol(rootMirror.RootClass, typeName, NoPosition, flags, isClass = false)
     internal.reificationSupport.setInfo(result, typeSignature)
     result
   }
 
-  /**
-   * Translates this type so that all existential types in this type do not refer to the defining class,
-   * as they do by default. Heavy wizardry.
-   *
-   * The problem is that when you reify an existential type (with `c.reifyType`), for example `Set[_]`, the
-   * wildcard is reified as a Symbol whose owner is the class that used that existential type.
-   * This effectively means that the definition of existential type refers the class that used it.
-   * This means that when the type is finally evaluated in some universe, things will blow up if that class is
-   * not visible to that universe.
-   *
-   * For example, this is exactly what happens if you use some existential type in the SymbolValidator DSL and
-   * the symbol validator is compiled at runtime using `compileSymbolValidator` method of ScexCompiler. That dynamically
-   * compiled class is not visible to the Scala compiler through classpath and when it tries to evaluate the reified
-   * type, we have a nice scala.reflect.internal.MissingRequirementError in our face.
-   */
+  /** Translates this type so that all existential types in this type do not refer to the defining class, as they do by
+    * default. Heavy wizardry.
+    *
+    * The problem is that when you reify an existential type (with `c.reifyType`), for example `Set[_]`, the wildcard is
+    * reified as a Symbol whose owner is the class that used that existential type. This effectively means that the
+    * definition of existential type refers the class that used it. This means that when the type is finally evaluated
+    * in some universe, things will blow up if that class is not visible to that universe.
+    *
+    * For example, this is exactly what happens if you use some existential type in the SymbolValidator DSL and the
+    * symbol validator is compiled at runtime using `compileSymbolValidator` method of ScexCompiler. That dynamically
+    * compiled class is not visible to the Scala compiler through classpath and when it tries to evaluate the reified
+    * type, we have a nice scala.reflect.internal.MissingRequirementError in our face.
+    */
   def detachExistentials(tpe: Type) = tpe.map {
     case ExistentialType(quantified, underlying) =>
       val rootSymbol = rootMirror.RootClass
 
-      val symbolMapping = quantified.collect {
-        case oldSymbol if oldSymbol.owner != rootSymbol =>
-          (oldSymbol, existentialSymbol(oldSymbol.fullName.replace(".", "_"), oldSymbol.typeSignature))
-      }.toMap.withDefault(identity)
+      val symbolMapping = quantified
+        .collect {
+          case oldSymbol if oldSymbol.owner != rootSymbol =>
+            (oldSymbol, existentialSymbol(oldSymbol.fullName.replace(".", "_"), oldSymbol.typeSignature))
+        }
+        .toMap
+        .withDefault(identity)
 
       val newQuantified = quantified.map(symbolMapping)
       val newUnderlying = underlying.map {
@@ -111,10 +110,9 @@ abstract class SymbolInfoParser[C <: blackbox.Context](val c: C) extends MacroUt
     case subTpe => subTpe
   }
 
-  /**
-   * Handles @plus and @minus type annotations.
-   * For example `java.util.List[Number@plus]` is translated to `java.util.List[_ <: Number]`
-   */
+  /** Handles @plus and @minus type annotations. For example `java.util.List[Number@plus]` is translated to
+    * `java.util.List[_ <: Number]`
+    */
   def existentialize(tpe: Type) = {
     object PlusOrMinus {
       def unapply(ann: Annotation) =
@@ -174,17 +172,19 @@ abstract class SymbolInfoParser[C <: blackbox.Context](val c: C) extends MacroUt
     """
 
   def unwrapConvertedPrefix(prefix: Tree) = prefix match {
-    case TypeApply(Select(convTree@ImplicitlyConverted(actualPrefix, fun), TermName("as")), List(_))
-      if hasType(convTree, DirectWildcardSelectorType) => actualPrefix
+    case TypeApply(Select(convTree @ ImplicitlyConverted(actualPrefix, fun), TermName("as")), List(_))
+        if hasType(convTree, DirectWildcardSelectorType) =>
+      actualPrefix
     case _ => prefix
   }
 
   def checkPrefix(required: Option[(Symbol, Type)], prefix: Tree) = (required, prefix) match {
     case (Some((requiredSymbol, requiredTpe)), Ident(_))
-      if prefix.symbol == requiredSymbol && prefix.tpe <:< requiredTpe =>
+        if prefix.symbol == requiredSymbol && prefix.tpe <:< requiredTpe =>
       requiredTpe
-    case (None, _) if prefix.symbol.isModule ||
-      (prefix.symbol.isStatic && prefix.symbol.isMethod && prefix.symbol.asMethod.isStable) =>
+    case (None, _)
+        if prefix.symbol.isModule ||
+          (prefix.symbol.isStatic && prefix.symbol.isMethod && prefix.symbol.asMethod.isStable) =>
       prefix.tpe
     case _ =>
       c.abort(prefix.pos, "Bad prefix: " + show(prefix))
@@ -199,7 +199,12 @@ abstract class SymbolInfoParser[C <: blackbox.Context](val c: C) extends MacroUt
       c.abort(tpeTree.pos, "Bad symbol specification syntax:")
   }
 
-  case class ParsedWildcardSelector(prefixTpe: Type, payloadTree: Tree, scope: List[TermSymbol], implConv: Option[(Tree, Type)]) {
+  case class ParsedWildcardSelector(
+    prefixTpe: Type,
+    payloadTree: Tree,
+    scope: List[TermSymbol],
+    implConv: Option[(Tree, Type)],
+  ) {
     def filterScope(pred: TermSymbol => Boolean) =
       copy(scope = scope.filter(pred))
 
@@ -226,7 +231,8 @@ abstract class SymbolInfoParser[C <: blackbox.Context](val c: C) extends MacroUt
 
   lazy val InvalidParsedWildcardSelector = ParsedWildcardSelector(NoType, EmptyTree, Nil, None)
 
-  def parseWildcardSelector(requiredPrefix: Option[(Symbol, Type)], payloadTree: Tree, tree: Tree): ParsedWildcardSelector = tree match {
+  def parseWildcardSelector(requiredPrefix: Option[(Symbol, Type)], payloadTree: Tree, tree: Tree)
+    : ParsedWildcardSelector = tree match {
     // prefix implicitly converted to DirectWildcardSelector
     case ImplicitlyConverted(prefix, _) if hasType(tree, DirectWildcardSelectorType) =>
       val tpe = checkPrefix(requiredPrefix, unwrapConvertedPrefix(prefix))
@@ -234,7 +240,7 @@ abstract class SymbolInfoParser[C <: blackbox.Context](val c: C) extends MacroUt
 
     // SymbolValidator.allStatic[T]
     case TypeApply(Select(symbolDslModule, TermName("allStatic")), List(tpeTree))
-      if hasType(symbolDslModule, dslObjectType) && isJavaClass(tpeTree.symbol) =>
+        if hasType(symbolDslModule, dslObjectType) && isJavaClass(tpeTree.symbol) =>
 
       val tpeWithStatics = tpeTree.symbol.companion.typeSignature
       ParsedWildcardSelector(tpeWithStatics, payloadTree, accessibleMembers(tpeWithStatics), None)
@@ -245,15 +251,16 @@ abstract class SymbolInfoParser[C <: blackbox.Context](val c: C) extends MacroUt
 
     // <prefix>.implicitlyAs[T]
     case TypeApply(Select(prefix, TermName("implicitlyAs")), List(implicitTpeTree))
-      if hasType(prefix, DirectWildcardSelectorType) =>
+        if hasType(prefix, DirectWildcardSelectorType) =>
 
       val prefixTpe = parseWildcardSelector(requiredPrefix, payloadTree, prefix).prefixTpe
       val implicitTpe = implicitTpeTree.tpe
 
-      val implConv = stripTypeApply(c.inferImplicitView(EmptyTree, prefixTpe, implicitTpe,
-        silent = true, withMacrosDisabled = false, tree.pos))
+      val implConv = stripTypeApply(
+        c.inferImplicitView(EmptyTree, prefixTpe, implicitTpe, silent = true, withMacrosDisabled = false, tree.pos)
+      )
 
-      //TODO: filter out members that already exist in original type
+      // TODO: filter out members that already exist in original type
       if (isGlobalImplicitConversion(implConv)) {
         val newScope = accessibleMembers(implicitTpe).filterNot(isConstructor)
         ParsedWildcardSelector(prefixTpe, payloadTree, newScope, Some((implConv, implicitTpe)))
@@ -264,7 +271,7 @@ abstract class SymbolInfoParser[C <: blackbox.Context](val c: C) extends MacroUt
 
     // <prefix>.constructorWithSignature(<signature>)
     case Apply(Select(prefix, TermName("constructorWithSignature")), List(Literal(Constant(signature: String))))
-      if hasType(prefix, DirectWildcardSelectorType) =>
+        if hasType(prefix, DirectWildcardSelectorType) =>
 
       val prevSelector = parseWildcardSelector(requiredPrefix, payloadTree, prefix)
       prevSelector.scope.find(p => isConstructor(p) && p.typeSignature.toString == signature) match {
@@ -274,8 +281,11 @@ abstract class SymbolInfoParser[C <: blackbox.Context](val c: C) extends MacroUt
           val availableSignatures = prevSelector.scope.collect {
             case member if isConstructor(member) => member.typeSignature.toString
           }
-          c.error(tree.pos, s"Type ${prevSelector.prefixTpe.widen} has no constructor with signature $signature\n" +
-            s"Signatures of available constructors are: ${availableSignatures.mkString(", ")}")
+          c.error(
+            tree.pos,
+            s"Type ${prevSelector.prefixTpe.widen} has no constructor with signature $signature\n" +
+              s"Signatures of available constructors are: ${availableSignatures.mkString(", ")}",
+          )
           InvalidParsedWildcardSelector
       }
 
@@ -298,11 +308,15 @@ abstract class SymbolInfoParser[C <: blackbox.Context](val c: C) extends MacroUt
 
     // <prefix>.members
     case Select(prefix, TermName("members")) if hasType(prefix, MemberSubsetsType) =>
-      parseWildcardSelector(requiredPrefix, payloadTree, prefix).filterScopeNot(m => isConstructor(m) || isFromToplevelType(m))
+      parseWildcardSelector(requiredPrefix, payloadTree, prefix).filterScopeNot(m =>
+        isConstructor(m) || isFromToplevelType(m)
+      )
 
     // <prefix>.membersNamed.<methodName>
-    case Apply(Select(Select(prefix, TermName("membersNamed")), TermName("selectDynamic")), List(Literal(Constant(name: String))))
-      if hasType(prefix, MemberSubsetsType) =>
+    case Apply(
+          Select(Select(prefix, TermName("membersNamed")), TermName("selectDynamic")),
+          List(Literal(Constant(name: String))),
+        ) if hasType(prefix, MemberSubsetsType) =>
 
       val termName = TermName(name).encodedName
       val result = parseWildcardSelector(requiredPrefix, payloadTree, prefix).filterScope(_.name == termName)
@@ -312,8 +326,7 @@ abstract class SymbolInfoParser[C <: blackbox.Context](val c: C) extends MacroUt
       } else result
 
     // <prefix>.membersNamed(<methodName>)
-    case Apply(Select(prefix, TermName("membersNamed")), nameTrees)
-      if hasType(prefix, MemberSubsetsType) =>
+    case Apply(Select(prefix, TermName("membersNamed")), nameTrees) if hasType(prefix, MemberSubsetsType) =>
 
       val names = nameTrees.collect {
         case LiteralString(name) => name
@@ -322,11 +335,13 @@ abstract class SymbolInfoParser[C <: blackbox.Context](val c: C) extends MacroUt
           "<invalid>"
       }.toSet
 
-      val result = parseWildcardSelector(requiredPrefix, payloadTree, prefix).filterScope(names contains _.name.decodedName.toString)
-      val absentMembers = names diff result.scope.map(_.name.decodedName.toString).toSet
+      val result = parseWildcardSelector(requiredPrefix, payloadTree, prefix).filterScope(
+        names contains _.name.decodedName.toString
+      )
+      val absentMembers = names.diff(result.scope.map(_.name.decodedName.toString).toSet)
       if (absentMembers.nonEmpty) {
-        absentMembers.foreach {
-          name => c.error(tree.pos, s"No member named $name found in type ${result.sourceTpe.widen}")
+        absentMembers.foreach { name =>
+          c.error(tree.pos, s"No member named $name found in type ${result.sourceTpe.widen}")
         }
         InvalidParsedWildcardSelector
       } else result
@@ -357,7 +372,7 @@ abstract class SymbolInfoParser[C <: blackbox.Context](val c: C) extends MacroUt
       reifyFlattenLists((stats :+ finalExpr).map(extractSymbols(requiredPrefix, payloadTree, _)))
 
     case Apply(Select(ImplicitlyConverted(inner, _), DecodedTermName("-->")), List(newPayloadTree))
-      if hasType(body, AttachedPayloadType) =>
+        if hasType(body, AttachedPayloadType) =>
       extractSymbols(requiredPrefix, newPayloadTree, inner)
 
     case _ if body.tpe =:= CompleteWildcardSelectorType =>
@@ -366,8 +381,13 @@ abstract class SymbolInfoParser[C <: blackbox.Context](val c: C) extends MacroUt
     case NewInstance(tpeTree, _) =>
       reifySymbolInfo(checkNewInstanceTpe(requiredPrefix, tpeTree), payloadTree, body.symbol, None)
 
-    case Select(apply@ImplicitlyConverted(prefix, fun), _) =>
-      reifySymbolInfo(checkPrefix(requiredPrefix, unwrapConvertedPrefix(prefix)), payloadTree, body.symbol, Some(stripTypeApply(fun)))
+    case Select(apply @ ImplicitlyConverted(prefix, fun), _) =>
+      reifySymbolInfo(
+        checkPrefix(requiredPrefix, unwrapConvertedPrefix(prefix)),
+        payloadTree,
+        body.symbol,
+        Some(stripTypeApply(fun)),
+      )
 
     case Select(prefix, _) =>
       reifySymbolInfo(checkPrefix(requiredPrefix, unwrapConvertedPrefix(prefix)), payloadTree, body.symbol, None)
@@ -381,8 +401,8 @@ abstract class SymbolInfoParser[C <: blackbox.Context](val c: C) extends MacroUt
     case Typed(inner, _) =>
       extractSymbols(requiredPrefix, payloadTree, inner)
 
-    case Function(List(valdef@ValDef(_, _, prefixTpeTree, _)), actualBody)
-      if internal.attachments(body).get[SymbolDslOnMark.type].isDefined =>
+    case Function(List(valdef @ ValDef(_, _, prefixTpeTree, _)), actualBody)
+        if internal.attachments(body).get[SymbolDslOnMark.type].isDefined =>
 
       extractSymbols(Some((valdef.symbol, prefixTpeTree.tpe)), payloadTree, actualBody)
 
@@ -399,9 +419,8 @@ abstract class SymbolInfoParser[C <: blackbox.Context](val c: C) extends MacroUt
   def extractSymbolInfos(tree: Tree): Tree = {
     val symbolInfos = extractSymbols(None, defaultPayload, tree)
 
-    val typeInfoDefs = typeInfos.iterator.map {
-      case (typeKey, termName) =>
-        ValDef(Modifiers(), termName, TypeTree(), reifyTypeInfo(typeKey.tpe))
+    val typeInfoDefs = typeInfos.iterator.map { case (typeKey, termName) =>
+      ValDef(Modifiers(), termName, TypeTree(), reifyTypeInfo(typeKey.tpe))
     }.toList
 
     Block(typeInfoDefs, symbolInfos)

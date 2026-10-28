@@ -2,9 +2,7 @@ package com.avsystem.scex
 
 import scala.annotation.implicitNotFound
 
-/**
-  * Created: 28-11-2013
-  * Author: ghik
+/** Created: 28-11-2013 Author: ghik
   */
 trait Setter[-T] extends (T => Unit) {
   def acceptedType: Type

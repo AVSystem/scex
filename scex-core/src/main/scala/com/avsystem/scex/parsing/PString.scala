@@ -10,9 +10,7 @@ object Binding extends AbstractValueEnumCompanion[Binding] {
   final val Left, Right: Value = new Binding
 }
 
-/**
-  * Created: 24-10-2013
-  * Author: ghik
+/** Created: 24-10-2013 Author: ghik
   */
 final case class Modification(offset: Int, amount: Int, binding: Binding)
 
@@ -54,8 +52,10 @@ final case class PString(result: String, beg: Int, end: Int, mods: Vector[Modifi
     }
 
   def replaceWith(replacement: String, binding: Binding): PString =
-    copy(result = replacement, mods =
-      Modification(beg, -result.length, binding) +: Modification(beg, replacement.length, binding) +: mods)
+    copy(
+      result = replacement,
+      mods = Modification(beg, -result.length, binding) +: Modification(beg, replacement.length, binding) +: mods,
+    )
 
   def withResult(result: String): PString =
     copy(result = result)
@@ -65,20 +65,26 @@ object PString {
   @tailrec private[scex] def computeMapping(
     mods: List[Modification],
     acc: List[(Int, ShiftInfo)],
-    racc: List[(Int, ShiftInfo)]
+    racc: List[(Int, ShiftInfo)],
   ): (SortedMap[Int, ShiftInfo], SortedMap[Int, ShiftInfo]) =
     (mods, acc, racc) match {
-      case (Modification(offset, amount, binding) :: tail, (prevOffset, prevInfo) :: accTail, (rprevOffset, rprevInfo) :: raccTail) =>
-        val newAcc = if (offset == prevOffset)
-          (prevOffset, prevInfo.update(amount, binding)) :: accTail
-        else
-          (offset, ShiftInfo(prevInfo.totalShift, amount, binding)) :: acc
+      case (
+            Modification(offset, amount, binding) :: tail,
+            (prevOffset, prevInfo) :: accTail,
+            (rprevOffset, rprevInfo) :: raccTail,
+          ) =>
+        val newAcc =
+          if (offset == prevOffset)
+            (prevOffset, prevInfo.update(amount, binding)) :: accTail
+          else
+            (offset, ShiftInfo(prevInfo.totalShift, amount, binding)) :: acc
 
         val roffset = offset + (if (offset == prevOffset) prevInfo.totalPrevShift else prevInfo.totalShift)
-        val newRacc = if (roffset == rprevOffset)
-          (rprevOffset, rprevInfo.update(-amount, binding)) :: raccTail
-        else
-          (roffset, ShiftInfo(rprevInfo.totalShift, -amount, binding)) :: racc
+        val newRacc =
+          if (roffset == rprevOffset)
+            (rprevOffset, rprevInfo.update(-amount, binding)) :: raccTail
+          else
+            (roffset, ShiftInfo(rprevInfo.totalShift, -amount, binding)) :: racc
 
         computeMapping(tail, newAcc, newRacc)
 

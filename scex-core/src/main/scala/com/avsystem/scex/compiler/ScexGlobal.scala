@@ -9,9 +9,7 @@ import scala.reflect.io.AbstractFile
 import scala.tools.nsc.Global
 import scala.tools.nsc.plugins.Plugin
 
-/**
-  * Created: 01-04-2014
-  * Author: ghik
+/** Created: 01-04-2014 Author: ghik
   */
 trait ScexGlobal extends Global with MacroUtils with SymbolErasures {
   lazy val universe: this.type = this
@@ -22,12 +20,14 @@ trait ScexGlobal extends Global with MacroUtils with SymbolErasures {
     val (wrappedCode, offset) = CodeGeneration.wrapForParsing(code, template)
     val sourceFile = new BatchSourceFile("(for_parsing)", wrappedCode)
     val unit = new CompilationUnit(sourceFile)
-    val PackageDef(_, List(ModuleDef(_, _, Template(_, _, List(_, expressionTree))))) = new syntaxAnalyzer.UnitParser(unit).parse()
+    val PackageDef(_, List(ModuleDef(_, _, Template(_, _, List(_, expressionTree))))) =
+      new syntaxAnalyzer.UnitParser(unit).parse()
     moveTree(expressionTree, -offset)
   }
 
   def movePosition(pos: Position, offset: Int): Position = pos match {
-    case tp: TransparentPosition => new TransparentPosition(tp.source, tp.start + offset, tp.point + offset, tp.end + offset)
+    case tp: TransparentPosition =>
+      new TransparentPosition(tp.source, tp.start + offset, tp.point + offset, tp.end + offset)
     case rp: RangePosition => new RangePosition(rp.source, rp.start + offset, rp.point + offset, rp.end + offset)
     case op: OffsetPosition => new OffsetPosition(op.source, op.point + offset)
     case _ => pos
@@ -40,8 +40,7 @@ trait ScexGlobal extends Global with MacroUtils with SymbolErasures {
     tree
   }
 
-  /**
-    * Locator with slightly modified inclusion check.
+  /** Locator with slightly modified inclusion check.
     */
   class ScexLocator(pos: Position) extends Traverser {
     var last: Tree = _
@@ -60,16 +59,17 @@ trait ScexGlobal extends Global with MacroUtils with SymbolErasures {
           if (includes(t.pos, pos)) {
             if (!t.pos.isTransparent) last = t
             super.traverse(t)
-          } else t match {
-            case mdef: MemberDef =>
-              traverseTrees(mdef.mods.annotations)
-            case _ =>
-          }
+          } else
+            t match {
+              case mdef: MemberDef =>
+                traverseTrees(mdef.mods.annotations)
+              case _ =>
+            }
       }
     }
 
     private def includes(pos1: Position, pos2: Position): Boolean =
-      (pos1 includes pos2) && pos1.end > pos2.start
+      (pos1.includes(pos2)) && pos1.end > pos2.start
   }
 
   override protected def loadRoughPluginsList(): List[Plugin] =
@@ -87,8 +87,8 @@ trait ScexGlobal extends Global with MacroUtils with SymbolErasures {
   def forgetSymbolsFromSource(file: AbstractFile): Unit = {
     val symbols = toplevelSymbolsMap.get(file).map(_.toSet).getOrElse(Set.empty)
     symbols.foreach { s =>
-      //like in: scala.tools.nsc.interactive.Global.filesDeleted
-      s.owner.info.decls unlink s
+      // like in: scala.tools.nsc.interactive.Global.filesDeleted
+      s.owner.info.decls.unlink(s)
     }
     toplevelSymbolsMap.remove(file)
   }

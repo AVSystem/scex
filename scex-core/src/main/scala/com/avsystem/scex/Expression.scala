@@ -19,7 +19,8 @@ abstract class AbstractExpression[-C <: ExpressionContext[_, _], +T]
 
   def eval(context: C): T
 
-  final def apply(context: C): T = try eval(context) catch {
+  final def apply(context: C): T = try eval(context)
+  catch {
     case NonFatal(cause) => throw new EvaluationException(cause)
   }
 

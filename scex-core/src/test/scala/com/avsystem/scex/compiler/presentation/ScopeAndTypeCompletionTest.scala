@@ -10,9 +10,7 @@ import org.scalatest.funsuite.AnyFunSuite
 
 import scala.annotation.nowarn
 
-/**
-  * Author: ghik
-  * Created: 11/18/14.
+/** Author: ghik Created: 11/18/14.
   */
 @nowarn("msg=a pure expression does nothing in statement position")
 class ScopeAndTypeCompletionTest extends AnyFunSuite with CompilationTest with CompletionTest {
@@ -75,61 +73,85 @@ class ScopeAndTypeCompletionTest extends AnyFunSuite with CompilationTest with C
     val completer = compiler.getCompleter[SimpleContext[Unit], Any](profile, template = false)
     val completion = completer.getTypeCompletion("\"\".", 2).passTo(c => c.copy(members = c.members.sortBy(_.name)))
 
-    assert(completion.members.map(asPartial) == Vector(
-      PartialMember("charAt", scexType[Char], List(List(Param("index", scexType[Int]))), doc = "doc of charAt"),
-      PartialMember("empty", scexType[Boolean]),
-      PartialMember("isEmpty", scexType[Boolean], List(Nil)),
-      PartialMember("toInt", scexType[Int])
-    ))
+    assert(
+      completion.members.map(asPartial) == Vector(
+        PartialMember("charAt", scexType[Char], List(List(Param("index", scexType[Int]))), doc = "doc of charAt"),
+        PartialMember("empty", scexType[Boolean]),
+        PartialMember("isEmpty", scexType[Boolean], List(Nil)),
+        PartialMember("toInt", scexType[Int]),
+      )
+    )
   }
 
   test("attribute annotations test") {
     val completer = compiler.getCompleter[SimpleContext[Root], Any](profile, template = false)
     val completion = completer.getTypeCompletion("_root.", 5).passTo(c => c.copy(members = c.members.sortBy(_.name)))
 
-    assert(completion.members.map(asPartial) === Vector(
-      PartialMember("com", scexType[Int]),
-      PartialMember("implicitMethod", scexType[Int], doc = "implicit method doc"),
-      PartialMember("method", scexType[Any], List(List(
-        Param("annotArg", scexType[Any]),
-        Param("moar", scexType[Any])
-      )), doc = "handles stuff")
-    ))
+    assert(
+      completion.members.map(asPartial) === Vector(
+        PartialMember("com", scexType[Int]),
+        PartialMember("implicitMethod", scexType[Int], doc = "implicit method doc"),
+        PartialMember(
+          "method",
+          scexType[Any],
+          List(
+            List(
+              Param("annotArg", scexType[Any]),
+              Param("moar", scexType[Any]),
+            )
+          ),
+          doc = "handles stuff",
+        ),
+      )
+    )
   }
 
   test("simple scope completion test") {
     val completer = compiler.getCompleter[SimpleContext[Root], Any](profile, template = false)
     val completion = completer.getScopeCompletion.passTo(c => c.copy(members = c.members.sortBy(_.name)))
 
-    assert(completion.members.filterNot(_.flags.iimplicit).map(asPartial) == Vector(
-      PartialMember("com", scexType[Int]), // test shadowing of toplevel package
-      PartialMember("method", scexType[Any], List(List(
-        Param("annotArg", scexType[Any]),
-        Param("moar", scexType[Any])
-      )), doc = "handles stuff"),
-      PartialMember("utilStuff", scexType[Int], doc = "util stuff")
-    ))
+    assert(
+      completion.members.filterNot(_.flags.iimplicit).map(asPartial) == Vector(
+        PartialMember("com", scexType[Int]), // test shadowing of toplevel package
+        PartialMember(
+          "method",
+          scexType[Any],
+          List(
+            List(
+              Param("annotArg", scexType[Any]),
+              Param("moar", scexType[Any]),
+            )
+          ),
+          doc = "handles stuff",
+        ),
+        PartialMember("utilStuff", scexType[Int], doc = "util stuff"),
+      )
+    )
   }
 
   test("scope completion test with adapted getters") {
     val completer = compiler.getCompleter[SimpleContext[JavaRootWithGetter], Any](profile, template = false)
     val completion = completer.getScopeCompletion.passTo(c => c.copy(members = c.members.sortBy(_.name)))
 
-    assert(completion.members.filterNot(_.flags.iimplicit).map(asPartial) == Vector(
-      PartialMember("getName", scexType[String], List(Nil)),
-      PartialMember("name", scexType[String]),
-      PartialMember("utilStuff", scexType[Int], doc = "util stuff")
-    ))
+    assert(
+      completion.members.filterNot(_.flags.iimplicit).map(asPartial) == Vector(
+        PartialMember("getName", scexType[String], List(Nil)),
+        PartialMember("name", scexType[String]),
+        PartialMember("utilStuff", scexType[Int], doc = "util stuff"),
+      )
+    )
   }
 
   test("type completion test with adapted getters") {
     val completer = compiler.getCompleter[SimpleContext[JavaRootWithGetter], Any](profile, template = false)
     val completion = completer.getTypeCompletion("_root.", 5).passTo(c => c.copy(members = c.members.sortBy(_.name)))
 
-    assert(completion.members.map(asPartial) == Vector(
-      PartialMember("getName", scexType[String], List(Nil)),
-      PartialMember("name", scexType[String])
-    ))
+    assert(
+      completion.members.map(asPartial) == Vector(
+        PartialMember("getName", scexType[String], List(Nil)),
+        PartialMember("name", scexType[String]),
+      )
+    )
   }
 
   test("literal as Any") {

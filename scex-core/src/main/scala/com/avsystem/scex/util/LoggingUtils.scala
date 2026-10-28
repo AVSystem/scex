@@ -3,12 +3,10 @@ package util
 
 import org.slf4j.{Logger, LoggerFactory}
 
-import scala.reflect.{ClassTag, classTag}
+import scala.reflect.{classTag, ClassTag}
 
-/**
- * Created: 06-12-2013
- * Author: ghik
- */
+/** Created: 06-12-2013 Author: ghik
+  */
 trait LoggingUtils {
 
   protected case class LazyLogger(underlying: Logger) {

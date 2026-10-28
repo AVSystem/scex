@@ -3,10 +3,8 @@ package com.avsystem.scex.compiler
 import scala.tools.nsc._
 import scala.tools.nsc.plugins.{Plugin, PluginComponent}
 
-/**
- * Created: 27-10-2014
- * Author: ghik
- */
+/** Created: 27-10-2014 Author: ghik
+  */
 trait InterceptingPluginScexCompiler extends ScexCompiler {
 
   protected def runsAfter: List[String]

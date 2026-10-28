@@ -5,9 +5,7 @@ import com.avsystem.scex.compiler.annotation.NotValidated
 
 import scala.language.dynamics
 
-/**
-  * Created: 23-09-2013
-  * Author: ghik
+/** Created: 23-09-2013 Author: ghik
   */
 class DynamicVariableAccessor[C <: ExpressionContext[_, V], V](ctx: C) extends TypedVariableAccessor(ctx) with Dynamic {
   @NotValidated def selectDynamic(name: String): V =

@@ -9,12 +9,10 @@ import com.avsystem.scex.util.{PredefinedAccessSpecs, SimpleContext}
 import com.avsystem.scex.validation.SymbolValidator._
 import org.scalatest.funsuite.AnyFunSuite
 
-import scala.reflect.{ClassTag, classTag}
+import scala.reflect.{classTag, ClassTag}
 
-/**
- * Created: 17-09-2013
- * Author: ghik
- */
+/** Created: 17-09-2013 Author: ghik
+  */
 class XmlFriendlyCompilerTest extends AnyFunSuite with CompilationTest {
 
   override protected def createCompiler = new XmlFriendlyJavaScexCompiler(new ScexSettings)
@@ -22,14 +20,16 @@ class XmlFriendlyCompilerTest extends AnyFunSuite with CompilationTest {
   test("single quotes test") {
     val profile = createProfile(Nil)
 
-    val expr = compiler.getCompiledExpression[SimpleContext[Unit], String](profile, "'single quoted string'", template = false)
+    val expr =
+      compiler.getCompiledExpression[SimpleContext[Unit], String](profile, "'single quoted string'", template = false)
     assert("single quoted string" == expr.apply(SimpleContext(())))
   }
 
   test("boolean expressions test") {
     val profile = createProfile(Nil)
 
-    val expr = compiler.getCompiledExpression[SimpleContext[Unit], Boolean](profile, "true or true and false", template = false)
+    val expr =
+      compiler.getCompiledExpression[SimpleContext[Unit], Boolean](profile, "true or true and false", template = false)
     assert(expr.apply(SimpleContext(())))
   }
 
@@ -45,7 +45,11 @@ class XmlFriendlyCompilerTest extends AnyFunSuite with CompilationTest {
     val acl = PredefinedAccessSpecs.basicOperations
     val expr = "#dafuq + 2345"
     try {
-      compiler.getCompiledExpression[SimpleContext[Unit], String](createProfile(acl, dynamicVariablesEnabled = false), expr, template = false)
+      compiler.getCompiledExpression[SimpleContext[Unit], String](
+        createProfile(acl, dynamicVariablesEnabled = false),
+        expr,
+        template = false,
+      )
     } catch {
       case CompilationFailedException(_, List(CompileError(source, column, msg))) =>
         assert(source == expr)
@@ -73,7 +77,7 @@ class XmlFriendlyCompilerTest extends AnyFunSuite with CompilationTest {
       profile = createProfile(acl, dynamicVariablesEnabled = dynamicVariablesEnabled),
       expression = expr,
       template = false,
-      variableTypes = Map("someDouble" -> TypeString[Double])
+      variableTypes = Map("someDouble" -> TypeString[Double]),
     )
 
     assert(180.0 == cexpr(dynamicVariablesEnabled = false)(context))
@@ -91,7 +95,7 @@ class XmlFriendlyCompilerTest extends AnyFunSuite with CompilationTest {
       profile = createProfile(acl, dynamicVariablesEnabled = dynamicVariablesEnabled),
       expression = expr,
       template = false,
-      variableTypes = Map("someDouble" -> TypeString[Double])
+      variableTypes = Map("someDouble" -> TypeString[Double]),
     )
 
     try {
@@ -111,8 +115,12 @@ class XmlFriendlyCompilerTest extends AnyFunSuite with CompilationTest {
     val expr = "#someDouble.toDegrees"
     val context = new ClassTaggedContext
     context.setTypedVariable("someDouble", math.Pi)(classTag[Double])
-    val cexpr = compiler.getCompiledExpression[ClassTaggedContext, Double](createProfile(acl), expr, template = false,
-      variableTypes = Map("someDouble" -> TypeString[Double]))
+    val cexpr = compiler.getCompiledExpression[ClassTaggedContext, Double](
+      createProfile(acl),
+      expr,
+      template = false,
+      variableTypes = Map("someDouble" -> TypeString[Double]),
+    )
     assert(180.0 == cexpr(context))
   }
 
@@ -120,8 +128,12 @@ class XmlFriendlyCompilerTest extends AnyFunSuite with CompilationTest {
     val acl = PredefinedAccessSpecs.basicOperations
     val expr = "#someDouble.toDegrees"
     assertMemberAccessForbidden {
-      compiler.getCompiledExpression[ClassTaggedContext, Double](createProfile(acl), expr, template = false,
-        variableTypes = Map("someDouble" -> TypeString[Double]))
+      compiler.getCompiledExpression[ClassTaggedContext, Double](
+        createProfile(acl),
+        expr,
+        template = false,
+        variableTypes = Map("someDouble" -> TypeString[Double]),
+      )
     }
   }
 

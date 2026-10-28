@@ -24,7 +24,7 @@ sealed trait Tree extends PrettyPrint {
   def locate(start: Int, end: Int): Tree =
     locate(Position(start, end, transparent = false))
 
-  def locate(pos: Position): Tree = {
+  def locate(pos: Position): Tree =
     if (pos != null) {
       var result: Tree = EmptyTree
       def traverse(tree: Tree): Unit = {
@@ -32,7 +32,9 @@ sealed trait Tree extends PrettyPrint {
           case EmptyTree =>
           case tt: TypeTree if tt.original != null && tt.original.attachments.position.includes(pos) =>
             traverse(tt.original)
-          case _ if tree.attachments != null && tree.attachments.position != null && tree.attachments.position.includes(pos) =>
+          case _
+              if tree.attachments != null && tree.attachments.position != null &&
+                tree.attachments.position.includes(pos) =>
             if (!tree.attachments.position.transparent) {
               result = tree
             }
@@ -45,7 +47,6 @@ sealed trait Tree extends PrettyPrint {
       traverse(this)
       result
     } else EmptyTree
-  }
 
   def pretty(withPositions: Boolean, withTypes: Boolean): String = {
     val sb = new StringBuilder
@@ -102,10 +103,9 @@ sealed trait Tree extends PrettyPrint {
 
 abstract class AbstractTree(val attachments: Attachments) extends Tree
 
-/**
- * A Scex-specific tree which is just a nicer representation of template expression.
- * This tree does not exist in the Scala compiler API.
- */
+/** A Scex-specific tree which is just a nicer representation of template expression. This tree does not exist in the
+  * Scala compiler API.
+  */
 final case class TemplateInterpolation(parts: List[Literal], args: List[Tree])(attachments: Attachments)
   extends AbstractTree(attachments) with TermTree {
 
@@ -114,16 +114,13 @@ final case class TemplateInterpolation(parts: List[Literal], args: List[Tree])(a
   def argsAsJava = args.asJava
 }
 
-final case class Annotated(annot: Tree, arg: Tree)(attachments: Attachments)
-  extends AbstractTree(attachments)
+final case class Annotated(annot: Tree, arg: Tree)(attachments: Attachments) extends AbstractTree(attachments)
 
-final case class CaseDef(pat: Tree, guard: Tree, body: Tree)(attachments: Attachments)
-  extends AbstractTree(attachments)
+final case class CaseDef(pat: Tree, guard: Tree, body: Tree)(attachments: Attachments) extends AbstractTree(attachments)
 
 sealed trait DefTree extends NameTree
 
-final case class Bind(name: Name, body: Tree)(attachments: Attachments)
-  extends AbstractTree(attachments) with DefTree
+final case class Bind(name: Name, body: Tree)(attachments: Attachments) extends AbstractTree(attachments) with DefTree
 
 final case class LabelDef(name: TermName, params: List[Ident], rhs: Tree)(attachments: Attachments)
   extends AbstractTree(attachments) with DefTree with TermTree {
@@ -139,8 +136,15 @@ sealed trait ImplDef extends MemberDef {
   def impl: Template
 }
 
-final case class ClassDef(mods: Modifiers, name: TypeName, tparams: List[TypeDef], impl: Template)(attachments: Attachments)
-  extends AbstractTree(attachments) with ImplDef {
+final case class ClassDef(
+  mods: Modifiers,
+  name: TypeName,
+  tparams: List[TypeDef],
+  impl: Template,
+)(
+  attachments: Attachments
+) extends AbstractTree(attachments)
+    with ImplDef {
 
   def tparamsAsJava: JList[TypeDef] = tparams.asJava
 }
@@ -170,8 +174,17 @@ sealed trait ValOrDefDef extends MemberDef {
   def rhs: Tree
 }
 
-final case class DefDef(mods: Modifiers, name: Name, tparams: List[TypeDef], vparamss: List[List[ValDef]],
-  tpt: Tree, rhs: Tree)(attachments: Attachments) extends AbstractTree(attachments) with ValOrDefDef {
+final case class DefDef(
+  mods: Modifiers,
+  name: Name,
+  tparams: List[TypeDef],
+  vparamss: List[List[ValDef]],
+  tpt: Tree,
+  rhs: Tree,
+)(
+  attachments: Attachments
+) extends AbstractTree(attachments)
+    with ValOrDefDef {
 
   def tparamsAsJava: JList[TypeDef] = tparams.asJava
 
@@ -195,8 +208,7 @@ final case class Import(expr: Tree, selectors: List[ImportSelector])(attachments
   def selectorsAsJava = selectors.asJava
 }
 
-final case class Return(expr: Tree)(attachments: Attachments)
-  extends AbstractTree(attachments) with TermTree
+final case class Return(expr: Tree)(attachments: Attachments) extends AbstractTree(attachments) with TermTree
 
 final case class Template(parents: List[Tree], self: ValDef, body: List[Tree])(attachments: Attachments)
   extends AbstractTree(attachments) {
@@ -206,15 +218,13 @@ final case class Template(parents: List[Tree], self: ValDef, body: List[Tree])(a
   def bodyAsJava = body.asJava
 }
 
-final case class This(qual: TypeName)(attachments: Attachments)
-  extends AbstractTree(attachments) with TermTree
+final case class This(qual: TypeName)(attachments: Attachments) extends AbstractTree(attachments) with TermTree
 
 sealed trait RefTree extends NameTree {
   def qualifier: Tree
 }
 
-final case class Ident(name: Name)(attachments: Attachments)
-  extends AbstractTree(attachments) with RefTree {
+final case class Ident(name: Name)(attachments: Attachments) extends AbstractTree(attachments) with RefTree {
 
   override def qualifier = EmptyTree
 }
@@ -237,8 +247,7 @@ final case class Alternative(trees: List[Tree])(attachments: Attachments)
   def treesAsJava: JList[Tree] = trees.asJava
 }
 
-final case class Assign(lhs: Tree, rhs: Tree)(attachments: Attachments)
-  extends AbstractTree(attachments) with TermTree
+final case class Assign(lhs: Tree, rhs: Tree)(attachments: Attachments) extends AbstractTree(attachments) with TermTree
 
 final case class NamedArg(lhs: Tree, rhs: Tree)(attachments: Attachments)
   extends AbstractTree(attachments) with TermTree
@@ -282,20 +291,17 @@ final case class Match(selector: Tree, cases: List[CaseDef])(attachments: Attach
   def casesAsJava: JList[CaseDef] = cases.asJava
 }
 
-final case class New(tpt: Tree)(attachments: Attachments)
-  extends AbstractTree(attachments) with TermTree
+final case class New(tpt: Tree)(attachments: Attachments) extends AbstractTree(attachments) with TermTree
 
 final case class ReferenceToBoxed(ident: Ident)(attachments: Attachments)
   extends AbstractTree(attachments) with TermTree
 
-final case class Star(elem: Tree)(attachments: Attachments)
-  extends AbstractTree(attachments) with TermTree
+final case class Star(elem: Tree)(attachments: Attachments) extends AbstractTree(attachments) with TermTree
 
 final case class Super(qual: Tree, mix: TypeName)(attachments: Attachments)
   extends AbstractTree(attachments) with TermTree
 
-final case class Throw(expr: Tree)(attachments: Attachments)
-  extends AbstractTree(attachments) with TermTree
+final case class Throw(expr: Tree)(attachments: Attachments) extends AbstractTree(attachments) with TermTree
 
 final case class Try(block: Tree, catches: List[CaseDef], finalizer: Tree)(attachments: Attachments)
   extends AbstractTree(attachments) with TermTree {
@@ -303,8 +309,7 @@ final case class Try(block: Tree, catches: List[CaseDef], finalizer: Tree)(attac
   def catchesAsJava: JList[CaseDef] = catches.asJava
 }
 
-final case class Typed(expr: Tree, tpt: Tree)(attachments: Attachments)
-  extends AbstractTree(attachments) with TermTree
+final case class Typed(expr: Tree, tpt: Tree)(attachments: Attachments) extends AbstractTree(attachments) with TermTree
 
 final case class UnApply(fun: Tree, args: List[Tree])(attachments: Attachments)
   extends AbstractTree(attachments) with TermTree {
@@ -335,11 +340,9 @@ final case class ExistentialTypeTree(tpt: Tree, whereClauses: List[Tree])(attach
   def whereClausesAsJava: JList[Tree] = whereClauses.asJava
 }
 
-final case class SingletonTypeTree(ref: Tree)(attachments: Attachments)
-  extends AbstractTree(attachments) with TypTree
+final case class SingletonTypeTree(ref: Tree)(attachments: Attachments) extends AbstractTree(attachments) with TypTree
 
 final case class TypeBoundsTree(lo: Tree, hi: Tree)(attachments: Attachments)
   extends AbstractTree(attachments) with TypTree
 
-final case class TypeTree()(val original: Tree, attachments: Attachments)
-  extends AbstractTree(attachments) with TypTree
+final case class TypeTree()(val original: Tree, attachments: Attachments) extends AbstractTree(attachments) with TypTree

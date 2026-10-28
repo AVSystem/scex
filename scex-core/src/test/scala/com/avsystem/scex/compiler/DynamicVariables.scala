@@ -5,10 +5,8 @@ import com.avsystem.scex.util.DynamicAdapters.DynamicVariableSupport
 
 import scala.collection.mutable
 
-/**
- * Created: 18-09-2013
- * Author: ghik
- */
+/** Created: 18-09-2013 Author: ghik
+  */
 class DynamicVariables extends DynamicVariableSupport[String] {
   private val map = new mutable.HashMap[String, String]
 

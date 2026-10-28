@@ -26,8 +26,8 @@ trait MacroUtils extends CrossMacroUtils {
   lazy val templateInterpolationsType: Type = scexClassType("compiler.TemplateInterpolations")
   lazy val splicerType: Type = scexClassType("compiler.TemplateInterpolations.Splicer")
 
-  lazy val any2stringadd: Symbol = symAlternatives(typeOf[Predef.type].member(TermName("any2stringadd")))
-    .find(_.isMethod).getOrElse(NoSymbol)
+  lazy val any2stringadd: Symbol =
+    symAlternatives(typeOf[Predef.type].member(TermName("any2stringadd"))).find(_.isMethod).getOrElse(NoSymbol)
   @nowarn("msg=deprecated")
   lazy val stringAddPlus: Symbol = typeOf[any2stringadd[_]].member(TermName("+").encodedName)
   lazy val stringConcat: Symbol = typeOf[String].member(TermName("+").encodedName)
@@ -45,7 +45,8 @@ trait MacroUtils extends CrossMacroUtils {
   lazy val AdapterWrappedName: TermName = TermName("_wrapped")
 
   lazy val toplevelSymbols: Set[Symbol] = Set(typeOf[Any], typeOf[AnyRef], typeOf[AnyVal]).map(_.typeSymbol)
-  lazy val standardStringInterpolations: Set[Symbol] = Set("s", "raw").map(name => typeOf[StringContext].member(TermName(name)))
+  lazy val standardStringInterpolations: Set[Symbol] =
+    Set("s", "raw").map(name => typeOf[StringContext].member(TermName(name)))
   lazy val getClassSymbol: Symbol = typeOf[Any].member(TermName("getClass"))
 
   object DecodedTermName {
@@ -71,7 +72,8 @@ trait MacroUtils extends CrossMacroUtils {
   object ImplicitlyConverted {
     def unapply(tree: Tree): Option[(Tree, Tree)] = tree match {
       case Apply(fun, List(prefix))
-        if isGlobalImplicitConversion(fun) && (tree.pos == NoPosition || prefix.pos == NoPosition || tree.pos == prefix.pos) =>
+          if isGlobalImplicitConversion(fun) &&
+            (tree.pos == NoPosition || prefix.pos == NoPosition || tree.pos == prefix.pos) =>
         Some((prefix, fun))
       case _ =>
         None
@@ -146,8 +148,8 @@ trait MacroUtils extends CrossMacroUtils {
 
   object SelectDynamic {
     def unapply(tree: Tree): Option[(Tree, String)] = tree match {
-      case Apply(Select(qual, TermName("selectDynamic")), List(lit@Literal(Constant(name: String))))
-        if qual.tpe != null && qual.tpe <:< dynamicTpe && lit.pos.isTransparent =>
+      case Apply(Select(qual, TermName("selectDynamic")), List(lit @ Literal(Constant(name: String))))
+          if qual.tpe != null && qual.tpe <:< dynamicTpe && lit.pos.isTransparent =>
         Some((qual, name))
       case _ => None
     }
@@ -234,8 +236,7 @@ trait MacroUtils extends CrossMacroUtils {
     case _ => throw new IllegalArgumentException("This tree does not represent simple path: " + showRaw(tree))
   }
 
-  /**
-    * Is this tree a path that starts with package and goes through stable symbols (vals and objects)?
+  /** Is this tree a path that starts with package and goes through stable symbols (vals and objects)?
     *
     * @return
     */
@@ -248,7 +249,7 @@ trait MacroUtils extends CrossMacroUtils {
 
   def isGlobalImplicitConversion(tree: Tree): Boolean = tree match {
     case TypeApply(prefix, _) => isGlobalImplicitConversion(prefix)
-    //TODO handle apply method on implicit function values
+    // TODO handle apply method on implicit function values
     case Select(prefix, name) =>
       tree.symbol.isMethod && tree.symbol.isImplicit && isStableGlobalPath(prefix)
     case _ => false
@@ -300,8 +301,8 @@ trait MacroUtils extends CrossMacroUtils {
     val name = symbol.name.decodedName.toString
 
     !isGetClass(methodSymbol) && methodSymbol.paramLists == List(List()) && methodSymbol.typeParams.isEmpty &&
-      (BeanGetterNamePattern.pattern.matcher(name).matches ||
-        BooleanBeanGetterNamePattern.pattern.matcher(name).matches && isBooleanType(methodSymbol.returnType))
+    (BeanGetterNamePattern.pattern.matcher(name).matches ||
+      BooleanBeanGetterNamePattern.pattern.matcher(name).matches && isBooleanType(methodSymbol.returnType))
   }
 
   def isParameterless(s: TermSymbol): Boolean =
@@ -339,16 +340,17 @@ trait MacroUtils extends CrossMacroUtils {
       val name = symbol.name.decodedName.toString
 
       takesSingleParameter(methodSymbol) && methodSymbol.typeParams.isEmpty &&
-        methodSymbol.returnType =:= typeOf[Unit] &&
-        BeanSetterNamePattern.pattern.matcher(name).matches
+      methodSymbol.returnType =:= typeOf[Unit] && BeanSetterNamePattern.pattern.matcher(name).matches
     }
 
-  /**
-    * Accessible members include methods, modules, val/var setters and getters and Java fields.
+  /** Accessible members include methods, modules, val/var setters and getters and Java fields.
     */
   def accessibleMembers(tpe: Type): List[TermSymbol] =
-    tpe.members.toList.collect { case s if s.isPublic && s.isTerm &&
-      (s.isJava || (!s.asTerm.isVal && !s.asTerm.isVar)) && !s.isImplementationArtifact => s.asTerm
+    tpe.members.toList.collect {
+      case s
+          if s.isPublic && s.isTerm && (s.isJava || (!s.asTerm.isVal && !s.asTerm.isVar)) &&
+            !s.isImplementationArtifact =>
+        s.asTerm
     }
 
   def hasType(tree: Tree, tpe: Type): Boolean =
@@ -373,8 +375,7 @@ trait MacroUtils extends CrossMacroUtils {
     nonBottomSymbolType(symbol) <:< profileObjectType
 
   def isFromProfileObject(symbol: Symbol): Boolean =
-    symbol != null && symbol != NoSymbol &&
-      (isProfileObject(symbol) || isFromProfileObject(symbol.owner))
+    symbol != null && symbol != NoSymbol && (isProfileObject(symbol) || isFromProfileObject(symbol.owner))
 
   def isScexSynthetic(symbol: Symbol): Boolean =
     symbol != null && symbol != NoSymbol &&
@@ -386,8 +387,7 @@ trait MacroUtils extends CrossMacroUtils {
   def isBottom(tpe: Type): Boolean =
     tpe <:< definitions.NullTpe || tpe <:< definitions.NothingTpe
 
-  /**
-    * Is this symbol the 'wrapped' field of Java getter adapter?
+  /** Is this symbol the 'wrapped' field of Java getter adapter?
     */
   def isAdapterWrappedMember(symbol: Symbol): Boolean =
     if (symbol != null && symbol.isTerm) {
@@ -441,10 +441,11 @@ trait MacroUtils extends CrossMacroUtils {
 
   def annotations(sym: Symbol): List[Annotation] = {
     sym.info // force annotations
-    sym.annotations ++ (if (sym.isTerm) {
-      val tsym = sym.asTerm
-      if (tsym.isGetter) annotations(tsym.accessed) else Nil
-    } else Nil)
+    sym.annotations ++
+      (if (sym.isTerm) {
+         val tsym = sym.asTerm
+         if (tsym.isGetter) annotations(tsym.accessed) else Nil
+       } else Nil)
   }
 
   def annotationsIncludingOverrides(sym: Symbol): List[Annotation] =
@@ -460,7 +461,7 @@ trait MacroUtils extends CrossMacroUtils {
 }
 
 object MacroUtils {
-  def apply(u: Universe): MacroUtils {val universe: u.type} =
+  def apply(u: Universe): MacroUtils { val universe: u.type } =
     new MacroUtils {
       val universe: u.type = u
     }

@@ -7,10 +7,8 @@ import scala.collection.mutable
 import com.avsystem.commons.jiop.JavaInterop._
 import scala.language.dynamics
 
-
-/**
- * Interfaces and utilities to allow Java implementations of `scala.Dynamic`
- */
+/** Interfaces and utilities to allow Java implementations of `scala.Dynamic`
+  */
 object DynamicAdapters {
 
   trait SelectAdapter[+R] extends Dynamic {
@@ -46,53 +44,44 @@ object DynamicAdapters {
   }
 
   trait ApplyVarargsAdapter[-AV, +R] extends Dynamic {
-    /**
-     * Note: you can use `DynamicAdapters#varargsAsJavaList` to convert
-     * <i>args</i> to `java.util.List`.
-     */
+
+    /** Note: you can use `DynamicAdapters#varargsAsJavaList` to convert <i>args</i> to `java.util.List`.
+      */
     def applyDynamic(method: String)(args: AV*): R
   }
 
-  /**
-   * Converts Scala-style varargs (a `scala.collection.Seq`) into an unmodifiable `java.util.List`.
-   */
+  /** Converts Scala-style varargs (a `scala.collection.Seq`) into an unmodifiable `java.util.List`.
+    */
   def varargsAsJavaList[AV](args: AV*) = args.asJava
 
   trait ApplyNamedAdapter[-AV, +R] extends Dynamic {
-    /**
-     * Note: you can use `DynamicAdapters#namedArgsAsJavaMap` and
-     * `DynamicAdapters#unnamedArgsAsJavaList` to extract named and unnamed
-     * parameters from <i>args</i> as `java.util.Map` and `java.util.List`
-     */
+
+    /** Note: you can use `DynamicAdapters#namedArgsAsJavaMap` and `DynamicAdapters#unnamedArgsAsJavaList` to extract
+      * named and unnamed parameters from <i>args</i> as `java.util.Map` and `java.util.List`
+      */
     def applyDynamicNamed(method: String)(args: (String, AV)*): R
   }
 
-  /**
-   * Extracts named arguments from named argument list and returns it
-   * as unmodifiable `java.util.Map` with preserved order.
-   *
-   * E.g. for invocation <tt>obj.someDynamicMethod(a = 1, 2, b = 3, 4)</tt>, returned map will be
-   * <tt>{a=1,b=3}</tt>
-   */
-  def namedArgsAsJavaMap[AV](args: (String, AV)*) = Collections.unmodifiableMap[String, AV](
-    mutable.LinkedHashMap(args.filter(_._1.nonEmpty): _*).asJava)
+  /** Extracts named arguments from named argument list and returns it as unmodifiable `java.util.Map` with preserved
+    * order.
+    *
+    * E.g. for invocation <tt>obj.someDynamicMethod(a = 1, 2, b = 3, 4)</tt>, returned map will be <tt>{a=1,b=3}</tt>
+    */
+  def namedArgsAsJavaMap[AV](args: (String, AV)*) =
+    Collections.unmodifiableMap[String, AV](mutable.LinkedHashMap(args.filter(_._1.nonEmpty): _*).asJava)
 
-  /**
-   * Extracts unnamed argument values from named argument list and returns it as unmodifiable
-   * `java.util.List`.
-   *
-   * E.g. for invocation <tt>obj.someDynamicMethod(a = 1, 2, b = 3, 4)</tt>, returned list will be
-   * <tt>[2,4]</tt>
-   */
+  /** Extracts unnamed argument values from named argument list and returns it as unmodifiable `java.util.List`.
+    *
+    * E.g. for invocation <tt>obj.someDynamicMethod(a = 1, 2, b = 3, 4)</tt>, returned list will be <tt>[2,4]</tt>
+    */
   def unnamedArgsAsJavaList[AV](args: (String, AV)*) =
-    args.collect({ case ("", arg) => arg}).asJava
+    args.collect { case ("", arg) => arg }.asJava
 
-  /**
-   * Convenience trait that can be implemented by contexts passed as expression inputs to provide
-   * dynamic variable support.
-   *
-   * @tparam T
-   */
+  /** Convenience trait that can be implemented by contexts passed as expression inputs to provide dynamic variable
+    * support.
+    *
+    * @tparam T
+    */
   trait DynamicVariableSupport[T] extends Dynamic {
     def selectDynamic(name: String): T
 

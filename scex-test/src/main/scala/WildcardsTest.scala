@@ -1,4 +1,3 @@
-
 object WildcardsTest {
   def main(args: Array[String]): Unit = {
     import com.avsystem.scex.validation.SymbolValidator._
@@ -7,73 +6,73 @@ object WildcardsTest {
       on { sc: ScalaClass =>
         sc.all.members
       }
-    } foreach println
+    }.foreach(println)
     println()
 
     allow {
       on { sc: ScalaClass =>
         sc.all.constructors
       }
-    } foreach println
+    }.foreach(println)
     println()
 
     allow {
       on { sc: ScalaClass =>
         sc.all.declared.members
       }
-    } foreach println
+    }.foreach(println)
     println()
 
     allow {
       on { sc: ScalaClass =>
         sc.all.introduced.members
       }
-    } foreach println
+    }.foreach(println)
     println()
 
     allow {
       on { sc: ScalaClass =>
         sc.all.beanGetters
       }
-    } foreach println
+    }.foreach(println)
     println()
 
     allow {
       on { sc: ScalaClass =>
         sc.all.beanSetters
       }
-    } foreach println
+    }.foreach(println)
     println()
 
     allow {
       on { sc: ScalaClass =>
         sc.all.scalaGetters
       }
-    } foreach println
+    }.foreach(println)
     println()
 
     allow {
       on { sc: ScalaClass =>
         sc.all.scalaSetters
       }
-    } foreach println
+    }.foreach(println)
     println()
 
     allow {
       on { sc: ScalaClass =>
         sc.all.membersNamed.stuff
       }
-    } foreach println
+    }.foreach(println)
     println()
 
     allow {
       allStatic[String].members
-    } foreach println
+    }.foreach(println)
     println()
 
     allow {
       allStatic[String].membersNamed.valueOf
-    } foreach println
+    }.foreach(println)
     println()
   }
 }

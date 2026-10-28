@@ -8,10 +8,9 @@ import scala.annotation.tailrec
 import scala.language.experimental.macros
 import scala.reflect.macros.whitebox
 
-/**
-  * Object used during expression compilation to validate the expression (syntax, invocations, etc.)
-  * This must be a Scala object and not a class because it contains macros. Validation is performed against
-  * given ExpressionProfile which is injected into this object by ScexCompiler by means of a dynamic variable.
+/** Object used during expression compilation to validate the expression (syntax, invocations, etc.) This must be a
+  * Scala object and not a class because it contains macros. Validation is performed against given ExpressionProfile
+  * which is injected into this object by ScexCompiler by means of a dynamic variable.
   */
 object ExpressionMacroProcessor {
   def markExpression[T](expr: T): T = macro ExpressionMacroProcessor.markExpression_impl[T]
@@ -68,27 +67,28 @@ class ExpressionMacroProcessor(val c: whitebox.Context) extends MacroUtils with 
     expr.tree
   }
 
-  def applyTypesafeEquals_impl[T](expr: c.Expr[T]): c.Tree = {
+  def applyTypesafeEquals_impl[T](expr: c.Expr[T]): c.Tree =
     if (c.inferImplicitValue(typeOf[TypesafeEqualsEnabled]) != EmptyTree) {
       object transformer extends Transformer {
         override def transform(tree: Tree): Tree = tree match {
-          case apply@Apply(Select(left, operator), List(right)) => operator.decodedName.toString match {
-            case "==" =>
-              c.typecheck(
-                typesafeEquals(transform(left), transform(right), apply.pos),
-                pt = typeOf[Boolean]
-              )
-            case "!=" =>
-              internal.setPos(
+          case apply @ Apply(Select(left, operator), List(right)) =>
+            operator.decodedName.toString match {
+              case "==" =>
                 c.typecheck(
-                  q"!${typesafeEquals(transform(left), transform(right), apply.pos)}",
-                  pt = typeOf[Boolean]
-                ),
-                apply.pos
-              )
-            case _ =>
-              super.transform(tree)
-          }
+                  typesafeEquals(transform(left), transform(right), apply.pos),
+                  pt = typeOf[Boolean],
+                )
+              case "!=" =>
+                internal.setPos(
+                  c.typecheck(
+                    q"!${typesafeEquals(transform(left), transform(right), apply.pos)}",
+                    pt = typeOf[Boolean],
+                  ),
+                  apply.pos,
+                )
+              case _ =>
+                super.transform(tree)
+            }
           case _ =>
             super.transform(tree)
         }
@@ -98,8 +98,6 @@ class ExpressionMacroProcessor(val c: whitebox.Context) extends MacroUtils with 
 
     } else expr.tree
 
-  }
-
   def typesafeEquals(leftTree: Tree, rightTree: Tree, pos: Position): Tree = {
     val leftTpe = leftTree.tpe.widen
     val rightTpe = rightTree.tpe.widen
@@ -107,16 +105,17 @@ class ExpressionMacroProcessor(val c: whitebox.Context) extends MacroUtils with 
     lazy val leftToRightConv = c.inferImplicitView(leftTree, leftTree.tpe, rightTree.tpe.widen)
     lazy val rightToLeftConv = c.inferImplicitView(rightTree, rightTree.tpe, leftTree.tpe.widen)
 
-    val result = if (leftTpe <:< rightTpe)
-      q"$leftTree == $rightTree"
-    else if (rightTpe <:< leftTpe)
-      q"$rightTree == $leftTree"
-    else if (rightToLeftConv != EmptyTree)
-      q"$leftTree == $rightToLeftConv($rightTree)"
-    else if (leftToRightConv != EmptyTree)
-      q"$leftToRightConv($leftTree) == $rightTree"
-    else
-      c.abort(pos, s"Values of types ${leftTpe.dealias} and ${rightTpe.dealias} cannot be compared for equality")
+    val result =
+      if (leftTpe <:< rightTpe)
+        q"$leftTree == $rightTree"
+      else if (rightTpe <:< leftTpe)
+        q"$rightTree == $leftTree"
+      else if (rightToLeftConv != EmptyTree)
+        q"$leftTree == $rightToLeftConv($rightTree)"
+      else if (leftToRightConv != EmptyTree)
+        q"$leftToRightConv($leftTree) == $rightTree"
+      else
+        c.abort(pos, s"Values of types ${leftTpe.dealias} and ${rightTpe.dealias} cannot be compared for equality")
 
     internal.setPos(result, pos)
   }
@@ -132,23 +131,26 @@ class ExpressionMacroProcessor(val c: whitebox.Context) extends MacroUtils with 
       q"(value: $ttpe) => ${bodyGen(q"value")}"
 
     def translate(tree: Tree): Tree = tree match {
-      case Apply(fun, List(arg)) if fun.symbol == safeToString || (fun.symbol :: fun.symbol.overrides).contains(splicerToString) =>
+      case Apply(fun, List(arg))
+          if fun.symbol == safeToString || (fun.symbol :: fun.symbol.overrides).contains(splicerToString) =>
         translate(arg)
 
-      case Select(prefix@Ident(_), TermName(propertyName)) if isRootAdapter(prefix.tpe) =>
+      case Select(prefix @ Ident(_), TermName(propertyName)) if isRootAdapter(prefix.tpe) =>
         reifySetterFunction(Select(Ident(TermName(CodeGeneration.RootSymbol)), TermName("set" + propertyName.capitalize)))
 
       case Select(ImplicitlyConverted(prefix, fun), TermName(propertyName)) if isAdapterConversion(fun.symbol) =>
         reifySetterFunction(Select(prefix, TermName("set" + propertyName.capitalize)))
 
-      case Select(va@Ident(TermName(CodeGeneration.VariablesSymbol)), TermName(varName)) if va.tpe <:< dynamicVarAccessorTpe =>
+      case Select(va @ Ident(TermName(CodeGeneration.VariablesSymbol)), TermName(varName))
+          if va.tpe <:< dynamicVarAccessorTpe =>
         val ctx = Ident(TermName(CodeGeneration.ContextSymbol))
         reifyFunction(arg => q"$ctx.setTypedVariable[${tree.tpe}]($varName, $arg)")
 
       case Select(prefix, TermName(getterName)) if tree.symbol.isMethod =>
         val returnType = tree.symbol.asMethod.returnType
         val setterName = getterName match {
-          case BooleanBeanGetterNamePattern(capitalizedProperty, _) if returnType <:< booleanTpe || returnType <:< jBooleanTpe =>
+          case BooleanBeanGetterNamePattern(capitalizedProperty, _)
+              if returnType <:< booleanTpe || returnType <:< jBooleanTpe =>
             "set" + capitalizedProperty
           case BeanGetterNamePattern(capitalizedProperty, _) =>
             "set" + capitalizedProperty
@@ -167,8 +169,7 @@ class ExpressionMacroProcessor(val c: whitebox.Context) extends MacroUtils with 
       case Apply(Select(prefix, TermName("apply")), List(soleArgument)) =>
         reifyFunction(arg => q"$prefix.update($soleArgument, $convertOnSet($arg))")
 
-      case Apply(Select(prefix, TermName("selectDynamic")), List(dynamicNameArg))
-        if prefix.tpe <:< typeOf[Dynamic] =>
+      case Apply(Select(prefix, TermName("selectDynamic")), List(dynamicNameArg)) if prefix.tpe <:< typeOf[Dynamic] =>
 
         reifySetterFunction(q"$prefix.updateDynamic($convertOnSet($dynamicNameArg))")
 

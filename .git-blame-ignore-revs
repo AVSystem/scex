@@ -1,0 +1,5 @@
+# Commits listed here are skipped by `git blame` (bulk reformats, etc.).
+# Enable locally with: git config blame.ignoreRevsFile .git-blame-ignore-revs
+
+# Reformat with scalafmt 3.11.1
+2e0458a04993c5d35625ad52fec79604df5db32f

@@ -47,13 +47,9 @@ trait ScexCompiler extends LoggingUtils {
 
     def mapPosition(pos: Position, mapping: PositionMapping): Position =
       if (pos.isRange) {
-        val result = pos
-          .withStart(mapping(pos.start))
-          .withPoint(mapping(pos.point))
-          .withEnd(mapping(pos.end))
+        val result = pos.withStart(mapping(pos.start)).withPoint(mapping(pos.point)).withEnd(mapping(pos.end))
         if (pos.isTransparent) result.makeTransparent else result
-      }
-      else if (pos.isOffset)
+      } else if (pos.isOffset)
         pos.withPoint(mapping(pos.point))
       else pos
 
@@ -98,10 +94,9 @@ trait ScexCompiler extends LoggingUtils {
   private var global: ScexGlobal = _
   private var reporter: Reporter = _
 
-  /**
-   * Classloader for stuff that will be never reclaimed after compilation -
-   * profiles, validators, custom util classes, etc.
-   */
+  /** Classloader for stuff that will be never reclaimed after compilation - profiles, validators, custom util classes,
+    * etc.
+    */
   private var sharedClassLoader: ScexClassLoader = _
   private var compilationCount: Int = _
 
@@ -136,24 +131,29 @@ trait ScexCompiler extends LoggingUtils {
   protected def instantiate[T](classLoader: ClassLoader, className: String): T =
     Class.forName(className, true, classLoader).getConstructor().newInstance().asInstanceOf[T]
 
-  protected def compileJavaGetterAdapters(profile: ExpressionProfile, name: String, classes: Seq[Class[_]], full: Boolean): Try[Seq[Option[String]]] =
+  protected def compileJavaGetterAdapters(
+    profile: ExpressionProfile,
+    name: String,
+    classes: Seq[Class[_]],
+    full: Boolean,
+  ): Try[Seq[Option[String]]] =
     if (settings.noGetterAdapters.value) Success(classes.map(_ => None))
     else {
       val (fullCode, names) = classes.foldLeft(("", Vector.empty[Option[String]])) {
-        case ((prevCode, prevNames), clazz) => generateJavaGetterAdapter(clazz, full) match {
-          case Some(code) => (prevCode + "\n" + code, prevNames :+ Some(adapterName(clazz, full)))
-          case None => (prevCode, prevNames :+ None)
-        }
+        case ((prevCode, prevNames), clazz) =>
+          generateJavaGetterAdapter(clazz, full) match {
+            case Some(code) => (prevCode + "\n" + code, prevNames :+ Some(adapterName(clazz, full)))
+            case None => (prevCode, prevNames :+ None)
+          }
       }
       val codeToCompile = wrapInSource(fullCode, AdaptersPkgPrefix + NameTransformer.encode(profile.name))
       val sourceFile = new ScexSourceFile(name + profile.name, codeToCompile, shared = true)
 
-      def result() = {
+      def result() =
         compile(sourceFile) match {
           case Left(_) => names
           case Right(errors) => throw CompilationFailedException(codeToCompile, errors)
         }
-      }
 
       Try(result())
     }
@@ -161,8 +161,8 @@ trait ScexCompiler extends LoggingUtils {
   protected def compileProfileObject(profile: ExpressionProfile): Try[Option[String]] = underLock {
     val classes = profile.symbolValidator.referencedJavaClasses.toVector.sortBy(_.getName)
     val adapterNames = compileJavaGetterAdapters(profile, "Adapters_", classes, full = false).get
-    val adapters = (classes zip adapterNames).collect {
-      case (clazz, Some(adapterName)) => (clazz, adapterName)
+    val adapters = (classes zip adapterNames).collect { case (clazz, Some(adapterName)) =>
+      (clazz, adapterName)
     }
 
     generateProfileObject(profile, adapters) match {
@@ -185,29 +185,33 @@ trait ScexCompiler extends LoggingUtils {
   }
 
   protected def compileExpressionUtils(utils: NamedSource): Try[Option[String]] =
-    if (utils.code.isEmpty) Success(None) else underLock {
-      val pkgName = UtilsPkgPrefix + NameTransformer.encode(utils.name)
-      val codeToCompile = wrapInSource(generateExpressionUtils(utils.code), pkgName)
-      val sourceFile = new ScexSourceFile(pkgName, codeToCompile, shared = true)
+    if (utils.code.isEmpty) Success(None)
+    else
+      underLock {
+        val pkgName = UtilsPkgPrefix + NameTransformer.encode(utils.name)
+        val codeToCompile = wrapInSource(generateExpressionUtils(utils.code), pkgName)
+        val sourceFile = new ScexSourceFile(pkgName, codeToCompile, shared = true)
 
-      def result =
-        compile(sourceFile) match {
-          case Left(_) => pkgName
-          case Right(errors) => throw CompilationFailedException(codeToCompile, errors)
-        }
+        def result =
+          compile(sourceFile) match {
+            case Left(_) => pkgName
+            case Right(errors) => throw CompilationFailedException(codeToCompile, errors)
+          }
 
-      Try(Some(result))
-    }
+        Try(Some(result))
+      }
 
-  protected final def expressionCode(exprDef: ExpressionDef, noMacroProcessing: Boolean = false): (String, String, Int) = {
+  protected final def expressionCode(exprDef: ExpressionDef, noMacroProcessing: Boolean = false)
+    : (String, String, Int) = {
     val profile = exprDef.profile
     val rootObjectClass = exprDef.rootObjectClass
 
     val fullAdapterClassNameOpt =
       if (profile.symbolValidator.referencedJavaClasses.contains(rootObjectClass)) {
         val name = adapterName(rootObjectClass, full = true)
-        compileJavaGetterAdapters(profile, name, Seq(rootObjectClass), full = true)
-          .get.head.map(name => s"$AdaptersPkgPrefix${NameTransformer.encode(profile.name)}.$name")
+        compileJavaGetterAdapters(profile, name, Seq(rootObjectClass), full = true).get.head.map(name =>
+          s"$AdaptersPkgPrefix${NameTransformer.encode(profile.name)}.$name"
+        )
       } else None
 
     val profileObjectPkg = compileProfileObject(profile).get
@@ -222,9 +226,11 @@ trait ScexCompiler extends LoggingUtils {
   protected final def withGlobal[T](code: ScexGlobal => T): T = underLock {
     reporter.reset()
     val global = this.global
-    val result = try code(global) finally {
-      reporter.reset()
-    }
+    val result =
+      try code(global)
+      finally {
+        reporter.reset()
+      }
     result
   }
 
@@ -283,8 +289,14 @@ trait ScexCompiler extends LoggingUtils {
     val (pkgName, codeToCompile, offset) = expressionCode(exprDef)
     // every single expression has its own classloader and virtual directory
     val sourceFile = new ExpressionSourceFile(exprDef, pkgName, codeToCompile, offset)
-    val sourceInfo = new SourceInfo(pkgName, codeToCompile, offset, offset + exprDef.expression.length,
-      sourceFile.offsetToLine(offset) + 1, sourceFile.offsetToLine(offset + exprDef.expression.length - 1) + 2)
+    val sourceInfo = new SourceInfo(
+      pkgName,
+      codeToCompile,
+      offset,
+      offset + exprDef.expression.length,
+      sourceFile.offsetToLine(offset) + 1,
+      sourceFile.offsetToLine(offset + exprDef.expression.length - 1) + 2,
+    )
     val debugInfo = new ExpressionDebugInfo(exprDef)
 
     compile(sourceFile) match {
@@ -292,7 +304,8 @@ trait ScexCompiler extends LoggingUtils {
         val clazz = Class.forName(s"$pkgName.$ExpressionClassName", true, classLoader)
         clazz.getDeclaredClasses
         // force loading of inner classes
-        val expr = clazz.getConstructor(classOf[ExpressionDebugInfo], classOf[SourceInfo])
+        val expr = clazz
+          .getConstructor(classOf[ExpressionDebugInfo], classOf[SourceInfo])
           .newInstance(debugInfo, sourceInfo)
           .asInstanceOf[RawExpression]
         Success(expr)
@@ -310,20 +323,30 @@ trait ScexCompiler extends LoggingUtils {
     expression: String,
     variableTypes: Map[String, TypeString[_]] = Map.empty,
     template: Boolean = true,
-    header: String = ""
+    header: String = "",
   )(implicit
     cti: ContextTypeInfo[C],
-    tts: TypeString[T]
+    tts: TypeString[T],
   ): Expression[C, T] = {
 
     require(profile != null, "Profile cannot be null")
     require(expression != null, "Expression cannot be null")
     require(header != null, "Header cannot be null")
 
-    val strVariableTypes = variableTypes.iterator.map({ case (k, v) => (k, v.value) }).toMap
+    val strVariableTypes = variableTypes.iterator.map { case (k, v) => (k, v.value) }.toMap
     val (actualExpression, positionMapping) = preprocess(expression, template)
-    getCompiledExpression(ExpressionDef(profile, template, setter = false, actualExpression,
-      header, cti.fullTypeString, tts.value, strVariableTypes)(expression, positionMapping, cti.rootObjectClass))
+    getCompiledExpression(
+      ExpressionDef(
+        profile,
+        template,
+        setter = false,
+        actualExpression,
+        header,
+        cti.fullTypeString,
+        tts.value,
+        strVariableTypes,
+      )(expression, positionMapping, cti.rootObjectClass)
+    )
   }
 
   def getCompiledSetterExpression[C <: ExpressionContext[_, _], T](
@@ -331,21 +354,31 @@ trait ScexCompiler extends LoggingUtils {
     expression: String,
     template: Boolean = true,
     variableTypes: Map[String, TypeString[_]] = Map.empty,
-    header: String = ""
+    header: String = "",
   )(implicit
     cti: ContextTypeInfo[C],
-    tts: TypeString[T]
+    tts: TypeString[T],
   ): Expression[C, Setter[T]] = {
 
     require(profile != null, "Profile cannot be null")
     require(expression != null, "Expression cannot be null")
     require(header != null, "Header cannot be null")
 
-    val strVariableTypes = variableTypes.iterator.map({ case (k, v) => (k, v.value) }).toMap
+    val strVariableTypes = variableTypes.iterator.map { case (k, v) => (k, v.value) }.toMap
 
     val (actualExpression, positionMapping) = preprocess(expression, template)
-    getCompiledExpression(ExpressionDef(profile, template, setter = true, actualExpression,
-      header, cti.fullTypeString, tts.value, strVariableTypes)(expression, positionMapping, cti.rootObjectClass))
+    getCompiledExpression(
+      ExpressionDef(
+        profile,
+        template,
+        setter = true,
+        actualExpression,
+        header,
+        cti.fullTypeString,
+        tts.value,
+        strVariableTypes,
+      )(expression, positionMapping, cti.rootObjectClass)
+    )
   }
 
   @throws[CompilationFailedException]
@@ -376,10 +409,9 @@ trait ScexCompiler extends LoggingUtils {
     }
   }
 
-  /**
-   * Compiles arbitrary Scala source file into a dedicated class loader and loads class with given fully qualified name
-   * from that class loader.
-   */
+  /** Compiles arbitrary Scala source file into a dedicated class loader and loads class with given fully qualified name
+    * from that class loader.
+    */
   def compileClass(code: String, name: String): Class[_] = underLock {
     val sourceName = ArbitraryClassSourceNamePrefix + DigestUtils.md5Hex(code)
     val sourceFile = new ScexSourceFile(sourceName, code, shared = false)
@@ -392,10 +424,9 @@ trait ScexCompiler extends LoggingUtils {
     }
   }
 
-  /**
-   * Resets internal compiler state by creating completely new instance of Scala compiler and invalidating all
-   * internal caches.
-   */
+  /** Resets internal compiler state by creating completely new instance of Scala compiler and invalidating all internal
+    * caches.
+    */
   def reset(): Unit =
     underLock(setup())
 }

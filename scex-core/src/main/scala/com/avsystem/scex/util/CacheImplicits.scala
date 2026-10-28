@@ -5,7 +5,6 @@ import com.google.common.cache.{CacheLoader, RemovalListener, RemovalNotificatio
 
 import scala.language.implicitConversions
 
-
 object CacheImplicits {
   implicit def funToCacheLoader[K, V](fun: K => V): CacheLoader[K, V] =
     new CacheLoader[K, V] {

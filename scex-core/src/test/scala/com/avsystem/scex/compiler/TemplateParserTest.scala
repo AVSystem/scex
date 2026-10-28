@@ -5,10 +5,8 @@ import com.avsystem.scex.parsing.TemplateParser
 import com.google.common.io.ByteStreams
 import org.scalatest.funsuite.AnyFunSuite
 
-/**
- * Created: 03-11-2014
- * Author: ghik
- */
+/** Created: 03-11-2014 Author: ghik
+  */
 class TemplateParserTest extends AnyFunSuite {
   def parse(expr: String): (List[String], List[String]) = {
     val (parts, args) = TemplateParser.parseTemplate(expr).get

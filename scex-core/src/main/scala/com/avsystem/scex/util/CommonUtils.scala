@@ -9,18 +9,49 @@ import scala.annotation.nowarn
 import scala.collection.mutable
 import scala.reflect.ClassTag
 
-
-/**
- * Created with IntelliJ IDEA.
- * User: ghik
- * Date: 08.01.13
- * Time: 21:03
- */
+/** Created with IntelliJ IDEA. User: ghik Date: 08.01.13 Time: 21:03
+  */
 object CommonUtils {
   final val ScalaKeywords = Set(
-    "abstract", "case", "catch", "class", "def", "do", "else", "extends", "false", "final", "finally", "for", "forSome",
-    "if", "implicit", "import", "lazy", "match", "new", "null", "object", "override", "package", "private", "protected",
-    "return", "sealed", "super", "this", "throw", "trait", "try", "true", "type", "val", "var", "while", "with", "yield"
+    "abstract",
+    "case",
+    "catch",
+    "class",
+    "def",
+    "do",
+    "else",
+    "extends",
+    "false",
+    "final",
+    "finally",
+    "for",
+    "forSome",
+    "if",
+    "implicit",
+    "import",
+    "lazy",
+    "match",
+    "new",
+    "null",
+    "object",
+    "override",
+    "package",
+    "private",
+    "protected",
+    "return",
+    "sealed",
+    "super",
+    "this",
+    "throw",
+    "trait",
+    "try",
+    "true",
+    "type",
+    "val",
+    "var",
+    "while",
+    "with",
+    "yield",
   )
 
   final val BeanGetterNamePattern = "get(([A-Z][a-z0-9_]*)+)".r
@@ -83,7 +114,8 @@ object CommonUtils {
     directSuperclasses(clazz).flatMap { superClass =>
       try {
         Some(superClass.getMethod(method.getName, method.getParameterTypes: _*))
-          .filter(m => Modifier.isPublic(m.getModifiers)).map(_.getDeclaringClass)
+          .filter(m => Modifier.isPublic(m.getModifiers))
+          .map(_.getDeclaringClass)
       } catch {
         case _: NoSuchMethodException => None
       }

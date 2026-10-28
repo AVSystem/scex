@@ -4,14 +4,12 @@ import com.avsystem.commons.misc.TypeString
 import com.avsystem.scex.Type
 import com.avsystem.scex.compiler.presentation.ScexPresentationCompiler.{Member, Param}
 
-import scala.reflect.{ClassTag, classTag}
+import scala.reflect.{classTag, ClassTag}
 
-/**
-  * Author: ghik
-  * Created: 11/18/14.
+/** Author: ghik Created: 11/18/14.
   */
 trait CompletionTest {
-  protected def scexType[T: TypeString : ClassTag]: Type =
+  protected def scexType[T: TypeString: ClassTag]: Type =
     Type(TypeString.of[T], classTag[T].runtimeClass)
 
   case class PartialMember(
@@ -19,13 +17,10 @@ trait CompletionTest {
     returnType: Type,
     params: List[List[Param]] = Nil,
     implicitParams: List[Param] = Nil,
-    doc: String = null)
+    doc: String = null,
+  )
 
-  def asPartial(member: Member) = PartialMember(
-    member.name,
-    member.returnType,
-    member.params,
-    member.implicitParams,
-    member.documentation.orNull)
+  def asPartial(member: Member) =
+    PartialMember(member.name, member.returnType, member.params, member.implicitParams, member.documentation.orNull)
 
 }

@@ -15,7 +15,7 @@ object CommonSymbolValidators {
     import JavaCollectionExtensions._
 
     allow {
-      on { c: JCollection[Any@plus] =>
+      on { c: JCollection[Any @plus] =>
         c.size
         c.contains _
         c.containsAll _
@@ -28,16 +28,16 @@ object CommonSymbolValidators {
       list _
       range(_: Int, _: Int, _: Int)
       range(_: Int, _: Int)
-      on { l: JList[Any@plus] =>
+      on { l: JList[Any @plus] =>
         l.get _
         l.implicitlyAs[ListOps[Any]].all.members
       }
       set _
-      on { s: JSet[Any@plus] =>
+      on { s: JSet[Any @plus] =>
         s.implicitlyAs[SetOps[Any]].all.members
       }
       map _
-      on { m: JMap[Any@plus, Any@plus] =>
+      on { m: JMap[Any @plus, Any @plus] =>
         m.isEmpty
         m.size
         m.get _
@@ -48,17 +48,17 @@ object CommonSymbolValidators {
         m.implicitlyAs[MapOps[Any, Any]].all.introduced.members
       }
       entry _
-      on { e: Entry[Any@plus, Any@plus] =>
+      on { e: Entry[Any @plus, Any @plus] =>
         e.key
         e.value
         e.withKey _
         e.withValue _
         e.toString
       }
-      on { c: JCollection[Entry[Any@plus, Any@plus]@plus] =>
+      on { c: JCollection[Entry[Any @plus, Any @plus] @plus] =>
         c.implicitlyAs[EntryCollectionOps[Any, Any]].all.members
       }
-      on { c: JCollection[(Any, Any)@plus] =>
+      on { c: JCollection[(Any, Any) @plus] =>
         c.implicitlyAs[PairCollectionOps[Any, Any]].all.members
       }
 

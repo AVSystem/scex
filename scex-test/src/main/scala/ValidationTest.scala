@@ -60,104 +60,93 @@ object ValidationTest {
       None
       Tuple2.apply _
 
-      on {
-        anyRef: AnyRef =>
-          anyRef == (_: AnyRef)
-          anyRef != (_: AnyRef)
+      on { anyRef: AnyRef =>
+        anyRef == (_: AnyRef)
+        anyRef != (_: AnyRef)
       }
 
-      on {
-        tl: TypedLol[_] =>
-          tl.toString
+      on { tl: TypedLol[_] =>
+        tl.toString
       }
 
-      on {
-        d: (TypedLol[T]#Dafuq[_] forSome {type T}) =>
-          d.getStuff
+      on { d: (TypedLol[T]#Dafuq[_] forSome { type T }) =>
+        d.getStuff
       }
 
-      on {
-        s: String =>
-          s.length
-          s.concat _
-          s.matches _
-          s.reverse
-          s.compare(_: String)
+      on { s: String =>
+        s.length
+        s.concat _
+        s.matches _
+        s.reverse
+        s.compare(_: String)
       }
 
-      on {
-        sc: StringContext =>
-          sc.all.membersNamed("s")
+      on { sc: StringContext =>
+        sc.all.membersNamed("s")
       }
 
-      on {
-        al: ju.ArrayList[_] =>
-          new ju.ArrayList(_: ju.Collection[_])
-          al.all.members
+      on { al: ju.ArrayList[_] =>
+        new ju.ArrayList(_: ju.Collection[_])
+        al.all.members
       }
 
-      on {
-        any: Any =>
-          any + (_: String)
-          any -> (_: Any)
-          any == (_: Any)
-          any != (_: Any)
+      on { any: Any =>
+        any + (_: String)
+        any -> (_: Any)
+        any == (_: Any)
+        any != (_: Any)
       }
 
-      on {
-        a: A[Any@plus] =>
-          a.costam _
-          a.hoho _
-          a.b()
-          a.multiParens(_: Int)(_: String, _: Float)(_: Nothing)
-          a.getClass
-          a.a_= _
+      on { a: A[Any @plus] =>
+        a.costam _
+        a.hoho _
+        a.b()
+        a.multiParens(_: Int)(_: String, _: Float)(_: Nothing)
+        a.getClass
+        a.a_= _
       }
 
-      on {
-        i: Int =>
-          i.implicitlyAs[RichInt].all.membersNamed.to
-          i.all.constructors
-          i.all.membersNamed("+")
+      on { i: Int =>
+        i.implicitlyAs[RichInt].all.membersNamed.to
+        i.all.constructors
+        i.all.membersNamed("+")
       }
 
-      on {
-        jl: JavaLol =>
-          jl.fuu
-          jl.isFoo
+      on { jl: JavaLol =>
+        jl.fuu
+        jl.isFoo
       }
 
       Dyn.selectDynamic _
 
     } ++ deny {
 
-      on {
-        any: Any =>
-          any.equals _
-          any.hashCode
-          any.##
-          any.getClass
-          any.asInstanceOf
-          any.isInstanceOf
+      on { any: Any =>
+        any.equals _
+        any.hashCode
+        any.##
+        any.getClass
+        any.asInstanceOf
+        any.isInstanceOf
       }
 
-      on {
-        anyRef: AnyRef =>
-          anyRef.eq _
-          anyRef.synchronized(_: Any)
+      on { anyRef: AnyRef =>
+        anyRef.eq _
+        anyRef.synchronized(_: Any)
       }
 
     }
 
-    //memberAccessSpecs foreach println
+    // memberAccessSpecs foreach println
 
     val syntaxValidator = new SyntaxValidator {
       def validateSyntax(u: Universe)(tree: u.Tree): (Boolean, List[u.Tree]) = {
         import u._
 
         tree match {
-          case _: Block | _: Select | _: Apply | _: TypeApply | _: Ident |
-               _: If | _: Literal | _: New | _: This | _: Typed | _: TypTree => (true, tree.children)
+          case _: Block | _: Select | _: Apply | _: TypeApply | _: Ident | _: If | _: Literal | _: New | _: This |
+              _: Typed | _: TypTree =>
+            (true, tree.children)
           case _ => (false, tree.children)
         }
       }
@@ -181,7 +170,7 @@ object ValidationTest {
     val typedLol = new TL
     val dafuq = new typedLol.Dafuq[ju.ArrayList[CharSequence]]
 
-    type Typ = TypedLol[T]#Dafuq[F] forSome {type T <: TypedLol[T]; type F}
+    type Typ = TypedLol[T]#Dafuq[F] forSome { type T <: TypedLol[T]; type F }
 
     compiler.getCompiledExpression[SimpleContext[Any], String](profile, "\"lol\".toUpperCase", template = false)
 
