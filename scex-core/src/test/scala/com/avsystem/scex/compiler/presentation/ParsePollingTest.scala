@@ -12,9 +12,9 @@ import scala.jdk.CollectionConverters._
 import scala.tools.nsc.Settings
 
 /** Background compile resets a stale unit (clearing its synthetics) before re-parsing and re-entering it. If the
-  * presentation compiler polled for work in between, a scex request could force an accessor symbol whose synthetic
-  * tree is already gone ("no synthetic tree found for bean accessor"). This test fails deterministically if any
-  * polling happens while a unit is being parsed and entered, regardless of whether the race actually triggers.
+  * presentation compiler polled for work in between, a scex request could force an accessor symbol whose synthetic tree
+  * is already gone ("no synthetic tree found for bean accessor"). This test fails deterministically if any polling
+  * happens while a unit is being parsed and entered, regardless of whether the race actually triggers.
   */
 class ParsePollingTest extends AnyFunSuite with CompilationTest {
 
@@ -29,8 +29,13 @@ class ParsePollingTest extends AnyFunSuite with CompilationTest {
         new IGlobal(settings, reporter, classLoader) {
           override protected def checkForMoreWork(pos: Position): Unit = {
             pollCount.incrementAndGet()
+            // Relies on scalac's `scala.tools.nsc.interactive.Global.parseAndEnter` showing up as a stack frame. If a
+            // scalac upgrade renames or inlines it, this never matches and the test passes vacuously (pollCount only
+            // proves this IGlobal is in use), so re-check the frame name after upgrading Scala.
             val inParseAndEnter = StackWalker.getInstance.walk { frames =>
-              frames.anyMatch(f => f.getClassName == "scala.tools.nsc.interactive.Global" && f.getMethodName == "parseAndEnter")
+              frames.anyMatch(f =>
+                f.getClassName == "scala.tools.nsc.interactive.Global" && f.getMethodName == "parseAndEnter"
+              )
             }
             if (inParseAndEnter) {
               pollsDuringParseAndEnter.add(Thread.currentThread.getStackTrace.mkString("\n  "))
