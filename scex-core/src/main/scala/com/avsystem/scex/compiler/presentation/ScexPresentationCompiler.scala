@@ -27,6 +27,9 @@ trait ScexPresentationCompiler extends ScexCompiler { compiler =>
   protected def isEnabled: Boolean = !settings.noPresentation.value
   protected def presentationCompilerSettings: Settings = settings
 
+  protected def createIGlobal(settings: Settings, reporter: Reporter, classLoader: ClassLoader): IGlobal =
+    new IGlobal(settings, reporter, classLoader)
+
   private var reporter: Reporter = _
   private var global: IGlobal = _
 
@@ -35,7 +38,7 @@ trait ScexPresentationCompiler extends ScexCompiler { compiler =>
     if (isEnabled) {
       logger.info("Initializing Scala presentation compiler")
       reporter = new Reporter(presentationCompilerSettings)
-      global = new IGlobal(presentationCompilerSettings, reporter, getSharedClassLoader)
+      global = createIGlobal(presentationCompilerSettings, reporter, getSharedClassLoader)
     }
   }
 

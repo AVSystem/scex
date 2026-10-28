@@ -18,9 +18,12 @@ class IGlobal(settings: Settings, reporter: Reporter, val classLoader: ClassLoad
 
   import definitions._
 
-  // Don't service interrupts (askForResponse) while parsing. Background compile resets a stale unit (clearing its
-  // synthetics) and only then re-parses and re-enters it, so an interrupt run from the parser could force a lazy
-  // accessor symbol left over from an aborted pass and crash with "no synthetic tree found for bean accessor".
+  // Don't poll for work while parsing. Background compile resets a stale unit (clearing its synthetics) and only then
+  // re-parses and re-enters it, so work run from the parser (e.g. our askForResponse calls) could force a lazy accessor
+  // symbol left over from an aborted pass and crash with "no synthetic tree found for bean accessor".
+  // This applies to every parse on the compiler thread and defers everything pollForWork does: interrupts, queued work
+  // items, cancellation checks, shutdown and fresh-run requests, and yielding. All of it resumes at the next typer
+  // check point. Scex sources are small, so the delay is negligible. Guarded by ParsePollingTest.
   override def signalParseProgress(pos: Position): Unit = ()
 
   abstract class ScexMember extends Member {
